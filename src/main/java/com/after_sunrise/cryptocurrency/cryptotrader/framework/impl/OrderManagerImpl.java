@@ -14,12 +14,20 @@ public class OrderManagerImpl implements OrderManager {
 
     @Override
     public Void create(CreateInstruction instruction) {
+
+        log.debug("Order instruction : {}", instruction);
+
         return null;
+
     }
 
     @Override
     public Void cancel(CancelInstruction instruction) {
+
+        log.debug("Order instruction : {}", instruction);
+
         return null;
+
     }
 
 }

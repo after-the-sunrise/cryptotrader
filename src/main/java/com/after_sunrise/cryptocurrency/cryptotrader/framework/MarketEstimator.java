@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.ToString;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.function.Supplier;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -16,7 +18,12 @@ import static lombok.AccessLevel.PRIVATE;
  */
 public interface MarketEstimator {
 
-    interface Context {
+    interface Context extends Supplier<String> {
+
+        BigDecimal getBesAskPrice(String site, String instrument, Instant timestamp);
+
+        BigDecimal getBesBidPrice(String site, String instrument, Instant timestamp);
+
     }
 
     @Getter
@@ -24,12 +31,6 @@ public interface MarketEstimator {
     @ToString
     @AllArgsConstructor(access = PRIVATE)
     class Estimation {
-
-        public enum Type {
-            ESTIMATED, BAILED
-        }
-
-        private final Type type;
 
         private final BigDecimal price;
 

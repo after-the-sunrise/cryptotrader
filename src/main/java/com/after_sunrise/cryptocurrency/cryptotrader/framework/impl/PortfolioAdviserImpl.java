@@ -14,7 +14,9 @@ public class PortfolioAdviserImpl implements PortfolioAdviser {
 
     @Override
     public Advice advise(Context context, Request request, Estimation estimation) {
+
         return Advice.builder().build();
+
     }
 
 }

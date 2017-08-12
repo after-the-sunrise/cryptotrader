@@ -22,6 +22,8 @@ public interface Trader {
     @AllArgsConstructor(access = PRIVATE)
     class Request {
 
+        public static final String ALL = "*";
+
         private String site;
 
         private String instrument;
