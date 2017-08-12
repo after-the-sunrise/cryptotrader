@@ -46,7 +46,7 @@
         <appender-ref ref="FILE"/>
     </root>
 
-    <logger level="DEBUG" name="com.after_sunrise.cryptocurrency.cryptotrader"/>
+    <logger level="DEBUG" name="com.after_sunrise.cryptocurrency"/>
 
     <logger level="TRACE" additivity="false" name="com.after_sunrise.cryptocurrency.bitflyer4j.core.Loggers$HttpLogger">
         <appender-ref ref="HTTP"/>

@@ -120,5 +120,5 @@ findbugs {
 mainClassName = "com.after_sunrise.cryptocurrency.cryptotrader.Main"
 
 applicationDefaultJvmArgs = [
-        "-Dcryptotrader.main=" + mainClassName
+        "-Dcryptotrader.main=com.after_sunrise.cryptocurrency.cryptotrader.core.CryptotraderImpl"
 ]
