@@ -73,7 +73,7 @@ public class BitflyerOrderManager implements OrderManager {
         builder.type(instruction.getPrice().signum() == 0 ? MARKET : LIMIT);
         builder.side(instruction.getSize().signum() > 0 ? BUY : SELL);
         builder.price(instruction.getPrice());
-        builder.size(instruction.getSize());
+        builder.size(instruction.getSize().abs());
         OrderCreate create = builder.build();
 
         if (!propertyManager.getTradingActive()) {

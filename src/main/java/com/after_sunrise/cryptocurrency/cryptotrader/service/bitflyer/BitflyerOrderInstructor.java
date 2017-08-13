@@ -213,7 +213,7 @@ public class BitflyerOrderInstructor implements OrderInstructor {
 
             BigDecimal raw = previous == null ? null : previous.add(delta);
 
-            BigDecimal rounded = context.roundFundingPosition(key, raw, delta.signum() >= 0 ? UP : DOWN);
+            BigDecimal rounded = context.roundInstrumentPosition(key, raw, delta.signum() >= 0 ? UP : DOWN);
 
             values.add(rounded == null ? previous : rounded);
 
