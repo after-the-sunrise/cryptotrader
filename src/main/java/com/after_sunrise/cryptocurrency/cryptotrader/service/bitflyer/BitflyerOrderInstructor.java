@@ -25,7 +25,8 @@ import static com.after_sunrise.cryptocurrency.bitflyer4j.core.StateType.ACTIVE;
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.TEN;
-import static java.math.RoundingMode.*;
+import static java.math.RoundingMode.DOWN;
+import static java.math.RoundingMode.UP;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
@@ -166,29 +167,31 @@ public class BitflyerOrderInstructor implements OrderInstructor {
     @VisibleForTesting
     List<BigDecimal> splitInstrumentSize(Context context, Key key, BigDecimal value) {
 
-        BigDecimal split = propertyManager.getTradingSplit().setScale(INTEGER_ZERO, DOWN);
+        BigDecimal base = value;
 
-        BigDecimal slice = value.divide(split, SCALE, HALF_UP);
-
-        if (slice.signum() <= 0) {
+        if (base.signum() <= 0) {
             return singletonList(value);
         }
 
         int offset = 0;
 
-        while (slice.compareTo(ONE) < 0) {
-            slice = slice.movePointRight(1);
+        while (base.compareTo(ONE) < 0) {
+            base = base.movePointRight(1);
             offset--;
         }
 
-        while (slice.compareTo(TEN) > 0) {
-            slice = slice.movePointLeft(1);
+        while (base.compareTo(TEN) > 0) {
+            base = base.movePointLeft(1);
             offset++;
         }
 
-        BigDecimal scaled = slice.setScale(INTEGER_ZERO, DOWN).scaleByPowerOfTen(offset);
+        BigDecimal scaledBase = base.setScale(INTEGER_ZERO, DOWN).scaleByPowerOfTen(offset);
 
-        BigDecimal rounded = context.roundInstrumentPosition(key, scaled, DOWN);
+        BigDecimal split = propertyManager.getTradingSplit().setScale(INTEGER_ZERO, DOWN);
+
+        BigDecimal slice = scaledBase.divide(split, SCALE, DOWN);
+
+        BigDecimal rounded = context.roundInstrumentPosition(key, slice, DOWN);
 
         if (rounded == null || rounded.signum() <= 0) {
             return singletonList(value);
