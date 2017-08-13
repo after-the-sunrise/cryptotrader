@@ -1,1 +1,2 @@
 com.after_sunrise.cryptocurrency.cryptotrader.service.strategy.MidMarketEstimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.strategy.LastMarketEstimator

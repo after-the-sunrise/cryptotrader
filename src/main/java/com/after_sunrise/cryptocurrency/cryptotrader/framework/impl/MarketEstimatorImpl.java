@@ -1,23 +1,24 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ExecutorFactory;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.MarketEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
-import static java.util.ServiceLoader.load;
+import static java.math.BigDecimal.ONE;
+import static java.math.RoundingMode.HALF_UP;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 
@@ -28,6 +29,8 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
 @Slf4j
 public class MarketEstimatorImpl implements MarketEstimator {
 
+    private static final int SCALE = 10;
+
     private final List<MarketEstimator> estimators;
 
     private final ExecutorService executor;
@@ -35,9 +38,7 @@ public class MarketEstimatorImpl implements MarketEstimator {
     @Inject
     public MarketEstimatorImpl(Injector injector) {
 
-        this.estimators = Lists.newArrayList(load(MarketEstimator.class).iterator());
-
-        this.estimators.forEach(injector::injectMembers);
+        this.estimators = Frameworks.load(MarketEstimator.class, injector);
 
         this.executor = injector.getInstance(ExecutorFactory.class).get(getClass());
 
@@ -46,7 +47,7 @@ public class MarketEstimatorImpl implements MarketEstimator {
     @Override
     public Estimation estimate(Context context, Request request) {
 
-        List<Estimation> estimations = collect(context, request);
+        Map<MarketEstimator, Estimation> estimations = collect(context, request);
 
         Estimation collapsed = collapse(estimations);
 
@@ -55,7 +56,7 @@ public class MarketEstimatorImpl implements MarketEstimator {
     }
 
     @VisibleForTesting
-    List<Estimation> collect(Context context, Request request) {
+    Map<MarketEstimator, Estimation> collect(Context context, Request request) {
 
         Map<MarketEstimator, CompletableFuture<Estimation>> futures = new IdentityHashMap<>();
 
@@ -65,7 +66,7 @@ public class MarketEstimatorImpl implements MarketEstimator {
 
         );
 
-        List<Estimation> estimations = new ArrayList<>(futures.size());
+        Map<MarketEstimator, Estimation> estimations = new IdentityHashMap<>();
 
         futures.forEach((estimator, future) -> {
 
@@ -73,13 +74,13 @@ public class MarketEstimatorImpl implements MarketEstimator {
 
                 Estimation estimation = future.get();
 
-                estimations.add(estimation);
+                estimations.put(estimator, estimation);
 
-                log.debug("Intermediate Estimation : {} ({})", estimation, estimator);
+                log.trace("Intermediate Estimation : {} ({})", estimation, estimator);
 
             } catch (Exception e) {
 
-                log.warn("Skipped Estimation : " + estimator, e);
+                log.trace("Skipped Estimation : " + estimator, e);
 
             }
         });
@@ -89,33 +90,41 @@ public class MarketEstimatorImpl implements MarketEstimator {
     }
 
     @VisibleForTesting
-    Estimation collapse(List<Estimation> estimations) {
+    Estimation collapse(Map<MarketEstimator, Estimation> estimations) {
+
+        BigDecimal numerator = BigDecimal.ZERO;
+
+        BigDecimal denominator = BigDecimal.ZERO;
 
         BigDecimal total = BigDecimal.ZERO;
 
-        BigDecimal confidences = BigDecimal.ZERO;
+        for (Entry<MarketEstimator, Estimation> entry : estimations.entrySet()) {
 
-        for (Estimation estimation : estimations) {
+            Estimation estimation = entry.getValue();
 
-            if (estimation.getPrice() == null) {
+            if (estimation == null || estimation.getPrice() == null || estimation.getConfidence() == null) {
+
+                log.trace("Ignoring estimation : {} ({})", estimation, entry.getKey());
+
                 continue;
+
             }
 
-            if (estimation.getConfidence() == null) {
-                continue;
-            }
+            numerator = numerator.add(estimation.getPrice().multiply(estimation.getConfidence()));
 
-            total = total.add(estimation.getPrice().multiply(estimation.getConfidence()));
+            denominator = denominator.add(estimation.getConfidence());
 
-            confidences = confidences.add(estimation.getConfidence());
+            total = total.add(ONE);
 
         }
 
-        BigDecimal price = confidences.signum() == 0 ? null : total.divide(confidences);
+        BigDecimal price = denominator.signum() == 0 ? null : numerator.divide(denominator, SCALE, HALF_UP);
 
-        Estimation collapsed = Estimation.builder().price(price).confidence(confidences).build();
+        BigDecimal confidence = total.signum() == 0 ? null : denominator.divide(total, SCALE, HALF_UP);
 
-        log.debug("Collapsed {} estimations : {}", estimations.size(), collapsed);
+        Estimation collapsed = Estimation.builder().price(price).confidence(confidence).build();
+
+        log.debug("Collapsed {} estimations : {} (= {} / {})", total, collapsed, numerator, denominator);
 
         return collapsed;
 

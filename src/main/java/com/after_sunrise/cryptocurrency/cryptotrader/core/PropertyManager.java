@@ -16,10 +16,16 @@ public interface PropertyManager {
 
     String getVersion();
 
-    Duration getTradingInterval();
-
-    BigDecimal getTradingAggressiveness();
+    Boolean getTradingActive();
 
     Map<String, Set<String>> getTradingTargets();
+
+    Duration getTradingInterval();
+
+    BigDecimal getTradingSpread();
+
+    BigDecimal getTradingExposure();
+
+    BigDecimal getTradingAggressiveness();
 
 }

@@ -63,6 +63,27 @@ public class PropertyManagerImpl implements PropertyManager {
     }
 
     @Override
+    public Boolean getTradingActive() {
+
+        try {
+
+            boolean value = configuration.getBoolean(TRADING_ACTIVE.getKey());
+
+            log.trace("Configured active : {}", value);
+
+            return value;
+
+        } catch (RuntimeException e) {
+
+            log.warn("Invalid property : " + TRADING_ACTIVE.getKey(), e);
+
+            return false;
+
+        }
+
+    }
+
+    @Override
     public Duration getTradingInterval() {
 
         try {
@@ -123,6 +144,52 @@ public class PropertyManagerImpl implements PropertyManager {
     }
 
     @Override
+    public BigDecimal getTradingSpread() {
+
+        try {
+
+            BigDecimal value = configuration.getBigDecimal(TRADING_SPREAD.getKey());
+
+            BigDecimal adjusted = value.max(ZERO).min(ONE);
+
+            log.trace("Configured spread : {} -> {}", value, adjusted);
+
+            return adjusted;
+
+        } catch (RuntimeException e) {
+
+            log.warn("Invalid property : " + TRADING_SPREAD.getKey(), e);
+
+            return ZERO;
+
+        }
+
+    }
+
+    @Override
+    public BigDecimal getTradingExposure() {
+
+        try {
+
+            BigDecimal value = configuration.getBigDecimal(TRADING_EXPOSURE.getKey());
+
+            BigDecimal adjusted = value.max(ZERO).min(ONE);
+
+            log.trace("Configured exposure : {} -> {}", value, adjusted);
+
+            return adjusted;
+
+        } catch (RuntimeException e) {
+
+            log.warn("Invalid property : " + TRADING_EXPOSURE.getKey(), e);
+
+            return ZERO;
+
+        }
+
+    }
+
+    @Override
     public BigDecimal getTradingAggressiveness() {
 
         try {
@@ -139,7 +206,7 @@ public class PropertyManagerImpl implements PropertyManager {
 
             log.warn("Invalid property : " + TRADING_AGGRESSIVENESS.getKey(), e);
 
-            return ONE;
+            return ZERO;
 
         }
 

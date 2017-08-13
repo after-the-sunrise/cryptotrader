@@ -32,13 +32,9 @@ public class CryptotraderImpl extends AbstractModule implements Cryptotrader {
         bind(Bitflyer4j.class).toInstance(new Bitflyer4jFactory().createInstance());
         bind(ExecutorFactory.class).to(ExecutorFactoryImpl.class).asEagerSingleton();
 
-        bind(MarketEstimator.Context.class).to(MarketContextImpl.class).asEagerSingleton();
+        bind(Context.class).toProvider(ContextProvider.class).asEagerSingleton();
         bind(MarketEstimator.class).to(MarketEstimatorImpl.class).asEagerSingleton();
-
-        bind(PortfolioAdviser.Context.class).to(PortfolioContextImpl.class).asEagerSingleton();
         bind(PortfolioAdviser.class).to(PortfolioAdviserImpl.class).asEagerSingleton();
-
-        bind(OrderInstructor.Context.class).to(OrderContextImpl.class).asEagerSingleton();
         bind(OrderInstructor.class).to(OrderInstructorImpl.class).asEagerSingleton();
 
         bind(OrderManager.class).to(OrderManagerImpl.class).asEagerSingleton();

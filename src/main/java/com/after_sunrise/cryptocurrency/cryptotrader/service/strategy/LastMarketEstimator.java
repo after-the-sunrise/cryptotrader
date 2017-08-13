@@ -16,7 +16,7 @@ import static java.math.BigDecimal.ONE;
  * @version 0.0.1
  */
 @Slf4j
-public class MidMarketEstimator implements MarketEstimator {
+public class LastMarketEstimator implements MarketEstimator {
 
     private static final Estimation BAIL = Estimation.builder().build();
 
@@ -29,7 +29,7 @@ public class MidMarketEstimator implements MarketEstimator {
             return BAIL;
         }
 
-        BigDecimal price = context.getMidPrice(key);
+        BigDecimal price = context.getLastPrice(key);
 
         Estimation estimation = Estimation.builder().price(price).confidence(ONE).build();
 

@@ -10,26 +10,20 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.framework.OrderInstructor.Context;
-
 /**
  * @author takanori.takase
  * @version 0.0.1
  */
 @Slf4j
-public class PipelineProcessorImpl implements PipelineProcessor, Instruction.Visitor<Void, Request> {
+public class PipelineProcessorImpl implements PipelineProcessor, Instruction.Visitor<Boolean, Request> {
+
+    private final Context context;
 
     private final MarketEstimator estimator;
 
-    private final MarketEstimator.Context marketContext;
-
     private final PortfolioAdviser adviser;
 
-    private final PortfolioAdviser.Context portfolioContext;
-
     private final OrderInstructor instructor;
-
-    private final OrderInstructor.Context instructionContext;
 
     private final OrderManager manager;
 
@@ -38,15 +32,11 @@ public class PipelineProcessorImpl implements PipelineProcessor, Instruction.Vis
 
         this.estimator = injector.getInstance(MarketEstimator.class);
 
-        this.marketContext = injector.getInstance(MarketEstimator.Context.class);
+        this.context = injector.getInstance(Context.class);
 
         this.adviser = injector.getInstance(PortfolioAdviser.class);
 
-        this.portfolioContext = injector.getInstance(PortfolioAdviser.Context.class);
-
         this.instructor = injector.getInstance(OrderInstructor.class);
-
-        this.instructionContext = injector.getInstance(Context.class);
 
         this.manager = injector.getInstance(OrderManager.class);
 
@@ -55,24 +45,24 @@ public class PipelineProcessorImpl implements PipelineProcessor, Instruction.Vis
     @Override
     public void accept(Request request) {
 
-        Estimation estimation = estimator.estimate(marketContext, request);
+        Estimation estimation = estimator.estimate(context, request);
 
-        Advice advice = adviser.advise(portfolioContext, request, estimation);
+        Advice advice = adviser.advise(context, request, estimation);
 
-        List<Instruction> instructions = instructor.instruct(instructionContext, request, advice);
+        List<Instruction> instructions = instructor.instruct(context, request, advice);
 
         instructions.forEach(i -> i.accept(this, request));
 
     }
 
     @Override
-    public Void visit(Request parameter, Instruction.CreateInstruction instruction) {
-        return manager.create(instruction);
+    public Boolean visit(Request request, Instruction.CreateInstruction instruction) {
+        return manager.create(request, instruction);
     }
 
     @Override
-    public Void visit(Request parameter, Instruction.CancelInstruction instruction) {
-        return manager.cancel(instruction);
+    public Boolean visit(Request request, Instruction.CancelInstruction instruction) {
+        return manager.cancel(request, instruction);
     }
 
 }

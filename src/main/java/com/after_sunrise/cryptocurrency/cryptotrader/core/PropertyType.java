@@ -10,11 +10,17 @@ public enum PropertyType {
 
     VERSION,
 
-    TRADING_INTERVAL,
-
     TRADING_TARGETS,
 
-    TRADING_AGGRESSIVENESS;
+    TRADING_INTERVAL,
+
+    TRADING_SPREAD,
+
+    TRADING_EXPOSURE,
+
+    TRADING_AGGRESSIVENESS,
+
+    TRADING_ACTIVE;
 
     private static final String PREFIX = "cryptotrader.";
 
