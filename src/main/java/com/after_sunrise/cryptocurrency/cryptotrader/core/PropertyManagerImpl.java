@@ -14,9 +14,11 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.*;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.math.BigDecimal.*;
+import static java.math.RoundingMode.DOWN;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.StringUtils.splitPreserveAllTokens;
+import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
 /**
  * @author takanori.takase
@@ -184,6 +186,29 @@ public class PropertyManagerImpl implements PropertyManager {
             log.warn("Invalid property : " + TRADING_EXPOSURE.getKey(), e);
 
             return ZERO;
+
+        }
+
+    }
+
+    @Override
+    public BigDecimal getTradingSplit() {
+
+        try {
+
+            BigDecimal value = configuration.getBigDecimal(TRADING_SPLIT.getKey());
+
+            BigDecimal adjusted = value.max(ONE).min(TEN).setScale(INTEGER_ZERO, DOWN);
+
+            log.trace("Configured split : {} -> {}", value, adjusted);
+
+            return adjusted;
+
+        } catch (RuntimeException e) {
+
+            log.warn("Invalid property : " + TRADING_SPLIT.getKey(), e);
+
+            return ONE;
 
         }
 

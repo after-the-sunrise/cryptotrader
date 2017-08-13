@@ -26,6 +26,8 @@ public interface PropertyManager {
 
     BigDecimal getTradingExposure();
 
+    BigDecimal getTradingSplit();
+
     BigDecimal getTradingAggressiveness();
 
 }

@@ -17,11 +17,19 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.StateType.ACTIVE;
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
+import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.TEN;
+import static java.math.RoundingMode.DOWN;
+import static java.math.RoundingMode.HALF_UP;
+import static java.util.Collections.singletonList;
+import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
 /**
  * @author takanori.takase
@@ -29,6 +37,8 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Instructio
  */
 @Slf4j
 public class BitflyerOrderInstructor implements OrderInstructor {
+
+    private static final int SCALE = 12;
 
     private PropertyManager propertyManager;
 
@@ -106,13 +116,13 @@ public class BitflyerOrderInstructor implements OrderInstructor {
             return Collections.emptyList();
         }
 
-        CreateInstruction instruction = CreateInstruction.builder() //
-                .price(advice.getBuyLimitPrice()) //
-                .size(advice.getBuyLimitSize()).build();
+        List<CreateInstruction> instructions = splitInstrumentSize(context, key, advice.getBuyLimitSize())
+                .stream().map(size -> CreateInstruction.builder().price(advice.getBuyLimitPrice()) //
+                        .size(size).build()).collect(Collectors.toList());
 
-        log.trace("Buy candidate : {}", instruction);
+        log.trace("Buy candidates : {}", instructions);
 
-        return Collections.singletonList(instruction);
+        return instructions;
 
     }
 
@@ -127,13 +137,48 @@ public class BitflyerOrderInstructor implements OrderInstructor {
             return Collections.emptyList();
         }
 
-        CreateInstruction instruction = CreateInstruction.builder() //
-                .price(advice.getSellLimitPrice()) //
-                .size(advice.getSellLimitSize().negate()).build();
+        List<CreateInstruction> instructions = splitInstrumentSize(context, key, advice.getSellLimitSize()) //
+                .stream().map(size -> CreateInstruction.builder().price(advice.getSellLimitPrice()) //
+                        .size(size).build()).collect(Collectors.toList());
 
-        log.trace("Sell candidate : {}", instruction);
+        log.trace("Sell candidates : {}", instructions);
 
-        return Collections.singletonList(instruction);
+        return instructions;
+
+    }
+
+    @VisibleForTesting
+    List<BigDecimal> splitInstrumentSize(Context context, Key key, BigDecimal value) {
+
+        BigDecimal split = propertyManager.getTradingSplit().setScale(INTEGER_ZERO, DOWN);
+
+        BigDecimal slice = value.divide(split, SCALE, HALF_UP);
+
+        if (slice.signum() <= 0) {
+            return singletonList(value);
+        }
+
+        int offset = 0;
+
+        while (slice.compareTo(ONE) < 0) {
+            slice = slice.movePointRight(1);
+            offset--;
+        }
+
+        while (slice.compareTo(TEN) > 0) {
+            slice = slice.movePointLeft(1);
+            offset++;
+        }
+
+        BigDecimal scaled = slice.setScale(INTEGER_ZERO, DOWN).scaleByPowerOfTen(offset);
+
+        BigDecimal rounded = context.roundInstrumentPosition(key, scaled, DOWN);
+
+        if (rounded == null || rounded.signum() <= 0) {
+            return singletonList(value);
+        }
+
+        return Collections.nCopies(split.intValue(), rounded);
 
     }
 
