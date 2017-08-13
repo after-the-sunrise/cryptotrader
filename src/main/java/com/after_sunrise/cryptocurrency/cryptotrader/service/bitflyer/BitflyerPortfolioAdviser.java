@@ -73,7 +73,7 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
         BigDecimal sSize = calculateSellLimitSize(context, key);
 
         return Advice.builder().buyLimitPrice(bPrice).buyLimitSize(bSize) //
-                .sellLimitPrice(sPrice).buyLimitSize(sSize).build();
+                .sellLimitPrice(sPrice).sellLimitSize(sSize).build();
 
     }
 

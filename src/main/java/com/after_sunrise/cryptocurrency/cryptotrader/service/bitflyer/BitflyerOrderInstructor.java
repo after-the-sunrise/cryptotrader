@@ -102,6 +102,10 @@ public class BitflyerOrderInstructor implements OrderInstructor {
             return Collections.emptyList();
         }
 
+        if (advice.getBuyLimitSize() == null || advice.getBuyLimitSize().signum() <= 0) {
+            return Collections.emptyList();
+        }
+
         CreateInstruction instruction = CreateInstruction.builder() //
                 .price(advice.getBuyLimitPrice()) //
                 .size(advice.getBuyLimitSize()).build();
@@ -116,6 +120,10 @@ public class BitflyerOrderInstructor implements OrderInstructor {
     List<CreateInstruction> createSells(Context context, Key key, Advice advice) {
 
         if (advice.getSellLimitPrice() == null || advice.getSellLimitPrice().signum() == 0) {
+            return Collections.emptyList();
+        }
+
+        if (advice.getSellLimitSize() == null || advice.getSellLimitSize().signum() <= 0) {
             return Collections.emptyList();
         }
 
