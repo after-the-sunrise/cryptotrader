@@ -15,9 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.Frameworks.trimToZero;
+import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.DOWN;
-import static java.math.RoundingMode.UP;
+import static java.math.RoundingMode.*;
 
 /**
  * @author takanori.takase
@@ -67,73 +67,80 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
 
         Key key = Frameworks.convert(request);
 
-        Advice.AdviceBuilder builder = Advice.builder();
-        builder = builder.buyLimitPrice(calculateBuyLimitPrice(context, key));
-        builder = builder.sellLimitPrice(calculateSellLimitPrice(context, key));
-        builder = builder.buyLimitSize(calculateBuyLimitSize(context, key));
-        builder = builder.sellLimitSize(calculateSellLimitSize(context, key));
-        return builder.build();
+        BigDecimal bPrice = calculateBuyLimitPrice(context, key, estimation);
+        BigDecimal sPrice = calculateSellLimitPrice(context, key, estimation);
+        BigDecimal bSize = calculateBuyLimitSize(context, key, bPrice);
+        BigDecimal sSize = calculateSellLimitSize(context, key);
+
+        return Advice.builder().buyLimitPrice(bPrice).buyLimitSize(bSize) //
+                .sellLimitPrice(sPrice).buyLimitSize(sSize).build();
 
     }
 
     @VisibleForTesting
-    BigDecimal calculateBuyLimitPrice(Context context, Key key) {
+    BigDecimal calculateBuyLimitPrice(Context context, Key key, Estimation estimation) {
 
-        BigDecimal price = context.getBesAskPrice(key);
+        BigDecimal mid = context.getMidPrice(key);
 
-        if (price == null || price.signum() <= 0) {
+        if (mid == null || mid.signum() <= 0) {
 
-            log.trace("Ask price not available.");
+            log.trace("Buy price not available.");
 
             return null;
 
         }
 
+        BigDecimal weighedEstimate = estimation.getPrice().multiply(estimation.getConfidence());
+
+        BigDecimal base = mid.add(weighedEstimate).divide(ONE.add(estimation.getConfidence()), PRECISION, HALF_UP);
+
         BigDecimal spread = propertyManager.getTradingSpread();
 
-        BigDecimal result = BigDecimal.ONE.subtract(spread).multiply(price);
+        BigDecimal target = BigDecimal.ONE.subtract(spread).multiply(base);
 
-        BigDecimal rounded = context.roundFundingPosition(key, result, DOWN);
+        BigDecimal rounded = context.roundFundingPosition(key, target, DOWN);
 
-        log.trace("Buy price : {} (ask=[{}] spread=[{}] raw=[{}])", rounded, price, spread, result);
+        log.trace("Buy price : {} (base=[{}] spread=[{}] raw=[{}])", rounded, base, spread, target);
 
         return rounded;
 
     }
 
     @VisibleForTesting
-    BigDecimal calculateSellLimitPrice(Context context, Key key) {
+    BigDecimal calculateSellLimitPrice(Context context, Key key, Estimation estimation) {
 
-        BigDecimal price = context.getBesBidPrice(key);
+        BigDecimal mid = context.getMidPrice(key);
 
-        if (price == null) {
+        if (mid == null || mid.signum() <= 0) {
 
-            log.trace("Bid price not available.");
+            log.trace("Sell price not available.");
 
             return null;
 
         }
 
+        BigDecimal weighedEstimate = estimation.getPrice().multiply(estimation.getConfidence());
+
+        BigDecimal base = mid.add(weighedEstimate).divide(ONE.add(estimation.getConfidence()), PRECISION, HALF_UP);
+
         BigDecimal spread = propertyManager.getTradingSpread();
 
-        BigDecimal result = BigDecimal.ONE.add(spread).multiply(price);
+        BigDecimal result = BigDecimal.ONE.add(spread).multiply(base);
 
         BigDecimal rounded = context.roundFundingPosition(key, result, UP);
 
-        log.trace("Sell price : {} (ask=[{}] spread=[{}] raw=[{}])", rounded, price, spread, result);
+        log.trace("Sell price : {} (base=[{}] spread=[{}] raw=[{}])", rounded, base, spread, result);
 
         return rounded;
 
     }
 
     @VisibleForTesting
-    BigDecimal calculateBuyLimitSize(Context context, Key key) {
+    BigDecimal calculateBuyLimitSize(Context context, Key key, BigDecimal price) {
 
-        BigDecimal productPrice = calculateBuyLimitPrice(context, key);
+        if (price == null || price.signum() == 0) {
 
-        if (productPrice == null || productPrice.signum() == 0) {
-
-            log.trace("Invalid buy price : {}", productPrice);
+            log.trace("Invalid buy price : {}", price);
 
             return ZERO;
 
@@ -149,13 +156,13 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
 
         }
 
-        BigDecimal productAmount = fundAmount.divide(productPrice, PRECISION, DOWN);
+        BigDecimal productAmount = fundAmount.divide(price, PRECISION, DOWN);
 
         BigDecimal exposure = propertyManager.getTradingExposure();
 
         BigDecimal result = context.roundInstrumentPosition(key, productAmount.multiply(exposure), DOWN);
 
-        log.trace("Buy size : {} (price=[{}] fund=[{}] exposure=[{}])", result, productPrice, fundAmount, exposure);
+        log.trace("Buy size : {} (price=[{}] fund=[{}] exposure=[{}])", result, price, fundAmount, exposure);
 
         return trimToZero(result);
 
