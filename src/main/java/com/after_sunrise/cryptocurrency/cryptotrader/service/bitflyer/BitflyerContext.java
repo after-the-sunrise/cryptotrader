@@ -316,7 +316,7 @@ public class BitflyerContext extends RealtimeListenerAdapter implements Context 
 
         // TODO : Handle margin products (FX + Futures)
 
-        return forBalance(key, ProductType::getStructure, Balance::getAmount);
+        return forBalance(key, ProductType::getStructure, Balance::getAvailable);
     }
 
     @Override
@@ -324,12 +324,12 @@ public class BitflyerContext extends RealtimeListenerAdapter implements Context 
 
         // TODO : Handle margin products (FX + Futures)
 
-        return forBalance(key, ProductType::getFunding, Balance::getAmount);
+        return forBalance(key, ProductType::getFunding, Balance::getAvailable);
 
     }
 
     @Override
-    public BigDecimal roundInstrumentPosition(Key key, BigDecimal value, RoundingMode mode) {
+    public BigDecimal roundLotSize(Key key, BigDecimal value, RoundingMode mode) {
 
         if (key == null || value == null || mode == null) {
             return null;
@@ -346,7 +346,7 @@ public class BitflyerContext extends RealtimeListenerAdapter implements Context 
     }
 
     @Override
-    public BigDecimal roundFundingPosition(Key key, BigDecimal value, RoundingMode mode) {
+    public BigDecimal roundTickSize(Key key, BigDecimal value, RoundingMode mode) {
 
         if (key == null || value == null || mode == null) {
             return null;
@@ -358,7 +358,7 @@ public class BitflyerContext extends RealtimeListenerAdapter implements Context 
             return null;
         }
 
-        return instrument.getFunding().roundToLotSize(value, mode);
+        return instrument.roundToTickSize(value, mode);
 
     }
 

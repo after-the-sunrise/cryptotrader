@@ -46,9 +46,9 @@ public interface Context extends Supplier<String> {
 
     BigDecimal getFundingPosition(Key key);
 
-    BigDecimal roundInstrumentPosition(Key key, BigDecimal value, RoundingMode mode);
+    BigDecimal roundLotSize(Key key, BigDecimal value, RoundingMode mode);
 
-    BigDecimal roundFundingPosition(Key key, BigDecimal value, RoundingMode mode);
+    BigDecimal roundTickSize(Key key, BigDecimal value, RoundingMode mode);
 
     List<OrderList.Response> getOrders(Key key, StateType active);
 

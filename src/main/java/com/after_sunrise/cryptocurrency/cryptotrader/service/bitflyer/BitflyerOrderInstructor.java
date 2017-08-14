@@ -191,7 +191,7 @@ public class BitflyerOrderInstructor implements OrderInstructor {
 
         BigDecimal slice = scaledBase.divide(split, SCALE, DOWN);
 
-        BigDecimal rounded = context.roundInstrumentPosition(key, slice, DOWN);
+        BigDecimal rounded = context.roundLotSize(key, slice, DOWN);
 
         if (rounded == null || rounded.signum() <= 0) {
             return singletonList(value);
@@ -205,17 +205,17 @@ public class BitflyerOrderInstructor implements OrderInstructor {
 
         List<BigDecimal> values = new ArrayList<>(size);
 
-        values.add(value);
+        BigDecimal previous = value;
 
-        for (int i = 1; i < size; i++) {
-
-            BigDecimal previous = values.get(i - 1);
+        for (int i = 0; i < size; i++) {
 
             BigDecimal raw = previous == null ? null : previous.add(delta);
 
-            BigDecimal rounded = context.roundInstrumentPosition(key, raw, delta.signum() >= 0 ? UP : DOWN);
+            BigDecimal rounded = context.roundTickSize(key, raw, delta.signum() >= 0 ? UP : DOWN);
 
             values.add(rounded == null ? previous : rounded);
+
+            previous = rounded;
 
         }
 

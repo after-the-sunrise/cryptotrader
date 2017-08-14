@@ -98,7 +98,7 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
 
         BigDecimal target = BigDecimal.ONE.subtract(spread).multiply(base);
 
-        BigDecimal rounded = context.roundFundingPosition(key, target, DOWN);
+        BigDecimal rounded = context.roundTickSize(key, target, DOWN);
 
         log.trace("Buy price : {} (base=[{}] spread=[{}] raw=[{}])", rounded, base, spread, target);
 
@@ -127,7 +127,7 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
 
         BigDecimal result = BigDecimal.ONE.add(spread).multiply(base);
 
-        BigDecimal rounded = context.roundFundingPosition(key, result, UP);
+        BigDecimal rounded = context.roundTickSize(key, result, UP);
 
         log.trace("Sell price : {} (base=[{}] spread=[{}] raw=[{}])", rounded, base, spread, result);
 
@@ -160,7 +160,7 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
 
         BigDecimal exposure = propertyManager.getTradingExposure();
 
-        BigDecimal result = context.roundInstrumentPosition(key, productAmount.multiply(exposure), DOWN);
+        BigDecimal result = context.roundLotSize(key, productAmount.multiply(exposure), DOWN);
 
         log.trace("Buy size : {} (price=[{}] fund=[{}] exposure=[{}])", result, price, fundAmount, exposure);
 
@@ -185,7 +185,7 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
 
         BigDecimal exposurePosition = position.multiply(exposure);
 
-        BigDecimal result = context.roundInstrumentPosition(key, exposurePosition, DOWN);
+        BigDecimal result = context.roundLotSize(key, exposurePosition, DOWN);
 
         log.trace("Sell size : {} (position=[{}] exposure=[{}])", result, position, exposure);
 
