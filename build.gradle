@@ -24,7 +24,7 @@ repositories {
 
 dependencies {
     compileOnly "org.projectlombok:lombok:1.16.16"
-    compile 'com.after_sunrise.cryptocurrency:bitflyer4j:0.0.5-SNAPSHOT'
+    compile 'com.after_sunrise.cryptocurrency:bitflyer4j:0.0.8-SNAPSHOT'
     runtime 'ch.qos.logback:logback-classic:1.2.3'
     testCompile 'org.testng:testng:6.10'
     testCompile 'org.mockito:mockito-all:1.10.19'

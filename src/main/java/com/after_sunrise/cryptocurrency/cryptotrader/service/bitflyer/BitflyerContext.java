@@ -1,13 +1,13 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 
 import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4j;
+import com.after_sunrise.cryptocurrency.bitflyer4j.core.ProductType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.StateType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.entity.*;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.RealtimeListener.RealtimeListenerAdapter;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.RealtimeService;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.inject.Inject;
@@ -263,19 +263,11 @@ public class BitflyerContext extends RealtimeListenerAdapter implements Context 
     }
 
     @VisibleForTesting
-    BigDecimal forBalance(Key key, Function<ProductType, String> mapper, Function<Balance, BigDecimal> function) {
+    BigDecimal forBalance(Key key, Function<ProductType, ProductType> mapper, Function<Balance, BigDecimal> function) {
 
         if (key == null) {
             return null;
         }
-
-        ProductType type = ProductType.find(key.getInstrument());
-
-        if (type == null) {
-            return null;
-        }
-
-        String currency = mapper.apply(type);
 
         Instant time = ofInstant(propertyManager.getNow(), ZONE).truncatedTo(ChronoUnit.SECONDS).toInstant();
 
@@ -301,6 +293,14 @@ public class BitflyerContext extends RealtimeListenerAdapter implements Context 
 
         }
 
+        ProductType instrumentType = ProductType.find(key.getInstrument());
+
+        if (instrumentType == null) {
+            return null;
+        }
+
+        String currency = mapper.apply(instrumentType).name();
+
         for (Balance balance : cached) {
             if (StringUtils.equals(currency, balance.getCurrency())) {
                 return balance.getAmount();
@@ -316,7 +316,7 @@ public class BitflyerContext extends RealtimeListenerAdapter implements Context 
 
         // TODO : Handle margin products (FX + Futures)
 
-        return forBalance(key, ProductType::getStructureCode, Balance::getAmount);
+        return forBalance(key, ProductType::getStructure, Balance::getAmount);
     }
 
     @Override
@@ -324,7 +324,7 @@ public class BitflyerContext extends RealtimeListenerAdapter implements Context 
 
         // TODO : Handle margin products (FX + Futures)
 
-        return forBalance(key, ProductType::getFundCode, Balance::getAmount);
+        return forBalance(key, ProductType::getFunding, Balance::getAmount);
 
     }
 
@@ -341,9 +341,7 @@ public class BitflyerContext extends RealtimeListenerAdapter implements Context 
             return null;
         }
 
-        BigDecimal units = value.divide(type.getUnit(), INTEGER_ZERO, mode);
-
-        return units.multiply(type.getUnit());
+        return type.roundToLotSize(value, mode);
 
     }
 
@@ -360,15 +358,7 @@ public class BitflyerContext extends RealtimeListenerAdapter implements Context 
             return null;
         }
 
-        ProductType funding = ProductType.find(instrument.getFundCode());
-
-        if (funding == null) {
-            return null;
-        }
-
-        BigDecimal units = value.divide(funding.getUnit(), INTEGER_ZERO, mode);
-
-        return units.multiply(funding.getUnit());
+        return instrument.getFunding().roundToLotSize(value, mode);
 
     }
 
