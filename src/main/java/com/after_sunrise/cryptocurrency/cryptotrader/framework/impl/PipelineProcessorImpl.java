@@ -9,6 +9,8 @@ import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * @author takanori.takase
@@ -51,7 +53,8 @@ public class PipelineProcessorImpl implements PipelineProcessor, Instruction.Vis
 
         List<Instruction> instructions = instructor.instruct(context, request, advice);
 
-        instructions.forEach(i -> i.accept(this, request));
+        Optional.ofNullable(instructions).ifPresent(l -> l.stream() //
+                .filter(Objects::nonNull).forEach(i -> i.accept(this, request)));
 
     }
 

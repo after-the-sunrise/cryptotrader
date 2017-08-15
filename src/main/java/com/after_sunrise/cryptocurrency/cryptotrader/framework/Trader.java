@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -31,6 +32,32 @@ public interface Trader {
         private Instant timestamp;
 
         private BigDecimal aggressiveness;
+
+        public static boolean isValid(Request value) {
+
+            if (value == null) {
+                return false;
+            }
+
+            if (StringUtils.isEmpty(value.getSite())) {
+                return false;
+            }
+
+            if (StringUtils.isEmpty(value.getInstrument())) {
+                return false;
+            }
+
+            if (value.getTimestamp() == null) {
+                return false;
+            }
+
+            if (value.getAggressiveness() == null) {
+                return false;
+            }
+
+            return true;
+
+        }
 
     }
 

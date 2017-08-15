@@ -13,6 +13,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
+
 /**
  * @author takanori.takase
  * @version 0.0.1
@@ -68,9 +70,11 @@ public class ExecutorFactoryImpl implements UncaughtExceptionHandler, ExecutorFa
     }
 
     @Override
-    public ExecutorService get(Class<?> clazz) {
+    public ExecutorService get(Class<?> clazz, int size) {
 
         Class<?> cls = clazz == null ? getClass() : clazz;
+
+        int adjustedSize = Math.min(Math.max(INTEGER_ONE, size), Byte.MAX_VALUE);
 
         try {
 
@@ -78,11 +82,11 @@ public class ExecutorFactoryImpl implements UncaughtExceptionHandler, ExecutorFa
 
             return services.computeIfAbsent(cls, c -> {
 
-                log.debug("Creating executor : {}", c.getSimpleName());
+                log.debug("Creating executor : {} (size = {})", c.getSimpleName(), adjustedSize);
 
                 ThreadFactory factory = new ThreadFactoryImpl(c, this);
 
-                return Executors.newSingleThreadScheduledExecutor(factory);
+                return Executors.newScheduledThreadPool(adjustedSize, factory);
 
             });
 

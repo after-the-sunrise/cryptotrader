@@ -1,5 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.google.inject.Inject;
@@ -12,6 +13,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * @author takanori.takase
@@ -19,6 +21,8 @@ import java.util.Objects;
  */
 @Slf4j
 public class ContextProvider implements Provider<Context>, InvocationHandler {
+
+    private static final Object[] EMPTY = {};
 
     private final Context delegate;
 
@@ -33,7 +37,7 @@ public class ContextProvider implements Provider<Context>, InvocationHandler {
 
         this.delegate = (Context) Proxy.newProxyInstance(loader, interfaces, this);
 
-        this.contexts = Frameworks.loadMap(Context.class, injector);
+        this.contexts = injector.getInstance(ServiceFactory.class).loadMap(Context.class);
 
     }
 
@@ -45,7 +49,7 @@ public class ContextProvider implements Provider<Context>, InvocationHandler {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 
-        for (Object arg : args) {
+        for (Object arg : Optional.ofNullable(args).orElse(EMPTY)) {
 
             if (arg instanceof Key) {
 

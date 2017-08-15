@@ -1,5 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.MarketEstimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.PortfolioAdviser;
@@ -26,7 +27,7 @@ public class PortfolioAdviserImpl implements PortfolioAdviser {
     @Inject
     public PortfolioAdviserImpl(Injector injector) {
 
-        this.advisers = Frameworks.loadMap(PortfolioAdviser.class, injector);
+        this.advisers = injector.getInstance(ServiceFactory.class).loadMap(PortfolioAdviser.class);
 
     }
 
@@ -38,7 +39,7 @@ public class PortfolioAdviserImpl implements PortfolioAdviser {
     @Override
     public Advice advise(Context context, Request request, Estimation estimation) {
 
-        if (Frameworks.isInvalid(request)) {
+        if (!Request.isValid(request)) {
 
             log.trace("Invalid request : {}", request);
 

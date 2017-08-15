@@ -8,6 +8,6 @@ import java.util.concurrent.ExecutorService;
  */
 public interface ExecutorFactory extends AutoCloseable {
 
-    ExecutorService get(Class<?> clazz);
+    ExecutorService get(Class<?> clazz, int size);
 
 }

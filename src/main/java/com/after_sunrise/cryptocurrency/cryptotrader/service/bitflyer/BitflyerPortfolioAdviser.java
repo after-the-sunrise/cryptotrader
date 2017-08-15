@@ -6,15 +6,14 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.MarketEstimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.PortfolioAdviser;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.Frameworks;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.Frameworks.trimToZero;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.*;
@@ -49,7 +48,9 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
     @Override
     public Advice advise(Context context, Request request, Estimation estimation) {
 
-        if (Frameworks.isInvalid(request)) {
+        Key key = Key.from(request);
+
+        if (!Key.isValid(key)) {
 
             log.trace("Invalid request : {}", request);
 
@@ -64,8 +65,6 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
             return BAIL;
 
         }
-
-        Key key = Frameworks.convert(request);
 
         BigDecimal bPrice = calculateBuyLimitPrice(context, key, estimation);
         BigDecimal sPrice = calculateSellLimitPrice(context, key, estimation);
@@ -164,7 +163,7 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
 
         log.trace("Buy size : {} (price=[{}] fund=[{}] exposure=[{}])", result, price, fundAmount, exposure);
 
-        return trimToZero(result);
+        return Optional.ofNullable(result).orElse(ZERO);
 
     }
 
@@ -189,7 +188,7 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
 
         log.trace("Sell size : {} (position=[{}] exposure=[{}])", result, position, exposure);
 
-        return trimToZero(result);
+        return Optional.ofNullable(result).orElse(ZERO);
 
     }
 

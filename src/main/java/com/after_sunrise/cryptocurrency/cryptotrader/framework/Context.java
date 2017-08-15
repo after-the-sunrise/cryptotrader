@@ -3,6 +3,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.framework;
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.StateType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.entity.OrderList;
 import lombok.*;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -31,6 +32,46 @@ public interface Context extends Supplier<String> {
         private final String instrument;
 
         private final Instant timestamp;
+
+        public static boolean isValid(Key value) {
+
+            if (value == null) {
+                return false;
+            }
+
+            if (StringUtils.isEmpty(value.getSite())) {
+                return false;
+            }
+
+            if (StringUtils.isEmpty(value.getInstrument())) {
+                return false;
+            }
+
+            if (value.getTimestamp() == null) {
+                return false;
+            }
+
+            return true;
+
+        }
+
+        public static Key from(Trader.Request request) {
+
+            Key.KeyBuilder builder = Key.builder();
+
+            if (request != null) {
+
+                builder = builder.site(request.getSite());
+
+                builder = builder.instrument(request.getInstrument());
+
+                builder = builder.timestamp(request.getTimestamp());
+
+            }
+
+            return builder.build();
+
+        }
 
     }
 

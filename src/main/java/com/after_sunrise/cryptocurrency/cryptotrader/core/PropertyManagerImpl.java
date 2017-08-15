@@ -17,7 +17,7 @@ import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.DOWN;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.commons.lang3.StringUtils.splitPreserveAllTokens;
+import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
 /**
@@ -30,6 +30,8 @@ public class PropertyManagerImpl implements PropertyManager {
     private static final long INTERVAL_MIN = SECONDS.toMillis(1);
 
     private static final long INTERVAL_MAX = DAYS.toMillis(1);
+
+    private static final BigDecimal BASIS = new BigDecimal("0.0001");
 
     private static final String SEPARATOR_ENTRY = "|";
 
@@ -119,13 +121,15 @@ public class PropertyManagerImpl implements PropertyManager {
 
             Map<String, Set<String>> targets = new LinkedHashMap<>();
 
-            for (String entry : splitPreserveAllTokens(raw, SEPARATOR_ENTRY)) {
+            for (String entry : split(raw, SEPARATOR_ENTRY)) {
 
-                String[] kv = splitPreserveAllTokens(entry, SEPARATOR_KEYVAL, 2);
+                String[] kv = split(entry, SEPARATOR_KEYVAL, 2);
 
-                Set<String> instruments = targets.computeIfAbsent(kv[0], key -> new LinkedHashSet<>());
+                if (kv.length != 2) {
+                    continue;
+                }
 
-                instruments.add(kv[1]);
+                targets.computeIfAbsent(kv[0], key -> new LinkedHashSet<>()).add(kv[1]);
 
             }
 
@@ -162,7 +166,7 @@ public class PropertyManagerImpl implements PropertyManager {
 
             log.warn("Invalid property : " + TRADING_SPREAD.getKey(), e);
 
-            return ZERO;
+            return BASIS;
 
         }
 

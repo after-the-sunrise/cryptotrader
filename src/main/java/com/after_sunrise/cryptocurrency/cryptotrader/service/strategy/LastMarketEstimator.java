@@ -4,7 +4,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.MarketEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.Frameworks;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -23,9 +22,13 @@ public class LastMarketEstimator implements MarketEstimator {
     @Override
     public Estimation estimate(Context context, Request request) {
 
-        Key key = Frameworks.convert(request);
+        if (context == null) {
+            return BAIL;
+        }
 
-        if (key == null || context == null) {
+        Key key = Key.from(request);
+
+        if (!Key.isValid(key)) {
             return BAIL;
         }
 

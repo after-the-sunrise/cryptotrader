@@ -1,16 +1,19 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.OrderManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
+
+import static java.lang.Boolean.FALSE;
 
 /**
  * @author takanori.takase
@@ -24,38 +27,13 @@ public class OrderManagerImpl implements OrderManager {
     @Inject
     public OrderManagerImpl(Injector injector) {
 
-        this.managers = Frameworks.loadMap(OrderManager.class, injector);
+        this.managers = injector.getInstance(ServiceFactory.class).loadMap(OrderManager.class);
 
     }
 
     @Override
     public String get() {
         return Request.ALL;
-    }
-
-    @VisibleForTesting
-    <V> V forRequest(Request request, Function<OrderManager, V> function) {
-
-        if (Frameworks.isInvalid(request)) {
-
-            log.trace("Invalid request : {}", request);
-
-            return null;
-
-        }
-
-        OrderManager manager = managers.get(request.getSite());
-
-        if (manager == null) {
-
-            log.debug("OrderManager not found for site : {}", request.getSite());
-
-            return null;
-
-        }
-
-        return function.apply(manager);
-
     }
 
     @Override
@@ -73,6 +51,30 @@ public class OrderManagerImpl implements OrderManager {
         log.debug("Order instruction : {}", instruction);
 
         return forRequest(request, m -> m.cancel(request, instruction));
+
+    }
+
+    private Boolean forRequest(Request request, Function<OrderManager, Boolean> function) {
+
+        if (!Request.isValid(request)) {
+
+            log.trace("Invalid request : {}", request);
+
+            return FALSE;
+
+        }
+
+        OrderManager manager = managers.get(request.getSite());
+
+        if (manager == null) {
+
+            log.debug("OrderManager not found for site : {}", request.getSite());
+
+            return FALSE;
+
+        }
+
+        return Optional.ofNullable(function.apply(manager)).orElse(FALSE);
 
     }
 

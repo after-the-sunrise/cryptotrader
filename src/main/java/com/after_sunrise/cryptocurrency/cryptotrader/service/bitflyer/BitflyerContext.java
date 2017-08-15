@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -34,7 +35,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ZONE;
 import static com.google.common.cache.CacheBuilder.newBuilder;
 import static java.time.ZonedDateTime.ofInstant;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -51,6 +51,8 @@ import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
  */
 @Slf4j
 public class BitflyerContext extends RealtimeListenerAdapter implements Context {
+
+    private static final ZoneId ZONE = ZoneId.of("GMT");
 
     private static final ChronoUnit CACHE_UNIT = MINUTES;
 
@@ -81,6 +83,11 @@ public class BitflyerContext extends RealtimeListenerAdapter implements Context 
 
         log.debug("Initialized.");
 
+    }
+
+    @Override
+    public String get() {
+        return BitflyerService.ID;
     }
 
     @Override
@@ -180,11 +187,6 @@ public class BitflyerContext extends RealtimeListenerAdapter implements Context 
 
     }
 
-
-    @Override
-    public String get() {
-        return BitflyerService.ID;
-    }
 
     @VisibleForTesting
     <V, R> R forInstant(Map<String, NavigableMap<Instant, V>> instruments, Key key, //

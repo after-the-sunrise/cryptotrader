@@ -11,7 +11,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Cance
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.OrderInstructor;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.PortfolioAdviser.Advice;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.Frameworks;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -27,7 +26,9 @@ import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.TEN;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
 /**
@@ -36,6 +37,8 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
  */
 @Slf4j
 public class BitflyerOrderInstructor implements OrderInstructor {
+
+    private static final List<OrderList.Response> EMPTY = emptyList();
 
     private static final int SCALE = 12;
 
@@ -64,7 +67,9 @@ public class BitflyerOrderInstructor implements OrderInstructor {
     @Override
     public List<Instruction> instruct(Context context, Request request, Advice advice) {
 
-        if (Frameworks.isInvalid(request)) {
+        Key key = Key.from(request);
+
+        if (!Key.isValid(key)) {
 
             log.trace("Invalid request : {}", request);
 
@@ -80,21 +85,20 @@ public class BitflyerOrderInstructor implements OrderInstructor {
 
         }
 
-        Key key = Frameworks.convert(request);
-
-        Map<CancelInstruction, OrderList.Response> cancels = createCancels(context, key);
-
         List<CreateInstruction> creates = new ArrayList<>();
+
         creates.addAll(createBuys(context, key, advice));
+
         creates.addAll(createSells(context, key, advice));
-        return merge(creates, cancels);
+
+        return merge(creates, createCancels(context, key));
 
     }
 
     @VisibleForTesting
     Map<CancelInstruction, OrderList.Response> createCancels(Context context, Key key) {
 
-        List<OrderList.Response> orders = Frameworks.trimToEmpty(context.getOrders(key, ACTIVE));
+        List<OrderList.Response> orders = ofNullable(context.getOrders(key, ACTIVE)).orElse(EMPTY);
 
         Map<CancelInstruction, OrderList.Response> cancels = new IdentityHashMap<>();
 

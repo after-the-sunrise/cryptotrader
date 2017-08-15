@@ -8,7 +8,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Cance
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.OrderManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.Frameworks;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +51,7 @@ public class BitflyerOrderManager implements OrderManager {
     @Override
     public Boolean create(Request request, CreateInstruction instruction) {
 
-        if (Frameworks.isInvalid(request)) {
+        if (!Request.isValid(request)) {
 
             log.trace("Invalid request : {}", request);
 
@@ -107,7 +106,7 @@ public class BitflyerOrderManager implements OrderManager {
     @Override
     public Boolean cancel(Request request, CancelInstruction instruction) {
 
-        if (Frameworks.isInvalid(request)) {
+        if (!Request.isValid(request)) {
 
             log.trace("Invalid request : {}", request);
 
