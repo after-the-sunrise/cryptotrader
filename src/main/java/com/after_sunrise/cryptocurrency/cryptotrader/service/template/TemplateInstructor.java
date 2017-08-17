@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.util.*;
 
+import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.TEN;
 import static java.math.RoundingMode.DOWN;
@@ -80,7 +81,9 @@ public class TemplateInstructor implements Instructor {
 
         Map<Instruction.CancelInstruction, Order> cancels = new IdentityHashMap<>();
 
-        orders.forEach(o -> cancels.put(Instruction.CancelInstruction.builder().id(o.getId()).build(), o));
+        orders.stream().filter(o -> TRUE.equals(o.getActive())).forEach(
+                o -> cancels.put(Instruction.CancelInstruction.builder().id(o.getId()).build(), o)
+        );
 
         log.trace("Cancel candidates : {}", cancels.keySet());
 
