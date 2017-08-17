@@ -1,9 +1,9 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.MarketEstimator.Estimation;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.PortfolioAdviser;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.google.inject.Inject;
@@ -18,16 +18,16 @@ import java.util.Optional;
  * @version 0.0.1
  */
 @Slf4j
-public class PortfolioAdviserImpl implements PortfolioAdviser {
+public class AdviserImpl implements Adviser {
 
     private final Advice BAIL = Advice.builder().build();
 
-    private final Map<String, PortfolioAdviser> advisers;
+    private final Map<String, Adviser> advisers;
 
     @Inject
-    public PortfolioAdviserImpl(Injector injector) {
+    public AdviserImpl(Injector injector) {
 
-        this.advisers = injector.getInstance(ServiceFactory.class).loadMap(PortfolioAdviser.class);
+        this.advisers = injector.getInstance(ServiceFactory.class).loadMap(Adviser.class);
 
     }
 
@@ -39,7 +39,7 @@ public class PortfolioAdviserImpl implements PortfolioAdviser {
     @Override
     public Advice advise(Context context, Request request, Estimation estimation) {
 
-        if (!Request.isValid(request)) {
+        if (Request.isInvalid(request)) {
 
             log.trace("Invalid request : {}", request);
 
@@ -47,7 +47,7 @@ public class PortfolioAdviserImpl implements PortfolioAdviser {
 
         }
 
-        PortfolioAdviser adviser = advisers.get(request.getSite());
+        Adviser adviser = advisers.get(request.getSite());
 
         if (adviser == null) {
 

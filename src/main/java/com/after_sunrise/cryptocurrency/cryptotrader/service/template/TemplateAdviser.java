@@ -1,14 +1,11 @@
-package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
+package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.MarketEstimator.Estimation;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.PortfolioAdviser;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -23,34 +20,27 @@ import static java.math.RoundingMode.*;
  * @version 0.0.1
  */
 @Slf4j
-public class BitflyerPortfolioAdviser implements PortfolioAdviser {
+public class TemplateAdviser implements Adviser {
 
     private static final int PRECISION = 12;
 
     private static final Advice BAIL = Advice.builder().build();
 
-    private PropertyManager propertyManager;
+    private final String id;
 
-    @Inject
-    public void initialize(Injector injector) {
-
-        this.propertyManager = injector.getInstance(PropertyManager.class);
-
-        log.debug("Initialized.");
-
+    public TemplateAdviser(String id) {
+        this.id = id;
     }
 
     @Override
     public String get() {
-        return BitflyerService.ID;
+        return id;
     }
 
     @Override
     public Advice advise(Context context, Request request, Estimation estimation) {
 
-        Key key = Key.from(request);
-
-        if (!Key.isValid(key)) {
+        if (!Request.isValid(request)) {
 
             log.trace("Invalid request : {}", request);
 
@@ -66,10 +56,10 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
 
         }
 
-        BigDecimal bPrice = calculateBuyLimitPrice(context, key, estimation);
-        BigDecimal sPrice = calculateSellLimitPrice(context, key, estimation);
-        BigDecimal bSize = calculateBuyLimitSize(context, key, bPrice);
-        BigDecimal sSize = calculateSellLimitSize(context, key);
+        BigDecimal bPrice = calculateBuyLimitPrice(context, request, estimation);
+        BigDecimal sPrice = calculateSellLimitPrice(context, request, estimation);
+        BigDecimal bSize = calculateBuyLimitSize(context, request, bPrice);
+        BigDecimal sSize = calculateSellLimitSize(context, request);
 
         return Advice.builder().buyLimitPrice(bPrice).buyLimitSize(bSize) //
                 .sellLimitPrice(sPrice).sellLimitSize(sSize).build();
@@ -77,7 +67,9 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
     }
 
     @VisibleForTesting
-    BigDecimal calculateBuyLimitPrice(Context context, Key key, Estimation estimation) {
+    BigDecimal calculateBuyLimitPrice(Context context, Request request, Estimation estimation) {
+
+        Key key = Key.from(request);
 
         BigDecimal mid = context.getMidPrice(key);
 
@@ -93,7 +85,7 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
 
         BigDecimal base = mid.add(weighedEstimate).divide(ONE.add(estimation.getConfidence()), PRECISION, HALF_UP);
 
-        BigDecimal spread = propertyManager.getTradingSpread();
+        BigDecimal spread = request.getTradingSpread();
 
         BigDecimal target = BigDecimal.ONE.subtract(spread).multiply(base);
 
@@ -106,7 +98,9 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
     }
 
     @VisibleForTesting
-    BigDecimal calculateSellLimitPrice(Context context, Key key, Estimation estimation) {
+    BigDecimal calculateSellLimitPrice(Context context, Request request, Estimation estimation) {
+
+        Key key = Key.from(request);
 
         BigDecimal mid = context.getMidPrice(key);
 
@@ -122,7 +116,7 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
 
         BigDecimal base = mid.add(weighedEstimate).divide(ONE.add(estimation.getConfidence()), PRECISION, HALF_UP);
 
-        BigDecimal spread = propertyManager.getTradingSpread();
+        BigDecimal spread = request.getTradingSpread();
 
         BigDecimal result = BigDecimal.ONE.add(spread).multiply(base);
 
@@ -135,7 +129,7 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
     }
 
     @VisibleForTesting
-    BigDecimal calculateBuyLimitSize(Context context, Key key, BigDecimal price) {
+    BigDecimal calculateBuyLimitSize(Context context, Request request, BigDecimal price) {
 
         if (price == null || price.signum() == 0) {
 
@@ -144,6 +138,8 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
             return ZERO;
 
         }
+
+        Key key = Key.from(request);
 
         BigDecimal fundAmount = context.getFundingPosition(key);
 
@@ -157,7 +153,7 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
 
         BigDecimal productAmount = fundAmount.divide(price, PRECISION, DOWN);
 
-        BigDecimal exposure = propertyManager.getTradingExposure();
+        BigDecimal exposure = request.getTradingExposure();
 
         BigDecimal result = context.roundLotSize(key, productAmount.multiply(exposure), DOWN);
 
@@ -168,7 +164,9 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
     }
 
     @VisibleForTesting
-    BigDecimal calculateSellLimitSize(Context context, Key key) {
+    BigDecimal calculateSellLimitSize(Context context, Request request) {
+
+        Key key = Key.from(request);
 
         BigDecimal position = context.getInstrumentPosition(key);
 
@@ -180,7 +178,7 @@ public class BitflyerPortfolioAdviser implements PortfolioAdviser {
 
         }
 
-        BigDecimal exposure = propertyManager.getTradingExposure();
+        BigDecimal exposure = request.getTradingExposure();
 
         BigDecimal exposurePosition = position.multiply(exposure);
 

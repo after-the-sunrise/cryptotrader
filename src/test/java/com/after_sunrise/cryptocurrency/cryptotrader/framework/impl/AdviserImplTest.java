@@ -2,10 +2,10 @@ package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.MarketEstimator.Estimation;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.PortfolioAdviser;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.PortfolioAdviser.Advice;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -13,8 +13,6 @@ import org.testng.annotations.Test;
 import java.util.Map;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request.ALL;
-import static java.math.BigDecimal.ZERO;
-import static java.time.Instant.now;
 import static java.util.Collections.singletonMap;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
@@ -23,13 +21,13 @@ import static org.testng.Assert.*;
  * @author takanori.takase
  * @version 0.0.1
  */
-public class PortfolioAdviserImplTest {
+public class AdviserImplTest {
 
-    private PortfolioAdviserImpl target;
+    private AdviserImpl target;
 
     private TestModule module;
 
-    private PortfolioAdviser service;
+    private Adviser service;
 
     private Context context;
 
@@ -38,15 +36,15 @@ public class PortfolioAdviserImplTest {
     @BeforeMethod
     public void setUp() {
 
-        service = mock(PortfolioAdviser.class);
+        service = mock(Adviser.class);
         module = new TestModule();
         context = null;
         estimation = null;
 
-        Map<String, PortfolioAdviser> services = singletonMap("test", service);
-        when(module.getMock(ServiceFactory.class).loadMap(PortfolioAdviser.class)).thenReturn(services);
+        Map<String, Adviser> services = singletonMap("test", service);
+        when(module.getMock(ServiceFactory.class).loadMap(Adviser.class)).thenReturn(services);
 
-        target = new PortfolioAdviserImpl(module.createInjector());
+        target = new AdviserImpl(module.createInjector());
 
     }
 
@@ -60,8 +58,7 @@ public class PortfolioAdviserImplTest {
     @Test
     public void testCreate() throws Exception {
 
-        Request.RequestBuilder builder = Request.builder().site("test").instrument("i") //
-                .timestamp(now()).aggressiveness(ZERO);
+        Request.RequestBuilder builder = module.createRequestBuilder();
 
         Request request = builder.build();
 

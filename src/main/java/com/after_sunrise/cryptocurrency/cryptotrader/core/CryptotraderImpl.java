@@ -39,18 +39,19 @@ public class CryptotraderImpl extends AbstractModule implements Cryptotrader {
 
         bind(Configuration.class).toInstance(new ConfigurationSupplier().get());
         bind(PropertyManager.class).to(PropertyManagerImpl.class).asEagerSingleton();
+        bind(Environment.class).to(PropertyManager.class).asEagerSingleton();
         bind(ServiceFactory.class).to(ServiceFactoryImpl.class).asEagerSingleton();
 
         bind(Bitflyer4j.class).toInstance(new Bitflyer4jFactory().createInstance());
         bind(ExecutorFactory.class).to(ExecutorFactoryImpl.class).asEagerSingleton();
 
         bind(Context.class).toProvider(ContextProvider.class).asEagerSingleton();
-        bind(MarketEstimator.class).to(MarketEstimatorImpl.class).asEagerSingleton();
-        bind(PortfolioAdviser.class).to(PortfolioAdviserImpl.class).asEagerSingleton();
-        bind(OrderInstructor.class).to(OrderInstructorImpl.class).asEagerSingleton();
+        bind(Estimator.class).to(EstimatorImpl.class).asEagerSingleton();
+        bind(Adviser.class).to(AdviserImpl.class).asEagerSingleton();
+        bind(Instructor.class).to(InstructorImpl.class).asEagerSingleton();
 
-        bind(OrderManager.class).to(OrderManagerImpl.class).asEagerSingleton();
-        bind(PipelineProcessor.class).to(PipelineProcessorImpl.class).asEagerSingleton();
+        bind(OrderManager.class).to(AgentImpl.class).asEagerSingleton();
+        bind(Pipeline.class).to(PipelineImpl.class).asEagerSingleton();
         bind(Trader.class).to(traderClass).asEagerSingleton();
 
     }
@@ -102,6 +103,8 @@ public class CryptotraderImpl extends AbstractModule implements Cryptotrader {
             return;
 
         }
+
+        closeQuietly(i, Trader.class);
 
         closeQuietly(i, Bitflyer4j.class);
 

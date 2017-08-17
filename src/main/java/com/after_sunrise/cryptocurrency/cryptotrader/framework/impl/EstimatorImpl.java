@@ -3,7 +3,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ExecutorFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.MarketEstimator;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
@@ -19,6 +18,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request.ALL;
 import static java.math.BigDecimal.valueOf;
 import static java.math.RoundingMode.HALF_UP;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
@@ -29,27 +29,32 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
  * @version 0.0.1
  */
 @Slf4j
-public class MarketEstimatorImpl implements MarketEstimator {
+public class EstimatorImpl implements Estimator {
 
     private static final int SCALE = 8;
 
-    private final List<MarketEstimator> estimators;
+    private final Map<String, Estimator> estimators;
 
     private final ExecutorService executor;
 
     @Inject
-    public MarketEstimatorImpl(Injector injector) {
+    public EstimatorImpl(Injector injector) {
 
-        this.estimators = injector.getInstance(ServiceFactory.class).load(MarketEstimator.class);
+        this.estimators = injector.getInstance(ServiceFactory.class).loadMap(Estimator.class);
 
         this.executor = injector.getInstance(ExecutorFactory.class).get(getClass(), estimators.size());
 
     }
 
     @Override
+    public String get() {
+        return ALL;
+    }
+
+    @Override
     public Estimation estimate(Context context, Request request) {
 
-        Map<MarketEstimator, Estimation> estimations = collect(context, request);
+        Map<Estimator, Estimation> estimations = collect(context, request);
 
         Estimation collapsed = collapse(estimations);
 
@@ -57,17 +62,17 @@ public class MarketEstimatorImpl implements MarketEstimator {
 
     }
 
-    private Map<MarketEstimator, Estimation> collect(Context context, Request request) {
+    private Map<Estimator, Estimation> collect(Context context, Request request) {
 
-        Map<MarketEstimator, CompletableFuture<Estimation>> futures = new IdentityHashMap<>();
+        Map<Estimator, CompletableFuture<Estimation>> futures = new IdentityHashMap<>();
 
-        estimators.forEach(estimator ->
+        estimators.values().forEach(estimator ->
                 futures.put(estimator,
                         supplyAsync(() -> estimator.estimate(context, request), executor)
                 )
         );
 
-        Map<MarketEstimator, Estimation> estimations = new IdentityHashMap<>();
+        Map<Estimator, Estimation> estimations = new IdentityHashMap<>();
 
         futures.forEach((estimator, future) -> {
 
@@ -90,7 +95,7 @@ public class MarketEstimatorImpl implements MarketEstimator {
 
     }
 
-    private Estimation collapse(Map<MarketEstimator, Estimation> estimations) {
+    private Estimation collapse(Map<Estimator, Estimation> estimations) {
 
         BigDecimal numerator = BigDecimal.ZERO;
 
@@ -100,7 +105,7 @@ public class MarketEstimatorImpl implements MarketEstimator {
 
         AtomicInteger s = new AtomicInteger(SCALE);
 
-        for (Entry<MarketEstimator, Estimation> entry : estimations.entrySet()) {
+        for (Entry<Estimator, Estimation> entry : estimations.entrySet()) {
 
             Estimation estimation = entry.getValue();
 

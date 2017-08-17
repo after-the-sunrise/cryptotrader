@@ -1,5 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,6 +8,7 @@ import lombok.Getter;
 import lombok.ToString;
 
 import java.math.BigDecimal;
+import java.util.function.Supplier;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -14,20 +16,24 @@ import static lombok.AccessLevel.PRIVATE;
  * @author takanori.takase
  * @version 0.0.1
  */
-public interface MarketEstimator {
+public interface Adviser extends Supplier<String> {
 
     @Getter
     @Builder
     @ToString
     @AllArgsConstructor(access = PRIVATE)
-    class Estimation {
+    class Advice {
 
-        private final BigDecimal price;
+        private final BigDecimal buyLimitPrice;
 
-        private final BigDecimal confidence;
+        private final BigDecimal buyLimitSize;
+
+        private final BigDecimal sellLimitPrice;
+
+        private final BigDecimal sellLimitSize;
 
     }
 
-    Estimation estimate(Context context, Request request);
+    Advice advise(Context context, Request request, Estimation estimation);
 
 }

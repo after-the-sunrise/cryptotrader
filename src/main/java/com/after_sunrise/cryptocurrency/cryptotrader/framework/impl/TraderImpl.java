@@ -1,13 +1,13 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.PipelineProcessor;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Pipeline;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
@@ -26,7 +26,7 @@ public class TraderImpl implements Trader {
 
     private final PropertyManager propertyManager;
 
-    private final PipelineProcessor pipelineProcessor;
+    private final Pipeline pipeline;
 
     @Inject
     public TraderImpl(Injector injector) {
@@ -35,12 +35,54 @@ public class TraderImpl implements Trader {
 
         this.propertyManager = injector.getInstance(PropertyManager.class);
 
-        this.pipelineProcessor = injector.getInstance(PipelineProcessor.class);
+        this.pipeline = injector.getInstance(Pipeline.class);
+
+    }
+
+    @Override
+    public void trigger() {
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        CountDownLatch old = tradeLatch.getAndSet(latch);
+
+        if (old == null) {
+
+            log.trace("Skipping trigger.");
+
+            return;
+
+        }
+
+        log.info("Triggered.");
+
+        old.countDown();
+
+    }
+
+    @Override
+    public void close() {
+
+        CountDownLatch latch = tradeLatch.getAndSet(null);
+
+        if (latch == null) {
+
+            log.trace("Already aborted.");
+
+            return;
+
+        }
+
+        log.info("Aborted.");
+
+        latch.countDown();
 
     }
 
     @Override
     public void trade() {
+
+        log.info("Trading started.");
 
         try {
 
@@ -48,35 +90,15 @@ public class TraderImpl implements Trader {
 
             while ((latch = tradeLatch.get()) != null) {
 
-                Instant now = propertyManager.getNow();
-
-                BigDecimal level = propertyManager.getTradingAggressiveness();
-
-                Request.RequestBuilder builder = Request.builder().timestamp(now).aggressiveness(level);
+                Instant time = calculateTime();
 
                 propertyManager.getTradingTargets().forEach((site, instruments) -> {
 
-                    instruments.forEach(instrument -> {
-
-                        Request request = builder.site(site).instrument(instrument).build();
-
-                        log.debug("Trading : {}", request);
-
-                        pipelineProcessor.accept(request);
-
-                    });
+                    instruments.forEach(i -> pipeline.process(time, site, i));
 
                 });
 
-                Duration interval = propertyManager.getTradingInterval();
-
-                if (interval == null) {
-
-                    log.debug("No more interval.");
-
-                    break;
-
-                }
+                Duration interval = calculateInterval(time);
 
                 log.debug("Sleeping for interval : {}", interval);
 
@@ -89,6 +111,36 @@ public class TraderImpl implements Trader {
             log.warn("Aborting trade.", e);
 
         }
+
+        log.info("Trading finished.");
+
+    }
+
+    @VisibleForTesting
+    Instant calculateTime() {
+
+        Duration interval = propertyManager.getTradingInterval();
+
+        Instant now = propertyManager.getNow();
+
+        return interval == null ? now : now.plus(interval);
+
+    }
+
+    @VisibleForTesting
+    Duration calculateInterval(Instant target) {
+
+        if (target == null) {
+            return Duration.ZERO;
+        }
+
+        Instant now = propertyManager.getNow();
+
+        if (now.isAfter(target)) {
+            return Duration.ZERO;
+        }
+
+        return Duration.between(now, target);
 
     }
 

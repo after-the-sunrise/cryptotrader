@@ -33,8 +33,8 @@ public class MainTest {
         test(Context.Key.class);
         test(Instruction.CreateInstruction.class);
         test(Instruction.CancelInstruction.class);
-        test(MarketEstimator.Estimation.class);
-        test(PortfolioAdviser.Advice.class);
+        test(Estimator.Estimation.class);
+        test(Adviser.Advice.class);
         test(Trader.Request.class);
     }
 

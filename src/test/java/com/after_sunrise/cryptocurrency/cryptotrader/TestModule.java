@@ -1,16 +1,21 @@
 package com.after_sunrise.cryptocurrency.cryptotrader;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ExecutorFactory;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import org.mockito.Mockito;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import static com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService;
+import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.ZERO;
+import static java.time.Instant.now;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
@@ -78,6 +83,22 @@ public class TestModule {
         }).when(mock).injectMembers(any());
 
         return mock;
+
+    }
+
+    public Request.RequestBuilder createRequestBuilder() {
+
+        Request.RequestBuilder builder = Request.builder()
+                .site("test")
+                .instrument("i") //
+                .timestamp(now())
+                .aggressiveness(ZERO)
+                .tradingSpread(ONE.movePointLeft(4))
+                .tradingExposure(ONE.movePointLeft(5))
+                .tradingSplit(BigDecimal.valueOf(4));
+        ;
+
+        return builder;
 
     }
 

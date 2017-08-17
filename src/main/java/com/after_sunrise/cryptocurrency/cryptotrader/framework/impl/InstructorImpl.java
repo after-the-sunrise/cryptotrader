@@ -1,10 +1,10 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.OrderInstructor;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.PortfolioAdviser.Advice;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instructor;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -22,15 +22,15 @@ import static java.util.Optional.ofNullable;
  * @version 0.0.1
  */
 @Slf4j
-public class OrderInstructorImpl implements OrderInstructor {
+public class InstructorImpl implements Instructor {
 
     private static final List<Instruction> EMPTY = Collections.emptyList();
 
-    private final Map<String, OrderInstructor> instructors;
+    private final Map<String, Instructor> instructors;
 
     @Inject
-    public OrderInstructorImpl(Injector injector) {
-        this.instructors = injector.getInstance(ServiceFactory.class).loadMap(OrderInstructor.class);
+    public InstructorImpl(Injector injector) {
+        this.instructors = injector.getInstance(ServiceFactory.class).loadMap(Instructor.class);
     }
 
     @Override
@@ -49,7 +49,7 @@ public class OrderInstructorImpl implements OrderInstructor {
 
         }
 
-        OrderInstructor instructor = instructors.get(request.getSite());
+        Instructor instructor = instructors.get(request.getSite());
 
         if (instructor == null) {
 

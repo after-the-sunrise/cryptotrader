@@ -15,15 +15,14 @@ import static lombok.AccessLevel.PRIVATE;
  */
 public interface Instruction {
 
-    interface Visitor<R, P> {
 
-        R visit(P parameter, CreateInstruction instruction);
+    interface Visitor<T> {
 
-        R visit(P parameter, CancelInstruction instruction);
+        T visit(CreateInstruction instruction);
+
+        T visit(CancelInstruction instruction);
 
     }
-
-    <R, P> R accept(Visitor<R, P> visitor, P parameter);
 
     @Getter
     @Builder
@@ -36,8 +35,8 @@ public interface Instruction {
         private final BigDecimal size;
 
         @Override
-        public <R, P> R accept(Visitor<R, P> visitor, P parameter) {
-            return visitor.visit(parameter, this);
+        public <T> T accept(Visitor<T> visitor) {
+            return visitor.visit(this);
         }
 
     }
@@ -51,10 +50,12 @@ public interface Instruction {
         private final String id;
 
         @Override
-        public <R, P> R accept(Visitor<R, P> visitor, P parameter) {
-            return visitor.visit(parameter, this);
+        public <T> T accept(Visitor<T> visitor) {
+            return visitor.visit(this);
         }
 
     }
+
+    <T> T accept(Visitor<T> visitor);
 
 }

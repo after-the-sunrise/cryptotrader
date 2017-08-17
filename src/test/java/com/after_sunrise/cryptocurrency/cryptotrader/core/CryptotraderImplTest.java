@@ -3,6 +3,10 @@ package com.after_sunrise.cryptocurrency.cryptotrader.core;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader;
 import org.testng.annotations.Test;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.testng.Assert.assertEquals;
+
 /**
  * @author takanori.takase
  * @version 0.0.1
@@ -10,9 +14,24 @@ import org.testng.annotations.Test;
 public class CryptotraderImplTest {
 
     static class TestTrader implements Trader {
+
+        static final AtomicInteger COUNT = new AtomicInteger(0);
+
         @Override
         public void trade() {
+            COUNT.incrementAndGet();
         }
+
+        @Override
+        public void trigger() {
+            COUNT.incrementAndGet();
+        }
+
+        @Override
+        public void close() {
+            COUNT.decrementAndGet();
+        }
+
     }
 
     @Test
@@ -33,15 +52,21 @@ public class CryptotraderImplTest {
 
         try {
 
+            assertEquals(TestTrader.COUNT.get(), 0);
+
             target.execute();
 
             target.execute();
+
+            assertEquals(TestTrader.COUNT.get(), 1);
 
         } finally {
 
             target.shutdown();
 
             target.shutdown();
+
+            assertEquals(TestTrader.COUNT.get(), 0);
 
         }
 

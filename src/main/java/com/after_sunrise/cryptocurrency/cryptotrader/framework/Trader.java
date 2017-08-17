@@ -15,7 +15,7 @@ import static lombok.AccessLevel.PRIVATE;
  * @author takanori.takase
  * @version 0.0.1
  */
-public interface Trader {
+public interface Trader extends Controllable {
 
     @Getter
     @Builder
@@ -33,30 +33,52 @@ public interface Trader {
 
         private BigDecimal aggressiveness;
 
-        public static boolean isValid(Request value) {
+        private BigDecimal tradingSpread;
 
-            if (value == null) {
+        private BigDecimal tradingExposure;
+
+        private BigDecimal tradingSplit;
+
+        public boolean isValid() {
+
+            if (StringUtils.isEmpty(site)) {
                 return false;
             }
 
-            if (StringUtils.isEmpty(value.getSite())) {
+            if (StringUtils.isEmpty(instrument)) {
                 return false;
             }
 
-            if (StringUtils.isEmpty(value.getInstrument())) {
+            if (timestamp == null) {
                 return false;
             }
 
-            if (value.getTimestamp() == null) {
+            if (aggressiveness == null) {
                 return false;
             }
 
-            if (value.getAggressiveness() == null) {
+            if (tradingSpread == null) {
+                return false;
+            }
+
+            if (tradingExposure == null) {
+                return false;
+            }
+
+            if (tradingSplit == null) {
                 return false;
             }
 
             return true;
 
+        }
+
+        public static boolean isValid(Request value) {
+            return value != null && value.isValid();
+        }
+
+        public static boolean isInvalid(Request value) {
+            return !isValid(value);
         }
 
     }

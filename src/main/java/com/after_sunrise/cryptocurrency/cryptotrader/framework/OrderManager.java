@@ -1,9 +1,9 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 
+import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -12,8 +12,8 @@ import java.util.function.Supplier;
  */
 public interface OrderManager extends Supplier<String> {
 
-    Boolean create(Request request, CreateInstruction instruction);
+    Map<Instruction, String> manage(Context context, Request request, List<Instruction> values);
 
-    Boolean cancel(Request request, CancelInstruction instruction);
+    Boolean reconcile(Context context, Request request, Map<Instruction, String> instructions);
 
 }

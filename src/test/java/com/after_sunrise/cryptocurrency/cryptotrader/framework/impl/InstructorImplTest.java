@@ -2,11 +2,11 @@ package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.OrderInstructor;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.PortfolioAdviser.Advice;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instructor;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -15,8 +15,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request.ALL;
-import static java.math.BigDecimal.ZERO;
-import static java.time.Instant.now;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.mockito.Mockito.*;
@@ -26,13 +24,13 @@ import static org.testng.Assert.assertEquals;
  * @author takanori.takase
  * @version 0.0.1
  */
-public class OrderInstructorImplTest {
+public class InstructorImplTest {
 
-    private OrderInstructorImpl target;
+    private InstructorImpl target;
 
     private TestModule module;
 
-    private OrderInstructor service;
+    private Instructor service;
 
     private Context context;
 
@@ -41,15 +39,15 @@ public class OrderInstructorImplTest {
     @BeforeMethod
     public void setUp() {
 
-        service = mock(OrderInstructor.class);
+        service = mock(Instructor.class);
         module = new TestModule();
         context = null;
         advice = null;
 
-        Map<String, OrderInstructor> services = singletonMap("test", service);
-        when(module.getMock(ServiceFactory.class).loadMap(OrderInstructor.class)).thenReturn(services);
+        Map<String, Instructor> services = singletonMap("test", service);
+        when(module.getMock(ServiceFactory.class).loadMap(Instructor.class)).thenReturn(services);
 
-        target = new OrderInstructorImpl(module.createInjector());
+        target = new InstructorImpl(module.createInjector());
 
     }
 
@@ -63,8 +61,7 @@ public class OrderInstructorImplTest {
     @Test
     public void testInstruct() throws Exception {
 
-        Request.RequestBuilder builder = Request.builder().site("test").instrument("i") //
-                .timestamp(now()).aggressiveness(ZERO);
+        Request.RequestBuilder builder = module.createRequestBuilder();
 
         Request request = builder.build();
 

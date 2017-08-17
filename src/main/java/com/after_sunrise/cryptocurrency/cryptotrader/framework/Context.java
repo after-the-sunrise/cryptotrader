@@ -1,7 +1,7 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework;
 
-import com.after_sunrise.cryptocurrency.bitflyer4j.core.StateType;
-import com.after_sunrise.cryptocurrency.bitflyer4j.entity.OrderList;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import lombok.*;
 import org.apache.commons.lang3.StringUtils;
 
@@ -18,7 +18,6 @@ import static lombok.AccessLevel.PRIVATE;
  * @version 0.0.1
  */
 public interface Context extends Supplier<String> {
-
 
     @Getter
     @Builder
@@ -91,7 +90,12 @@ public interface Context extends Supplier<String> {
 
     BigDecimal roundTickSize(Key key, BigDecimal value, RoundingMode mode);
 
-    List<OrderList.Response> getOrders(Key key, StateType active);
+    Order findOrder(Key key, String id);
 
+    List<Order> listOrders(Key key);
+
+    String createOrder(Key key, CreateInstruction instruction);
+
+    String cancelOrder(Key key, CancelInstruction instruction);
 
 }

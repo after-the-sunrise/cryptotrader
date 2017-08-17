@@ -1,8 +1,8 @@
-package com.after_sunrise.cryptocurrency.cryptotrader.service.strategy;
+package com.after_sunrise.cryptocurrency.cryptotrader.service.estimator;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.MarketEstimator;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,9 +15,14 @@ import static java.math.BigDecimal.ONE;
  * @version 0.0.1
  */
 @Slf4j
-public class LastMarketEstimator implements MarketEstimator {
+public class MidEstimator implements Estimator {
 
     private static final Estimation BAIL = Estimation.builder().build();
+
+    @Override
+    public String get() {
+        return getClass().getSimpleName();
+    }
 
     @Override
     public Estimation estimate(Context context, Request request) {
@@ -32,7 +37,7 @@ public class LastMarketEstimator implements MarketEstimator {
             return BAIL;
         }
 
-        BigDecimal price = context.getLastPrice(key);
+        BigDecimal price = context.getMidPrice(key);
 
         Estimation estimation = Estimation.builder().price(price).confidence(ONE).build();
 
