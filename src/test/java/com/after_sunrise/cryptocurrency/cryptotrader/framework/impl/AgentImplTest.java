@@ -94,11 +94,6 @@ public class AgentImplTest {
         Request request = builder.build();
         Map<Instruction, String> values = emptyMap();
 
-        // Dry
-        when(propertyManager.getTradingActive()).thenReturn(false);
-        assertFalse(target.reconcile(context, request, values));
-        verifyNoMoreInteractions(service);
-
         // Found
         when(propertyManager.getTradingActive()).thenReturn(true);
         assertFalse(target.reconcile(context, request, values));
