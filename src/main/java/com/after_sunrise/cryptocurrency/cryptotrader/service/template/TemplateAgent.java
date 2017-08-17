@@ -127,6 +127,8 @@ public class TemplateAgent implements OrderManager {
     @VisibleForTesting
     Boolean checkCreated(Context context, Key key, String id) {
 
+        // TODO : Retry
+
         Boolean result = context.findOrder(key, id) != null;
 
         log.trace("Create check : {} - {}", result, id);
@@ -137,6 +139,8 @@ public class TemplateAgent implements OrderManager {
 
     @VisibleForTesting
     Boolean checkCancelled(Context context, Key key, String id) {
+
+        // TODO : Retry
 
         Order order = context.findOrder(key, id);
 

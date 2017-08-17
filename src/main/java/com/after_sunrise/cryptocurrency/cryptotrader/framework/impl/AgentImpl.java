@@ -10,10 +10,12 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Optional.ofNullable;
 
 /**
  * @author takanori.takase
@@ -47,7 +49,7 @@ public class AgentImpl implements OrderManager {
 
             log.trace("Invalid request : {}", req);
 
-            return Collections.emptyMap();
+            return emptyMap();
 
         }
 
@@ -57,25 +59,27 @@ public class AgentImpl implements OrderManager {
 
             log.debug("Service not found for site : {}", req.getSite());
 
-            return Collections.emptyMap();
+            return emptyMap();
 
         }
 
-        List<Instruction> values = Optional.ofNullable(instructions).orElse(Collections.emptyList());
+        List<Instruction> values = ofNullable(instructions).orElse(emptyList());
 
         if (!propertyManager.getTradingActive()) {
 
             log.debug("Skipping manage : {}", values.size());
 
-            return Collections.emptyMap();
+            return emptyMap();
 
         }
 
-        log.debug("Managing : {}", values.size());
+        Map<Instruction, String> results = ofNullable(manager.manage(ctx, req, values)).orElse(emptyMap());
 
-        values.forEach(i -> log.debug("{}", i));
+        log.debug("Managed : {}", results.size());
 
-        return manager.manage(ctx, req, values);
+        results.forEach((k, v) -> log.debug("id=[{}] {}", v, k));
+
+        return results;
 
     }
 
@@ -100,13 +104,13 @@ public class AgentImpl implements OrderManager {
 
         }
 
-        Map<Instruction, String> values = Optional.ofNullable(instructions).orElse(Collections.emptyMap());
+        // TODO : Change to Map<Instruction|String, Boolean>
 
-        log.debug("Reconciling : {}", values.size());
+        Boolean result = manager.reconcile(ctx, req, instructions);
 
-        values.forEach((k, v) -> log.debug("[{}] {}", v, k));
+        log.debug("Reconciled : {}", result);
 
-        return manager.reconcile(ctx, req, values);
+        return result;
 
     }
 
