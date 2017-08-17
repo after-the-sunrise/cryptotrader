@@ -4,7 +4,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.OrderManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.google.inject.Inject;
@@ -14,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author takanori.takase
@@ -21,8 +21,6 @@ import java.util.Map;
  */
 @Slf4j
 public class AgentImpl implements OrderManager {
-
-    private static final List<Order> EMTPY = Collections.emptyList();
 
     private final PropertyManager propertyManager;
 
@@ -43,7 +41,7 @@ public class AgentImpl implements OrderManager {
     }
 
     @Override
-    public Map<Instruction, String> manage(Context ctx, Request req, List<Instruction> vals) {
+    public Map<Instruction, String> manage(Context ctx, Request req, List<Instruction> instructions) {
 
         if (Request.isInvalid(req)) {
 
@@ -57,21 +55,27 @@ public class AgentImpl implements OrderManager {
 
         if (manager == null) {
 
-            log.debug("OrderManager not found for site : {}", req.getSite());
+            log.debug("Service not found for site : {}", req.getSite());
 
             return Collections.emptyMap();
 
         }
+
+        List<Instruction> values = Optional.ofNullable(instructions).orElse(Collections.emptyList());
 
         if (!propertyManager.getTradingActive()) {
 
-            vals.forEach(i -> log.debug("Skipped by dry-run : {} - {}", i, req));
+            log.debug("Skipping manage : {}", values.size());
 
             return Collections.emptyMap();
 
         }
 
-        return manager.manage(ctx, req, vals);
+        log.debug("Managing : {}", values.size());
+
+        values.forEach(i -> log.debug("{}", i));
+
+        return manager.manage(ctx, req, values);
 
     }
 
@@ -90,21 +94,19 @@ public class AgentImpl implements OrderManager {
 
         if (manager == null) {
 
-            log.debug("OrderManager not found for site : {}", req.getSite());
+            log.debug("Service not found for site : {}", req.getSite());
 
             return Boolean.FALSE;
 
         }
 
-        if (!propertyManager.getTradingActive()) {
+        Map<Instruction, String> values = Optional.ofNullable(instructions).orElse(Collections.emptyMap());
 
-            instructions.forEach((k, v) -> log.debug("Skipped by dry-run : {} - {}", k, req));
+        log.debug("Reconciling : {}", values.size());
 
-            return Boolean.FALSE;
+        values.forEach((k, v) -> log.debug("[{}] {}", v, k));
 
-        }
-
-        return manager.reconcile(ctx, req, instructions);
+        return manager.reconcile(ctx, req, values);
 
     }
 

@@ -59,11 +59,15 @@ public class InstructorImpl implements Instructor {
 
         }
 
-        List<Instruction> instructions = ofNullable(instructor.instruct(context, request, advice)).orElse(EMPTY);
+        List<Instruction> instructions = instructor.instruct(context, request, advice);
 
-        log.debug("Instructions : {}", instructions.size());
+        List<Instruction> values = ofNullable(instructions).orElse(EMPTY);
 
-        return instructions;
+        log.debug("Instructions : {}", values.size());
+
+        values.forEach(i -> log.debug("{}", i));
+
+        return values;
 
     }
 

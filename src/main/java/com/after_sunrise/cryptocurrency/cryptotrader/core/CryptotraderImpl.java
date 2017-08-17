@@ -27,7 +27,7 @@ public class CryptotraderImpl extends AbstractModule implements Cryptotrader {
     private final Class<? extends Trader> traderClass;
 
     public CryptotraderImpl() {
-        this(Trader.class);
+        this(TraderImpl.class);
     }
 
     public CryptotraderImpl(Class<? extends Trader> traderClass) {

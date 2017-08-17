@@ -92,6 +92,8 @@ public class TraderImpl implements Trader {
 
                 Instant time = calculateTime();
 
+                log.debug("Trade attempt : {}", time);
+
                 propertyManager.getTradingTargets().forEach((site, instruments) -> {
 
                     instruments.forEach(i -> pipeline.process(time, site, i));

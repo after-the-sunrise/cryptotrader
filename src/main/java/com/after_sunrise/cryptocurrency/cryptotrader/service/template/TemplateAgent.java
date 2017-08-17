@@ -56,6 +56,8 @@ public class TemplateAgent implements OrderManager {
                     @Override
                     public Void visit(CreateInstruction instruction) {
 
+                        log.trace("Creating : {} - {}", key, instruction);
+
                         results.put(instruction, ctx.createOrder(key, instruction));
 
                         return null;
@@ -64,6 +66,8 @@ public class TemplateAgent implements OrderManager {
 
                     @Override
                     public Void visit(CancelInstruction instruction) {
+
+                        log.trace("Cancelling : {} - {}", key, instruction);
 
                         results.put(instruction, ctx.cancelOrder(key, instruction));
 
@@ -101,12 +105,16 @@ public class TemplateAgent implements OrderManager {
                     Boolean matched = instruction.accept(new Visitor<Boolean>() {
                         @Override
                         public Boolean visit(CreateInstruction instruction) {
+
                             return checkCreated(context, key, id);
+
                         }
 
                         @Override
                         public Boolean visit(CancelInstruction instruction) {
+
                             return checkCancelled(context, key, id);
+
                         }
                     });
 
@@ -119,8 +127,11 @@ public class TemplateAgent implements OrderManager {
     @VisibleForTesting
     Boolean checkCreated(Context context, Key key, String id) {
 
-        return context.findOrder(key, id) != null;
+        Boolean result = context.findOrder(key, id) != null;
 
+        log.trace("Create check : {} - {}", result, id);
+
+        return result;
 
     }
 
@@ -129,9 +140,12 @@ public class TemplateAgent implements OrderManager {
 
         Order order = context.findOrder(key, id);
 
-        return order == null || !Boolean.TRUE.equals(order.getActive());
+        Boolean result = order == null || !Boolean.TRUE.equals(order.getActive());
+
+        log.trace("Cancel check : {} - {}", result, id);
+
+        return result;
 
     }
-
 
 }

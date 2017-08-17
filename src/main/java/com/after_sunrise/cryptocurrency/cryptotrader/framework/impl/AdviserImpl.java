@@ -51,7 +51,7 @@ public class AdviserImpl implements Adviser {
 
         if (adviser == null) {
 
-            log.debug("Adviser not found : {}", request);
+            log.debug("Service not found : {}", request.getSite());
 
             return BAIL;
 

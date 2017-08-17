@@ -96,6 +96,8 @@ public abstract class TemplateContext implements Context {
 
         } catch (Exception e) {
 
+            log.warn("Failed to cache : {} - {}", cacheType, e);
+
             return null;
 
         }
@@ -125,6 +127,8 @@ public abstract class TemplateContext implements Context {
             return cached.get().stream().map(cacheType::cast).collect(Collectors.toList());
 
         } catch (Exception e) {
+
+            log.warn("Failed to cache list : {} - {}", cacheType, e);
 
             return Collections.emptyList();
 
