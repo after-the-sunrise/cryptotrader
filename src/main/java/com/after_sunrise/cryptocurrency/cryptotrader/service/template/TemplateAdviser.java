@@ -13,7 +13,8 @@ import java.util.Optional;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.*;
+import static java.math.RoundingMode.DOWN;
+import static java.math.RoundingMode.HALF_UP;
 
 /**
  * @author takanori.takase
@@ -23,6 +24,8 @@ import static java.math.RoundingMode.*;
 public class TemplateAdviser implements Adviser {
 
     private static final int PRECISION = 12;
+
+    private static final BigDecimal EPSILON = ONE.movePointLeft(PRECISION);
 
     private static final Advice BAIL = Advice.builder().build();
 
@@ -81,17 +84,19 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        BigDecimal weighedEstimate = estimation.getPrice().multiply(estimation.getConfidence());
+        BigDecimal estimate = estimation.getPrice();
 
-        BigDecimal base = mid.add(weighedEstimate).divide(ONE.add(estimation.getConfidence()), PRECISION, HALF_UP);
+        BigDecimal adjConfidence = estimate.multiply(estimation.getConfidence());
 
-        BigDecimal spread = request.getTradingSpread();
+        BigDecimal adjAverage = mid.add(adjConfidence).divide(ONE.add(estimation.getConfidence()), PRECISION, HALF_UP);
 
-        BigDecimal target = BigDecimal.ONE.subtract(spread).multiply(base);
+        BigDecimal adjSpread = adjAverage.multiply(ONE.subtract(request.getTradingSpread()));
 
-        BigDecimal rounded = context.roundTickSize(key, target, DOWN);
+        BigDecimal adjCross = adjSpread.min(mid.subtract(EPSILON));
 
-        log.trace("Buy price : {} (base=[{}] spread=[{}] raw=[{}])", rounded, base, spread, target);
+        BigDecimal rounded = context.roundTickSize(key, adjCross, DOWN);
+
+        log.trace("Buy price : {} (average=[{}] spread=[{}] estimate=[{}])", rounded, adjSpread, adjAverage, estimate);
 
         return rounded;
 
@@ -112,17 +117,19 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        BigDecimal weighedEstimate = estimation.getPrice().multiply(estimation.getConfidence());
+        BigDecimal estimate = estimation.getPrice();
 
-        BigDecimal base = mid.add(weighedEstimate).divide(ONE.add(estimation.getConfidence()), PRECISION, HALF_UP);
+        BigDecimal adjConfidence = estimate.multiply(estimation.getConfidence());
 
-        BigDecimal spread = request.getTradingSpread();
+        BigDecimal adjAverage = mid.add(adjConfidence).divide(ONE.add(estimation.getConfidence()), PRECISION, HALF_UP);
 
-        BigDecimal result = BigDecimal.ONE.add(spread).multiply(base);
+        BigDecimal adjSpread = adjAverage.multiply(ONE.add(request.getTradingSpread()));
 
-        BigDecimal rounded = context.roundTickSize(key, result, UP);
+        BigDecimal adjCross = adjSpread.max(mid.add(EPSILON));
 
-        log.trace("Sell price : {} (base=[{}] spread=[{}] raw=[{}])", rounded, base, spread, result);
+        BigDecimal rounded = context.roundTickSize(key, adjCross, DOWN);
+
+        log.trace("Sell price : {} (average=[{}] spread=[{}] estimate=[{}])", rounded, adjSpread, adjAverage, estimate);
 
         return rounded;
 
