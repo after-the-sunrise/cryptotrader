@@ -11,12 +11,14 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -35,8 +37,6 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
  */
 @Slf4j
 public class BitflyerContext extends TemplateContext implements BitflyerService {
-
-    private static final Duration EXPIRY = Duration.ofSeconds(INTEGER_ONE);
 
     private static final long TIMEOUT = MINUTES.toMillis(INTEGER_ONE);
 
@@ -58,7 +58,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     @Override
     public BigDecimal getBesAskPrice(Key key) {
 
-        Tick tick = findCached(Tick.class, key, EXPIRY, () ->
+        Tick tick = findCached(Tick.class, key, () ->
                 bitflyer4j.getMarketService().getTick(key.getInstrument()).get(TIMEOUT, MILLISECONDS)
         );
 
@@ -69,7 +69,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     @Override
     public BigDecimal getBesBidPrice(Key key) {
 
-        Tick tick = findCached(Tick.class, key, EXPIRY, () ->
+        Tick tick = findCached(Tick.class, key, () ->
                 bitflyer4j.getMarketService().getTick(key.getInstrument()).get(TIMEOUT, MILLISECONDS)
         );
 
@@ -80,7 +80,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     @Override
     public BigDecimal getMidPrice(Key key) {
 
-        Board val = findCached(Board.class, key, EXPIRY, () ->
+        Board val = findCached(Board.class, key, () ->
                 bitflyer4j.getMarketService().getBoard(key.getInstrument()).get(TIMEOUT, MILLISECONDS)
         );
 
@@ -91,7 +91,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     @Override
     public BigDecimal getLastPrice(Key key) {
 
-        Tick tick = findCached(Tick.class, key, EXPIRY, () ->
+        Tick tick = findCached(Tick.class, key, () ->
                 bitflyer4j.getMarketService().getTick(key.getInstrument()).get(TIMEOUT, MILLISECONDS)
         );
 
@@ -114,7 +114,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
         String currency = mapper.apply(instrumentType).name();
 
-        List<Balance> balances = listCached(Balance.class, key, EXPIRY, () ->
+        List<Balance> balances = listCached(Balance.class, key, () ->
                 bitflyer4j.getAccountService().getBalances().get(TIMEOUT, MILLISECONDS)
         );
 
@@ -183,17 +183,27 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     @Override
     public Order findOrder(Key key, String id) {
 
-        return listOrders(key).stream()
-                .filter(o -> StringUtils.equals(o.getId(), id))
-                .findFirst()
-                .orElse(null);
+        BitflyerOrder value = findCached(BitflyerOrder.class, key, () -> {
+
+            OrderList r = OrderList.builder().acceptanceId(id).product(key.getInstrument()).build();
+
+            Pagination p = Pagination.builder().count(NumberUtils.LONG_ONE).build();
+
+            List<OrderList.Response> v = bitflyer4j.getOrderService().listOrders(r, p).get(TIMEOUT, MILLISECONDS);
+
+            return Optional.ofNullable(v).orElse(Collections.emptyList()).stream()
+                    .filter(Objects::nonNull).map(BitflyerOrder::new).findFirst().orElse(null);
+
+        });
+
+        return value;
 
     }
 
     @Override
     public List<Order> listOrders(Key key) {
 
-        List<OrderList.Response> values = listCached(OrderList.Response.class, key, EXPIRY, () -> {
+        List<OrderList.Response> values = listCached(OrderList.Response.class, key, () -> {
 
             OrderList request = OrderList.builder().product(key.getInstrument()).build();
 
