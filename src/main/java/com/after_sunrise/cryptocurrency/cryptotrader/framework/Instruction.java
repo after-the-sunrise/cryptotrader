@@ -16,7 +16,6 @@ import static lombok.AccessLevel.PRIVATE;
  */
 public interface Instruction {
 
-
     interface Visitor<T> {
 
         T visit(CreateInstruction instruction);

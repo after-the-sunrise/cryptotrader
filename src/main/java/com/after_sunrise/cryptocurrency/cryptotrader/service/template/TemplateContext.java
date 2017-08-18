@@ -1,7 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -43,11 +42,9 @@ public abstract class TemplateContext implements Context {
         return id;
     }
 
-    @VisibleForTesting
-    <K0, K1 extends K0, V0, V1 extends V0> Cache<K1, V1> createCache(Class<?> clazz) {
+    private <K0, K1 extends K0, V0, V1 extends V0> Cache<K1, V1> createCache(Class<?> clazz) {
         return CacheBuilder.newBuilder()
                 .expireAfterWrite(EXPIRY, MILLISECONDS)
-                .expireAfterAccess(EXPIRY, MILLISECONDS)
                 .maximumSize(SIZE)
                 .build();
     }
@@ -86,7 +83,7 @@ public abstract class TemplateContext implements Context {
 
         try {
 
-            Optional<? extends List<?>> cached = cache.get(key, () -> Optional.of(c.call()));
+            Optional<? extends List<?>> cached = cache.get(key, () -> Optional.ofNullable(c.call()));
 
             if (!cached.isPresent()) {
                 return Collections.emptyList();

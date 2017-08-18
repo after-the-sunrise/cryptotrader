@@ -30,11 +30,11 @@ public class MainTest {
 
     @Test
     public void testEntity() throws ReflectiveOperationException {
+        test(Adviser.Advice.class);
         test(Context.Key.class);
+        test(Estimator.Estimation.class);
         test(Instruction.CreateInstruction.class);
         test(Instruction.CancelInstruction.class);
-        test(Estimator.Estimation.class);
-        test(Adviser.Advice.class);
         test(Trader.Request.class);
     }
 
