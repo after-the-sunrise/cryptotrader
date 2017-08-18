@@ -50,7 +50,7 @@ public class CryptotraderImpl extends AbstractModule implements Cryptotrader {
         bind(Adviser.class).to(AdviserImpl.class).asEagerSingleton();
         bind(Instructor.class).to(InstructorImpl.class).asEagerSingleton();
 
-        bind(OrderManager.class).to(AgentImpl.class).asEagerSingleton();
+        bind(Agent.class).to(AgentImpl.class).asEagerSingleton();
         bind(Pipeline.class).to(PipelineImpl.class).asEagerSingleton();
         bind(Trader.class).to(traderClass).asEagerSingleton();
 

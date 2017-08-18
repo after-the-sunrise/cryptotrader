@@ -2,9 +2,9 @@ package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Agent;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.OrderManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -22,18 +22,18 @@ import static java.util.Optional.ofNullable;
  * @version 0.0.1
  */
 @Slf4j
-public class AgentImpl implements OrderManager {
+public class AgentImpl implements Agent {
 
     private final PropertyManager propertyManager;
 
-    private final Map<String, OrderManager> managers;
+    private final Map<String, Agent> managers;
 
     @Inject
     public AgentImpl(Injector injector) {
 
         this.propertyManager = injector.getInstance(PropertyManager.class);
 
-        this.managers = injector.getInstance(ServiceFactory.class).loadMap(OrderManager.class);
+        this.managers = injector.getInstance(ServiceFactory.class).loadMap(Agent.class);
 
     }
 
@@ -53,7 +53,7 @@ public class AgentImpl implements OrderManager {
 
         }
 
-        OrderManager manager = managers.get(req.getSite());
+        Agent manager = managers.get(req.getSite());
 
         if (manager == null) {
 
@@ -84,33 +84,33 @@ public class AgentImpl implements OrderManager {
     }
 
     @Override
-    public Boolean reconcile(Context ctx, Request req, Map<Instruction, String> instructions) {
+    public Map<Instruction, Boolean> reconcile(Context ctx, Request req, Map<Instruction, String> instructions) {
 
         if (Request.isInvalid(req)) {
 
             log.trace("Invalid request : {}", req);
 
-            return Boolean.FALSE;
+            return emptyMap();
 
         }
 
-        OrderManager manager = managers.get(req.getSite());
+        Agent manager = managers.get(req.getSite());
 
         if (manager == null) {
 
             log.debug("Service not found for site : {}", req.getSite());
 
-            return Boolean.FALSE;
+            return emptyMap();
 
         }
 
-        // TODO : Change to Map<Instruction|String, Boolean>
+        Map<Instruction, Boolean> results = ofNullable(manager.reconcile(ctx, req, instructions)).orElse(emptyMap());
 
-        Boolean result = manager.reconcile(ctx, req, instructions);
+        log.debug("Reconciled : {}", results.size());
 
-        log.debug("Reconciled : {}", result);
+        results.forEach((k, v) -> log.debug("Reconcile=[{}] {}", v, k));
 
-        return result;
+        return results;
 
     }
 

@@ -3,9 +3,9 @@ package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Agent;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.OrderManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -33,7 +33,7 @@ public class AgentImplTest {
 
     private PropertyManager propertyManager;
 
-    private OrderManager service;
+    private Agent service;
 
     @BeforeMethod
     public void setUp() {
@@ -41,10 +41,10 @@ public class AgentImplTest {
         module = new TestModule();
         context = null;
         propertyManager = module.getMock(PropertyManager.class);
-        service = module.getMock(OrderManager.class);
+        service = module.getMock(Agent.class);
 
-        Map<String, OrderManager> services = singletonMap("test", service);
-        when(module.getMock(ServiceFactory.class).loadMap(OrderManager.class)).thenReturn(services);
+        Map<String, Agent> services = singletonMap("test", service);
+        when(module.getMock(ServiceFactory.class).loadMap(Agent.class)).thenReturn(services);
 
         target = new AgentImpl(module.createInjector());
 
@@ -93,19 +93,21 @@ public class AgentImplTest {
         Request.RequestBuilder builder = module.createRequestBuilder();
         Request request = builder.build();
         Map<Instruction, String> values = emptyMap();
+        Map<Instruction, Boolean> results = new HashMap<>();
+        doReturn(results).when(service).reconcile(context, request, values);
 
         // Found
         when(propertyManager.getTradingActive()).thenReturn(true);
-        assertFalse(target.reconcile(context, request, values));
+        assertSame(target.reconcile(context, request, values), results);
         verify(service).reconcile(context, request, values);
 
         // Site not found
         request = builder.site("hoge").build();
-        assertFalse(target.reconcile(context, request, values));
+        assertNotSame(target.reconcile(context, request, values), results);
         verifyNoMoreInteractions(service);
 
         // Invalid request
-        assertFalse(target.reconcile(context, request, values));
+        assertNotSame(target.reconcile(context, request, values), results);
         verifyNoMoreInteractions(service);
 
     }

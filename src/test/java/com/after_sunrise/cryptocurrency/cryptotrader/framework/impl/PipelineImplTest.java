@@ -49,20 +49,22 @@ public class PipelineImplTest {
         Advice advice = Advice.builder().build();
         List<Instruction> instructions = Collections.emptyList();
         Map<Instruction, String> results = Collections.emptyMap();
+        Map<Instruction, Boolean> reconcile = Collections.emptyMap();
 
         doReturn(request).when(target).createRequest(now, site, instrument);
         when(module.getMock(Estimator.class).estimate(context, request)).thenReturn(estimation);
         when(module.getMock(Adviser.class).advise(context, request, estimation)).thenReturn(advice);
         when(module.getMock(Instructor.class).instruct(context, request, advice)).thenReturn(instructions);
-        when(module.getMock(OrderManager.class).manage(context, request, instructions)).thenReturn(results);
+        when(module.getMock(Agent.class).manage(context, request, instructions)).thenReturn(results);
+        when(module.getMock(Agent.class).reconcile(context, request, results)).thenReturn(reconcile);
 
         target.process(now, site, instrument);
 
         verify(module.getMock(Estimator.class)).estimate(context, request);
         verify(module.getMock(Adviser.class)).advise(context, request, estimation);
         verify(module.getMock(Instructor.class)).instruct(context, request, advice);
-        verify(module.getMock(OrderManager.class)).manage(context, request, instructions);
-        verify(module.getMock(OrderManager.class)).reconcile(context, request, results);
+        verify(module.getMock(Agent.class)).manage(context, request, instructions);
+        verify(module.getMock(Agent.class)).reconcile(context, request, results);
 
     }
 
@@ -77,20 +79,22 @@ public class PipelineImplTest {
         Advice advice = null;
         List<Instruction> instructions = null;
         Map<Instruction, String> results = null;
+        Map<Instruction, Boolean> reconcile = null;
 
         doReturn(request).when(target).createRequest(now, site, instrument);
         when(module.getMock(Estimator.class).estimate(context, request)).thenReturn(estimation);
         when(module.getMock(Adviser.class).advise(context, request, estimation)).thenReturn(advice);
         when(module.getMock(Instructor.class).instruct(context, request, advice)).thenReturn(instructions);
-        when(module.getMock(OrderManager.class).manage(context, request, instructions)).thenReturn(results);
+        when(module.getMock(Agent.class).manage(context, request, instructions)).thenReturn(results);
+        when(module.getMock(Agent.class).reconcile(context, request, results)).thenReturn(reconcile);
 
         target.process(now, site, instrument);
 
         verify(module.getMock(Estimator.class)).estimate(context, request);
         verify(module.getMock(Adviser.class)).advise(context, request, estimation);
         verify(module.getMock(Instructor.class)).instruct(context, request, advice);
-        verify(module.getMock(OrderManager.class)).manage(context, request, instructions);
-        verify(module.getMock(OrderManager.class)).reconcile(context, request, results);
+        verify(module.getMock(Agent.class)).manage(context, request, instructions);
+        verify(module.getMock(Agent.class)).reconcile(context, request, results);
 
     }
 

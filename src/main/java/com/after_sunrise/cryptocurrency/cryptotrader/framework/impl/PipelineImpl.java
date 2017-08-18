@@ -14,6 +14,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Collections.emptyMap;
+import static java.util.Optional.ofNullable;
+
 /**
  * @author takanori.takase
  * @version 0.0.1
@@ -31,7 +34,7 @@ public class PipelineImpl implements Pipeline {
 
     private final Instructor instructor;
 
-    private final OrderManager manager;
+    private final Agent manager;
 
     @Inject
     public PipelineImpl(Injector injector) {
@@ -46,7 +49,7 @@ public class PipelineImpl implements Pipeline {
 
         this.instructor = injector.getInstance(Instructor.class);
 
-        this.manager = injector.getInstance(OrderManager.class);
+        this.manager = injector.getInstance(Agent.class);
 
     }
 
@@ -65,9 +68,9 @@ public class PipelineImpl implements Pipeline {
 
         Map<Instruction, String> futures = manager.manage(context, request, instructions);
 
-        Boolean result = manager.reconcile(context, request, futures);
+        Map<Instruction, Boolean> results = manager.reconcile(context, request, futures);
 
-        log.debug("Processed : {}", result);
+        log.debug("Processed : {}", ofNullable(results).orElse(emptyMap()).size());
 
     }
 
