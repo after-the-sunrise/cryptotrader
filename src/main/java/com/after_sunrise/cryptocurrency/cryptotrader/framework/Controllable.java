@@ -11,4 +11,6 @@ public interface Controllable extends AutoCloseable {
 
     void trigger();
 
+    boolean isClosed();
+
 }

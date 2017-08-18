@@ -28,6 +28,11 @@ public class CryptotraderImplTest {
         }
 
         @Override
+        public boolean isClosed() {
+            return COUNT.get() == 0;
+        }
+
+        @Override
         public void close() throws Exception {
 
             COUNT.decrementAndGet();

@@ -39,6 +39,7 @@ public class TraderImpl implements Trader {
 
     }
 
+
     @Override
     public void trigger() {
 
@@ -80,6 +81,11 @@ public class TraderImpl implements Trader {
     }
 
     @Override
+    public boolean isClosed() {
+        return tradeLatch.get() == null;
+    }
+
+    @Override
     public void trade() {
 
         log.info("Trading started.");
@@ -108,7 +114,7 @@ public class TraderImpl implements Trader {
 
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException | InterruptedException e) {
 
             log.warn("Aborting trade.", e);
 
