@@ -69,7 +69,13 @@ public class BitflyerOrder implements Order {
             return null;
         }
 
-        return delegate.getSide() == SideType.BUY ? value : value.negate();
+        SideType side = delegate.getSide();
+
+        if (side == null) {
+            return null;
+        }
+
+        return side == SideType.BUY ? value : value.negate();
 
     }
 
@@ -82,7 +88,13 @@ public class BitflyerOrder implements Order {
             return null;
         }
 
-        return delegate.getSide() == SideType.BUY ? value : value.negate();
+        SideType side = delegate.getSide();
+
+        if (side == null) {
+            return null;
+        }
+
+        return side == SideType.BUY ? value : value.negate();
 
     }
 

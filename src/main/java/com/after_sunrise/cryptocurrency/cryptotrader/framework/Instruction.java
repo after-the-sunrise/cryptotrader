@@ -25,8 +25,6 @@ public interface Instruction {
 
     }
 
-    @Getter
-    @ToString
     abstract class BaseInstruction implements Instruction {
 
         private static final AtomicLong SEQUENCE = new AtomicLong();
