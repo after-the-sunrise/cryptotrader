@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.ToString;
 
 import java.math.BigDecimal;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -25,10 +26,26 @@ public interface Instruction {
     }
 
     @Getter
+    @ToString
+    abstract class BaseInstruction implements Instruction {
+
+        private static final AtomicLong SEQUENCE = new AtomicLong();
+
+        protected static String generateUid() {
+            return String.valueOf(SEQUENCE.incrementAndGet());
+        }
+
+        public abstract String getUid();
+
+    }
+
+    @Getter
     @Builder
     @ToString
     @AllArgsConstructor(access = PRIVATE)
-    class CreateInstruction implements Instruction {
+    class CreateInstruction extends BaseInstruction {
+
+        private final String uid = generateUid();
 
         private final BigDecimal price;
 
@@ -45,7 +62,9 @@ public interface Instruction {
     @Builder
     @ToString
     @AllArgsConstructor(access = PRIVATE)
-    class CancelInstruction implements Instruction {
+    class CancelInstruction extends BaseInstruction {
+
+        private final String uid = generateUid();
 
         private final String id;
 

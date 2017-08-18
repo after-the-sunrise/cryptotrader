@@ -28,8 +28,12 @@ public class CryptotraderImplTest {
         }
 
         @Override
-        public void close() {
+        public void close() throws Exception {
+
             COUNT.decrementAndGet();
+
+            throw new Exception("test");
+
         }
 
     }

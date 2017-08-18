@@ -61,6 +61,11 @@ public class EstimatorImplTest {
     }
 
     @Test
+    public void testGet() {
+        assertEquals(target.get(), Request.ALL);
+    }
+
+    @Test
     public void testEstimate() throws Exception {
 
         // Valid Estimation (1st)

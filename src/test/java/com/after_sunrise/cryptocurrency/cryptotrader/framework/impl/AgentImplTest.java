@@ -82,7 +82,7 @@ public class AgentImplTest {
         verifyNoMoreInteractions(service);
 
         // Invalid request
-        assertNotSame(target.manage(context, request, instructions), results);
+        assertNotSame(target.manage(context, null, instructions), results);
         verifyNoMoreInteractions(service);
 
     }
@@ -107,7 +107,7 @@ public class AgentImplTest {
         verifyNoMoreInteractions(service);
 
         // Invalid request
-        assertNotSame(target.reconcile(context, request, values), results);
+        assertNotSame(target.reconcile(context, null, values), results);
         verifyNoMoreInteractions(service);
 
     }
