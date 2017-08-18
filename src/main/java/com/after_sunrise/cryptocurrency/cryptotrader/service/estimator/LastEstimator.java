@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 
 import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.ZERO;
 
 /**
  * @author takanori.takase
@@ -17,7 +18,7 @@ import static java.math.BigDecimal.ONE;
 @Slf4j
 public class LastEstimator implements Estimator {
 
-    private static final Estimation BAIL = Estimation.builder().build();
+    private static final Estimation BAIL = Estimation.builder().confidence(ZERO).build();
 
     @Override
     public String get() {
@@ -39,11 +40,11 @@ public class LastEstimator implements Estimator {
 
         BigDecimal price = context.getLastPrice(key);
 
-        Estimation estimation = Estimation.builder().price(price).confidence(ONE).build();
+        BigDecimal confidence = price == null ? ZERO : ONE;
 
-        log.debug("Estimated : {} - {}", estimation, key);
+        log.debug("Estimated : {} - {}", price, key);
 
-        return estimation;
+        return Estimation.builder().price(price).confidence(confidence).build();
 
     }
 
