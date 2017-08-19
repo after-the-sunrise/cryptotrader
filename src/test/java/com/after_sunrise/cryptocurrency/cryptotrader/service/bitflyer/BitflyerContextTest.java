@@ -147,7 +147,6 @@ public class BitflyerContextTest {
     @Test
     public void testForBalance() throws Exception {
 
-        Key key = Key.from(Request.builder().instrument("BTC_JPY").build());
 
         Balance b1 = null;
         Balance b2 = mock(Balance.class);
@@ -160,13 +159,33 @@ public class BitflyerContextTest {
         CompletableFuture<List<Balance>> f2 = completedFuture(asList(b2, null, b3));
         when(accountService.getBalances()).thenReturn(f1, f2, null);
 
+
+        // Null key
+        Key key = null;
+        assertNull(target.forBalance(key, ProductType::getStructure, Balance::getAmount));
+        verifyNoMoreInteractions(accountService);
+
+        // No instrument
+        key = Key.from(Request.builder().build());
+        assertNull(target.forBalance(key, ProductType::getStructure, Balance::getAmount));
+        verifyNoMoreInteractions(accountService);
+
+        // Unknown instrument
+        key = Key.from(Request.builder().instrument("hoge").build());
+        assertNull(target.forBalance(key, ProductType::getStructure, Balance::getAmount));
+        verifyNoMoreInteractions(accountService);
+
+        // Found
+        key = Key.from(Request.builder().instrument("BTC_JPY").build());
         assertEquals(target.forBalance(key, ProductType::getStructure, Balance::getAmount), TEN);
         assertEquals(target.forBalance(key, ProductType::getStructure, Balance::getAmount), TEN);
 
+        // Next query
         target.clear();
         assertEquals(target.forBalance(key, ProductType::getStructure, Balance::getAmount), TEN);
         assertEquals(target.forBalance(key, ProductType::getStructure, Balance::getAmount), TEN);
 
+        // Null result
         target.clear();
         assertNull(target.forBalance(key, ProductType::getStructure, Balance::getAmount));
         assertNull(target.forBalance(key, ProductType::getStructure, Balance::getAmount));
@@ -185,7 +204,6 @@ public class BitflyerContextTest {
         when(f1.get().get(0).getAmount()).thenReturn(ONE);
         when(f2.get().get(0).getAmount()).thenReturn(TEN);
         when(accountService.getBalances()).thenReturn(f1, f2);
-
 
         assertEquals(target.getInstrumentPosition(key), ONE);
         assertEquals(target.getInstrumentPosition(key), ONE);
