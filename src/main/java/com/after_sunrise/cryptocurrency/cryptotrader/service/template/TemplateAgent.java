@@ -14,11 +14,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 
+import java.time.Duration;
 import java.util.*;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * @author takanori.takase
@@ -29,22 +29,12 @@ public class TemplateAgent implements Agent {
 
     private static final int LIMIT = 10;
 
-    private static final long INTERVAL = SECONDS.toMillis(6L);
+    private static final Duration INTERVAL = Duration.ofSeconds(6L);
 
     private final String id;
 
-    private final int retryLimit;
-
-    private final long retryInterval;
-
     public TemplateAgent(String id) {
-        this(id, LIMIT, INTERVAL);
-    }
-
-    public TemplateAgent(String id, int retryLimit, long retryInterval) {
         this.id = id;
-        this.retryLimit = retryLimit;
-        this.retryInterval = retryInterval;
     }
 
     @Override
@@ -122,16 +112,12 @@ public class TemplateAgent implements Agent {
                     Boolean matched = instruction.accept(new Visitor<Boolean>() {
                         @Override
                         public Boolean visit(CreateInstruction instruction) {
-
-                            return checkCreated(context, key, entry.getValue());
-
+                            return checkCreated(context, key, entry.getValue(), INTERVAL);
                         }
 
                         @Override
                         public Boolean visit(CancelInstruction instruction) {
-
-                            return checkCancelled(context, key, entry.getValue());
-
+                            return checkCancelled(context, key, entry.getValue(), INTERVAL);
                         }
                     });
 
@@ -146,9 +132,9 @@ public class TemplateAgent implements Agent {
     }
 
     @VisibleForTesting
-    Boolean checkCreated(Context context, Key key, String id) {
+    Boolean checkCreated(Context context, Key key, String id, Duration interval) {
 
-        for (int i = 0; i < retryLimit; i++) {
+        for (int i = 0; i < LIMIT; i++) {
 
             log.trace("Reconciling create : {}", id);
 
@@ -164,7 +150,7 @@ public class TemplateAgent implements Agent {
 
             try {
 
-                Thread.sleep(retryInterval);
+                Thread.sleep(interval.toMillis());
 
             } catch (InterruptedException e) {
 
@@ -183,9 +169,9 @@ public class TemplateAgent implements Agent {
     }
 
     @VisibleForTesting
-    Boolean checkCancelled(Context context, Key key, String id) {
+    Boolean checkCancelled(Context context, Key key, String id, Duration interval) {
 
-        for (int i = 0; i < retryLimit; i++) {
+        for (int i = 0; i < LIMIT; i++) {
 
             log.trace("Reconciling cancel : {}", id);
 
@@ -201,7 +187,7 @@ public class TemplateAgent implements Agent {
 
             try {
 
-                Thread.sleep(retryInterval);
+                Thread.sleep(interval.toMillis());
 
             } catch (InterruptedException e) {
 
