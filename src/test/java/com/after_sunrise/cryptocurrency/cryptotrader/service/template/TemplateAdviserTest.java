@@ -89,6 +89,18 @@ public class TemplateAdviserTest {
         assertEquals(result.getSellLimitPrice(), valueOf(3));
         assertEquals(result.getSellLimitSize(), valueOf(4));
 
+        result = target.advise(context, null, estimation);
+        assertNull(result.getBuyLimitPrice());
+        assertNull(result.getBuyLimitSize());
+        assertNull(result.getSellLimitPrice());
+        assertNull(result.getSellLimitSize());
+
+        result = target.advise(context, request, null);
+        assertNull(result.getBuyLimitPrice());
+        assertNull(result.getBuyLimitSize());
+        assertNull(result.getSellLimitPrice());
+        assertNull(result.getSellLimitSize());
+
     }
 
     @Test
@@ -169,7 +181,11 @@ public class TemplateAdviserTest {
 
         // No Fund
         when(context.getFundingPosition(Key.from(request))).thenReturn(ZERO);
-        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("0.00"));
+        assertEquals(target.calculateBuyLimitSize(context, request, price), ZERO);
+
+        // Null Fund
+        when(context.getFundingPosition(Key.from(request))).thenReturn(null);
+        assertEquals(target.calculateBuyLimitSize(context, request, price), ZERO);
 
     }
 
@@ -187,7 +203,7 @@ public class TemplateAdviserTest {
         when(context.getInstrumentPosition(Key.from(request))).thenReturn(ZERO);
         assertEquals(target.calculateSellLimitSize(context, request), ZERO);
 
-        // No position
+        // Null position
         when(context.getInstrumentPosition(Key.from(request))).thenReturn(null);
         assertEquals(target.calculateSellLimitSize(context, request), ZERO);
 

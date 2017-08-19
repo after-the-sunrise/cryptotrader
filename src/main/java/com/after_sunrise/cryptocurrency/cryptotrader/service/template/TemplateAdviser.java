@@ -154,7 +154,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal fundAmount = context.getFundingPosition(key);
 
-        if (fundAmount == null) {
+        if (fundAmount == null || fundAmount.signum() == 0) {
 
             log.trace("Fund amount not available.");
 
