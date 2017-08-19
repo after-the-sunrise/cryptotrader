@@ -79,7 +79,7 @@ public abstract class TemplateContext implements Context, Cached {
     protected <T> List<T> listCached(Class<T> type, Key key, Callable<List<T>> c) {
 
         if (type == null || key == null) {
-            return null;
+            return Collections.emptyList();
         }
 
         Cache<Key, Optional<? extends List<?>>> cache = listCache.computeIfAbsent(type, this::createCache);
