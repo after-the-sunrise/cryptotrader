@@ -9,6 +9,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType;
 import org.testng.annotations.BeforeMethod;
@@ -23,12 +24,10 @@ import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.LIM
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.MARKET;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.SELL;
-import static com.after_sunrise.cryptocurrency.bitflyer4j.core.StateType.ACTIVE;
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.mockito.Matchers.any;
@@ -63,7 +62,7 @@ public class BitflyerContextTest {
         when(module.getMock(Bitflyer4j.class).getMarketService()).thenReturn(marketService);
         when(module.getMock(Bitflyer4j.class).getOrderService()).thenReturn(orderService);
 
-        target = new BitflyerContext();
+        target = spy(new BitflyerContext());
         target.initialize(module.createInjector());
 
     }
@@ -265,38 +264,70 @@ public class BitflyerContextTest {
     }
 
     @Test
+    public void testFetchOrder() {
+
+        Key key = Key.from(Request.builder().instrument("inst").build());
+
+        OrderList.Response r1 = mock(OrderList.Response.class);
+        OrderList.Response r2 = mock(OrderList.Response.class);
+        when(r1.getPrice()).thenReturn(ONE);
+        when(r2.getPrice()).thenReturn(TEN);
+        when(orderService.listOrders(any(), any())).thenAnswer(i -> {
+
+            assertEquals(i.getArgumentAt(0, OrderList.class).getProduct(), "inst");
+            assertNull(i.getArgumentAt(0, OrderList.class).getState());
+            assertNull(i.getArgumentAt(0, OrderList.class).getAcceptanceId());
+            assertNull(i.getArgumentAt(0, OrderList.class).getOrderId());
+            assertNull(i.getArgumentAt(0, OrderList.class).getParentId());
+            assertNull(i.getArgumentAt(1, Pagination.class));
+
+            return completedFuture(asList(r1, null, r2));
+
+        }).thenReturn(null);
+
+        // Queried
+        List<Order> orders = target.fetchOrder(key);
+        assertEquals(orders.size(), 2);
+        assertEquals(orders.get(0).getOrderPrice(), ONE);
+        assertEquals(orders.get(1).getOrderPrice(), TEN);
+        verify(orderService).listOrders(any(), any());
+
+        // Cached
+        orders = target.fetchOrder(key);
+        assertEquals(orders.size(), 2);
+        assertEquals(orders.get(0).getOrderPrice(), ONE);
+        assertEquals(orders.get(1).getOrderPrice(), TEN);
+        verify(orderService).listOrders(any(), any());
+
+        target.clear();
+
+        // Queried
+        orders = target.fetchOrder(key);
+        assertEquals(orders.size(), 0);
+        verify(orderService, times(2)).listOrders(any(), any());
+
+    }
+
+    @Test
     public void testFindOrder() throws Exception {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
 
-        OrderList.Response response = mock(OrderList.Response.class);
-        when(response.getPrice()).thenReturn(TEN);
-        when(orderService.listOrders(any(), any())).thenAnswer(i -> {
+        Order o1 = mock(Order.class);
+        Order o2 = mock(Order.class);
+        Order o3 = mock(Order.class);
+        when(o2.getId()).thenReturn("id");
+        doReturn(asList(o1, o2, o3)).when(target).fetchOrder(key);
 
-            assertEquals(i.getArgumentAt(0, OrderList.class).getProduct(), "inst");
-            assertEquals(i.getArgumentAt(0, OrderList.class).getAcceptanceId(), "aid");
-            assertNull(i.getArgumentAt(0, OrderList.class).getOrderId());
-            assertNull(i.getArgumentAt(0, OrderList.class).getState());
-            assertNull(i.getArgumentAt(0, OrderList.class).getParentId());
+        assertSame(target.findOrder(key, "id"), o2);
+        assertNull(target.findOrder(key, "di"));
+        assertNull(target.findOrder(key, null));
 
-            assertEquals(i.getArgumentAt(1, Pagination.class).getCount(), (Long) 1L);
-            assertNull(i.getArgumentAt(1, Pagination.class).getAfter());
-            assertNull(i.getArgumentAt(1, Pagination.class).getBefore());
+        reset(o2);
 
-            return completedFuture(singletonList(response));
-
-        });
-
-        assertEquals(target.findOrder(key, "aid").getOrderPrice(), TEN);
-        assertEquals(target.findOrder(key, "aid").getOrderPrice(), TEN);
-
-        doReturn(completedFuture(emptyList())).when(orderService).listOrders(any(), any());
-        assertEquals(target.findOrder(key, "aid").getOrderPrice(), TEN);
-        assertEquals(target.findOrder(key, "aid").getOrderPrice(), TEN);
-
-        target.clear();
-        assertNull(target.findOrder(key, "aid"));
-        assertNull(target.findOrder(key, "aid"));
+        assertNull(target.findOrder(key, "id"));
+        assertNull(target.findOrder(key, "di"));
+        assertNull(target.findOrder(key, null));
 
     }
 
@@ -305,31 +336,19 @@ public class BitflyerContextTest {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
 
-        OrderList.Response response = mock(OrderList.Response.class);
-        when(response.getPrice()).thenReturn(TEN);
-        when(orderService.listOrders(any(), any())).thenAnswer(i -> {
+        Order o1 = mock(Order.class);
+        Order o2 = mock(Order.class);
+        Order o3 = mock(Order.class);
+        Order o4 = mock(Order.class);
+        when(o2.getActive()).thenReturn(true);
+        when(o3.getActive()).thenReturn(false);
+        when(o4.getActive()).thenReturn(true);
+        doReturn(asList(o1, o2, o3, o4)).when(target).fetchOrder(key);
 
-            assertEquals(i.getArgumentAt(0, OrderList.class).getProduct(), "inst");
-            assertEquals(i.getArgumentAt(0, OrderList.class).getState(), ACTIVE);
-            assertNull(i.getArgumentAt(0, OrderList.class).getAcceptanceId());
-            assertNull(i.getArgumentAt(0, OrderList.class).getOrderId());
-            assertNull(i.getArgumentAt(0, OrderList.class).getParentId());
-            assertNull(i.getArgumentAt(1, Pagination.class));
-
-            return completedFuture(singletonList(response));
-
-        });
-
-        assertEquals(target.listOrders(key).get(0).getOrderPrice(), TEN);
-        assertEquals(target.listOrders(key).get(0).getOrderPrice(), TEN);
-
-        doReturn(completedFuture(emptyList())).when(orderService).listOrders(any(), any());
-        assertEquals(target.listOrders(key).get(0).getOrderPrice(), TEN);
-        assertEquals(target.listOrders(key).get(0).getOrderPrice(), TEN);
-
-        target.clear();
-        assertEquals(target.listOrders(key).size(), 0);
-        assertEquals(target.listOrders(key).size(), 0);
+        List<Order> results = target.listOrders(key);
+        assertEquals(results.size(), 2);
+        assertSame(results.get(0), o2);
+        assertSame(results.get(1), o4);
 
     }
 

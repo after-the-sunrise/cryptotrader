@@ -13,7 +13,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -23,15 +22,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.LIMIT;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.MARKET;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.SELL;
-import static com.after_sunrise.cryptocurrency.bitflyer4j.core.StateType.ACTIVE;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.toList;
 
 /**
  * @author takanori.takase
@@ -194,38 +192,34 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
     }
 
-    @Override
-    public Order findOrder(Key key, String id) {
+    @VisibleForTesting
+    List<Order> fetchOrder(Key key) {
 
-        BitflyerOrder value = findCached(BitflyerOrder.class, key, () -> {
+        List<OrderList.Response> values = listCached(OrderList.Response.class, key, () -> {
 
-            OrderList r = OrderList.builder().acceptanceId(id).product(key.getInstrument()).build();
+            OrderList request = OrderList.builder().product(key.getInstrument()).build();
 
-            Pagination p = Pagination.builder().count(NumberUtils.LONG_ONE).build();
-
-            List<OrderList.Response> v = orderService.listOrders(r, p).get(TIMEOUT.toMillis(), MILLISECONDS);
-
-            return Optional.ofNullable(v).orElse(emptyList()).stream()
-                    .filter(Objects::nonNull).map(BitflyerOrder::new).findFirst().orElse(null);
+            return orderService.listOrders(request, null).get(TIMEOUT.toMillis(), MILLISECONDS);
 
         });
 
-        return value;
+        return Optional.ofNullable(values).orElse(emptyList()).stream()
+                .filter(Objects::nonNull).map(BitflyerOrder::new).collect(toList());
+
+    }
+
+    @Override
+    public Order findOrder(Key key, String id) {
+
+        return fetchOrder(key).stream().filter(o -> StringUtils.isNotEmpty(o.getId()))
+                .filter(o -> StringUtils.equals(o.getId(), id)).findFirst().orElse(null);
 
     }
 
     @Override
     public List<Order> listOrders(Key key) {
 
-        List<OrderList.Response> values = listCached(OrderList.Response.class, key, () -> {
-
-            OrderList request = OrderList.builder().product(key.getInstrument()).state(ACTIVE).build();
-
-            return orderService.listOrders(request, null).get(TIMEOUT.toMillis(), MILLISECONDS);
-
-        });
-
-        return values.stream().filter(Objects::nonNull).map(BitflyerOrder::new).collect(Collectors.toList());
+        return fetchOrder(key).stream().filter(o -> Boolean.TRUE.equals(o.getActive())).collect(toList());
 
     }
 
