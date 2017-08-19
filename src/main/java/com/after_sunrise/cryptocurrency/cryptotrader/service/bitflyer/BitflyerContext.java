@@ -1,7 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 
 import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4j;
-import com.after_sunrise.cryptocurrency.bitflyer4j.core.ProductType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.entity.*;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.AccountService;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.MarketService;
@@ -117,7 +116,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     }
 
     @VisibleForTesting
-    BigDecimal forBalance(Key key, Function<ProductType, ProductType> mapper, Function<Balance, BigDecimal> function) {
+    BigDecimal forBalance(Key key, Function<ProductType, AssetType> mapper, Function<Balance, BigDecimal> function) {
 
         if (key == null) {
             return null;
