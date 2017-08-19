@@ -3,6 +3,9 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4j;
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.ProductType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.entity.*;
+import com.after_sunrise.cryptocurrency.bitflyer4j.service.AccountService;
+import com.after_sunrise.cryptocurrency.bitflyer4j.service.MarketService;
+import com.after_sunrise.cryptocurrency.bitflyer4j.service.OrderService;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
@@ -15,7 +18,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Collections;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -27,9 +30,9 @@ import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.LIM
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.MARKET;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.SELL;
+import static com.after_sunrise.cryptocurrency.bitflyer4j.core.StateType.ACTIVE;
+import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
 /**
  * @author takanori.takase
@@ -38,12 +41,20 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 @Slf4j
 public class BitflyerContext extends TemplateContext implements BitflyerService {
 
-    private static final long TIMEOUT = MINUTES.toMillis(INTEGER_ONE);
+    private static final Duration CACHE = Duration.ofSeconds(3);
+
+    private static final Duration TIMEOUT = Duration.ofMinutes(1);
 
     private Bitflyer4j bitflyer4j;
 
+    private AccountService accountService;
+
+    private MarketService marketService;
+
+    private OrderService orderService;
+
     public BitflyerContext() {
-        super(ID);
+        super(ID, CACHE);
     }
 
     @Inject
@@ -51,15 +62,21 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
         bitflyer4j = injector.getInstance(Bitflyer4j.class);
 
+        accountService = bitflyer4j.getAccountService();
+
+        marketService = bitflyer4j.getMarketService();
+
+        orderService = bitflyer4j.getOrderService();
+
         log.debug("Initialized.");
 
     }
 
     @Override
-    public BigDecimal getBesAskPrice(Key key) {
+    public BigDecimal getBestAskPrice(Key key) {
 
         Tick tick = findCached(Tick.class, key, () ->
-                bitflyer4j.getMarketService().getTick(key.getInstrument()).get(TIMEOUT, MILLISECONDS)
+                marketService.getTick(key.getInstrument()).get(TIMEOUT.toMillis(), MILLISECONDS)
         );
 
         return tick == null ? null : tick.getBestAskPrice();
@@ -67,10 +84,10 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     }
 
     @Override
-    public BigDecimal getBesBidPrice(Key key) {
+    public BigDecimal getBestBidPrice(Key key) {
 
         Tick tick = findCached(Tick.class, key, () ->
-                bitflyer4j.getMarketService().getTick(key.getInstrument()).get(TIMEOUT, MILLISECONDS)
+                marketService.getTick(key.getInstrument()).get(TIMEOUT.toMillis(), MILLISECONDS)
         );
 
         return tick == null ? null : tick.getBestBidPrice();
@@ -81,7 +98,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     public BigDecimal getMidPrice(Key key) {
 
         Board val = findCached(Board.class, key, () ->
-                bitflyer4j.getMarketService().getBoard(key.getInstrument()).get(TIMEOUT, MILLISECONDS)
+                marketService.getBoard(key.getInstrument()).get(TIMEOUT.toMillis(), MILLISECONDS)
         );
 
         return val == null ? null : val.getMid();
@@ -92,7 +109,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     public BigDecimal getLastPrice(Key key) {
 
         Tick tick = findCached(Tick.class, key, () ->
-                bitflyer4j.getMarketService().getTick(key.getInstrument()).get(TIMEOUT, MILLISECONDS)
+                marketService.getTick(key.getInstrument()).get(TIMEOUT.toMillis(), MILLISECONDS)
         );
 
         return tick == null ? null : tick.getTradePrice();
@@ -115,16 +132,14 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
         String currency = mapper.apply(instrumentType).name();
 
         List<Balance> balances = listCached(Balance.class, key, () ->
-                bitflyer4j.getAccountService().getBalances().get(TIMEOUT, MILLISECONDS)
+                accountService.getBalances().get(TIMEOUT.toMillis(), MILLISECONDS)
         );
 
-        for (Balance balance : balances) {
-            if (StringUtils.equals(currency, balance.getCurrency())) {
-                return function.apply(balance);
-            }
-        }
-
-        return null;
+        return Optional.ofNullable(balances).orElse(emptyList()).stream()
+                .filter(Objects::nonNull)
+                .filter(b -> StringUtils.equals(currency, b.getCurrency()))
+                .map(function)
+                .findFirst().orElse(null);
 
     }
 
@@ -133,7 +148,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
         // TODO : Handle margin products (FX + Futures)
 
-        return forBalance(key, ProductType::getStructure, Balance::getAvailable);
+        return forBalance(key, ProductType::getStructure, Balance::getAmount);
 
     }
 
@@ -142,7 +157,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
         // TODO : Handle margin products (FX + Futures)
 
-        return forBalance(key, ProductType::getFunding, Balance::getAvailable);
+        return forBalance(key, ProductType::getFunding, Balance::getAmount);
 
     }
 
@@ -189,9 +204,9 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
             Pagination p = Pagination.builder().count(NumberUtils.LONG_ONE).build();
 
-            List<OrderList.Response> v = bitflyer4j.getOrderService().listOrders(r, p).get(TIMEOUT, MILLISECONDS);
+            List<OrderList.Response> v = orderService.listOrders(r, p).get(TIMEOUT.toMillis(), MILLISECONDS);
 
-            return Optional.ofNullable(v).orElse(Collections.emptyList()).stream()
+            return Optional.ofNullable(v).orElse(emptyList()).stream()
                     .filter(Objects::nonNull).map(BitflyerOrder::new).findFirst().orElse(null);
 
         });
@@ -205,9 +220,9 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
         List<OrderList.Response> values = listCached(OrderList.Response.class, key, () -> {
 
-            OrderList request = OrderList.builder().product(key.getInstrument()).build();
+            OrderList request = OrderList.builder().product(key.getInstrument()).state(ACTIVE).build();
 
-            return bitflyer4j.getOrderService().listOrders(request, null).get(TIMEOUT, MILLISECONDS);
+            return orderService.listOrders(request, null).get(TIMEOUT.toMillis(), MILLISECONDS);
 
         });
 
@@ -218,7 +233,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     @Override
     public String createOrder(Key key, Instruction.CreateInstruction instruction) {
 
-        if (key == null) {
+        if (key == null || StringUtils.isBlank(key.getInstrument())) {
             return null;
         }
 
@@ -234,22 +249,16 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
         builder.size(instruction.getSize().abs());
         OrderCreate create = builder.build();
 
-        CompletableFuture<OrderCreate.Response> future = bitflyer4j.getOrderService().sendOrder(create);
+        CompletableFuture<OrderCreate.Response> future = orderService.sendOrder(create);
 
-        CompletableFuture<String> f = future.thenApply(r -> r == null ? null : r.getAcceptanceId());
-
-        try {
-            return f.get(TIMEOUT, MILLISECONDS);
-        } catch (Exception e) {
-            return null;
-        }
+        return getQuietly(future.thenApply(r -> r == null ? null : r.getAcceptanceId()), TIMEOUT);
 
     }
 
     @Override
     public String cancelOrder(Key key, Instruction.CancelInstruction instruction) {
 
-        if (key == null) {
+        if (key == null || StringUtils.isBlank(key.getInstrument())) {
             return null;
         }
 
@@ -262,15 +271,9 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
         builder.acceptanceId(instruction.getId());
         OrderCancel cancel = builder.build();
 
-        CompletableFuture<OrderCancel.Response> future = bitflyer4j.getOrderService().cancelOrder(cancel);
+        CompletableFuture<OrderCancel.Response> future = orderService.cancelOrder(cancel);
 
-        CompletableFuture<String> f = future.thenApply(r -> instruction.getId());
-
-        try {
-            return f.get(TIMEOUT, MILLISECONDS);
-        } catch (Exception e) {
-            return null;
-        }
+        return getQuietly(future.thenApply(r -> instruction.getId()), TIMEOUT);
 
     }
 

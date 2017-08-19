@@ -74,9 +74,9 @@ public interface Context extends Supplier<String> {
 
     }
 
-    BigDecimal getBesAskPrice(Key key);
+    BigDecimal getBestAskPrice(Key key);
 
-    BigDecimal getBesBidPrice(Key key);
+    BigDecimal getBestBidPrice(Key key);
 
     BigDecimal getMidPrice(Key key);
 

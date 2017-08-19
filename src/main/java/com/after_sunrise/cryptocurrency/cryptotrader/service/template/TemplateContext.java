@@ -1,31 +1,29 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.Cached;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * @author takanori.takase
  * @version 0.0.1
  */
 @Slf4j
-public abstract class TemplateContext implements Context {
-
-    private static final long SIZE = 3;
-
-    private static final long EXPIRY = SECONDS.toMillis(SIZE);
+public abstract class TemplateContext implements Context, Cached {
 
     private final Map<Class<?>, Cache<Key, Optional<?>>> singleCache = new ConcurrentHashMap<>();
 
@@ -33,8 +31,11 @@ public abstract class TemplateContext implements Context {
 
     private final String id;
 
-    public TemplateContext(String id) {
+    private final Duration cacheExpiry;
+
+    protected TemplateContext(String id, Duration cacheExpiry) {
         this.id = id;
+        this.cacheExpiry = cacheExpiry;
     }
 
     @Override
@@ -42,11 +43,13 @@ public abstract class TemplateContext implements Context {
         return id;
     }
 
-    private <K0, K1 extends K0, V0, V1 extends V0> Cache<K1, V1> createCache(Class<?> clazz) {
-        return CacheBuilder.newBuilder()
-                .expireAfterWrite(EXPIRY, MILLISECONDS)
-                .maximumSize(SIZE)
-                .build();
+    @Override
+    public void clear() {
+
+        singleCache.forEach((k, v) -> v.invalidateAll());
+
+        listCache.forEach((k, v) -> v.invalidateAll());
+
     }
 
     protected <T> T findCached(Class<T> type, Key key, Callable<T> c) {
@@ -97,6 +100,29 @@ public abstract class TemplateContext implements Context {
 
             return Collections.emptyList();
 
+        }
+
+    }
+
+    private <K0, K1 extends K0, V0, V1 extends V0> Cache<K1, V1> createCache(Class<?> clazz) {
+        return CacheBuilder.newBuilder()
+                .maximumSize(cacheExpiry.getSeconds())
+                .expireAfterWrite(cacheExpiry.toMillis(), MILLISECONDS)
+                .build();
+    }
+
+    protected <V> V getQuietly(Future<V> future, Duration timeout) {
+
+        try {
+
+            if (future == null) {
+                return null;
+            }
+
+            return timeout == null ? future.get() : future.get(timeout.toMillis(), MILLISECONDS);
+
+        } catch (Exception e) {
+            return null;
         }
 
     }
