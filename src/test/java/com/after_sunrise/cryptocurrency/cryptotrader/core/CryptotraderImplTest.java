@@ -1,6 +1,7 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.core;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader;
+import com.google.inject.Guice;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,7 +47,9 @@ public class CryptotraderImplTest {
     @Test
     public void testExecute_Dry() throws Exception {
 
-        CryptotraderImpl target = new CryptotraderImpl();
+        CryptotraderImpl.Module module = new CryptotraderImpl.Module();
+
+        CryptotraderImpl target = new CryptotraderImpl(Guice.createInjector(module));
 
         // Do not call "execute()"
 
@@ -57,7 +60,9 @@ public class CryptotraderImplTest {
     @Test
     public void testExecute_TestTrader() throws Exception {
 
-        CryptotraderImpl target = new CryptotraderImpl(TestTrader.class);
+        CryptotraderImpl.Module module = new CryptotraderImpl.Module(TestTrader.class);
+
+        CryptotraderImpl target = new CryptotraderImpl(Guice.createInjector(module));
 
         try {
 
@@ -65,13 +70,9 @@ public class CryptotraderImplTest {
 
             target.execute();
 
-            target.execute();
-
             assertEquals(TestTrader.COUNT.get(), 1);
 
         } finally {
-
-            target.shutdown();
 
             target.shutdown();
 

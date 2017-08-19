@@ -1,31 +1,40 @@
 package com.after_sunrise.cryptocurrency.cryptotrader;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.CryptotraderImpl;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Module;
 import lombok.extern.slf4j.Slf4j;
+
+import java.lang.reflect.Proxy;
 
 /**
  * @author takanori.takase
  * @version 0.0.1
  */
 @Slf4j
-public class Main implements Cryptotrader {
+public class Main extends AbstractModule {
 
-    public static final String APPLICATION = "cryptotrader.main";
+    public static final String MODULE = "cryptotrader.module";
 
     public static void main(String... args) throws Exception {
 
-        String appName = System.getProperty(APPLICATION, Main.class.getName());
+        String moduleName = System.getProperty(MODULE, Main.class.getName());
 
-        Cryptotrader app = (Cryptotrader) Class.forName(appName).newInstance();
+        Module module = (Module) Class.forName(moduleName).newInstance();
 
-        log.info("Starting application : {}", appName);
+        log.info("Starting application : {}", moduleName);
+
+        CryptotraderImpl trader = new CryptotraderImpl(Guice.createInjector(module));
 
         try {
 
-            app.execute();
+            trader.execute();
 
         } finally {
 
-            app.shutdown();
+            trader.shutdown();
 
         }
 
@@ -33,18 +42,22 @@ public class Main implements Cryptotrader {
 
     }
 
-
     @Override
-    public void execute() throws Exception {
+    protected void configure() {
 
-        log.debug("Execute.");
+        bind(Trader.class).toInstance(proxy(Trader.class));
 
     }
 
-    @Override
-    public void shutdown() {
+    private <P> P proxy(Class<P> clazz) {
 
-        log.debug("Shutdown.");
+        ClassLoader cl = getClass().getClassLoader();
+
+        Class[] classes = {clazz};
+
+        Object o = Proxy.newProxyInstance(cl, classes, (p, m, a) -> null);
+
+        return clazz.cast(o);
 
     }
 

@@ -6,7 +6,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader;
  */
 public interface Cryptotrader {
 
-    void execute() throws Exception;
+    void execute();
 
     void shutdown();
 
