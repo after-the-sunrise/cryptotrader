@@ -92,7 +92,6 @@ public class TestModule {
                 .site("test")
                 .instrument("i") //
                 .timestamp(now())
-                .aggressiveness(ZERO)
                 .tradingSpread(ONE.movePointLeft(4))
                 .tradingExposure(ONE.movePointLeft(5))
                 .tradingSplit(BigDecimal.valueOf(4));

@@ -31,8 +31,6 @@ public interface Trader extends Controllable {
 
         private Instant timestamp;
 
-        private BigDecimal aggressiveness;
-
         private BigDecimal tradingSpread;
 
         private BigDecimal tradingExposure;
@@ -50,10 +48,6 @@ public interface Trader extends Controllable {
             }
 
             if (timestamp == null) {
-                return false;
-            }
-
-            if (aggressiveness == null) {
                 return false;
             }
 

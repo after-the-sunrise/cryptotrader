@@ -23,6 +23,4 @@ public interface PropertyManager extends Environment {
 
     BigDecimal getTradingSplit();
 
-    BigDecimal getTradingAggressiveness();
-
 }

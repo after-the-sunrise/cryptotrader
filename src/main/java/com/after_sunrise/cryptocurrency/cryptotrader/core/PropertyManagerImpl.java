@@ -218,27 +218,4 @@ public class PropertyManagerImpl implements PropertyManager {
 
     }
 
-    @Override
-    public BigDecimal getTradingAggressiveness() {
-
-        try {
-
-            BigDecimal value = configuration.getBigDecimal(TRADING_AGGRESSIVENESS.getKey());
-
-            BigDecimal adjusted = value.max(ZERO).min(TEN);
-
-            log.trace("Configured aggressiveness : {} -> {}", value, adjusted);
-
-            return adjusted;
-
-        } catch (RuntimeException e) {
-
-            log.warn("Invalid property : " + TRADING_AGGRESSIVENESS.getKey(), e);
-
-            return ZERO;
-
-        }
-
-    }
-
 }

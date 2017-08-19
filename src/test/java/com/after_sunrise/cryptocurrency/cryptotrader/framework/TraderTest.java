@@ -37,10 +37,6 @@ public class TraderTest {
         assertFalse(Request.isValid(builder.build()));
         assertTrue(Request.isInvalid(builder.build()));
 
-        builder = builder.aggressiveness(ZERO);
-        assertFalse(Request.isValid(builder.build()));
-        assertTrue(Request.isInvalid(builder.build()));
-
         builder = builder.tradingSpread(ZERO);
         assertFalse(Request.isValid(builder.build()));
         assertTrue(Request.isInvalid(builder.build()));

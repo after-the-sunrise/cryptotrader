@@ -81,8 +81,6 @@ public class PipelineImpl implements Pipeline {
 
         builder = builder.timestamp(time).site(site).instrument(instrument);
 
-        builder.aggressiveness(propertyManager.getTradingAggressiveness());
-
         builder.tradingSpread(propertyManager.getTradingSpread());
 
         builder.tradingExposure(propertyManager.getTradingExposure());

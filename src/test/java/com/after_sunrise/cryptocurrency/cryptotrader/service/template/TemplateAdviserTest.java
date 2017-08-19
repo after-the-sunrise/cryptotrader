@@ -58,7 +58,7 @@ public class TemplateAdviserTest {
         when(context.roundLotSize(any(), any(), any())).thenAnswer(i -> f.apply(i, new BigDecimal("0.25")));
 
         rBuilder = Request.builder().site("s").instrument("i").timestamp(now())
-                .aggressiveness(ZERO).tradingExposure(new BigDecimal("0.10"))
+                .tradingExposure(new BigDecimal("0.10"))
                 .tradingSplit(new BigDecimal("2")).tradingSpread(new BigDecimal("0.0080"));
 
         eBuilder = Estimation.builder().price(new BigDecimal("12345.6789")).confidence(new BigDecimal("0.5"));

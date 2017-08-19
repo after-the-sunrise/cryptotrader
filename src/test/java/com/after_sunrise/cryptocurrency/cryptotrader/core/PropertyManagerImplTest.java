@@ -230,27 +230,4 @@ public class PropertyManagerImplTest implements InvocationHandler {
 
     }
 
-    @Test
-    public void testGetTradingAggressiveness() throws Exception {
-
-        assertEquals(target.getTradingAggressiveness(), ZERO.setScale(4));
-
-        // Specific
-        doReturn(new BigDecimal("0.3456")).when(conf).getBigDecimal(TRADING_AGGRESSIVENESS.getKey());
-        assertEquals(target.getTradingAggressiveness(), new BigDecimal("0.3456"));
-
-        // Floor
-        doReturn(TEN.negate()).when(conf).getBigDecimal(TRADING_AGGRESSIVENESS.getKey());
-        assertEquals(target.getTradingAggressiveness(), ZERO);
-
-        // Ceiling
-        doReturn(TEN.multiply(TEN)).when(conf).getBigDecimal(TRADING_AGGRESSIVENESS.getKey());
-        assertEquals(target.getTradingAggressiveness(), TEN);
-
-        // Error
-        throwable = new RuntimeException("test");
-        assertEquals(target.getTradingAggressiveness(), ZERO);
-
-    }
-
 }

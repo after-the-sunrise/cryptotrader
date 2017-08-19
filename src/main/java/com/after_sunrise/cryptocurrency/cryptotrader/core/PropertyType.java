@@ -20,8 +20,6 @@ public enum PropertyType {
 
     TRADING_SPLIT,
 
-    TRADING_AGGRESSIVENESS,
-
     TRADING_ACTIVE;
 
     private static final String PREFIX = "cryptotrader.";
