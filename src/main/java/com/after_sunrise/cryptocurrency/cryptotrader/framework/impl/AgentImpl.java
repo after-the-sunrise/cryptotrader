@@ -65,7 +65,7 @@ public class AgentImpl implements Agent {
 
         List<Instruction> values = ofNullable(instructions).orElse(emptyList());
 
-        if (!propertyManager.getTradingActive()) {
+        if (!propertyManager.getTradingActive(req.getSite(), req.getInstrument())) {
 
             log.debug("Skipping manage : {}", values.size());
 

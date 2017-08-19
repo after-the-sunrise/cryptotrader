@@ -102,13 +102,13 @@ public class PropertyManagerImplTest implements InvocationHandler {
     @Test
     public void testGetTradingActive() throws Exception {
 
-        assertEquals(target.getTradingActive(), FALSE);
+        assertEquals(target.getTradingActive("site", "inst"), FALSE);
 
         doReturn(TRUE).when(conf).getBoolean(TRADING_ACTIVE.getKey());
-        assertEquals(target.getTradingActive(), TRUE);
+        assertEquals(target.getTradingActive("site", "inst"), TRUE);
 
         throwable = new RuntimeException("test");
-        assertEquals(target.getTradingActive(), FALSE);
+        assertEquals(target.getTradingActive("site", "inst"), FALSE);
 
     }
 
@@ -164,69 +164,69 @@ public class PropertyManagerImplTest implements InvocationHandler {
     @Test
     public void testGetTradingSpread() throws Exception {
 
-        assertEquals(target.getTradingSpread(), new BigDecimal("0.0500"));
+        assertEquals(target.getTradingSpread("site", "inst"), new BigDecimal("0.0500"));
 
         // Specific
         doReturn(new BigDecimal("0.1234")).when(conf).getBigDecimal(TRADING_SPREAD.getKey());
-        assertEquals(target.getTradingSpread(), new BigDecimal("0.1234"));
+        assertEquals(target.getTradingSpread("site", "inst"), new BigDecimal("0.1234"));
 
         // Floor
         doReturn(BigDecimal.TEN.negate()).when(conf).getBigDecimal(TRADING_SPREAD.getKey());
-        assertEquals(target.getTradingSpread(), ZERO);
+        assertEquals(target.getTradingSpread("site", "inst"), ZERO);
 
         // Ceiling
         doReturn(BigDecimal.TEN).when(conf).getBigDecimal(TRADING_SPREAD.getKey());
-        assertEquals(target.getTradingSpread(), ONE);
+        assertEquals(target.getTradingSpread("site", "inst"), ONE);
 
         // Error
         throwable = new RuntimeException("test");
-        assertEquals(target.getTradingSpread(), new BigDecimal("0.0001"));
+        assertEquals(target.getTradingSpread("site", "inst"), new BigDecimal("0.0001"));
 
     }
 
     @Test
     public void testGetTradingExposure() throws Exception {
 
-        assertEquals(target.getTradingExposure(), new BigDecimal("0.0001"));
+        assertEquals(target.getTradingExposure("site", "inst"), new BigDecimal("0.0001"));
 
         // Specific
         doReturn(new BigDecimal("0.1234")).when(conf).getBigDecimal(TRADING_EXPOSURE.getKey());
-        assertEquals(target.getTradingExposure(), new BigDecimal("0.1234"));
+        assertEquals(target.getTradingExposure("site", "inst"), new BigDecimal("0.1234"));
 
         // Floor
         doReturn(BigDecimal.TEN.negate()).when(conf).getBigDecimal(TRADING_EXPOSURE.getKey());
-        assertEquals(target.getTradingExposure(), ZERO);
+        assertEquals(target.getTradingExposure("site", "inst"), ZERO);
 
         // Ceiling
         doReturn(BigDecimal.TEN).when(conf).getBigDecimal(TRADING_EXPOSURE.getKey());
-        assertEquals(target.getTradingExposure(), ONE);
+        assertEquals(target.getTradingExposure("site", "inst"), ONE);
 
         // Error
         throwable = new RuntimeException("test");
-        assertEquals(target.getTradingExposure(), ZERO);
+        assertEquals(target.getTradingExposure("site", "inst"), ZERO);
 
     }
 
     @Test
     public void testGetTradingSplit() throws Exception {
 
-        assertEquals(target.getTradingSplit(), ONE);
+        assertEquals(target.getTradingSplit("site", "inst"), ONE);
 
         // Specific
         doReturn(new BigDecimal("2.3456")).when(conf).getBigDecimal(TRADING_SPLIT.getKey());
-        assertEquals(target.getTradingSplit(), ONE.add(ONE));
+        assertEquals(target.getTradingSplit("site", "inst"), ONE.add(ONE));
 
         // Floor
         doReturn(TEN.negate()).when(conf).getBigDecimal(TRADING_SPLIT.getKey());
-        assertEquals(target.getTradingSplit(), ONE);
+        assertEquals(target.getTradingSplit("site", "inst"), ONE);
 
         // Ceiling
         doReturn(TEN.multiply(TEN)).when(conf).getBigDecimal(TRADING_SPLIT.getKey());
-        assertEquals(target.getTradingSplit(), TEN);
+        assertEquals(target.getTradingSplit("site", "inst"), TEN);
 
         // Error
         throwable = new RuntimeException("test");
-        assertEquals(target.getTradingSplit(), ONE);
+        assertEquals(target.getTradingSplit("site", "inst"), ONE);
 
     }
 

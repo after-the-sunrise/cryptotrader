@@ -107,9 +107,9 @@ public class PipelineImplTest {
         Instant time = Instant.now();
         String site = "test";
         String instrument = "i";
-        when(module.getMock(PropertyManager.class).getTradingSpread()).thenReturn(valueOf(2));
-        when(module.getMock(PropertyManager.class).getTradingExposure()).thenReturn(valueOf(3));
-        when(module.getMock(PropertyManager.class).getTradingSplit()).thenReturn(valueOf(4));
+        when(module.getMock(PropertyManager.class).getTradingSpread(site, instrument)).thenReturn(valueOf(2));
+        when(module.getMock(PropertyManager.class).getTradingExposure(site, instrument)).thenReturn(valueOf(3));
+        when(module.getMock(PropertyManager.class).getTradingSplit(site, instrument)).thenReturn(valueOf(4));
 
         Request request = target.createRequest(time, site, instrument);
         assertEquals(request.getTargetTime(), time);

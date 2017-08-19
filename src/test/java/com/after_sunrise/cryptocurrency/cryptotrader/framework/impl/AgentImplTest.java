@@ -43,7 +43,7 @@ public class AgentImplTest {
         propertyManager = module.getMock(PropertyManager.class);
         service = module.getMock(Agent.class);
 
-        Map<String, Agent> services = singletonMap("test", service);
+        Map<String, Agent> services = singletonMap("s", service);
         when(module.getMock(ServiceFactory.class).loadMap(Agent.class)).thenReturn(services);
 
         target = new AgentImpl(module.createInjector());
@@ -61,18 +61,18 @@ public class AgentImplTest {
     public void testManager() throws Exception {
 
         Request.RequestBuilder builder = module.createRequestBuilder();
-        Request request = builder.build();
+        Request request = builder.site("s").instrument("i").build();
         List<Instruction> instructions = emptyList();
         Map<Instruction, String> results = new HashMap<>();
         when(service.manage(context, request, instructions)).thenReturn(results);
 
         // Dry
-        when(propertyManager.getTradingActive()).thenReturn(false);
+        when(propertyManager.getTradingActive("s", "i")).thenReturn(false);
         assertNotSame(target.manage(context, request, instructions), results);
         verifyNoMoreInteractions(service);
 
         // Found
-        when(propertyManager.getTradingActive()).thenReturn(true);
+        when(propertyManager.getTradingActive("s", "i")).thenReturn(true);
         assertSame(target.manage(context, request, instructions), results);
         verify(service).manage(context, request, instructions);
 
@@ -91,13 +91,12 @@ public class AgentImplTest {
     public void testReconcile() throws Exception {
 
         Request.RequestBuilder builder = module.createRequestBuilder();
-        Request request = builder.build();
+        Request request = builder.site("s").instrument("i").build();
         Map<Instruction, String> values = emptyMap();
         Map<Instruction, Boolean> results = new HashMap<>();
         doReturn(results).when(service).reconcile(context, request, values);
 
         // Found
-        when(propertyManager.getTradingActive()).thenReturn(true);
         assertSame(target.reconcile(context, request, values), results);
         verify(service).reconcile(context, request, values);
 

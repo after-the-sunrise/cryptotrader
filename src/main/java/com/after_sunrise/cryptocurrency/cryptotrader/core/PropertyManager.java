@@ -11,16 +11,16 @@ import java.util.Set;
  */
 public interface PropertyManager extends Environment {
 
-    Boolean getTradingActive();
-
     Map<String, Set<String>> getTradingTargets();
 
     Duration getTradingInterval();
 
-    BigDecimal getTradingSpread();
+    Boolean getTradingActive(String site, String instrument);
 
-    BigDecimal getTradingExposure();
+    BigDecimal getTradingSpread(String site, String instrument);
 
-    BigDecimal getTradingSplit();
+    BigDecimal getTradingExposure(String site, String instrument);
+
+    BigDecimal getTradingSplit(String site, String instrument);
 
 }

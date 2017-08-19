@@ -81,11 +81,11 @@ public class PipelineImpl implements Pipeline {
 
         builder = builder.targetTime(time).site(site).instrument(instrument);
 
-        builder.tradingSpread(propertyManager.getTradingSpread());
+        builder.tradingSpread(propertyManager.getTradingSpread(site, instrument));
 
-        builder.tradingExposure(propertyManager.getTradingExposure());
+        builder.tradingExposure(propertyManager.getTradingExposure(site, instrument));
 
-        builder.tradingSplit(propertyManager.getTradingSplit());
+        builder.tradingSplit(propertyManager.getTradingSplit(site, instrument));
 
         return builder.build();
 

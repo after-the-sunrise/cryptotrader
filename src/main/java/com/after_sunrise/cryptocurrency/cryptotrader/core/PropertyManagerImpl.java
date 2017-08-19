@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.*;
 import static java.lang.Math.max;
@@ -37,6 +38,8 @@ public class PropertyManagerImpl implements PropertyManager {
 
     private static final String SEPARATOR_KEYVAL = ":";
 
+    private static final String KEY_TEMPLATE = "%s.%s.%s";
+
     private final Configuration configuration;
 
     @Inject
@@ -61,50 +64,6 @@ public class PropertyManagerImpl implements PropertyManager {
             log.warn("Invalid property : " + VERSION.getKey(), e);
 
             return StringUtils.EMPTY;
-
-        }
-
-    }
-
-    @Override
-    public Boolean getTradingActive() {
-
-        try {
-
-            boolean value = configuration.getBoolean(TRADING_ACTIVE.getKey());
-
-            log.trace("Configured active : {}", value);
-
-            return value;
-
-        } catch (RuntimeException e) {
-
-            log.warn("Invalid property : " + TRADING_ACTIVE.getKey(), e);
-
-            return false;
-
-        }
-
-    }
-
-    @Override
-    public Duration getTradingInterval() {
-
-        try {
-
-            long millis = configuration.getLong(TRADING_INTERVAL.getKey());
-
-            long adjusted = min(max(millis, INTERVAL_MIN), INTERVAL_MAX);
-
-            log.trace("Configured duration : {}ms -> {}ms", millis, adjusted);
-
-            return Duration.ofMillis(adjusted);
-
-        } catch (RuntimeException e) {
-
-            log.warn("Invalid property : " + TRADING_INTERVAL.getKey(), e);
-
-            return Duration.ofMillis(INTERVAL_MAX);
 
         }
 
@@ -149,12 +108,65 @@ public class PropertyManagerImpl implements PropertyManager {
 
     }
 
+
     @Override
-    public BigDecimal getTradingSpread() {
+    public Duration getTradingInterval() {
 
         try {
 
-            BigDecimal value = configuration.getBigDecimal(TRADING_SPREAD.getKey());
+            long millis = configuration.getLong(TRADING_INTERVAL.getKey());
+
+            long adjusted = min(max(millis, INTERVAL_MIN), INTERVAL_MAX);
+
+            log.trace("Configured duration : {}ms -> {}ms", millis, adjusted);
+
+            return Duration.ofMillis(adjusted);
+
+        } catch (RuntimeException e) {
+
+            log.warn("Invalid property : " + TRADING_INTERVAL.getKey(), e);
+
+            return Duration.ofMillis(INTERVAL_MAX);
+
+        }
+
+    }
+
+    private <T> T get(Function<String, T> function, PropertyType type, String site, String instrument) {
+
+        String specificKey = String.format(KEY_TEMPLATE, type.getKey(), site, instrument);
+
+        return configuration.containsKey(specificKey) ? function.apply(specificKey) : function.apply(type.getKey());
+
+    }
+
+    @Override
+    public Boolean getTradingActive(String site, String instrument) {
+
+        try {
+
+            boolean value = get(configuration::getBoolean, TRADING_ACTIVE, site, instrument);
+
+            log.trace("Configured active : {}", value);
+
+            return value;
+
+        } catch (RuntimeException e) {
+
+            log.warn("Invalid property : " + TRADING_ACTIVE.getKey(), e);
+
+            return false;
+
+        }
+
+    }
+
+    @Override
+    public BigDecimal getTradingSpread(String site, String instrument) {
+
+        try {
+
+            BigDecimal value = get(configuration::getBigDecimal, TRADING_SPREAD, site, instrument);
 
             BigDecimal adjusted = value.max(ZERO).min(ONE);
 
@@ -173,11 +185,11 @@ public class PropertyManagerImpl implements PropertyManager {
     }
 
     @Override
-    public BigDecimal getTradingExposure() {
+    public BigDecimal getTradingExposure(String site, String instrument) {
 
         try {
 
-            BigDecimal value = configuration.getBigDecimal(TRADING_EXPOSURE.getKey());
+            BigDecimal value = get(configuration::getBigDecimal, TRADING_EXPOSURE, site, instrument);
 
             BigDecimal adjusted = value.max(ZERO).min(ONE);
 
@@ -196,11 +208,11 @@ public class PropertyManagerImpl implements PropertyManager {
     }
 
     @Override
-    public BigDecimal getTradingSplit() {
+    public BigDecimal getTradingSplit(String site, String instrument) {
 
         try {
 
-            BigDecimal value = configuration.getBigDecimal(TRADING_SPLIT.getKey());
+            BigDecimal value = get(configuration::getBigDecimal, TRADING_SPLIT, site, instrument);
 
             BigDecimal adjusted = value.max(ONE).min(TEN).setScale(INTEGER_ZERO, DOWN);
 
