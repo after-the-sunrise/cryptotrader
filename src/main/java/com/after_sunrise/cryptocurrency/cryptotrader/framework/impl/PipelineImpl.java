@@ -79,7 +79,7 @@ public class PipelineImpl implements Pipeline {
 
         Request.RequestBuilder builder = Request.builder();
 
-        builder = builder.timestamp(time).site(site).instrument(instrument);
+        builder = builder.targetTime(time).site(site).instrument(instrument);
 
         builder.tradingSpread(propertyManager.getTradingSpread());
 

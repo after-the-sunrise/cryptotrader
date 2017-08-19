@@ -33,7 +33,7 @@ public class TraderTest {
         assertFalse(Request.isValid(builder.build()));
         assertTrue(Request.isInvalid(builder.build()));
 
-        builder = builder.timestamp(Instant.now());
+        builder = builder.targetTime(Instant.now());
         assertFalse(Request.isValid(builder.build()));
         assertTrue(Request.isInvalid(builder.build()));
 

@@ -64,7 +64,7 @@ public interface Context extends Supplier<String> {
 
                 builder = builder.instrument(request.getInstrument());
 
-                builder = builder.timestamp(request.getTimestamp());
+                builder = builder.timestamp(request.getTargetTime());
 
             }
 

@@ -14,7 +14,6 @@ import java.util.concurrent.ExecutorService;
 
 import static com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService;
 import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.ZERO;
 import static java.time.Instant.now;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -91,7 +90,7 @@ public class TestModule {
         Request.RequestBuilder builder = Request.builder()
                 .site("test")
                 .instrument("i") //
-                .timestamp(now())
+                .targetTime(now())
                 .tradingSpread(ONE.movePointLeft(4))
                 .tradingExposure(ONE.movePointLeft(5))
                 .tradingSplit(BigDecimal.valueOf(4));

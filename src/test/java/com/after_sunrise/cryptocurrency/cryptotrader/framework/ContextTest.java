@@ -29,7 +29,7 @@ public class ContextTest {
         builder = builder.instrument("i");
         assertFalse(Key.isValid(Key.from(builder.build())));
 
-        builder = builder.timestamp(Instant.ofEpochMilli(0L));
+        builder = builder.targetTime(Instant.ofEpochMilli(0L));
         assertTrue(Key.isValid(Key.from(builder.build())));
 
         Key key = Key.from(builder.build());

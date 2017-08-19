@@ -112,7 +112,7 @@ public class PipelineImplTest {
         when(module.getMock(PropertyManager.class).getTradingSplit()).thenReturn(valueOf(4));
 
         Request request = target.createRequest(time, site, instrument);
-        assertEquals(request.getTimestamp(), time);
+        assertEquals(request.getTargetTime(), time);
         assertEquals(request.getSite(), site);
         assertEquals(request.getInstrument(), instrument);
         assertEquals(request.getTradingSpread(), valueOf(2));

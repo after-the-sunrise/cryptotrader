@@ -57,7 +57,7 @@ public class TemplateAdviserTest {
         when(context.roundTickSize(any(), any(), any())).thenAnswer(i -> f.apply(i, new BigDecimal("0.0025")));
         when(context.roundLotSize(any(), any(), any())).thenAnswer(i -> f.apply(i, new BigDecimal("0.25")));
 
-        rBuilder = Request.builder().site("s").instrument("i").timestamp(now())
+        rBuilder = Request.builder().site("s").instrument("i").targetTime(now())
                 .tradingExposure(new BigDecimal("0.10"))
                 .tradingSplit(new BigDecimal("2")).tradingSpread(new BigDecimal("0.0080"));
 

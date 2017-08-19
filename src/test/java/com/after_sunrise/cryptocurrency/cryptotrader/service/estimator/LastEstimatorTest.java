@@ -40,7 +40,7 @@ public class LastEstimatorTest {
     @Test
     public void testEstimate() throws Exception {
 
-        Request request = Request.builder().site("s").instrument("i").timestamp(now()).build();
+        Request request = Request.builder().site("s").instrument("i").targetTime(now()).build();
         Key key = Key.from(request);
 
         when(context.getLastPrice(key)).thenReturn(TEN);

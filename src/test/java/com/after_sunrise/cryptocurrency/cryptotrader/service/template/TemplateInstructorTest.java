@@ -66,7 +66,7 @@ public class TemplateInstructorTest {
         when(context.roundTickSize(any(), any(), any())).thenAnswer(i -> f.apply(i, new BigDecimal("0.003")));
         when(context.roundLotSize(any(), any(), any())).thenAnswer(i -> f.apply(i, new BigDecimal("0.3")));
 
-        builder = Request.builder().site("s").instrument("i").timestamp(now())
+        builder = Request.builder().site("s").instrument("i").targetTime(now())
                 .tradingExposure(ZERO).tradingSplit(new BigDecimal("5")).tradingSpread(ZERO);
 
         target = spy(new TemplateInstructor("test"));

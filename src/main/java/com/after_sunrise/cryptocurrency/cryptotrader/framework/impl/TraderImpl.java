@@ -39,7 +39,6 @@ public class TraderImpl implements Trader {
 
     }
 
-
     @Override
     public void trigger() {
 

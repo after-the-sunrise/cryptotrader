@@ -29,7 +29,7 @@ public interface Trader extends Controllable {
 
         private String instrument;
 
-        private Instant timestamp;
+        private Instant targetTime;
 
         private BigDecimal tradingSpread;
 
@@ -47,7 +47,7 @@ public interface Trader extends Controllable {
                 return false;
             }
 
-            if (timestamp == null) {
+            if (targetTime == null) {
                 return false;
             }
 
