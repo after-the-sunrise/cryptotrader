@@ -131,11 +131,10 @@ public class TemplateInstructorTest {
     public void testCreateBuys() throws Exception {
 
         Request request = builder.build();
-        Advice advice = Advice.builder()
-                .buyLimitPrice(ONE).buyLimitSize(TEN)
-                .build();
+        Advice.AdviceBuilder builder = Advice.builder()
+                .buyLimitPrice(ONE).buyLimitSize(TEN);
 
-        List<CreateInstruction> results = target.createBuys(context, request, advice);
+        List<CreateInstruction> results = target.createBuys(context, request, builder.build());
         assertEquals(results.size(), 5, results.toString());
 
         assertEquals(results.get(0).getPrice(), new BigDecimal("0.999"));
@@ -150,20 +149,30 @@ public class TemplateInstructorTest {
         assertEquals(results.get(3).getSize(), new BigDecimal("1.8"));
         assertEquals(results.get(4).getSize(), new BigDecimal("1.8"));
 
+        // Fraction size
+        results = target.createBuys(context, request, builder.buyLimitSize(ONE).build());
+        assertEquals(results.size(), 3, results.toString());
+        assertEquals(results.get(0).getPrice(), new BigDecimal("0.999"));
+        assertEquals(results.get(1).getPrice(), new BigDecimal("0.996"));
+        assertEquals(results.get(2).getPrice(), new BigDecimal("0.993"));
+        assertEquals(results.get(0).getSize(), new BigDecimal("0.3"));
+        assertEquals(results.get(1).getSize(), new BigDecimal("0.3"));
+        assertEquals(results.get(2).getSize(), new BigDecimal("0.3"));
+
+        // Too small
+        results = target.createBuys(context, request, builder.buyLimitSize(ONE.movePointLeft(1)).build());
+        assertEquals(results.size(), 0);
+
         // Null size
-        results = target.createBuys(context, request, Advice.builder().build());
+        results = target.createBuys(context, request, builder.buyLimitSize(null).build());
         assertEquals(results.size(), 0);
 
         // Zero size
-        results = target.createBuys(context, request, Advice.builder().sellLimitSize(ONE.negate()).build());
+        results = target.createBuys(context, request, builder.buyLimitSize(ZERO).build());
         assertEquals(results.size(), 0);
 
         // Negative size
-        results = target.createBuys(context, request, Advice.builder().sellLimitSize(ONE.negate()).build());
-        assertEquals(results.size(), 0);
-
-        // Too small
-        results = target.createBuys(context, request, Advice.builder().sellLimitSize(ONE.movePointLeft(10)).build());
+        results = target.createBuys(context, request, builder.buyLimitSize(ONE.negate()).build());
         assertEquals(results.size(), 0);
 
     }
@@ -172,11 +181,10 @@ public class TemplateInstructorTest {
     public void testCreateSells() throws Exception {
 
         Request request = builder.build();
-        Advice advice = Advice.builder()
-                .sellLimitPrice(ONE).sellLimitSize(TEN)
-                .build();
+        Advice.AdviceBuilder builder = Advice.builder()
+                .sellLimitPrice(ONE).sellLimitSize(TEN);
 
-        List<CreateInstruction> results = target.createSells(context, request, advice);
+        List<CreateInstruction> results = target.createSells(context, request, builder.build());
         assertEquals(results.size(), 5, results.toString());
 
         assertEquals(results.get(0).getPrice(), new BigDecimal("1.002"));
@@ -191,20 +199,30 @@ public class TemplateInstructorTest {
         assertEquals(results.get(3).getSize(), new BigDecimal("-1.8"));
         assertEquals(results.get(4).getSize(), new BigDecimal("-1.8"));
 
+        // Fraction size
+        results = target.createSells(context, request, builder.sellLimitSize(ONE).build());
+        assertEquals(results.size(), 3, results.toString());
+        assertEquals(results.get(0).getPrice(), new BigDecimal("1.002"));
+        assertEquals(results.get(1).getPrice(), new BigDecimal("1.005"));
+        assertEquals(results.get(2).getPrice(), new BigDecimal("1.008"));
+        assertEquals(results.get(0).getSize(), new BigDecimal("-0.3"));
+        assertEquals(results.get(1).getSize(), new BigDecimal("-0.3"));
+        assertEquals(results.get(2).getSize(), new BigDecimal("-0.3"));
+
+        // Too small
+        results = target.createSells(context, request, builder.sellLimitSize(ONE.movePointLeft(1)).build());
+        assertEquals(results.size(), 0);
+
         // Null size
-        results = target.createSells(context, request, Advice.builder().build());
+        results = target.createSells(context, request, builder.sellLimitSize(null).build());
         assertEquals(results.size(), 0);
 
         // Zero size
-        results = target.createSells(context, request, Advice.builder().sellLimitSize(ONE.negate()).build());
+        results = target.createSells(context, request, builder.sellLimitSize(ZERO).build());
         assertEquals(results.size(), 0);
 
         // Negative size
-        results = target.createSells(context, request, Advice.builder().sellLimitSize(ONE.negate()).build());
-        assertEquals(results.size(), 0);
-
-        // Too small
-        results = target.createSells(context, request, Advice.builder().sellLimitSize(ONE.movePointLeft(10)).build());
+        results = target.createSells(context, request, builder.sellLimitSize(ONE.negate()).build());
         assertEquals(results.size(), 0);
 
     }

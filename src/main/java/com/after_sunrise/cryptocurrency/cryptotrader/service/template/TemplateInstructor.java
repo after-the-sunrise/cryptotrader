@@ -171,6 +171,10 @@ public class TemplateInstructor implements Instructor {
 
             }
 
+            if (slice.signum() <= 0) {
+                continue;
+            }
+
             results.add(slice);
 
         }
