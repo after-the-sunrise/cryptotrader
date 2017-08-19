@@ -1,6 +1,6 @@
-package com.after_sunrise.cryptocurrency.cryptotrader;
+package com.after_sunrise.cryptocurrency.cryptotrader.web;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader;
+import com.after_sunrise.cryptocurrency.cryptotrader.Cryptotrader;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -33,31 +33,28 @@ public class WebTest {
     @Test
     public void test() throws Exception {
 
-        Trader trader = Mockito.mock(Trader.class);
+        Cryptotrader trader = Mockito.mock(Cryptotrader.class);
         CountDownLatch latch1 = new CountDownLatch(1);
         CountDownLatch latch2 = new CountDownLatch(1);
         Mockito.doAnswer(i -> {
             latch1.countDown();
             return null;
-        }).when(trader).trade();
+        }).when(trader).execute();
         Mockito.doAnswer(i -> {
             latch2.countDown();
             return null;
-        }).when(trader).close();
+        }).when(trader).shutdown();
 
         Injector injector = Guice.createInjector(new AbstractModule() {
             @Override
             protected void configure() {
-                bind(Trader.class).toInstance(trader);
+                bind(Cryptotrader.class).toInstance(trader);
             }
         });
 
         target.withInjector(injector);
 
-        target.execute();
         latch1.await(3, SECONDS);
-
-        target.shutdown();
         latch2.await(3, SECONDS);
 
     }

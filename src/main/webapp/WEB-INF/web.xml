@@ -12,7 +12,7 @@
     </context-param>
 
     <listener>
-        <listener-class>org.jboss.resteasy.plugins.guice.GuiceResteasyBootstrapServletContextListener</listener-class>
+        <listener-class>com.after_sunrise.cryptocurrency.cryptotrader.web.Web</listener-class>
     </listener>
 
     <servlet>

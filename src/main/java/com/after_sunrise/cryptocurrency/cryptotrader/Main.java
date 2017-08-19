@@ -1,7 +1,5 @@
 package com.after_sunrise.cryptocurrency.cryptotrader;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.core.CryptotraderImpl;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Module;
@@ -26,7 +24,7 @@ public class Main extends AbstractModule {
 
         log.info("Starting application : {}", moduleName);
 
-        CryptotraderImpl trader = new CryptotraderImpl(Guice.createInjector(module));
+        Cryptotrader trader = Guice.createInjector(module).getInstance(Cryptotrader.class);
 
         try {
 
@@ -45,7 +43,7 @@ public class Main extends AbstractModule {
     @Override
     protected void configure() {
 
-        bind(Trader.class).toInstance(proxy(Trader.class));
+        bind(Cryptotrader.class).toInstance(proxy(Cryptotrader.class));
 
     }
 

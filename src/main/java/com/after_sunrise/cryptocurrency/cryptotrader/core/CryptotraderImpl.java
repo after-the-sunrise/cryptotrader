@@ -7,6 +7,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.*;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.AbstractModule;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.configuration2.Configuration;
@@ -19,6 +20,7 @@ import org.apache.commons.configuration2.Configuration;
 @Slf4j
 public class CryptotraderImpl implements Cryptotrader {
 
+    @Slf4j
     public static class Module extends AbstractModule {
 
         private final Class<? extends Trader> traderClass;
@@ -51,12 +53,15 @@ public class CryptotraderImpl implements Cryptotrader {
             bind(Pipeline.class).to(PipelineImpl.class).asEagerSingleton();
             bind(Trader.class).to(traderClass).asEagerSingleton();
 
+            bind(Cryptotrader.class).to(CryptotraderImpl.class);
+
         }
 
     }
 
     private final Injector injector;
 
+    @Inject
     public CryptotraderImpl(Injector injector) {
         this.injector = injector;
     }
