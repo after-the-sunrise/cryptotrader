@@ -100,10 +100,6 @@ public class CryptotraderImpl implements Cryptotrader {
 
             AutoCloseable c = injector.getInstance(clazz);
 
-            if (c == null) {
-                return;
-            }
-
             c.close();
 
         } catch (Exception e) {
