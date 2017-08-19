@@ -51,7 +51,7 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        if (estimation == null || estimation.getPrice() == null || estimation.getConfidence() == null) {
+        if (!Estimation.isValid(estimation)) {
 
             log.trace("Invalid estimation : {}", estimation);
 
