@@ -2,20 +2,22 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
 
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.TEN;
+import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
@@ -30,7 +32,7 @@ public class TemplateInstructor implements Instructor {
 
     private static final int SCALE = 12;
 
-    private static final BigDecimal INCREMENT = ONE.movePointLeft(SCALE);
+    private static final BigDecimal EPSILON = ONE.movePointLeft(SCALE);
 
     private final String id;
 
@@ -62,7 +64,7 @@ public class TemplateInstructor implements Instructor {
 
         }
 
-        List<Instruction.CreateInstruction> creates = new ArrayList<>();
+        List<CreateInstruction> creates = new ArrayList<>();
 
         creates.addAll(createBuys(context, request, advice));
 
@@ -73,17 +75,19 @@ public class TemplateInstructor implements Instructor {
     }
 
     @VisibleForTesting
-    Map<Instruction.CancelInstruction, Order> createCancels(Context context, Request request) {
+    Map<CancelInstruction, Order> createCancels(Context context, Request request) {
 
         Key key = Key.from(request);
 
         List<Order> orders = ofNullable(context.listOrders(key)).orElse(EMPTY);
 
-        Map<Instruction.CancelInstruction, Order> cancels = new IdentityHashMap<>();
+        Map<CancelInstruction, Order> cancels = new IdentityHashMap<>();
 
-        orders.stream().filter(o -> TRUE.equals(o.getActive())).forEach(
-                o -> cancels.put(Instruction.CancelInstruction.builder().id(o.getId()).build(), o)
-        );
+        orders.stream()
+                .filter(Objects::nonNull)
+                .filter(o -> StringUtils.isNotEmpty(o.getId()))
+                .filter(o -> TRUE.equals(o.getActive()))
+                .forEach(o -> cancels.put(CancelInstruction.builder().id(o.getId()).build(), o));
 
         log.trace("Cancel candidates : {}", cancels.keySet());
 
@@ -92,24 +96,16 @@ public class TemplateInstructor implements Instructor {
     }
 
     @VisibleForTesting
-    List<Instruction.CreateInstruction> createBuys(Context context, Request request, Adviser.Advice adv) {
+    List<CreateInstruction> createBuys(Context context, Request request, Adviser.Advice adv) {
 
-        if (adv.getBuyLimitPrice() == null || adv.getBuyLimitPrice().signum() == 0) {
-            return Collections.emptyList();
-        }
+        List<BigDecimal> s = splitSize(context, request, adv.getBuyLimitSize());
 
-        if (adv.getBuyLimitSize() == null || adv.getBuyLimitSize().signum() <= 0) {
-            return Collections.emptyList();
-        }
+        List<BigDecimal> p = splitPrice(context, request, adv.getBuyLimitPrice(), s.size(), EPSILON.negate());
 
-        List<BigDecimal> s = splitInstrumentSize(context, request, adv.getBuyLimitSize());
-
-        List<BigDecimal> p = splitInstrumentPrice(context, request, adv.getBuyLimitPrice(), s.size(), INCREMENT.negate());
-
-        List<Instruction.CreateInstruction> instructions = new ArrayList<>(s.size());
+        List<CreateInstruction> instructions = new ArrayList<>(s.size());
 
         for (int i = 0; i < s.size(); i++) {
-            instructions.add(Instruction.CreateInstruction.builder().price(p.get(i)).size(s.get(i)).build());
+            instructions.add(CreateInstruction.builder().price(p.get(i)).size(s.get(i)).build());
         }
 
         log.trace("Buy candidates : {}", instructions);
@@ -119,27 +115,19 @@ public class TemplateInstructor implements Instructor {
     }
 
     @VisibleForTesting
-    List<Instruction.CreateInstruction> createSells(Context context, Request request, Adviser.Advice adv) {
+    List<CreateInstruction> createSells(Context context, Request request, Adviser.Advice adv) {
 
-        if (adv.getSellLimitPrice() == null || adv.getSellLimitPrice().signum() == 0) {
-            return Collections.emptyList();
-        }
+        List<BigDecimal> s = splitSize(context, request, adv.getSellLimitSize());
 
-        if (adv.getSellLimitSize() == null || adv.getSellLimitSize().signum() <= 0) {
-            return Collections.emptyList();
-        }
+        List<BigDecimal> p = splitPrice(context, request, adv.getSellLimitPrice(), s.size(), EPSILON);
 
-        List<BigDecimal> s = splitInstrumentSize(context, request, adv.getSellLimitSize());
-
-        List<BigDecimal> p = splitInstrumentPrice(context, request, adv.getSellLimitPrice(), s.size(), INCREMENT);
-
-        List<Instruction.CreateInstruction> instructions = new ArrayList<>(s.size());
+        List<CreateInstruction> instructions = new ArrayList<>(s.size());
 
         for (int i = 0; i < s.size(); i++) {
 
             BigDecimal size = s.get(i) == null ? null : s.get(i).negate();
 
-            instructions.add(Instruction.CreateInstruction.builder().price(p.get(i)).size(size).build());
+            instructions.add(CreateInstruction.builder().price(p.get(i)).size(size).build());
 
         }
 
@@ -149,46 +137,49 @@ public class TemplateInstructor implements Instructor {
 
     }
 
-    @VisibleForTesting
-    List<BigDecimal> splitInstrumentSize(Context context, Request request, BigDecimal value) {
-
-        BigDecimal base = value;
-
-        if (base.signum() <= 0) {
-            return singletonList(value);
-        }
-
-        int offset = 0;
-
-        while (base.compareTo(ONE) < 0) {
-            base = base.movePointRight(1);
-            offset--;
-        }
-
-        while (base.compareTo(TEN) > 0) {
-            base = base.movePointLeft(1);
-            offset++;
-        }
+    private List<BigDecimal> splitSize(Context context, Request request, BigDecimal value) {
 
         Key key = Key.from(request);
 
-        BigDecimal scaledBase = base.setScale(INTEGER_ZERO, DOWN).scaleByPowerOfTen(offset);
+        BigDecimal total = context.roundLotSize(key, value, DOWN);
 
-        BigDecimal split = request.getTradingSplit().setScale(INTEGER_ZERO, DOWN);
-
-        BigDecimal slice = scaledBase.divide(split, SCALE, DOWN);
-
-        BigDecimal rounded = context.roundLotSize(key, slice, DOWN);
-
-        if (rounded == null || rounded.signum() <= 0) {
-            return singletonList(value);
+        if (total == null || total.signum() <= 0) {
+            return emptyList();
         }
 
-        return Collections.nCopies(split.intValue(), rounded);
+        BigDecimal unit = Optional.ofNullable(context.roundLotSize(key, EPSILON, UP)).orElse(total);
+
+        BigDecimal split = request.getTradingSplit().setScale(INTEGER_ZERO, DOWN).max(ONE);
+
+        BigDecimal fair = total.divide(split, SCALE, DOWN);
+
+        BigDecimal floor = Optional.ofNullable(context.roundLotSize(key, fair, DOWN)).orElse(ZERO);
+
+        BigDecimal residual = total.subtract(split.multiply(floor));
+
+        List<BigDecimal> results = new ArrayList<>(split.intValue());
+
+        for (int i = 0; i < split.intValue(); i++) {
+
+            BigDecimal slice = floor;
+
+            if (residual.compareTo(unit) >= 0) {
+
+                slice = slice.add(unit);
+
+                residual = residual.subtract(unit);
+
+            }
+
+            results.add(slice);
+
+        }
+
+        return results;
 
     }
 
-    List<BigDecimal> splitInstrumentPrice(Context context, Request request, BigDecimal value, int size, BigDecimal delta) {
+    private List<BigDecimal> splitPrice(Context context, Request request, BigDecimal value, int size, BigDecimal delta) {
 
         List<BigDecimal> values = new ArrayList<>(size);
 
@@ -213,37 +204,29 @@ public class TemplateInstructor implements Instructor {
     }
 
     @VisibleForTesting
-    List<Instruction> merge(List<Instruction.CreateInstruction> creates, Map<Instruction.CancelInstruction, Order> cancels) {
+    List<Instruction> merge(List<CreateInstruction> creates, Map<CancelInstruction, Order> cancels) {
 
-        Map<Instruction.CancelInstruction, Order> remainingCancels = new IdentityHashMap<>(cancels);
+        Map<CancelInstruction, Order> remainingCancels = new IdentityHashMap<>(cancels);
 
-        List<Instruction.CreateInstruction> remainingCreates = new ArrayList<>(creates);
+        List<CreateInstruction> remainingCreates = new ArrayList<>(creates);
 
-        Iterator<Instruction.CreateInstruction> createItr = remainingCreates.iterator();
+        Iterator<CreateInstruction> createItr = remainingCreates.iterator();
 
         while (createItr.hasNext()) {
 
-            Instruction.CreateInstruction create = createItr.next();
+            CreateInstruction create = createItr.next();
 
-            Iterator<Map.Entry<Instruction.CancelInstruction, Order>> cancelItr = remainingCancels.entrySet().iterator();
+            Iterator<Map.Entry<CancelInstruction, Order>> cancelItr = remainingCancels.entrySet().iterator();
 
             while (cancelItr.hasNext()) {
 
-                Map.Entry<Instruction.CancelInstruction, Order> entry = cancelItr.next();
+                Map.Entry<CancelInstruction, Order> entry = cancelItr.next();
 
-                if (entry.getValue().getOrderPrice() == null) {
+                if (isDifferent(create.getPrice(), entry.getValue().getOrderPrice())) {
                     continue;
                 }
 
-                if (create.getPrice().compareTo(entry.getValue().getOrderPrice()) != 0) {
-                    continue;
-                }
-
-                if (entry.getValue().getRemainingQuantity() == null) {
-                    continue;
-                }
-
-                if (entry.getValue().getRemainingQuantity().compareTo(create.getSize()) != 0) {
+                if (isDifferent(create.getSize(), entry.getValue().getRemainingQuantity())) {
                     continue;
                 }
 
@@ -264,6 +247,10 @@ public class TemplateInstructor implements Instructor {
         instructions.addAll(remainingCreates);
         return instructions;
 
+    }
+
+    private boolean isDifferent(BigDecimal v1, BigDecimal v2) {
+        return v1 == null || v2 == null || v1.compareTo(v2) != 0;
     }
 
 }
