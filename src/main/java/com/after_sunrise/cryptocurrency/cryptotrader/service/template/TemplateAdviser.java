@@ -14,7 +14,7 @@ import java.util.Optional;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.DOWN;
-import static java.math.RoundingMode.HALF_UP;
+import static java.math.RoundingMode.UP;
 
 /**
  * @author takanori.takase
@@ -76,7 +76,9 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal mid = context.getMidPrice(key);
 
-        if (mid == null || mid.signum() <= 0) {
+        BigDecimal ask = context.getBestAskPrice(key);
+
+        if (mid == null || ask == null) {
 
             log.trace("Buy price not available.");
 
@@ -86,17 +88,17 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal estimate = estimation.getPrice();
 
-        BigDecimal adjConfidence = estimate.multiply(estimation.getConfidence());
+        BigDecimal confidence = ONE.min(ZERO.max(estimation.getConfidence()));
 
-        BigDecimal adjAverage = mid.add(adjConfidence).divide(ONE.add(estimation.getConfidence()), PRECISION, HALF_UP);
+        BigDecimal weighed = mid.multiply(ONE.subtract(confidence)).add(estimate.multiply(confidence));
 
-        BigDecimal adjSpread = adjAverage.multiply(ONE.subtract(request.getTradingSpread()));
+        BigDecimal adjCross = weighed.min(ask.subtract(EPSILON));
 
-        BigDecimal adjCross = adjSpread.min(mid.subtract(EPSILON));
+        BigDecimal adjSpread = adjCross.multiply(ONE.subtract(request.getTradingSpread()));
 
-        BigDecimal rounded = context.roundTickSize(key, adjCross, DOWN);
+        BigDecimal rounded = context.roundTickSize(key, adjSpread, DOWN);
 
-        log.trace("Buy price : {} (average=[{}] spread=[{}] estimate=[{}])", rounded, adjSpread, adjAverage, estimate);
+        log.trace("Buy price : {} (spread=[{}] weighed=[{}] estimate=[{}])", rounded, adjSpread, weighed, estimate);
 
         return rounded;
 
@@ -109,7 +111,9 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal mid = context.getMidPrice(key);
 
-        if (mid == null || mid.signum() <= 0) {
+        BigDecimal bid = context.getBestBidPrice(key);
+
+        if (mid == null || bid == null) {
 
             log.trace("Sell price not available.");
 
@@ -119,17 +123,17 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal estimate = estimation.getPrice();
 
-        BigDecimal adjConfidence = estimate.multiply(estimation.getConfidence());
+        BigDecimal confidence = ONE.min(ZERO.max(estimation.getConfidence()));
 
-        BigDecimal adjAverage = mid.add(adjConfidence).divide(ONE.add(estimation.getConfidence()), PRECISION, HALF_UP);
+        BigDecimal weighed = mid.multiply(ONE.subtract(confidence)).add(estimate.multiply(confidence));
 
-        BigDecimal adjSpread = adjAverage.multiply(ONE.add(request.getTradingSpread()));
+        BigDecimal adjCross = weighed.max(bid.add(EPSILON));
 
-        BigDecimal adjCross = adjSpread.max(mid.add(EPSILON));
+        BigDecimal adjSpread = adjCross.multiply(ONE.add(request.getTradingSpread()));
 
-        BigDecimal rounded = context.roundTickSize(key, adjCross, DOWN);
+        BigDecimal rounded = context.roundTickSize(key, adjSpread, UP);
 
-        log.trace("Sell price : {} (average=[{}] spread=[{}] estimate=[{}])", rounded, adjSpread, adjAverage, estimate);
+        log.trace("Sell price : {} (spread=[{}] weighed=[{}] estimate=[{}])", rounded, adjSpread, weighed, estimate);
 
         return rounded;
 
@@ -177,7 +181,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal position = context.getInstrumentPosition(key);
 
-        if (position == null) {
+        if (position == null || position.signum() == 0) {
 
             log.trace("Position not available.");
 
