@@ -1,7 +1,10 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.core;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.configuration2.BaseConfiguration;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 
@@ -9,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.*;
@@ -19,6 +23,7 @@ import static java.math.RoundingMode.DOWN;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.StringUtils.split;
+import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
 /**
@@ -26,7 +31,7 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
  * @version 0.0.1
  */
 @Slf4j
-public class PropertyManagerImpl implements PropertyManager {
+public class PropertyManagerImpl implements PropertyController {
 
     private static final long INTERVAL_MIN = SECONDS.toMillis(1);
 
@@ -42,9 +47,69 @@ public class PropertyManagerImpl implements PropertyManager {
 
     private final Configuration configuration;
 
+    private final Configuration override;
+
     @Inject
     public PropertyManagerImpl(Configuration configuration) {
+
         this.configuration = configuration;
+
+        this.override = new BaseConfiguration();
+
+    }
+
+    @VisibleForTesting
+    <T> T get(PropertyType type, String site, String instrument, BiFunction<Configuration, String, T> f) {
+
+        if (StringUtils.isNotEmpty(site) && StringUtils.isNotEmpty(instrument)) {
+
+            String specificKey = String.format(KEY_TEMPLATE, type.getKey(), site, instrument);
+
+            if (override.containsKey(specificKey)) {
+                return f.apply(override, specificKey);
+            }
+
+            if (configuration.containsKey(specificKey)) {
+                return f.apply(configuration, specificKey);
+            }
+
+        }
+
+        if (override.containsKey(type.getKey())) {
+            return f.apply(override, type.getKey());
+        }
+
+        return f.apply(configuration, type.getKey());
+
+    }
+
+    @VisibleForTesting
+    <I> void set(PropertyType type, String site, String instrument, I value, Function<I, ?> function) {
+
+        String key;
+
+        if (StringUtils.isNotEmpty(site) && StringUtils.isNotEmpty(instrument)) {
+            key = String.format(KEY_TEMPLATE, type.getKey(), site, instrument);
+        } else {
+            key = type.getKey();
+        }
+
+        if (value == null) {
+
+            override.clearProperty(key);
+
+            log.info("Cleared override : {}", key);
+
+        } else {
+
+            Object newValue = function.apply(value);
+
+            override.setProperty(key, newValue);
+
+            log.info("Configured override : {}={}", key, newValue);
+
+        }
+
     }
 
     @Override
@@ -57,7 +122,7 @@ public class PropertyManagerImpl implements PropertyManager {
 
         try {
 
-            return configuration.getString(VERSION.getKey());
+            return get(VERSION, null, null, Configuration::getString);
 
         } catch (RuntimeException e) {
 
@@ -76,11 +141,11 @@ public class PropertyManagerImpl implements PropertyManager {
 
         try {
 
-            raw = configuration.getString(TRADING_TARGETS.getKey());
+            raw = get(TRADING_TARGETS, null, null, Configuration::getString);
 
             Map<String, Set<String>> targets = new LinkedHashMap<>();
 
-            for (String entry : split(raw, SEPARATOR_ENTRY)) {
+            for (String entry : split(trimToEmpty(raw), SEPARATOR_ENTRY)) {
 
                 String[] kv = split(entry, SEPARATOR_KEYVAL, 2);
 
@@ -108,13 +173,26 @@ public class PropertyManagerImpl implements PropertyManager {
 
     }
 
+    @Override
+    public void setTradingTargets(Map<String, Set<String>> values) {
+        set(TRADING_TARGETS, null, null, values, input -> StringUtils.join(
+                input.entrySet().stream()
+                        .filter(e -> StringUtils.isNotEmpty(e.getKey()))
+                        .filter(e -> CollectionUtils.isNotEmpty(e.getValue()))
+                        .map(entry -> StringUtils.join(entry.getValue().stream()
+                                .filter(StringUtils::isNotEmpty)
+                                .map(v -> entry.getKey() + SEPARATOR_KEYVAL + v)
+                                .toArray(), SEPARATOR_ENTRY))
+                        .toArray()
+                , SEPARATOR_ENTRY));
+    }
 
     @Override
     public Duration getTradingInterval() {
 
         try {
 
-            long millis = configuration.getLong(TRADING_INTERVAL.getKey());
+            long millis = get(TRADING_INTERVAL, null, null, Configuration::getLong);
 
             long adjusted = min(max(millis, INTERVAL_MIN), INTERVAL_MAX);
 
@@ -132,12 +210,9 @@ public class PropertyManagerImpl implements PropertyManager {
 
     }
 
-    private <T> T get(Function<String, T> function, PropertyType type, String site, String instrument) {
-
-        String specificKey = String.format(KEY_TEMPLATE, type.getKey(), site, instrument);
-
-        return configuration.containsKey(specificKey) ? function.apply(specificKey) : function.apply(type.getKey());
-
+    @Override
+    public void setTradingInterval(Duration value) {
+        set(TRADING_INTERVAL, null, null, value, Duration::toMillis);
     }
 
     @Override
@@ -145,7 +220,7 @@ public class PropertyManagerImpl implements PropertyManager {
 
         try {
 
-            boolean value = get(configuration::getBoolean, TRADING_ACTIVE, site, instrument);
+            boolean value = get(TRADING_ACTIVE, site, instrument, Configuration::getBoolean);
 
             log.trace("Configured active : {}", value);
 
@@ -162,11 +237,16 @@ public class PropertyManagerImpl implements PropertyManager {
     }
 
     @Override
+    public void setTradingActive(String site, String instrument, Boolean value) {
+        set(TRADING_ACTIVE, site, instrument, value, input -> input);
+    }
+
+    @Override
     public BigDecimal getTradingSpread(String site, String instrument) {
 
         try {
 
-            BigDecimal value = get(configuration::getBigDecimal, TRADING_SPREAD, site, instrument);
+            BigDecimal value = get(TRADING_SPREAD, site, instrument, Configuration::getBigDecimal);
 
             BigDecimal adjusted = value.max(ZERO).min(ONE);
 
@@ -185,11 +265,16 @@ public class PropertyManagerImpl implements PropertyManager {
     }
 
     @Override
+    public void setTradingSpread(String site, String instrument, BigDecimal value) {
+        set(TRADING_SPREAD, site, instrument, value, BigDecimal::toPlainString);
+    }
+
+    @Override
     public BigDecimal getTradingExposure(String site, String instrument) {
 
         try {
 
-            BigDecimal value = get(configuration::getBigDecimal, TRADING_EXPOSURE, site, instrument);
+            BigDecimal value = get(TRADING_EXPOSURE, site, instrument, Configuration::getBigDecimal);
 
             BigDecimal adjusted = value.max(ZERO).min(ONE);
 
@@ -208,11 +293,16 @@ public class PropertyManagerImpl implements PropertyManager {
     }
 
     @Override
+    public void setTradingExposure(String site, String instrument, BigDecimal value) {
+        set(TRADING_EXPOSURE, site, instrument, value, BigDecimal::toPlainString);
+    }
+
+    @Override
     public BigDecimal getTradingSplit(String site, String instrument) {
 
         try {
 
-            BigDecimal value = get(configuration::getBigDecimal, TRADING_SPLIT, site, instrument);
+            BigDecimal value = get(TRADING_SPLIT, site, instrument, Configuration::getBigDecimal);
 
             BigDecimal adjusted = value.max(ONE).min(TEN).setScale(INTEGER_ZERO, DOWN);
 
@@ -228,6 +318,11 @@ public class PropertyManagerImpl implements PropertyManager {
 
         }
 
+    }
+
+    @Override
+    public void setTradingSplit(String site, String instrument, BigDecimal value) {
+        set(TRADING_SPLIT, site, instrument, value, BigDecimal::toPlainString);
     }
 
 }
