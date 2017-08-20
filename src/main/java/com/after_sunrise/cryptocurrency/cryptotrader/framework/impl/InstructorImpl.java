@@ -63,7 +63,7 @@ public class InstructorImpl implements Instructor {
 
         List<Instruction> values = ofNullable(instructions).orElse(EMPTY);
 
-        log.debug("Instructions : {}", values.size());
+        log.info("Instruction : [{} {}] {}", request.getSite(), request.getInstrument(), values.size());
 
         values.forEach(i -> log.debug("{}", i));
 

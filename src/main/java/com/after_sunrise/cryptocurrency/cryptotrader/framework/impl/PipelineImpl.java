@@ -58,7 +58,7 @@ public class PipelineImpl implements Pipeline {
 
         Request request = createRequest(time, site, instrument);
 
-        log.debug("Processing : {}", request);
+        log.info("Processing : {}", request);
 
         Estimation estimation = estimator.estimate(context, request);
 
@@ -70,7 +70,7 @@ public class PipelineImpl implements Pipeline {
 
         Map<Instruction, Boolean> results = manager.reconcile(context, request, futures);
 
-        log.debug("Processed : {}", ofNullable(results).orElse(emptyMap()).size());
+        log.info("Processed : {}", ofNullable(results).orElse(emptyMap()).size());
 
     }
 

@@ -59,7 +59,7 @@ public class AdviserImpl implements Adviser {
 
         Advice advice = adviser.advise(context, request, estimation);
 
-        log.debug("Advised : {}", advice);
+        log.info("Advice : [{} {}] {}", request.getSite(), request.getInstrument(), advice);
 
         return Optional.ofNullable(advice).orElse(BAIL);
 

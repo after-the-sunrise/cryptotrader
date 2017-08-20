@@ -82,11 +82,9 @@ public class EstimatorImpl implements Estimator {
 
                 estimations.put(estimator, estimation);
 
-                log.trace("Intermediate Estimation : {} ({})", estimation, estimator);
-
             } catch (Exception e) {
 
-                log.trace("Skipped Estimation : " + estimator, e);
+                log.warn("Skipping estimate : " + estimator, e);
 
             }
         });
@@ -111,11 +109,13 @@ public class EstimatorImpl implements Estimator {
 
             if (estimation == null || estimation.getPrice() == null || estimation.getConfidence() == null) {
 
-                log.trace("Ignoring estimation : {} ({})", estimation, entry.getKey());
+                log.debug("Omitting estimate : {} ({})", estimation, entry.getKey());
 
                 continue;
 
             }
+
+            log.debug("Including estimate : {} - {}", estimation, entry.getKey());
 
             numerator = numerator.add(estimation.getPrice().multiply(estimation.getConfidence()));
 
@@ -133,7 +133,7 @@ public class EstimatorImpl implements Estimator {
 
         Estimation collapsed = Estimation.builder().price(price).confidence(confidence).build();
 
-        log.debug("Collapsed {} estimations : {} (= {} / {})", total, collapsed, numerator, denominator);
+        log.info("Collapsed {} estimations : {} (= {} / {})", total, collapsed, numerator, denominator);
 
         return collapsed;
 

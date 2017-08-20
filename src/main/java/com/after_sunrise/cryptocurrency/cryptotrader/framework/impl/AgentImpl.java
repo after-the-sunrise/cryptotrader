@@ -75,7 +75,7 @@ public class AgentImpl implements Agent {
 
         Map<Instruction, String> results = ofNullable(manager.manage(ctx, req, values)).orElse(emptyMap());
 
-        log.debug("Managed : {}", results.size());
+        log.info("Manage : [{} {}] {}", req.getSite(), req.getInstrument(), results.size());
 
         results.forEach((k, v) -> log.debug("id=[{}] {}", v, k));
 
@@ -106,7 +106,7 @@ public class AgentImpl implements Agent {
 
         Map<Instruction, Boolean> results = ofNullable(manager.reconcile(ctx, req, instructions)).orElse(emptyMap());
 
-        log.debug("Reconciled : {}", results.size());
+        log.info("Reconcile : [{} {}] {}", req.getSite(), req.getInstrument(), results.size());
 
         results.forEach((k, v) -> log.debug("Reconcile=[{}] {}", v, k));
 
