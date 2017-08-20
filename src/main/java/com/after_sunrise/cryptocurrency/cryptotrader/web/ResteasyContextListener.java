@@ -13,7 +13,7 @@ import java.util.concurrent.Executors;
  * @version 0.0.1
  */
 @Slf4j
-public class Web extends GuiceResteasyBootstrapServletContextListener {
+public class ResteasyContextListener extends GuiceResteasyBootstrapServletContextListener {
 
     @Override
     protected void withInjector(Injector injector) {

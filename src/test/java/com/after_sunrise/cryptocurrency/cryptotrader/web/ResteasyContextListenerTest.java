@@ -16,13 +16,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @author takanori.takase
  * @version 0.0.1
  */
-public class WebTest {
+public class ResteasyContextListenerTest {
 
-    private Web target;
+    private ResteasyContextListener target;
 
     @BeforeMethod
     public void setUp() {
-        target = new Web();
+        target = new ResteasyContextListener();
     }
 
     @Test
