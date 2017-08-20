@@ -12,10 +12,21 @@
         <encoder>
             <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}][%-5level][%thread][%logger{0}] %msg%n</pattern>
         </encoder>
-        <file>logs/cryptotrader.log</file>
+        <file>logs/cryptotrader-app.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/cryptotrader-api_%d{yyyy-MM-dd}.tar.gz</fileNamePattern>
-            <maxHistory>7</maxHistory>
+            <fileNamePattern>logs/cryptotrader-app_%d{yyyy-MM-dd}.tar.gz</fileNamePattern>
+            <maxHistory>8</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="SRVC" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}][%-5level][%thread][%logger{0}] %msg%n</pattern>
+        </encoder>
+        <file>logs/cryptotrader-service.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/cryptotrader-service_%d{yyyy-MM-dd_HH}.tar.gz</fileNamePattern>
+            <maxHistory>8</maxHistory>
         </rollingPolicy>
     </appender>
 
@@ -26,7 +37,7 @@
         <file>logs/cryptotrader-http.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>logs/cryptotrader-http_%d{yyyy-MM-dd}.tar.gz</fileNamePattern>
-            <maxHistory>7</maxHistory>
+            <maxHistory>8</maxHistory>
         </rollingPolicy>
     </appender>
 
@@ -37,7 +48,7 @@
         <file>logs/cryptotrader-pubnub.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>logs/cryptotrader-pubnub_%d{yyyy-MM-dd}.tar.gz</fileNamePattern>
-            <maxHistory>7</maxHistory>
+            <maxHistory>8</maxHistory>
         </rollingPolicy>
     </appender>
 
@@ -47,6 +58,10 @@
     </root>
 
     <logger level="DEBUG" name="com.after_sunrise.cryptocurrency"/>
+
+    <logger level="TRACE" additivity="false" name="com.after_sunrise.cryptocurrency.cryptotrader.service">
+        <appender-ref ref="SRVC"/>
+    </logger>
 
     <logger level="TRACE" additivity="false" name="com.after_sunrise.cryptocurrency.bitflyer4j.core.Loggers$HttpLogger">
         <appender-ref ref="HTTP"/>
