@@ -22,17 +22,21 @@ repositories {
     }
 }
 
+configurations {
+    testCompile {
+        extendsFrom compileOnly
+    }
+}
+
 dependencies {
-    compileOnly "org.projectlombok:lombok:1.16.16"
-    compileOnly 'javax.servlet:javax.servlet-api:3.1.0'
     compile 'com.after_sunrise.cryptocurrency:bitflyer4j:0.0.9'
     compile 'org.jboss.resteasy:resteasy-jaxrs:3.1.4.Final'
     compile 'org.jboss.resteasy:resteasy-guice:3.1.4.Final'
     runtime 'ch.qos.logback:logback-classic:1.2.3'
+    compileOnly "org.projectlombok:lombok:1.16.16"
+    compileOnly 'javax.servlet:javax.servlet-api:3.1.0'
     testCompile 'org.testng:testng:6.10'
     testCompile 'org.mockito:mockito-all:1.10.19'
-    testCompile 'org.eclipse.jetty:jetty-server:9.4.6.v20170531'
-    testCompile 'org.eclipse.jetty:jetty-webapp:9.4.6.v20170531'
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -50,7 +54,7 @@ artifacts {
     archives javadocJar
 }
 
-jar.doFirst {
+war.doFirst {
     project.ext {
         vval = archivesBaseName + '.version=' + project.version
         vout = 'build/resources/main/' + archivesBaseName + '-version.properties'

@@ -4,15 +4,10 @@ import com.after_sunrise.cryptocurrency.cryptotrader.Cryptotrader;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -56,30 +51,6 @@ public class WebTest {
 
         latch1.await(3, SECONDS);
         latch2.await(3, SECONDS);
-
-    }
-
-    public static void main(String[] args) throws Exception {
-
-        Path root = Paths.get("build", "libs");
-
-        Path path = Files.find(root, 1, (p, attributes) -> {
-
-            String name = p.getFileName().toString();
-
-            return name.matches(".*\\.war");
-
-        }).findFirst().get();
-
-        WebAppContext context = new WebAppContext();
-        context.setContextPath("/");
-        context.setWar(path.toAbsolutePath().toString());
-
-        Server server = new Server(8080);
-        server.setHandler(context);
-
-        server.start();
-        server.join();
 
     }
 
