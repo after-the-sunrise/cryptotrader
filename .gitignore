@@ -19,4 +19,5 @@ build
 
 # Runtime
 logs
-
+etc/winstone/*.war
+etc/winstone/logs
