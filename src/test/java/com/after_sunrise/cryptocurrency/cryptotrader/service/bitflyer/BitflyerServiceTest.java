@@ -6,9 +6,9 @@ import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
 
-import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ProductType.ETH_BTC;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.BTC;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.BTC_JPY;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.ETH_BTC;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.*;
 import static org.testng.Assert.*;

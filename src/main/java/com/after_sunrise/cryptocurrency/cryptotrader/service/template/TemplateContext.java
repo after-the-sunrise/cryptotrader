@@ -70,7 +70,7 @@ public abstract class TemplateContext implements Context, Cached {
 
                 log.trace("Cached : {} - {}", key, value);
 
-                return value;
+                return Optional.ofNullable(value);
 
             });
 
