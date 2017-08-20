@@ -78,13 +78,17 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal ask = context.getBestAskPrice(key);
 
-        if (mid == null || ask == null) {
+        BigDecimal comm = context.getCommissionRate(key);
 
-            log.trace("Buy price not available.");
+        if (mid == null || ask == null || comm == null) {
+
+            log.trace("Buy price not available : mid=[{}] ask=[{}] comm=[{}]", mid, ask, comm);
 
             return null;
 
         }
+
+        // TODO : Cost Basis
 
         BigDecimal estimate = estimation.getPrice();
 
@@ -94,7 +98,9 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal adjCross = weighed.min(ask.subtract(EPSILON));
 
-        BigDecimal adjSpread = adjCross.multiply(ONE.subtract(request.getTradingSpread()));
+        BigDecimal basis = request.getTradingSpread().add(comm).max(ZERO);
+
+        BigDecimal adjSpread = adjCross.multiply(ONE.subtract(basis));
 
         BigDecimal rounded = context.roundTickSize(key, adjSpread, DOWN);
 
@@ -113,13 +119,17 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal bid = context.getBestBidPrice(key);
 
-        if (mid == null || bid == null) {
+        BigDecimal comm = context.getCommissionRate(key);
 
-            log.trace("Sell price not available.");
+        if (mid == null || bid == null || comm == null) {
+
+            log.trace("Sell price not available : mid=[{}] bid=[{}] comm=[{}]", mid, bid, comm);
 
             return null;
 
         }
+
+        // TODO : Cost Basis
 
         BigDecimal estimate = estimation.getPrice();
 
@@ -129,7 +139,9 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal adjCross = weighed.max(bid.add(EPSILON));
 
-        BigDecimal adjSpread = adjCross.multiply(ONE.add(request.getTradingSpread()));
+        BigDecimal basis = request.getTradingSpread().add(comm).max(ZERO);
+
+        BigDecimal adjSpread = adjCross.multiply(ONE.add(basis));
 
         BigDecimal rounded = context.roundTickSize(key, adjSpread, UP);
 
@@ -152,9 +164,9 @@ public class TemplateAdviser implements Adviser {
 
         Key key = Key.from(request);
 
-        BigDecimal fundAmount = context.getFundingPosition(key);
+        BigDecimal fund = context.getFundingPosition(key);
 
-        if (fundAmount == null || fundAmount.signum() == 0) {
+        if (fund == null || fund.signum() == 0) {
 
             log.trace("Fund amount not available.");
 
@@ -162,13 +174,15 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        BigDecimal productAmount = fundAmount.divide(price, PRECISION, DOWN);
+        BigDecimal product = fund.divide(price, PRECISION, DOWN);
 
         BigDecimal exposure = request.getTradingExposure();
 
-        BigDecimal result = context.roundLotSize(key, productAmount.multiply(exposure), DOWN);
+        BigDecimal result = context.roundLotSize(key, product.multiply(exposure), DOWN);
 
-        log.trace("Buy size : {} (price=[{}] fund=[{}] exposure=[{}])", result, price, fundAmount, exposure);
+        String message = "Buy size : {} (price=[{}] fund=[{}] product=[{}] exposure=[{}])";
+
+        log.trace(message, result, price, fund, product, exposure);
 
         return Optional.ofNullable(result).orElse(ZERO);
 

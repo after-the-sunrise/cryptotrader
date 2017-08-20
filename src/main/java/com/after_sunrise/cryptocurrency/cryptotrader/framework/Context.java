@@ -19,6 +19,7 @@ import static lombok.AccessLevel.PRIVATE;
  */
 public interface Context extends Supplier<String> {
 
+
     @Getter
     @Builder
     @ToString
@@ -89,6 +90,8 @@ public interface Context extends Supplier<String> {
     BigDecimal roundLotSize(Key key, BigDecimal value, RoundingMode mode);
 
     BigDecimal roundTickSize(Key key, BigDecimal value, RoundingMode mode);
+
+    BigDecimal getCommissionRate(Key key);
 
     Order findOrder(Key key, String id);
 

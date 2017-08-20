@@ -74,6 +74,11 @@ public class TemplateContextTest {
         }
 
         @Override
+        public BigDecimal getCommissionRate(Key key) {
+            return null;
+        }
+
+        @Override
         public Order findOrder(Key key, String id) {
             return null;
         }

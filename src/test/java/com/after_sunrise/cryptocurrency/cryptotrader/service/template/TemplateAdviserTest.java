@@ -59,7 +59,7 @@ public class TemplateAdviserTest {
 
         rBuilder = Request.builder().site("s").instrument("i").targetTime(now())
                 .tradingExposure(new BigDecimal("0.10"))
-                .tradingSplit(new BigDecimal("2")).tradingSpread(new BigDecimal("0.0080"));
+                .tradingSplit(new BigDecimal("2")).tradingSpread(new BigDecimal("0.0060"));
 
         eBuilder = Estimation.builder().price(new BigDecimal("12345.6789")).confidence(new BigDecimal("0.5"));
 
@@ -109,10 +109,11 @@ public class TemplateAdviserTest {
         Request request = rBuilder.build();
         Estimation estimation = eBuilder.build();
         when(context.getMidPrice(Key.from(request))).thenReturn(new BigDecimal("12349.8765"));
+        when(context.getCommissionRate(Key.from(request))).thenReturn(new BigDecimal("0.0020"));
 
         // Estimated : price 12345.6789 | confidence 0.5
         // Weighed : 12347.7777
-        // Spread : Average * (1 - 80 bps) = 12248.99548
+        // Spread : Average * (1 - (60 + 20 bps)) = 12248.99548
         // Rounded : 12248.9950
         when(context.getBestAskPrice(Key.from(request))).thenReturn(new BigDecimal("20000"));
         assertEquals(target.calculateBuyLimitPrice(context, request, estimation), new BigDecimal("12248.9950"));
@@ -124,11 +125,19 @@ public class TemplateAdviserTest {
         // No Mid
         when(context.getMidPrice(Key.from(request))).thenReturn(null);
         when(context.getBestAskPrice(Key.from(request))).thenReturn(ONE);
+        when(context.getCommissionRate(Key.from(request))).thenReturn(ZERO);
         assertNull(target.calculateBuyLimitPrice(context, request, estimation));
 
         // No Ask
         when(context.getMidPrice(Key.from(request))).thenReturn(ONE);
         when(context.getBestAskPrice(Key.from(request))).thenReturn(null);
+        when(context.getCommissionRate(Key.from(request))).thenReturn(ZERO);
+        assertNull(target.calculateBuyLimitPrice(context, request, estimation));
+
+        // No Commission
+        when(context.getMidPrice(Key.from(request))).thenReturn(ONE);
+        when(context.getBestAskPrice(Key.from(request))).thenReturn(ONE);
+        when(context.getCommissionRate(Key.from(request))).thenReturn(null);
         assertNull(target.calculateBuyLimitPrice(context, request, estimation));
 
     }
@@ -139,10 +148,11 @@ public class TemplateAdviserTest {
         Request request = rBuilder.build();
         Estimation estimation = eBuilder.build();
         when(context.getMidPrice(Key.from(request))).thenReturn(new BigDecimal("12349.8765"));
+        when(context.getCommissionRate(Key.from(request))).thenReturn(new BigDecimal("0.0020"));
 
         // Estimated : price 12345.6789 | confidence 0.5
         // Weighed : 12347.7777
-        // Spread : Average * (1 - 80 bps) = 12446.55992
+        // Spread : Average * (1 - (60 + 20 bps)) = 12446.55992
         // Rounded : 12446.5600
         when(context.getBestBidPrice(Key.from(request))).thenReturn(new BigDecimal("10000"));
         assertEquals(target.calculateSellLimitPrice(context, request, estimation), new BigDecimal("12446.5600"));
@@ -154,11 +164,19 @@ public class TemplateAdviserTest {
         // No Mid
         when(context.getMidPrice(Key.from(request))).thenReturn(null);
         when(context.getBestBidPrice(Key.from(request))).thenReturn(ONE);
+        when(context.getCommissionRate(Key.from(request))).thenReturn(ZERO);
         assertNull(target.calculateSellLimitPrice(context, request, estimation));
 
         // No Bid
         when(context.getMidPrice(Key.from(request))).thenReturn(ONE);
         when(context.getBestBidPrice(Key.from(request))).thenReturn(null);
+        when(context.getCommissionRate(Key.from(request))).thenReturn(ZERO);
+        assertNull(target.calculateSellLimitPrice(context, request, estimation));
+
+        // No Commission
+        when(context.getMidPrice(Key.from(request))).thenReturn(ONE);
+        when(context.getBestBidPrice(Key.from(request))).thenReturn(ONE);
+        when(context.getCommissionRate(Key.from(request))).thenReturn(null);
         assertNull(target.calculateSellLimitPrice(context, request, estimation));
 
     }

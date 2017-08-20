@@ -192,6 +192,21 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
     }
 
+    @Override
+    public BigDecimal getCommissionRate(Key key) {
+
+        TradeCommission.Response value = findCached(TradeCommission.Response.class, key, () -> {
+
+            TradeCommission request = TradeCommission.builder().product(key.getInstrument()).build();
+
+            return orderService.getCommission(request).get(TIMEOUT.toMillis(), MILLISECONDS);
+
+        });
+
+        return value == null ? null : value.getRate();
+
+    }
+
     @VisibleForTesting
     List<Order> fetchOrder(Key key) {
 
@@ -218,6 +233,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
     @Override
     public List<Order> listOrders(Key key) {
+
+        // TODO : Split methods into active/filled
 
         return fetchOrder(key).stream().filter(o -> Boolean.TRUE.equals(o.getActive())).collect(toList());
 

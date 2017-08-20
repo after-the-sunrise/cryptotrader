@@ -264,6 +264,23 @@ public class BitflyerContextTest {
     }
 
     @Test
+    public void testGetCommissionRate() throws Exception {
+
+        Key key = Key.from(Request.builder().instrument("i").build());
+
+        CompletableFuture<TradeCommission.Response> f = completedFuture(mock(TradeCommission.Response.class));
+        when(f.get().getRate()).thenReturn(ONE.movePointLeft(3));
+        when(orderService.getCommission(any())).thenReturn(f, null);
+
+        assertEquals(target.getCommissionRate(key), ONE.movePointLeft(3));
+        assertEquals(target.getCommissionRate(key), ONE.movePointLeft(3));
+        target.clear();
+        assertEquals(target.getCommissionRate(key), null);
+        assertEquals(target.getBestAskPrice(key), null);
+
+    }
+
+    @Test
     public void testFetchOrder() {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
