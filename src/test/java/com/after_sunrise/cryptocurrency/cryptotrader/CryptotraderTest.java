@@ -19,14 +19,7 @@ import static org.testng.Assert.*;
  * @author takanori.takase
  * @version 0.0.1
  */
-public class MainTest {
-
-    @Test
-    public void testMain() throws Exception {
-
-        Main.main();
-
-    }
+public class CryptotraderTest {
 
     @Test
     public void testEntity() throws ReflectiveOperationException {
