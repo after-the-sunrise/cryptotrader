@@ -232,9 +232,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     }
 
     @Override
-    public List<Order> listOrders(Key key) {
-
-        // TODO : Split methods into active/filled
+    public List<Order> listActiveOrders(Key key) {
 
         return fetchOrder(key).stream().filter(o -> Boolean.TRUE.equals(o.getActive())).collect(toList());
 

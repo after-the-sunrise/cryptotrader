@@ -116,12 +116,12 @@ public class TemplateInstructorTest {
         when(o2.getId()).thenReturn("id");
         List<Order> orders = asList(o1, null, o2, o3, o4);
 
-        when(context.listOrders(Key.from(builder.build()))).thenReturn(orders);
+        when(context.listActiveOrders(Key.from(builder.build()))).thenReturn(orders);
         Map<CancelInstruction, Order> results = target.createCancels(context, builder.build());
         assertEquals(results.size(), 1);
         assertTrue(results.values().contains(o2));
 
-        when(context.listOrders(Key.from(builder.build()))).thenReturn(null);
+        when(context.listActiveOrders(Key.from(builder.build()))).thenReturn(null);
         results = target.createCancels(context, builder.build());
         assertEquals(results.size(), 0);
 

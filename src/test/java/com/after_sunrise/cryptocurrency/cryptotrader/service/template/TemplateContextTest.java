@@ -84,7 +84,7 @@ public class TemplateContextTest {
         }
 
         @Override
-        public List<Order> listOrders(Key key) {
+        public List<Order> listActiveOrders(Key key) {
             return null;
         }
 

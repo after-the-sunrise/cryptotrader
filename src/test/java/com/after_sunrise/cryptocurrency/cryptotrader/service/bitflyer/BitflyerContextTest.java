@@ -362,7 +362,7 @@ public class BitflyerContextTest {
         when(o4.getActive()).thenReturn(true);
         doReturn(asList(o1, o2, o3, o4)).when(target).fetchOrder(key);
 
-        List<Order> results = target.listOrders(key);
+        List<Order> results = target.listActiveOrders(key);
         assertEquals(results.size(), 2);
         assertSame(results.get(0), o2);
         assertSame(results.get(1), o4);

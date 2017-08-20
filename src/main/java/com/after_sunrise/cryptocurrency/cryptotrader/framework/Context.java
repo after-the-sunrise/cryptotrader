@@ -95,7 +95,7 @@ public interface Context extends Supplier<String> {
 
     Order findOrder(Key key, String id);
 
-    List<Order> listOrders(Key key);
+    List<Order> listActiveOrders(Key key);
 
     String createOrder(Key key, CreateInstruction instruction);
 

@@ -79,7 +79,7 @@ public class TemplateInstructor implements Instructor {
 
         Key key = Key.from(request);
 
-        List<Order> orders = ofNullable(context.listOrders(key)).orElse(EMPTY);
+        List<Order> orders = ofNullable(context.listActiveOrders(key)).orElse(EMPTY);
 
         Map<CancelInstruction, Order> cancels = new IdentityHashMap<>();
 
