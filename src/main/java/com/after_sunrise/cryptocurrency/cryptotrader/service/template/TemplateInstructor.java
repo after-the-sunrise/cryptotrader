@@ -226,11 +226,11 @@ public class TemplateInstructor implements Instructor {
 
                 Map.Entry<CancelInstruction, Order> entry = cancelItr.next();
 
-                if (isDifferent(create.getPrice(), entry.getValue().getOrderPrice())) {
+                if (isDifferent(entry.getValue().getOrderPrice(), create.getPrice())) {
                     continue;
                 }
 
-                if (isDifferent(create.getSize(), entry.getValue().getRemainingQuantity())) {
+                if (isDifferent(entry.getValue().getRemainingQuantity(), create.getSize())) {
                     continue;
                 }
 
