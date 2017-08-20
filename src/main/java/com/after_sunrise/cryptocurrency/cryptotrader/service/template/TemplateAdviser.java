@@ -64,8 +64,12 @@ public class TemplateAdviser implements Adviser {
         BigDecimal bSize = calculateBuyLimitSize(context, request, bPrice);
         BigDecimal sSize = calculateSellLimitSize(context, request);
 
-        return Advice.builder().buyLimitPrice(bPrice).buyLimitSize(bSize) //
+        Advice advice = Advice.builder().buyLimitPrice(bPrice).buyLimitSize(bSize) //
                 .sellLimitPrice(sPrice).sellLimitSize(sSize).build();
+
+        log.trace("Advice : {} - {}", advice, request);
+
+        return advice;
 
     }
 
@@ -168,7 +172,7 @@ public class TemplateAdviser implements Adviser {
 
         if (fund == null || fund.signum() == 0) {
 
-            log.trace("Fund amount not available.");
+            log.trace("Fund amount not available : {}", fund);
 
             return ZERO;
 
@@ -197,7 +201,7 @@ public class TemplateAdviser implements Adviser {
 
         if (position == null || position.signum() == 0) {
 
-            log.trace("Position not available.");
+            log.trace("Position not available : {}");
 
             return ZERO;
 

@@ -46,6 +46,8 @@ public abstract class TemplateContext implements Context, Cached {
     @Override
     public void clear() {
 
+        log.trace("Clearing cache.");
+
         singleCache.forEach((k, v) -> v.invalidateAll());
 
         listCache.forEach((k, v) -> v.invalidateAll());
@@ -62,7 +64,15 @@ public abstract class TemplateContext implements Context, Cached {
 
         try {
 
-            Optional<?> cached = cache.get(key, () -> Optional.ofNullable(c.call()));
+            Optional<?> cached = cache.get(key, () -> {
+
+                T value = c.call();
+
+                log.trace("Cached : {} - {}", key, value);
+
+                return value;
+
+            });
 
             return type.cast(cached.orElse(null));
 
@@ -86,7 +96,15 @@ public abstract class TemplateContext implements Context, Cached {
 
         try {
 
-            Optional<? extends List<?>> cached = cache.get(key, () -> Optional.ofNullable(c.call()));
+            Optional<? extends List<?>> cached = cache.get(key, () -> {
+
+                List<T> values = Optional.ofNullable(c.call()).orElse(Collections.emptyList());
+
+                log.trace("Cached list : {} ({})", key, values.size());
+
+                return Optional.of(values);
+
+            });
 
             if (!cached.isPresent()) {
                 return Collections.emptyList();

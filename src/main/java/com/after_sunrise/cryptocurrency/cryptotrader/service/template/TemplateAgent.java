@@ -136,8 +136,6 @@ public class TemplateAgent implements Agent {
 
         for (int i = 0; i < LIMIT; i++) {
 
-            log.trace("Reconciling create : {}", id);
-
             Order order = context.findOrder(key, id);
 
             if (order != null) {
@@ -172,8 +170,6 @@ public class TemplateAgent implements Agent {
     Boolean checkCancelled(Context context, Key key, String id, Duration interval) {
 
         for (int i = 0; i < LIMIT; i++) {
-
-            log.trace("Reconciling cancel : {}", id);
 
             Order order = context.findOrder(key, id);
 

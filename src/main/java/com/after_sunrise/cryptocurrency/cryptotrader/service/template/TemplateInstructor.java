@@ -89,7 +89,7 @@ public class TemplateInstructor implements Instructor {
                 .filter(o -> TRUE.equals(o.getActive()))
                 .forEach(o -> cancels.put(CancelInstruction.builder().id(o.getId()).build(), o));
 
-        log.trace("Cancel candidates : {}", cancels.keySet());
+        cancels.forEach((k, v) -> log.trace("Cancel candidate : {}", v));
 
         return cancels;
 
@@ -108,7 +108,7 @@ public class TemplateInstructor implements Instructor {
             instructions.add(CreateInstruction.builder().price(p.get(i)).size(s.get(i)).build());
         }
 
-        log.trace("Buy candidates : {}", instructions);
+        instructions.forEach((v) -> log.trace("Buy candidate : {}", v));
 
         return instructions;
 
@@ -131,7 +131,7 @@ public class TemplateInstructor implements Instructor {
 
         }
 
-        log.trace("Sell candidates : {}", instructions);
+        instructions.forEach((v) -> log.trace("Sell candidate : {}", v));
 
         return instructions;
 
@@ -247,8 +247,13 @@ public class TemplateInstructor implements Instructor {
         }
 
         List<Instruction> instructions = new ArrayList<>();
+
         instructions.addAll(remainingCancels.keySet());
+
         instructions.addAll(remainingCreates);
+
+        instructions.forEach(v -> log.trace("Merged candidate : {}", v));
+
         return instructions;
 
     }
