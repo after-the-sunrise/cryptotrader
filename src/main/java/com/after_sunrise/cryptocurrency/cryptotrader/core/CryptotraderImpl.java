@@ -83,13 +83,15 @@ public class CryptotraderImpl implements Cryptotrader {
     @Override
     public void shutdown() {
 
+        log.info("Shutting down...");
+
         closeQuietly(Trader.class);
 
         closeQuietly(Bitflyer4j.class);
 
         closeQuietly(ExecutorFactory.class);
 
-        log.info("Shutdown.");
+        log.info("Shutdown complete.");
 
     }
 
