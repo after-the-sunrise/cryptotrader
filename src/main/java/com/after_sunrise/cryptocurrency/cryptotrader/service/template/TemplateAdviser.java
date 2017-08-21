@@ -106,11 +106,13 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal ask = context.getBestAskPrice(key);
 
+        BigDecimal ratio = calculatePositionRatio(context, request).max(ZERO);
+
         BigDecimal comm = context.getCommissionRate(key);
 
-        if (mid == null || ask == null || comm == null) {
+        if (mid == null || ask == null || ratio == null || comm == null) {
 
-            log.trace("Buy price not available : mid=[{}] ask=[{}] comm=[{}]", mid, ask, comm);
+            log.trace("Buy price not available : mid=[{}] ask=[{}] ratio=[{}] comm=[{}]", mid, ask, ratio, comm);
 
             return null;
 
@@ -125,8 +127,6 @@ public class TemplateAdviser implements Adviser {
         BigDecimal weighed = mid.multiply(ONE.subtract(confidence)).add(estimate.multiply(confidence));
 
         BigDecimal adjCross = weighed.min(ask.subtract(EPSILON));
-
-        BigDecimal ratio = calculatePositionRatio(context, request).max(ZERO);
 
         BigDecimal basis = request.getTradingSpread().multiply(ONE.add(ratio)).add(comm).max(ZERO);
 
@@ -149,11 +149,13 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal bid = context.getBestBidPrice(key);
 
+        BigDecimal ratio = calculatePositionRatio(context, request).min(ZERO).abs();
+
         BigDecimal comm = context.getCommissionRate(key);
 
-        if (mid == null || bid == null || comm == null) {
+        if (mid == null || bid == null || ratio == null || comm == null) {
 
-            log.trace("Sell price not available : mid=[{}] bid=[{}] comm=[{}]", mid, bid, comm);
+            log.trace("Sell price not available : mid=[{}] bid=[{}] ratio=[{}] comm=[{}]", mid, bid, ratio, comm);
 
             return null;
 
@@ -168,8 +170,6 @@ public class TemplateAdviser implements Adviser {
         BigDecimal weighed = mid.multiply(ONE.subtract(confidence)).add(estimate.multiply(confidence));
 
         BigDecimal adjCross = weighed.max(bid.add(EPSILON));
-
-        BigDecimal ratio = calculatePositionRatio(context, request).min(ZERO).abs();
 
         BigDecimal basis = request.getTradingSpread().multiply(ONE.add(ratio)).add(comm).max(ZERO);
 
