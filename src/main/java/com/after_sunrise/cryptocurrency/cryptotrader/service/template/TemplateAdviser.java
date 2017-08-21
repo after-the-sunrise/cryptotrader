@@ -92,6 +92,8 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal weighed = mid.multiply(ONE.subtract(confidence)).add(estimate.multiply(confidence));
 
+        log.trace("Weighed price : {} (mid=[[]] [{}])", weighed, mid, estimation);
+
         return weighed;
 
     }
@@ -117,7 +119,11 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal diff = equivalent.subtract(funding);
 
-        return diff.divide(sum, PRECISION, HALF_UP);
+        BigDecimal ratio = diff.divide(sum, PRECISION, HALF_UP);
+
+        log.trace("Position ratio: {} (fund=[{}], structure=[{}] equivalent=[{}])", ratio, structure, equivalent);
+
+        return ratio;
 
     }
 
@@ -130,13 +136,11 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal ask = context.getBestAskPrice(key);
 
-        BigDecimal ratio = calculatePositionRatio(context, request).max(ZERO);
-
         BigDecimal comm = context.getCommissionRate(key);
 
-        if (weighed == null || ask == null || ratio == null || comm == null) {
+        if (weighed == null || ask == null || comm == null) {
 
-            log.trace("Buy price not available : weighed=[{}] ask=[{}] ratio=[{}] comm=[{}]", weighed, ask, ratio, comm);
+            log.trace("Buy price not available : weighed=[{}] ask=[{}] comm=[{}]", weighed, ask, comm);
 
             return null;
 
@@ -146,13 +150,15 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal adjCross = weighed.min(ask.subtract(EPSILON));
 
+        BigDecimal ratio = calculatePositionRatio(context, request).max(ZERO);
+
         BigDecimal basis = request.getTradingSpread().multiply(ONE.add(ratio)).add(comm).max(ZERO);
 
         BigDecimal adjSpread = adjCross.multiply(ONE.subtract(basis));
 
         BigDecimal rounded = context.roundTickSize(key, adjSpread, DOWN);
 
-        log.trace("Buy price : {} (spread=[{}] weighed=[{}])", rounded, adjSpread, weighed);
+        log.trace("Buy price : {} (spread=[{}] basis=[{}])", rounded, adjSpread, basis);
 
         return rounded;
 
@@ -167,13 +173,11 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal bid = context.getBestBidPrice(key);
 
-        BigDecimal ratio = calculatePositionRatio(context, request).min(ZERO).abs();
-
         BigDecimal comm = context.getCommissionRate(key);
 
-        if (weighed == null || bid == null || ratio == null || comm == null) {
+        if (weighed == null || bid == null || comm == null) {
 
-            log.trace("Sell price not available : weighed=[{}] bid=[{}] ratio=[{}] comm=[{}]", weighed, bid, ratio, comm);
+            log.trace("Sell price not available : weighed=[{}] bid=[{}] comm=[{}]", weighed, bid, comm);
 
             return null;
 
@@ -183,13 +187,15 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal adjCross = weighed.max(bid.add(EPSILON));
 
+        BigDecimal ratio = calculatePositionRatio(context, request).min(ZERO).abs();
+
         BigDecimal basis = request.getTradingSpread().multiply(ONE.add(ratio)).add(comm).max(ZERO);
 
         BigDecimal adjSpread = adjCross.multiply(ONE.add(basis));
 
         BigDecimal rounded = context.roundTickSize(key, adjSpread, UP);
 
-        log.trace("Sell price : {} (spread=[{}] weighed=[{}])", rounded, adjSpread, weighed);
+        log.trace("Sell price : {} (spread=[{}] basis=[{}])", rounded, adjSpread, basis);
 
         return rounded;
 
