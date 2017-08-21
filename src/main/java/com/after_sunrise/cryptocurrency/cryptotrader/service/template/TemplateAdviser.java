@@ -72,6 +72,30 @@ public class TemplateAdviser implements Adviser {
 
     }
 
+    BigDecimal calculateWeighedPrice(Context context, Request request, Estimation estimation) {
+
+        Key key = Key.from(request);
+
+        BigDecimal mid = context.getMidPrice(key);
+
+        if (mid == null) {
+
+            log.trace("Weighed price not available. No mid.");
+
+            return null;
+
+        }
+
+        BigDecimal estimate = estimation.getPrice();
+
+        BigDecimal confidence = ONE.min(ZERO.max(estimation.getConfidence()));
+
+        BigDecimal weighed = mid.multiply(ONE.subtract(confidence)).add(estimate.multiply(confidence));
+
+        return weighed;
+
+    }
+
     @VisibleForTesting
     BigDecimal calculatePositionRatio(Context context, Request request) {
 
@@ -102,7 +126,7 @@ public class TemplateAdviser implements Adviser {
 
         Key key = Key.from(request);
 
-        BigDecimal mid = context.getMidPrice(key);
+        BigDecimal weighed = calculateWeighedPrice(context, request, estimation);
 
         BigDecimal ask = context.getBestAskPrice(key);
 
@@ -110,21 +134,15 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal comm = context.getCommissionRate(key);
 
-        if (mid == null || ask == null || ratio == null || comm == null) {
+        if (weighed == null || ask == null || ratio == null || comm == null) {
 
-            log.trace("Buy price not available : mid=[{}] ask=[{}] ratio=[{}] comm=[{}]", mid, ask, ratio, comm);
+            log.trace("Buy price not available : weighed=[{}] ask=[{}] ratio=[{}] comm=[{}]", weighed, ask, ratio, comm);
 
             return null;
 
         }
 
         // TODO : Cost Basis
-
-        BigDecimal estimate = estimation.getPrice();
-
-        BigDecimal confidence = ONE.min(ZERO.max(estimation.getConfidence()));
-
-        BigDecimal weighed = mid.multiply(ONE.subtract(confidence)).add(estimate.multiply(confidence));
 
         BigDecimal adjCross = weighed.min(ask.subtract(EPSILON));
 
@@ -134,7 +152,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal rounded = context.roundTickSize(key, adjSpread, DOWN);
 
-        log.trace("Buy price : {} (spread=[{}] weighed=[{}] estimate=[{}])", rounded, adjSpread, weighed, estimate);
+        log.trace("Buy price : {} (spread=[{}] weighed=[{}])", rounded, adjSpread, weighed);
 
         return rounded;
 
@@ -145,7 +163,7 @@ public class TemplateAdviser implements Adviser {
 
         Key key = Key.from(request);
 
-        BigDecimal mid = context.getMidPrice(key);
+        BigDecimal weighed = calculateWeighedPrice(context, request, estimation);
 
         BigDecimal bid = context.getBestBidPrice(key);
 
@@ -153,21 +171,15 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal comm = context.getCommissionRate(key);
 
-        if (mid == null || bid == null || ratio == null || comm == null) {
+        if (weighed == null || bid == null || ratio == null || comm == null) {
 
-            log.trace("Sell price not available : mid=[{}] bid=[{}] ratio=[{}] comm=[{}]", mid, bid, ratio, comm);
+            log.trace("Sell price not available : weighed=[{}] bid=[{}] ratio=[{}] comm=[{}]", weighed, bid, ratio, comm);
 
             return null;
 
         }
 
         // TODO : Cost Basis
-
-        BigDecimal estimate = estimation.getPrice();
-
-        BigDecimal confidence = ONE.min(ZERO.max(estimation.getConfidence()));
-
-        BigDecimal weighed = mid.multiply(ONE.subtract(confidence)).add(estimate.multiply(confidence));
 
         BigDecimal adjCross = weighed.max(bid.add(EPSILON));
 
@@ -177,7 +189,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal rounded = context.roundTickSize(key, adjSpread, UP);
 
-        log.trace("Sell price : {} (spread=[{}] weighed=[{}] estimate=[{}])", rounded, adjSpread, weighed, estimate);
+        log.trace("Sell price : {} (spread=[{}] weighed=[{}])", rounded, adjSpread, weighed);
 
         return rounded;
 
