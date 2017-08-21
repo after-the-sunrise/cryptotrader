@@ -6,6 +6,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.MoreObjects;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -13,8 +14,7 @@ import java.util.Optional;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.DOWN;
-import static java.math.RoundingMode.UP;
+import static java.math.RoundingMode.*;
 
 /**
  * @author takanori.takase
@@ -74,6 +74,31 @@ public class TemplateAdviser implements Adviser {
     }
 
     @VisibleForTesting
+    BigDecimal calculatePositionRatio(Context context, Request request) {
+
+        Key key = Key.from(request);
+
+        BigDecimal funding = MoreObjects.firstNonNull(context.getFundingPosition(key), ZERO);
+
+        BigDecimal structure = MoreObjects.firstNonNull(context.getInstrumentPosition(key), ZERO);
+
+        BigDecimal price = MoreObjects.firstNonNull(context.getMidPrice(key), ZERO);
+
+        BigDecimal equivalent = structure.multiply(price);
+
+        BigDecimal sum = equivalent.add(funding);
+
+        if (sum.signum() == 0) {
+            return ZERO;
+        }
+
+        BigDecimal diff = equivalent.subtract(funding);
+
+        return diff.divide(sum, PRECISION, HALF_UP);
+
+    }
+
+    @VisibleForTesting
     BigDecimal calculateBuyLimitPrice(Context context, Request request, Estimation estimation) {
 
         Key key = Key.from(request);
@@ -102,7 +127,9 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal adjCross = weighed.min(ask.subtract(EPSILON));
 
-        BigDecimal basis = request.getTradingSpread().add(comm).max(ZERO);
+        BigDecimal ratio = calculatePositionRatio(context, request).max(ZERO);
+
+        BigDecimal basis = request.getTradingSpread().multiply(ONE.add(ratio)).add(comm).max(ZERO);
 
         BigDecimal adjSpread = adjCross.multiply(ONE.subtract(basis));
 
@@ -143,7 +170,9 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal adjCross = weighed.max(bid.add(EPSILON));
 
-        BigDecimal basis = request.getTradingSpread().add(comm).max(ZERO);
+        BigDecimal ratio = calculatePositionRatio(context, request).min(ZERO).abs();
+
+        BigDecimal basis = request.getTradingSpread().multiply(ONE.add(ratio)).add(comm).max(ZERO);
 
         BigDecimal adjSpread = adjCross.multiply(ONE.add(basis));
 
@@ -154,6 +183,7 @@ public class TemplateAdviser implements Adviser {
         return rounded;
 
     }
+
 
     @VisibleForTesting
     BigDecimal calculateBuyLimitSize(Context context, Request request, BigDecimal price) {
