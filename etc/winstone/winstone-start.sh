@@ -9,8 +9,8 @@ fi
 nohup \
   java \
   -server \
-  -Xms512m \
-  -Xmx512m \
+  -Xms256m \
+  -Xmx256m \
   -XX:+UseParallelGC \
   -XX:+UseParallelOldGC \
   -Xloggc:logs/winstone-gc.log \
