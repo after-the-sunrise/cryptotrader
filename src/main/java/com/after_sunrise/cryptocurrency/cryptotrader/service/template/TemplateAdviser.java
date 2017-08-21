@@ -6,15 +6,14 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.MoreObjects;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.*;
+import static java.util.Optional.ofNullable;
 
 /**
  * @author takanori.takase
@@ -78,11 +77,11 @@ public class TemplateAdviser implements Adviser {
 
         Key key = Key.from(request);
 
-        BigDecimal funding = MoreObjects.firstNonNull(context.getFundingPosition(key), ZERO);
+        BigDecimal funding = ofNullable(context.getFundingPosition(key)).orElse(ZERO);
 
-        BigDecimal structure = MoreObjects.firstNonNull(context.getInstrumentPosition(key), ZERO);
+        BigDecimal structure = ofNullable(context.getInstrumentPosition(key)).orElse(ZERO);
 
-        BigDecimal price = MoreObjects.firstNonNull(context.getMidPrice(key), ZERO);
+        BigDecimal price = ofNullable(context.getMidPrice(key)).orElse(ZERO);
 
         BigDecimal equivalent = structure.multiply(price);
 
@@ -218,7 +217,7 @@ public class TemplateAdviser implements Adviser {
 
         log.trace(message, result, price, fund, product, exposure);
 
-        return Optional.ofNullable(result).orElse(ZERO);
+        return ofNullable(result).orElse(ZERO);
 
     }
 
@@ -245,7 +244,7 @@ public class TemplateAdviser implements Adviser {
 
         log.trace("Sell size : {} (position=[{}] exposure=[{}])", result, position, exposure);
 
-        return Optional.ofNullable(result).orElse(ZERO);
+        return ofNullable(result).orElse(ZERO);
 
     }
 
