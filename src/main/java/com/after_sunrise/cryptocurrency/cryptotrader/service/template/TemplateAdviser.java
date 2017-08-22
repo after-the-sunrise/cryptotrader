@@ -277,8 +277,9 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        // Leveraged short can be larger than the funding.
-        BigDecimal netSize = limitSize.subtract(position).max(ZERO);
+        BigDecimal shortPosition = position.min(ZERO);
+
+        BigDecimal netSize = limitSize.subtract(shortPosition).max(ZERO);
 
         log.trace("Margin Buy size : {} (position=[{}] funding=[{}])", netSize, position, limitSize);
 
@@ -304,8 +305,9 @@ public class TemplateAdviser implements Adviser {
 
             BigDecimal limitSize = calculateFundingLimitSize(context, request, price);
 
-            // Leveraged short can be larger than the funding.
-            BigDecimal netSize = limitSize.add(position).max(ZERO);
+            BigDecimal longPosition = position.max(ZERO);
+
+            BigDecimal netSize = limitSize.add(longPosition).max(ZERO);
 
             log.trace("Margin sell size : {} (position=[{}] funding=[{}])", netSize, position, limitSize);
 

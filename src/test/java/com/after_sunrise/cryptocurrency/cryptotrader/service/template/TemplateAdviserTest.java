@@ -321,13 +321,13 @@ public class TemplateAdviserTest {
         BigDecimal price = new BigDecimal("123.4567");
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9000"));
 
-        // Net Position = 7.25 - (+4.75) = 2.5
+        // Net Position = (ignore long position)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("+4.75"));
-        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("2.50"));
+        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("7.25"));
 
-        // Net Position = 7.25 - (+9.75) = -2.5 -> 0
+        // Net Position = (ignore long position)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("+9.75"));
-        assertEquals(target.calculateBuyLimitSize(context, request, price), ZERO);
+        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("7.25"));
 
         // Net Position = 7.25 - (-4.75) = 12
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4.75"));
@@ -378,13 +378,13 @@ public class TemplateAdviserTest {
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("+4.75"));
         assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("12.00"));
 
-        // Net Position = 7.25 + (-4.75) = 2.50
+        // Net Position = (ignore short)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4.75"));
-        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("2.50"));
+        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("7.25"));
 
         // Net Position = 7.25 + (-9.75) = -2.5 -> 0
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-9.75"));
-        assertEquals(target.calculateSellLimitSize(context, request, price), ZERO);
+        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("7.25"));
 
         // Null Position = 7.25 + null = null
         when(context.getInstrumentPosition(key)).thenReturn(null);
