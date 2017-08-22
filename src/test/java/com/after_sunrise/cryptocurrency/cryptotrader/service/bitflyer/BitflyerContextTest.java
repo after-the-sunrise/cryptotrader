@@ -291,7 +291,7 @@ public class BitflyerContextTest {
         when(i2.getAlias()).thenReturn("BTCJPY_MAT1WK");
         when(i3.getAlias()).thenReturn("BTCJPY_MAT2WK");
         when(i3.getAlias()).thenReturn("BTCJPY_MAT3WK");
-        when(marketService.getProducts()).thenReturn(completedFuture(asList(i1, null, i2, i3, i4)), null);
+        when(marketService.getProducts()).thenReturn(completedFuture(asList(i1, null, i2, i3, i4))).thenReturn(null);
 
         TradePosition.Response p1 = mock(TradePosition.Response.class);
         TradePosition.Response p2 = mock(TradePosition.Response.class);
@@ -318,7 +318,7 @@ public class BitflyerContextTest {
 
         Collateral c = mock(Collateral.class);
         when(c.getCollateral()).thenReturn(TEN.add(TEN));
-        when(accountService.getCollateral()).thenReturn(completedFuture(c), null);
+        when(accountService.getCollateral()).thenReturn(completedFuture(c)).thenReturn(null);
 
         Key key1 = Key.from(Request.builder().instrument("BTCJPY_MAT1WK").build());
         Key key2 = Key.from(Request.builder().instrument("BTC_JPY").build());
@@ -428,7 +428,7 @@ public class BitflyerContextTest {
 
         CompletableFuture<TradeCommission.Response> f = completedFuture(mock(TradeCommission.Response.class));
         when(f.get().getRate()).thenReturn(ONE.movePointLeft(3));
-        when(orderService.getCommission(any())).thenReturn(f, null);
+        when(orderService.getCommission(any())).thenReturn(f).thenReturn(null);
 
         assertEquals(target.getCommissionRate(key), ONE.movePointLeft(3));
         assertEquals(target.getCommissionRate(key), ONE.movePointLeft(3));
