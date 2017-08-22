@@ -121,7 +121,7 @@ public class TemplateAdviser implements Adviser {
             }
 
             // Leveraged short can be larger than the funding.
-            return equivalent.divide(funding, PRECISION, HALF_UP).min(ONE).max(ONE.negate());
+            return equivalent.divide(funding, PRECISION, HALF_UP);
 
         }
 

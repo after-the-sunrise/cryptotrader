@@ -160,7 +160,7 @@ public class TemplateAdviserTest {
 
         // Leveraged Long (2345 * 5 / 9800 = 1.19642857142857..)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
-        assertEquals(target.calculatePositionRatio(context, request), ONE);
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("1.196428571429"));
 
         // Short (2345 * -3 / 9800 = -0.71785714285714..)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-3"));
@@ -168,7 +168,7 @@ public class TemplateAdviserTest {
 
         // Leveraged Short (2345 * -5 / 9800 = -1.19642857142857..)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-5"));
-        assertEquals(target.calculatePositionRatio(context, request), ONE.negate());
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-1.196428571429"));
 
         // Flat
         when(context.getInstrumentPosition(key)).thenReturn(ZERO);
