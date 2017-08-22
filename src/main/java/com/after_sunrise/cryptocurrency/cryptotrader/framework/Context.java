@@ -93,6 +93,8 @@ public interface Context extends Supplier<String> {
 
     BigDecimal getCommissionRate(Key key);
 
+    Boolean isMarginable(Key key);
+
     Order findOrder(Key key, String id);
 
     List<Order> listActiveOrders(Key key);

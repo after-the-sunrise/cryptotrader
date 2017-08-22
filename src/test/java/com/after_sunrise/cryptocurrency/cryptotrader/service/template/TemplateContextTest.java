@@ -79,6 +79,11 @@ public class TemplateContextTest {
         }
 
         @Override
+        public Boolean isMarginable(Key key) {
+            return null;
+        }
+
+        @Override
         public Order findOrder(Key key, String id) {
             return null;
         }

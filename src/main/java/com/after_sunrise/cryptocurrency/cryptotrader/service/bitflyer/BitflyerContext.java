@@ -27,7 +27,10 @@ import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.LIM
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.MARKET;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.SELL;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.COLLATERAL;
+import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
+import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 
@@ -113,48 +116,116 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
     }
 
-    @VisibleForTesting
-    BigDecimal forBalance(Key key, Function<ProductType, AssetType> mapper, Function<Balance, BigDecimal> function) {
-
-        if (key == null) {
-            return null;
-        }
-
-        ProductType instrumentType = ProductType.find(key.getInstrument());
-
-        if (instrumentType == null) {
-            return null;
-        }
-
-        String currency = mapper.apply(instrumentType).name();
-
-        List<Balance> balances = listCached(Balance.class, key, () ->
-                accountService.getBalances().get(TIMEOUT.toMillis(), MILLISECONDS)
-        );
-
-        return Optional.ofNullable(balances).orElse(emptyList()).stream()
-                .filter(Objects::nonNull)
-                .filter(b -> StringUtils.equals(currency, b.getCurrency()))
-                .map(function)
-                .findFirst().orElse(null);
-
-    }
-
     @Override
     public BigDecimal getInstrumentPosition(Key key) {
 
-        // TODO : Handle margin products (FX + Futures)
-
-        return forBalance(key, ProductType::getStructure, Balance::getAmount);
+        return forBalance(key, ProductType::getStructure);
 
     }
 
     @Override
     public BigDecimal getFundingPosition(Key key) {
 
-        // TODO : Handle margin products (FX + Futures)
+        return forBalance(key, ProductType::getFunding);
 
-        return forBalance(key, ProductType::getFunding, Balance::getAmount);
+    }
+
+    @VisibleForTesting
+    BigDecimal forBalance(Key key, Function<ProductType, AssetType> mapper) {
+
+        if (key == null) {
+            return null;
+        }
+
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null) {
+            return null;
+        }
+
+        if (product.getFunding() == COLLATERAL) {
+            return forMargin(key, mapper);
+        }
+
+        String currency = mapper.apply(product).name();
+
+        List<Balance> balances = listCached(Balance.class, key, () ->
+                accountService.getBalances().get(TIMEOUT.toMillis(), MILLISECONDS)
+        );
+
+        return ofNullable(balances).orElse(emptyList()).stream()
+                .filter(Objects::nonNull)
+                .filter(b -> StringUtils.equals(currency, b.getCurrency()))
+                .map(b -> b.getAmount())
+                .findFirst().orElse(null);
+
+    }
+
+    @VisibleForTesting
+    BigDecimal forMargin(Key key, Function<ProductType, AssetType> mapper) {
+
+        if (key == null) {
+            return null;
+        }
+
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null || product.getFunding() != COLLATERAL) {
+            return null;
+        }
+
+        if (mapper.apply(product) == COLLATERAL) {
+
+            Collateral collateral = findCached(Collateral.class, key, () ->
+                    accountService.getCollateral().get(TIMEOUT.toMillis(), MILLISECONDS)
+            );
+
+            return collateral == null ? null : collateral.getCollateral();
+
+        }
+
+        List<TradePosition.Response> positions = listCached(TradePosition.Response.class, key, () -> {
+
+            // "BTCJPY_MAT2WK" -> "BTCJPYddmmmyyyy"
+            String productId = convertProductAlias(key);
+
+            TradePosition request = TradePosition.builder().product(productId).build();
+
+            return orderService.listPositions(request).get(TIMEOUT.toMillis(), MILLISECONDS);
+
+        });
+
+        Optional<BigDecimal> sum = ofNullable(positions).orElse(emptyList()).stream()
+                .filter(Objects::nonNull)
+                .filter(p -> Objects.nonNull(p.getSide()))
+                .filter(p -> Objects.nonNull(p.getSize()))
+                .map(p -> p.getSide() == BUY ? p.getSize() : p.getSize().negate())
+                .reduce(BigDecimal::add);
+
+        return sum.orElse(ZERO);
+
+    }
+
+    @VisibleForTesting
+    String convertProductAlias(Key key) {
+
+        if (key == null || StringUtils.isEmpty(key.getInstrument())) {
+            return null;
+        }
+
+        List<Product> products = listCached(Product.class, key, () ->
+                marketService.getProducts().get(TIMEOUT.toMillis(), MILLISECONDS)
+        );
+
+        return ofNullable(products).orElse(emptyList()).stream()
+                .filter(Objects::nonNull)
+                .filter(p -> StringUtils.isNotEmpty(p.getProduct()))
+                .filter(p ->
+                        StringUtils.equals(key.getInstrument(), p.getProduct())
+                                || StringUtils.equals(key.getInstrument(), p.getAlias())
+                )
+                .map(Product::getProduct)
+                .findFirst().orElse(null);
 
     }
 
@@ -207,6 +278,23 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
     }
 
+    @Override
+    public Boolean isMarginable(Key key) {
+
+        if (key == null) {
+            return false;
+        }
+
+        ProductType type = ProductType.find(key.getInstrument());
+
+        if (type == null) {
+            return false;
+        }
+
+        return type.getFunding() == COLLATERAL;
+
+    }
+
     @VisibleForTesting
     List<Order> fetchOrder(Key key) {
 
@@ -218,7 +306,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
         });
 
-        return Optional.ofNullable(values).orElse(emptyList()).stream()
+        return ofNullable(values).orElse(emptyList()).stream()
                 .filter(Objects::nonNull).map(BitflyerOrder::new).collect(toList());
 
     }

@@ -16,14 +16,19 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.LIMIT;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.MARKET;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.SELL;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.COLLATERAL;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.FUTURE_BTC1W;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.BTCJPY_MAT1WK;
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
@@ -144,54 +149,6 @@ public class BitflyerContextTest {
     }
 
     @Test
-    public void testForBalance() throws Exception {
-
-
-        Balance b1 = null;
-        Balance b2 = mock(Balance.class);
-        Balance b3 = mock(Balance.class);
-
-        when(b2.getCurrency()).thenReturn("BTC");
-        when(b2.getAmount()).thenReturn(TEN);
-
-        CompletableFuture<List<Balance>> f1 = completedFuture(asList(b1, null, b2));
-        CompletableFuture<List<Balance>> f2 = completedFuture(asList(b2, null, b3));
-        when(accountService.getBalances()).thenReturn(f1, f2, null);
-
-
-        // Null key
-        Key key = null;
-        assertNull(target.forBalance(key, ProductType::getStructure, Balance::getAmount));
-        verifyNoMoreInteractions(accountService);
-
-        // No instrument
-        key = Key.from(Request.builder().build());
-        assertNull(target.forBalance(key, ProductType::getStructure, Balance::getAmount));
-        verifyNoMoreInteractions(accountService);
-
-        // Unknown instrument
-        key = Key.from(Request.builder().instrument("hoge").build());
-        assertNull(target.forBalance(key, ProductType::getStructure, Balance::getAmount));
-        verifyNoMoreInteractions(accountService);
-
-        // Found
-        key = Key.from(Request.builder().instrument("BTC_JPY").build());
-        assertEquals(target.forBalance(key, ProductType::getStructure, Balance::getAmount), TEN);
-        assertEquals(target.forBalance(key, ProductType::getStructure, Balance::getAmount), TEN);
-
-        // Next query
-        target.clear();
-        assertEquals(target.forBalance(key, ProductType::getStructure, Balance::getAmount), TEN);
-        assertEquals(target.forBalance(key, ProductType::getStructure, Balance::getAmount), TEN);
-
-        // Null result
-        target.clear();
-        assertNull(target.forBalance(key, ProductType::getStructure, Balance::getAmount));
-        assertNull(target.forBalance(key, ProductType::getStructure, Balance::getAmount));
-
-    }
-
-    @Test
     public void testGetInstrumentPosition() throws Exception {
 
         Key key = Key.from(Request.builder().instrument("BTC_JPY").build());
@@ -213,6 +170,27 @@ public class BitflyerContextTest {
     }
 
     @Test
+    public void testGetInstrumentPosition_Margin() throws Exception {
+
+        Key key = Key.from(Request.builder().instrument("BTCJPY_MAT1WK").build());
+
+        BigDecimal margin = ONE.add(ONE);
+
+        doAnswer(i -> {
+
+            assertSame(i.getArgumentAt(0, Key.class), key);
+
+            assertSame(i.getArgumentAt(1, Function.class).apply(BTCJPY_MAT1WK), FUTURE_BTC1W);
+
+            return margin;
+
+        }).when(target).forMargin(any(), any());
+
+        assertEquals(target.getInstrumentPosition(key), margin);
+
+    }
+
+    @Test
     public void testGetFundingPosition() throws Exception {
 
         Key key = Key.from(Request.builder().instrument("BTC_JPY").build());
@@ -230,6 +208,186 @@ public class BitflyerContextTest {
         target.clear();
         assertEquals(target.getFundingPosition(key), TEN);
         assertEquals(target.getFundingPosition(key), TEN);
+
+    }
+
+    @Test
+    public void testGetFundingPosition_Margin() throws Exception {
+
+        Key key = Key.from(Request.builder().instrument("BTCJPY_MAT1WK").build());
+
+        BigDecimal margin = ONE.add(ONE);
+
+        doAnswer(i -> {
+
+            assertSame(i.getArgumentAt(0, Key.class), key);
+
+            assertSame(i.getArgumentAt(1, Function.class).apply(BTCJPY_MAT1WK), COLLATERAL);
+
+            return margin;
+
+        }).when(target).forMargin(any(), any());
+
+        assertEquals(target.getFundingPosition(key), margin);
+
+    }
+
+    @Test
+    public void testForBalance() throws Exception {
+
+        Balance b1 = null;
+        Balance b2 = mock(Balance.class);
+        Balance b3 = mock(Balance.class);
+
+        when(b2.getCurrency()).thenReturn("BTC");
+        when(b2.getAmount()).thenReturn(TEN);
+
+        CompletableFuture<List<Balance>> f1 = completedFuture(asList(b1, null, b2));
+        CompletableFuture<List<Balance>> f2 = completedFuture(asList(b2, null, b3));
+        when(accountService.getBalances()).thenReturn(f1, f2, null);
+
+        // Null key
+        Key key = null;
+        assertNull(target.forBalance(key, ProductType::getStructure));
+        verifyNoMoreInteractions(accountService);
+
+        // No instrument
+        key = Key.from(Request.builder().build());
+        assertNull(target.forBalance(key, ProductType::getStructure));
+        verifyNoMoreInteractions(accountService);
+
+        // Unknown instrument
+        key = Key.from(Request.builder().instrument("hoge").build());
+        assertNull(target.forBalance(key, ProductType::getStructure));
+        verifyNoMoreInteractions(accountService);
+
+        // Found
+        key = Key.from(Request.builder().instrument("BTC_JPY").build());
+        assertEquals(target.forBalance(key, ProductType::getStructure), TEN);
+        assertEquals(target.forBalance(key, ProductType::getStructure), TEN);
+
+        // Next query
+        target.clear();
+        assertEquals(target.forBalance(key, ProductType::getStructure), TEN);
+        assertEquals(target.forBalance(key, ProductType::getStructure), TEN);
+
+        // Null result
+        target.clear();
+        assertNull(target.forBalance(key, ProductType::getStructure));
+        assertNull(target.forBalance(key, ProductType::getStructure));
+
+    }
+
+    @Test
+    public void testForMargin() {
+
+        Product i1 = mock(Product.class);
+        Product i2 = mock(Product.class);
+        Product i3 = mock(Product.class);
+        Product i4 = mock(Product.class);
+        when(i1.getProduct()).thenReturn("BTCJPY08JAN2017");
+        when(i2.getProduct()).thenReturn("BTCJPY14APR2017");
+        when(i3.getProduct()).thenReturn("BTCJPY08OCT2017");
+        when(i2.getAlias()).thenReturn("BTCJPY_MAT1WK");
+        when(i3.getAlias()).thenReturn("BTCJPY_MAT2WK");
+        when(i3.getAlias()).thenReturn("BTCJPY_MAT3WK");
+        when(marketService.getProducts()).thenReturn(completedFuture(asList(i1, null, i2, i3, i4)), null);
+
+        TradePosition.Response p1 = mock(TradePosition.Response.class);
+        TradePosition.Response p2 = mock(TradePosition.Response.class);
+        TradePosition.Response p3 = mock(TradePosition.Response.class);
+        TradePosition.Response p4 = mock(TradePosition.Response.class);
+        TradePosition.Response p5 = mock(TradePosition.Response.class);
+        TradePosition.Response p6 = mock(TradePosition.Response.class);
+        when(p2.getSide()).thenReturn(BUY); // No price
+        when(p3.getSide()).thenReturn(BUY);
+        when(p4.getSide()).thenReturn(SELL);
+        when(p5.getSide()).thenReturn(SELL);
+        when(p3.getSize()).thenReturn(TEN); // +10
+        when(p4.getSize()).thenReturn(ONE); // -1
+        when(p5.getSize()).thenReturn(ONE); // -1
+        when(p6.getSize()).thenReturn(ONE); // No side
+        when(orderService.listPositions(any())).thenAnswer(i -> {
+
+            // Should be converted from "BTCJPY_MAT1WK" to "BTCJPY14APR2017"
+            assertEquals(i.getArgumentAt(0, TradePosition.class).getProduct(), "BTCJPY14APR2017");
+
+            return completedFuture(asList(p1, p2, p3, null, p4, p5, p6));
+
+        }).thenReturn(null);
+
+        Collateral c = mock(Collateral.class);
+        when(c.getCollateral()).thenReturn(TEN.add(TEN));
+        when(accountService.getCollateral()).thenReturn(completedFuture(c), null);
+
+        Key key1 = Key.from(Request.builder().instrument("BTCJPY_MAT1WK").build());
+        Key key2 = Key.from(Request.builder().instrument("BTC_JPY").build());
+        Key key3 = Key.from(Request.builder().instrument("TEST").build());
+        Key key4 = null;
+
+        assertEquals(target.forMargin(key1, ProductType::getStructure), TEN.subtract(ONE).subtract(ONE));
+        assertEquals(target.forMargin(key1, ProductType::getStructure), TEN.subtract(ONE).subtract(ONE));
+        assertEquals(target.forMargin(key2, ProductType::getStructure), null);
+        assertEquals(target.forMargin(key3, ProductType::getStructure), null);
+        assertEquals(target.forMargin(key4, ProductType::getStructure), null);
+        assertEquals(target.forMargin(key1, ProductType::getFunding), TEN.add(TEN));
+        assertEquals(target.forMargin(key1, ProductType::getFunding), TEN.add(TEN));
+        assertEquals(target.forMargin(key2, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key3, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key4, ProductType::getFunding), null);
+        target.clear();
+        assertEquals(target.forMargin(key1, ProductType::getStructure), ZERO);
+        assertEquals(target.forMargin(key2, ProductType::getStructure), null);
+        assertEquals(target.forMargin(key3, ProductType::getStructure), null);
+        assertEquals(target.forMargin(key4, ProductType::getStructure), null);
+        assertEquals(target.forMargin(key1, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key2, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key3, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key4, ProductType::getFunding), null);
+
+    }
+
+    @Test
+    public void testConvertProductAlias() {
+
+        List<Product> products = new ArrayList<>();
+        products.add(mock(Product.class));
+        products.add(mock(Product.class));
+        products.add(null);
+        products.add(mock(Product.class));
+        products.add(mock(Product.class));
+        when(products.get(0).getProduct()).thenReturn("BTCJPY08JAN2017");
+        when(products.get(1).getProduct()).thenReturn("BTCJPY14APR2017");
+        when(products.get(3).getProduct()).thenReturn("BTCJPY08OCT2017");
+        when(products.get(4).getProduct()).thenReturn(null);
+        when(products.get(0).getAlias()).thenReturn(null);
+        when(products.get(1).getAlias()).thenReturn("BTCJPY_MAT1WK");
+        when(products.get(3).getAlias()).thenReturn("BTCJPY_MAT2WK");
+        when(products.get(4).getAlias()).thenReturn("BTCJPY_MAT3WK");
+
+        when(marketService.getProducts()).thenReturn(completedFuture(products));
+
+        Key.KeyBuilder b = Key.builder();
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY08JAN2017").build()), "BTCJPY08JAN2017");
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY14APR2017").build()), "BTCJPY14APR2017");
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY08OCT2017").build()), "BTCJPY08OCT2017");
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT1WK").build()), "BTCJPY14APR2017");
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT2WK").build()), "BTCJPY08OCT2017");
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT3WK").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument("TEST").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument(null).build()), null);
+        assertEquals(target.convertProductAlias(null), null);
+        reset(marketService);
+        target.clear();
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY08JAN2017").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY14APR2017").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY08OCT2017").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT1WK").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT2WK").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT3WK").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument("TEST").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument(null).build()), null);
+        assertEquals(target.convertProductAlias(null), null);
 
     }
 
@@ -277,6 +435,23 @@ public class BitflyerContextTest {
         target.clear();
         assertEquals(target.getCommissionRate(key), null);
         assertEquals(target.getBestAskPrice(key), null);
+
+    }
+
+    @Test
+    public void testIsMarginable() {
+
+        Key.KeyBuilder builder = Key.builder();
+
+        assertFalse(target.isMarginable(builder.build()));
+        assertFalse(target.isMarginable(builder.instrument("FOO").build()));
+        assertFalse(target.isMarginable(builder.instrument("JPY").build()));
+        assertFalse(target.isMarginable(builder.instrument("BTC_JPY").build()));
+        assertFalse(target.isMarginable(null));
+
+        assertTrue(target.isMarginable(builder.instrument("FX_BTC_JPY").build()));
+        assertTrue(target.isMarginable(builder.instrument("BTCJPY_MAT1WK").build()));
+        assertTrue(target.isMarginable(builder.instrument("BTCJPY_MAT2WK").build()));
 
     }
 

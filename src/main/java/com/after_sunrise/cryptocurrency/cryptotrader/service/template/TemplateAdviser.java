@@ -9,7 +9,9 @@ import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
+import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.*;
@@ -61,7 +63,7 @@ public class TemplateAdviser implements Adviser {
         BigDecimal bPrice = calculateBuyLimitPrice(context, request, estimation);
         BigDecimal sPrice = calculateSellLimitPrice(context, request, estimation);
         BigDecimal bSize = calculateBuyLimitSize(context, request, bPrice);
-        BigDecimal sSize = calculateSellLimitSize(context, request);
+        BigDecimal sSize = calculateSellLimitSize(context, request, sPrice);
 
         Advice advice = Advice.builder().buyLimitPrice(bPrice).buyLimitSize(bSize) //
                 .sellLimitPrice(sPrice).sellLimitSize(sSize).build();
@@ -72,6 +74,7 @@ public class TemplateAdviser implements Adviser {
 
     }
 
+    @VisibleForTesting
     BigDecimal calculateWeighedPrice(Context context, Request request, Estimation estimation) {
 
         Key key = Key.from(request);
@@ -110,6 +113,17 @@ public class TemplateAdviser implements Adviser {
         BigDecimal price = ofNullable(context.getMidPrice(key)).orElse(ZERO);
 
         BigDecimal equivalent = structure.multiply(price);
+
+        if (Objects.equals(TRUE, context.isMarginable(key))) {
+
+            if (funding.signum() == 0) {
+                return ZERO;
+            }
+
+            // Leveraged short can be larger than the funding.
+            return equivalent.divide(funding, PRECISION, HALF_UP).min(ONE).max(ONE.negate());
+
+        }
 
         BigDecimal sum = equivalent.add(funding);
 
@@ -201,9 +215,8 @@ public class TemplateAdviser implements Adviser {
 
     }
 
-
     @VisibleForTesting
-    BigDecimal calculateBuyLimitSize(Context context, Request request, BigDecimal price) {
+    BigDecimal calculateFundingLimitSize(Context context, Request request, BigDecimal price) {
 
         if (price == null || price.signum() == 0) {
 
@@ -229,40 +242,86 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal exposure = request.getTradingExposure();
 
-        BigDecimal result = context.roundLotSize(key, product.multiply(exposure), DOWN);
+        BigDecimal exposed = product.multiply(exposure);
 
-        String message = "Buy size : {} (price=[{}] fund=[{}] product=[{}] exposure=[{}])";
+        BigDecimal rounded = context.roundLotSize(key, exposed, DOWN);
 
-        log.trace(message, result, price, fund, product, exposure);
+        log.trace("Funding limit size : {} (exposure=[{}] fund=[{}] price=[{}])", rounded, exposure, fund, price);
 
-        return ofNullable(result).orElse(ZERO);
+        return ofNullable(rounded).orElse(ZERO);
 
     }
 
     @VisibleForTesting
-    BigDecimal calculateSellLimitSize(Context context, Request request) {
+    BigDecimal calculateBuyLimitSize(Context context, Request request, BigDecimal price) {
+
+        BigDecimal limitSize = calculateFundingLimitSize(context, request, price);
 
         Key key = Key.from(request);
 
+        if (!Objects.equals(TRUE, context.isMarginable(key))) {
+
+            log.trace("Cash Buy size : {}", limitSize);
+
+            return limitSize;
+
+        }
+
         BigDecimal position = context.getInstrumentPosition(key);
 
-        if (position == null || position.signum() == 0) {
+        if (position == null) {
 
-            log.trace("Position not available : {}");
+            log.trace("Margin buy size not not available. Null position.");
 
             return ZERO;
 
         }
 
+        // Leveraged short can be larger than the funding.
+        BigDecimal netSize = limitSize.subtract(position).max(ZERO);
+
+        log.trace("Margin Buy size : {} (position=[{}] funding=[{}])", netSize, position, limitSize);
+
+        return netSize;
+
+    }
+
+    protected BigDecimal calculateSellLimitSize(Context context, Request request, BigDecimal price) {
+
+        Key key = Key.from(request);
+
+        BigDecimal position = context.getInstrumentPosition(key);
+
+        if (position == null) {
+
+            log.trace("Sell size not not available. Null position.");
+
+            return ZERO;
+
+        }
+
+        if (Objects.equals(TRUE, context.isMarginable(key))) {
+
+            BigDecimal limitSize = calculateFundingLimitSize(context, request, price);
+
+            // Leveraged short can be larger than the funding.
+            BigDecimal netSize = limitSize.add(position).max(ZERO);
+
+            log.trace("Margin sell size : {} (position=[{}] funding=[{}])", netSize, position, limitSize);
+
+            return netSize;
+
+        }
+
         BigDecimal exposure = request.getTradingExposure();
 
-        BigDecimal exposurePosition = position.multiply(exposure);
+        BigDecimal exposed = position.multiply(exposure);
 
-        BigDecimal result = context.roundLotSize(key, exposurePosition, DOWN);
+        BigDecimal rounded = context.roundLotSize(key, exposed, DOWN);
 
-        log.trace("Sell size : {} (position=[{}] exposure=[{}])", result, position, exposure);
+        log.trace("Cash sell size : {} (position=[{}] exposure=[{}])", rounded, position, exposure);
 
-        return ofNullable(result).orElse(ZERO);
+        return ofNullable(rounded).orElse(ZERO);
 
     }
 

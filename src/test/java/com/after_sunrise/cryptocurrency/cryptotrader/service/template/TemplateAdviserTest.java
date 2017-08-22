@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.function.BiFunction;
 
+import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.*;
 import static java.time.Instant.now;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
@@ -81,7 +82,7 @@ public class TemplateAdviserTest {
         doReturn(valueOf(1)).when(target).calculateBuyLimitPrice(context, request, estimation);
         doReturn(valueOf(2)).when(target).calculateBuyLimitSize(context, request, valueOf(1));
         doReturn(valueOf(3)).when(target).calculateSellLimitPrice(context, request, estimation);
-        doReturn(valueOf(4)).when(target).calculateSellLimitSize(context, request);
+        doReturn(valueOf(4)).when(target).calculateSellLimitSize(context, request, valueOf(3));
 
         Advice result = target.advise(context, request, estimation);
         assertEquals(result.getBuyLimitPrice(), valueOf(1));
@@ -104,10 +105,11 @@ public class TemplateAdviserTest {
     }
 
     @Test
-    public void testCalculatePositionRatio() {
+    public void testCalculatePositionRatio_Cash() {
 
         Request request = rBuilder.build();
         Key key = Key.from(request);
+        when(context.isMarginable(key)).thenReturn(null);
 
         // Net-Long
         // Fund = 9,800 : Structure = 5 * 2345 = 11,725
@@ -140,6 +142,41 @@ public class TemplateAdviserTest {
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("0"));
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-1.000000000000"));
+
+    }
+
+    @Test
+    public void testCalculatePositionRatio_Margin() {
+
+        Request request = rBuilder.build();
+        Key key = Key.from(request);
+        when(context.isMarginable(key)).thenReturn(true);
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9800"));
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
+
+        // Long (2345 * 3 / 9800 = 0.71785714285714..)
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("3"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("0.717857142857"));
+
+        // Leveraged Long (2345 * 5 / 9800 = 1.19642857142857..)
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
+        assertEquals(target.calculatePositionRatio(context, request), ONE);
+
+        // Short (2345 * -3 / 9800 = -0.71785714285714..)
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-3"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-0.717857142857"));
+
+        // Leveraged Short (2345 * -5 / 9800 = -1.19642857142857..)
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-5"));
+        assertEquals(target.calculatePositionRatio(context, request), ONE.negate());
+
+        // Flat
+        when(context.getInstrumentPosition(key)).thenReturn(ZERO);
+        assertEquals(target.calculatePositionRatio(context, request).signum(), 0);
+
+        // Null
+        when(context.getInstrumentPosition(key)).thenReturn(null);
+        assertEquals(target.calculatePositionRatio(context, request).signum(), 0);
 
     }
 
@@ -244,12 +281,13 @@ public class TemplateAdviserTest {
     }
 
     @Test
-    public void testCalculateBuyLimitSize() throws Exception {
+    public void testCalculateBuyLimitSize_Cash() throws Exception {
 
         Request request = rBuilder.build();
         Key key = Key.from(request);
         BigDecimal price = new BigDecimal("123.4567");
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9000"));
+        when(context.isMarginable(key)).thenReturn(null);
 
         // Exposed = Fund * Exposure = 900
         // Fund / Price = 7.290005322...
@@ -271,23 +309,86 @@ public class TemplateAdviserTest {
     }
 
     @Test
-    public void testCalculateSellLimitSize() throws Exception {
+    public void testCalculateBuyLimitSize_Margin() throws Exception {
 
         Request request = rBuilder.build();
         Key key = Key.from(request);
+        when(context.isMarginable(key)).thenReturn(TRUE);
+
+        // Exposed = Fund * Exposure = 900
+        // Fund / Price = 7.290005322...
+        // Rounded = 7.25
+        BigDecimal price = new BigDecimal("123.4567");
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9000"));
+
+        // Net Position = 7.25 - (+4.75) = 2.5
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("+4.75"));
+        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("2.50"));
+
+        // Net Position = 7.25 - (+9.75) = -2.5 -> 0
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("+9.75"));
+        assertEquals(target.calculateBuyLimitSize(context, request, price), ZERO);
+
+        // Net Position = 7.25 - (-4.75) = 12
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4.75"));
+        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("12.00"));
+
+        // Null Position = 7.25 - null = null
+        when(context.getInstrumentPosition(key)).thenReturn(null);
+        assertEquals(target.calculateBuyLimitSize(context, request, price), ZERO);
+
+    }
+
+    @Test
+    public void testCalculateSellLimitSize_Cash() throws Exception {
+
+        Request request = rBuilder.build();
+        Key key = Key.from(request);
+        when(context.isMarginable(key)).thenReturn(null);
 
         // Exposure  = Instrument * Exposure = 12.3456789
         // Rounded = 12.25
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("123.456789"));
-        assertEquals(target.calculateSellLimitSize(context, request), new BigDecimal("12.25"));
+        assertEquals(target.calculateSellLimitSize(context, request, null), new BigDecimal("12.25"));
 
         // No position
         when(context.getInstrumentPosition(key)).thenReturn(ZERO);
-        assertEquals(target.calculateSellLimitSize(context, request), ZERO);
+        assertEquals(target.calculateSellLimitSize(context, request, null).signum(), 0);
 
         // Null position
         when(context.getInstrumentPosition(key)).thenReturn(null);
-        assertEquals(target.calculateSellLimitSize(context, request), ZERO);
+        assertEquals(target.calculateSellLimitSize(context, request, null).signum(), 0);
+
+    }
+
+    @Test
+    public void testCalculateSellLimitSize_Margin() throws Exception {
+
+        Request request = rBuilder.build();
+        Key key = Key.from(request);
+        when(context.isMarginable(key)).thenReturn(TRUE);
+
+        // Exposed = Fund * Exposure = 900
+        // Fund / Price = 7.290005322...
+        // Rounded = 7.25
+        BigDecimal price = new BigDecimal("123.4567");
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9000"));
+
+        // Net Position = 7.25 + (+4.75) = 12
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("+4.75"));
+        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("12.00"));
+
+        // Net Position = 7.25 + (-4.75) = 2.50
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4.75"));
+        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("2.50"));
+
+        // Net Position = 7.25 + (-9.75) = -2.5 -> 0
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-9.75"));
+        assertEquals(target.calculateSellLimitSize(context, request, price), ZERO);
+
+        // Null Position = 7.25 + null = null
+        when(context.getInstrumentPosition(key)).thenReturn(null);
+        assertEquals(target.calculateSellLimitSize(context, request, price), ZERO);
 
     }
 
