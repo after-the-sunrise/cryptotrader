@@ -1,6 +1,9 @@
 package com.after_sunrise.cryptocurrency.cryptotrader;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.CryptotraderImpl;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.Test;
 
@@ -121,6 +124,18 @@ public class CryptotraderTest {
         }
 
         return o;
+
+    }
+
+    public static void main(String[] args) {
+
+        CryptotraderImpl.Module module = new CryptotraderImpl.Module();
+
+        Injector i = Guice.createInjector(module);
+
+        i.getInstance(Cryptotrader.class).execute();
+
+        i.getInstance(Cryptotrader.class).shutdown();
 
     }
 
