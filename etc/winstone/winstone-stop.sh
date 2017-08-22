@@ -6,6 +6,10 @@ java -cp "`find . -name "winstone-*.jar"`" winstone.tools.WinstoneControl shutdo
 
 RET=$?
 
+sleep 3
+
+ps -ef | grep java | grep winstone
+
 popd > /dev/null 2>&1
 
 exit $RET
