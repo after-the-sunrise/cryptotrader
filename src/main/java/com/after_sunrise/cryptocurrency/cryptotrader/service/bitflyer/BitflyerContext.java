@@ -194,7 +194,23 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
                     accountService.getCollateral().get(TIMEOUT.toMillis(), MILLISECONDS)
             );
 
-            return collateral == null ? null : collateral.getCollateral();
+            if (collateral == null) {
+                return null;
+            }
+
+            BigDecimal amount = collateral.getCollateral();
+
+            if (amount == null) {
+                return null;
+            }
+
+            BigDecimal pl = collateral.getOpenPositionPl();
+
+            if (pl == null) {
+                return null;
+            }
+
+            return amount.add(pl.min(ZERO));
 
         }
 
