@@ -45,6 +45,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
     private static final Duration TIMEOUT = Duration.ofMinutes(1);
 
+    private static final BigDecimal HALF = new BigDecimal("0.5");
+
     private Bitflyer4j bitflyer4j;
 
     private AccountService accountService;
@@ -97,11 +99,23 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     @Override
     public BigDecimal getMidPrice(Key key) {
 
-        Board val = findCached(Board.class, key, () ->
-                marketService.getBoard(key.getInstrument()).get(TIMEOUT.toMillis(), MILLISECONDS)
+        Tick tick = findCached(Tick.class, key, () ->
+                marketService.getTick(key.getInstrument()).get(TIMEOUT.toMillis(), MILLISECONDS)
         );
 
-        return val == null ? null : val.getMid();
+        if (tick == null) {
+            return null;
+        }
+
+        BigDecimal ask = tick.getBestAskPrice();
+
+        BigDecimal bid = tick.getBestBidPrice();
+
+        if (ask == null || bid == null) {
+            return null;
+        }
+
+        return ask.add(bid).multiply(HALF);
 
     }
 

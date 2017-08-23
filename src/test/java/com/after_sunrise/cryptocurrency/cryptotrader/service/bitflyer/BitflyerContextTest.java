@@ -115,17 +115,33 @@ public class BitflyerContextTest {
 
         Key key = Key.from(Request.builder().instrument("i").build());
 
-        CompletableFuture<Board> f1 = completedFuture(mock(Board.class));
-        CompletableFuture<Board> f2 = completedFuture(mock(Board.class));
-        when(f1.get().getMid()).thenReturn(ONE);
-        when(f2.get().getMid()).thenReturn(TEN);
-        when(marketService.getBoard("i")).thenReturn(f1, f2);
-
-        assertEquals(target.getMidPrice(key), ONE);
-        assertEquals(target.getMidPrice(key), ONE);
+        when(marketService.getTick(anyString())).thenReturn(null);
+        assertNull(target.getMidPrice(key));
         target.clear();
-        assertEquals(target.getMidPrice(key), TEN);
-        assertEquals(target.getMidPrice(key), TEN);
+
+        when(marketService.getTick(anyString())).thenReturn(completedFuture(null));
+        assertNull(target.getMidPrice(key));
+        target.clear();
+
+        Tick tick = mock(Tick.class);
+        when(marketService.getTick(anyString())).thenReturn(completedFuture(tick)).thenReturn(null);
+        assertNull(target.getMidPrice(key));
+
+        when(tick.getBestAskPrice()).thenReturn(null);
+        when(tick.getBestBidPrice()).thenReturn(ONE);
+        assertNull(target.getMidPrice(key));
+
+        when(tick.getBestAskPrice()).thenReturn(TEN);
+        when(tick.getBestBidPrice()).thenReturn(null);
+        assertNull(target.getMidPrice(key));
+
+        when(tick.getBestAskPrice()).thenReturn(TEN);
+        when(tick.getBestBidPrice()).thenReturn(ONE);
+        assertEquals(target.getMidPrice(key), new BigDecimal("5.5"));
+        assertEquals(target.getMidPrice(key), new BigDecimal("5.5"));
+        target.clear();
+        assertNull(target.getMidPrice(key));
+        assertNull(target.getMidPrice(key));
 
     }
 
