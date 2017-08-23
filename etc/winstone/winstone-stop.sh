@@ -2,7 +2,7 @@
 
 pushd "`dirname "$0"`" > /dev/null || exit $?
 
-java -cp "`find . -name "winstone-*.jar"`" winstone.tools.WinstoneControl shutdown --host=127.0.01 --port=40422
+java -cp "`find . -name "winstone-*.jar"`" winstone.tools.WinstoneControl shutdown --host=127.0.01 --port=41422
 
 RET=$?
 

@@ -28,8 +28,8 @@ nohup \
   --httpListenAddress=127.0.0.1 \
   --httpPort=41480 \
   --httpsListenAddress=127.0.0.1 \
-  --httpsPort=40443 \
-  --controlPort=40422 \
+  --httpsPort=41443 \
+  --controlPort=41422 \
  > logs/winstone-console.log 2>&1 & > logs/winstone-nohup.log 2>&1
 
 sleep 1
@@ -39,7 +39,7 @@ ps -ef | grep "java" | grep "winstone" | grep "cryptotrader"
 popd > /dev/null 2>&1
 
 #  -Dcom.sun.management.jmxremote \
-#  -Dcom.sun.management.jmxremote.port=50414 \
+#  -Dcom.sun.management.jmxremote.port=41414 \
 #  -Dcom.sun.management.jmxremote.authenticate=true \
 #  -Dcom.sun.management.jmxremote.password.file=~/.jmxremote
 #  -Dcom.sun.management.jmxremote.ssl=true \
