@@ -30,7 +30,11 @@ nohup \
   --httpsListenAddress=127.0.0.1 \
   --httpsPort=40443 \
   --controlPort=40422 \
- > logs/winstone-console.log 2>&1 & > logs/winstone-nohup.log
+ > logs/winstone-console.log 2>&1 & > logs/winstone-nohup.log 2>&1
+
+sleep 1
+
+ps -ef | grep "java" | grep "winstone" | grep "cryptotrader"
 
 popd > /dev/null 2>&1
 
