@@ -3,12 +3,14 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -100,6 +102,11 @@ public class TemplateContextTest {
 
         @Override
         public String cancelOrder(Key key, Instruction.CancelInstruction instruction) {
+            return null;
+        }
+
+        @Override
+        public List<Trade> listTrades(Key key, Instant fromTime) {
             return null;
         }
 

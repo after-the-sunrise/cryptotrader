@@ -10,12 +10,14 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -161,6 +163,41 @@ public class BitflyerContextTest {
         target.clear();
         assertEquals(target.getLastPrice(key), TEN);
         assertEquals(target.getLastPrice(key), TEN);
+
+    }
+
+    @Test
+    public void testListExecutions() {
+
+        Key key = Key.from(Request.builder().instrument("inst").build());
+
+        ZonedDateTime time = ZonedDateTime.now();
+
+        Execution e1 = mock(Execution.class);
+        Execution e2 = mock(Execution.class);
+        Execution e3 = mock(Execution.class);
+        Execution e4 = mock(Execution.class);
+        Execution e5 = mock(Execution.class);
+        Execution e6 = mock(Execution.class);
+        Execution e7 = mock(Execution.class);
+        when(e1.getTimestamp()).thenReturn(null);
+        when(e2.getTimestamp()).thenReturn(time.minusSeconds(2));
+        when(e3.getTimestamp()).thenReturn(time.minusSeconds(1));
+        when(e4.getTimestamp()).thenReturn(time);
+        when(e5.getTimestamp()).thenReturn(null);
+        when(e6.getTimestamp()).thenReturn(time.plusSeconds(1));
+        when(e7.getTimestamp()).thenReturn(time.plusSeconds(2));
+        CompletableFuture<List<Execution>> f = completedFuture(asList(e1, e2, null, e3, e4, e5, e6, e7));
+        when(marketService.getExecutions(eq("inst"), any())).thenReturn(f);
+
+        List<Trade> results = target.listTrades(key, null);
+        assertEquals(results.size(), 7);
+
+        List<Trade> filtered = target.listTrades(key, time.toInstant());
+        assertEquals(filtered.size(), 3);
+        assertEquals(filtered.get(0).getTimestamp(), time.toInstant());
+        assertEquals(filtered.get(1).getTimestamp(), time.plusSeconds(1).toInstant());
+        assertEquals(filtered.get(2).getTimestamp(), time.plusSeconds(2).toInstant());
 
     }
 

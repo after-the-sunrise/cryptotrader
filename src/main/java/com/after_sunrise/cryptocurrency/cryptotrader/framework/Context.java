@@ -83,6 +83,8 @@ public interface Context extends Supplier<String> {
 
     BigDecimal getLastPrice(Key key);
 
+    List<Trade> listTrades(Key key, Instant fromTime);
+
     BigDecimal getInstrumentPosition(Key key);
 
     BigDecimal getFundingPosition(Key key);

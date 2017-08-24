@@ -7,6 +7,7 @@ import com.after_sunrise.cryptocurrency.bitflyer4j.service.MarketService;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.OrderService;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
@@ -17,6 +18,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -28,8 +30,10 @@ import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.MAR
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.SELL;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.COLLATERAL;
+import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.unmodifiableList;
 import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
@@ -41,11 +45,13 @@ import static java.util.stream.Collectors.toList;
 @Slf4j
 public class BitflyerContext extends TemplateContext implements BitflyerService {
 
-    private static final Duration CACHE = Duration.ofSeconds(3);
+    private static final Duration CACHE = Duration.ofMinutes(1);
 
     private static final Duration TIMEOUT = Duration.ofMinutes(1);
 
     private static final BigDecimal HALF = new BigDecimal("0.5");
+
+    private static final Long PAGE = 500L;
 
     private Bitflyer4j bitflyer4j;
 
@@ -127,6 +133,32 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
         );
 
         return tick == null ? null : tick.getTradePrice();
+
+    }
+
+    @Override
+    public List<Trade> listTrades(Key key, Instant fromTime) {
+
+        List<Trade> values = listCached(Trade.class, key, () -> {
+
+            String instrument = key.getInstrument();
+
+            Pagination p = Pagination.builder().count(PAGE).build();
+
+            return unmodifiableList(ofNullable(marketService.getExecutions(instrument, p)
+                    .get(TIMEOUT.toMillis(), MILLISECONDS)).orElse(emptyList())
+                    .stream().filter(Objects::nonNull).map(BitflyerTrade::new).collect(toList()));
+
+        });
+
+        if (fromTime == null) {
+            return values;
+        }
+
+        return unmodifiableList(values.stream()
+                .filter(e -> Objects.nonNull(e.getTimestamp()))
+                .filter(e -> !e.getTimestamp().isBefore(fromTime))
+                .collect(toList()));
 
     }
 
@@ -328,16 +360,17 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     @VisibleForTesting
     List<Order> fetchOrder(Key key) {
 
-        List<OrderList.Response> values = listCached(OrderList.Response.class, key, () -> {
+        List<Order> values = listCached(Order.class, key, () -> {
 
             OrderList request = OrderList.builder().product(key.getInstrument()).build();
 
-            return orderService.listOrders(request, null).get(TIMEOUT.toMillis(), MILLISECONDS);
+            return unmodifiableList(ofNullable(orderService.listOrders(request, null)
+                    .get(TIMEOUT.toMillis(), MILLISECONDS)).orElse(emptyList()).stream()
+                    .filter(Objects::nonNull).map(BitflyerOrder::new).collect(toList()));
 
         });
 
-        return ofNullable(values).orElse(emptyList()).stream()
-                .filter(Objects::nonNull).map(BitflyerOrder::new).collect(toList());
+        return values;
 
     }
 
@@ -352,7 +385,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     @Override
     public List<Order> listActiveOrders(Key key) {
 
-        return fetchOrder(key).stream().filter(o -> Boolean.TRUE.equals(o.getActive())).collect(toList());
+        return fetchOrder(key).stream().filter(o -> TRUE.equals(o.getActive())).collect(toList());
 
     }
 
