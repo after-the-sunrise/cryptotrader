@@ -7,7 +7,6 @@ import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -27,7 +27,7 @@ public abstract class TemplateContext implements Context, Cached {
 
     private final Map<Class<?>, Cache<Key, Optional<?>>> singleCache = new ConcurrentHashMap<>();
 
-    private final Map<Class<?>, Cache<Key, Optional<? extends List<?>>>> listCache = new ConcurrentHashMap<>();
+    private final Map<Class<?>, Cache<Key, Optional<List<?>>>> listCache = new ConcurrentHashMap<>();
 
     private final String id;
 
@@ -89,16 +89,16 @@ public abstract class TemplateContext implements Context, Cached {
     protected <T> List<T> listCached(Class<T> type, Key key, Callable<List<T>> c) {
 
         if (type == null || key == null) {
-            return Collections.emptyList();
+            return emptyList();
         }
 
-        Cache<Key, Optional<? extends List<?>>> cache = listCache.computeIfAbsent(type, this::createCache);
+        Cache<Key, Optional<List<?>>> cache = listCache.computeIfAbsent(type, this::createCache);
 
         try {
 
-            Optional<? extends List<?>> cached = cache.get(key, () -> {
+            Optional<List<?>> cached = cache.get(key, () -> {
 
-                List<T> values = Optional.ofNullable(c.call()).orElse(Collections.emptyList());
+                List<T> values = Optional.ofNullable(c.call()).orElse(emptyList());
 
                 log.trace("Cached list : {} ({})", key, values.size());
 
@@ -106,17 +106,13 @@ public abstract class TemplateContext implements Context, Cached {
 
             });
 
-            if (!cached.isPresent()) {
-                return Collections.emptyList();
-            }
-
-            return cached.get().stream().map(type::cast).collect(Collectors.toList());
+            return cached.orElse(emptyList()).stream().map(type::cast).collect(Collectors.toList());
 
         } catch (Exception e) {
 
             log.warn("Failed to cache list : {} - {}", type, e);
 
-            return Collections.emptyList();
+            return emptyList();
 
         }
 
