@@ -7,7 +7,10 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import static java.math.BigDecimal.*;
+import java.math.BigDecimal;
+
+import static java.math.BigDecimal.TEN;
+import static java.math.BigDecimal.ZERO;
 import static java.time.Instant.now;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -46,7 +49,7 @@ public class MidEstimatorTest {
         when(context.getMidPrice(key)).thenReturn(TEN);
         Estimation result = target.estimate(context, request);
         assertEquals(result.getPrice(), TEN);
-        assertEquals(result.getConfidence(), ONE);
+        assertEquals(result.getConfidence(), new BigDecimal("0.5"));
 
         result = target.estimate(null, request);
         assertEquals(result.getPrice(), null);

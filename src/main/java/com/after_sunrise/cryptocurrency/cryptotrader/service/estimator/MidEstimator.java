@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 
-import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 
 /**
@@ -19,6 +18,8 @@ import static java.math.BigDecimal.ZERO;
 public class MidEstimator implements Estimator {
 
     private static final Estimation BAIL = Estimation.builder().confidence(ZERO).build();
+
+    private static final BigDecimal HALF = new BigDecimal("0.5");
 
     @Override
     public String get() {
@@ -40,7 +41,7 @@ public class MidEstimator implements Estimator {
 
         BigDecimal price = context.getMidPrice(key);
 
-        BigDecimal confidence = price == null ? ZERO : ONE;
+        BigDecimal confidence = price == null ? ZERO : HALF;
 
         log.debug("Estimated : {} - {}", price, key);
 
