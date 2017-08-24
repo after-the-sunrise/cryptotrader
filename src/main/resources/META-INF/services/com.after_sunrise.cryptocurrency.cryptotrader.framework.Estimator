@@ -1,2 +1,3 @@
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator
