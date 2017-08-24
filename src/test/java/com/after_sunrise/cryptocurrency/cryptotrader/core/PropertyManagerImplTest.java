@@ -275,7 +275,7 @@ public class PropertyManagerImplTest {
     public void testGetTradingExposure() throws Exception {
 
         // Default
-        assertEquals(target.getTradingExposure(site, inst), new BigDecimal("0.0001"));
+        assertEquals(target.getTradingExposure(site, inst), new BigDecimal("0.0010"));
 
         // Mocked
         doReturn(new BigDecimal("0.1234")).when(conf).getBigDecimal(TRADING_EXPOSURE.getKey());
@@ -300,7 +300,7 @@ public class PropertyManagerImplTest {
 
         // Clear
         target.setTradingExposure(site, inst, null);
-        assertEquals(target.getTradingExposure(site, inst), new BigDecimal("0.0001"));
+        assertEquals(target.getTradingExposure(site, inst), new BigDecimal("0.0010"));
 
     }
 
