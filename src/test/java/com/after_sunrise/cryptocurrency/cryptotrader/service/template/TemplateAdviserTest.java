@@ -117,7 +117,7 @@ public class TemplateAdviserTest {
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9800"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("0.089430894309"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("0.178861788618"));
 
         // Long-only
         // Fund = 0 : Structure = 5 * 2345 = 11,725
@@ -125,7 +125,7 @@ public class TemplateAdviserTest {
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("0"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("1.000000000000"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("2.000000000000"));
 
         // Net-Short
         // Fund = 12,345 : Structure = 5 * 2,345 = 11,725
@@ -133,7 +133,7 @@ public class TemplateAdviserTest {
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("12345"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-0.025758205235"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-0.051516410469"));
 
         // Short-Only
         // Fund = 12,345 : Structure = 0
@@ -141,7 +141,7 @@ public class TemplateAdviserTest {
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("12345"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("0"));
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-1.000000000000"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-2.000000000000"));
 
     }
 
@@ -200,15 +200,15 @@ public class TemplateAdviserTest {
         assertEquals(target.calculateBuyLimitPrice(context, request, estimation), new BigDecimal("12248.9950"));
 
         // ...
-        // Spread : 60 * 1.29885609511276..  = 77.9313657.. bps
-        // Spread : Average * (1 - (77.93 + 20 bps)) = 12226.85423
-        // Rounded : 12226.8525
+        // Spread : 60 * 1.597712..  = 95.86272.. bps
+        // Spread : Average * (1 - (95.86 + 20 bps)) = 12204.71298..
+        // Rounded : 12204.7125
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("20000"));
-        assertEquals(target.calculateBuyLimitPrice(context, request, estimation), new BigDecimal("12226.8525"));
+        assertEquals(target.calculateBuyLimitPrice(context, request, estimation), new BigDecimal("12204.7125"));
 
-        // Cross protection : Ask 10000 * (1 - (77.93 + 20 bps)) = 9902.068634
+        // Cross protection : Ask 10000 * (1 - (95.86 + 20 bps)) = 9884.1372..
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("10000"));
-        assertEquals(target.calculateBuyLimitPrice(context, request, estimation), new BigDecimal("9902.0675"));
+        assertEquals(target.calculateBuyLimitPrice(context, request, estimation), new BigDecimal("9884.1350"));
 
         // No Mid
         when(context.getMidPrice(key)).thenReturn(null);
@@ -250,15 +250,15 @@ public class TemplateAdviserTest {
         assertEquals(target.calculateSellLimitPrice(context, request, estimation), new BigDecimal("12446.5600"));
 
         // ...
-        // Spread : 60 * 1.14876996690721..  = 68.9261980.. bps
-        // Target : Average * (1 - (68.92 + 20 bps)) = 12457.58179
-        // Rounded : 12457.5825
+        // Spread : 60 * 1.297539933814..  = 77.85239598.. bps
+        // Target : Average * (1 + (77.85 + 20 bps)) = 12468.60..
+        // Rounded : 12468.6050
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("50000"));
-        assertEquals(target.calculateSellLimitPrice(context, request, estimation), new BigDecimal("12457.5825"));
+        assertEquals(target.calculateSellLimitPrice(context, request, estimation), new BigDecimal("12468.6050"));
 
-        // Cross protection : Bid 20000 * (1 - (68.92 + 20 bps)) = 20177.8524
+        // Cross protection : Bid 20000 * (1 + (77.85 + 20 bps)) = 20195.70..
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("20000"));
-        assertEquals(target.calculateSellLimitPrice(context, request, estimation), new BigDecimal("20177.8525"));
+        assertEquals(target.calculateSellLimitPrice(context, request, estimation), new BigDecimal("20195.7050"));
 
         // No Mid
         when(context.getMidPrice(key)).thenReturn(null);

@@ -133,7 +133,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal diff = equivalent.subtract(funding);
 
-        BigDecimal ratio = diff.divide(sum, PRECISION, HALF_UP);
+        BigDecimal ratio = diff.add(diff).divide(sum, PRECISION, HALF_UP);
 
         log.trace("Position ratio: {} (fund=[{}], structure=[{}] equivalent=[{}])", ratio, structure, equivalent);
 
