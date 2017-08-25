@@ -43,9 +43,9 @@ public class TemplateAgent implements Agent {
     }
 
     @Override
-    public Map<Instruction, String> manage(Context ctx, Request req, List<Instruction> vals) {
+    public Map<Instruction, String> manage(Context context, Request request, List<Instruction> instructions) {
 
-        if (CollectionUtils.isEmpty(vals)) {
+        if (CollectionUtils.isEmpty(instructions)) {
 
             log.trace("Nothing to manage.");
 
@@ -53,11 +53,11 @@ public class TemplateAgent implements Agent {
 
         }
 
-        Key key = Key.from(req);
+        Key key = Key.from(request);
 
         Map<Instruction, String> results = new IdentityHashMap<>();
 
-        vals.stream()
+        instructions.stream()
                 .filter(Objects::nonNull)
                 .forEach(i -> i.accept(new Visitor<Void>() {
                     @Override
@@ -65,7 +65,7 @@ public class TemplateAgent implements Agent {
 
                         log.trace("Creating : {} - {}", key, instruction);
 
-                        results.put(instruction, ctx.createOrder(key, instruction));
+                        results.put(instruction, context.createOrder(key, instruction));
 
                         return null;
 
@@ -76,7 +76,7 @@ public class TemplateAgent implements Agent {
 
                         log.trace("Cancelling : {} - {}", key, instruction);
 
-                        results.put(instruction, ctx.cancelOrder(key, instruction));
+                        results.put(instruction, context.cancelOrder(key, instruction));
 
                         return null;
 

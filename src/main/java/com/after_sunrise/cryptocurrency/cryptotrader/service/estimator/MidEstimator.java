@@ -29,15 +29,7 @@ public class MidEstimator implements Estimator {
     @Override
     public Estimation estimate(Context context, Request request) {
 
-        if (context == null) {
-            return BAIL;
-        }
-
         Key key = Key.from(request);
-
-        if (!Key.isValid(key)) {
-            return BAIL;
-        }
 
         BigDecimal price = context.getMidPrice(key);
 

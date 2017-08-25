@@ -77,12 +77,8 @@ public class AgentImplTest {
         verify(service).manage(context, request, instructions);
 
         // Site not found
-        request = builder.site("hoge").build();
+        request = builder.site(null).build();
         assertNotSame(target.manage(context, request, instructions), results);
-        verifyNoMoreInteractions(service);
-
-        // Invalid request
-        assertNotSame(target.manage(context, null, instructions), results);
         verifyNoMoreInteractions(service);
 
     }
@@ -101,12 +97,8 @@ public class AgentImplTest {
         verify(service).reconcile(context, request, values);
 
         // Site not found
-        request = builder.site("hoge").build();
+        request = builder.site(null).build();
         assertNotSame(target.reconcile(context, request, values), results);
-        verifyNoMoreInteractions(service);
-
-        // Invalid request
-        assertNotSame(target.reconcile(context, null, values), results);
         verifyNoMoreInteractions(service);
 
     }

@@ -5,7 +5,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
-import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -38,15 +37,12 @@ public class VwapEstimator implements Estimator {
         return getClass().getSimpleName();
     }
 
-    @VisibleForTesting
-    Instant getNow() {
-        return Instant.now();
-    }
-
     @Override
     public Estimation estimate(Context context, Request request) {
 
-        Instant from = getNow().minus(LONG_ONE, DAYS);
+        Instant now = request.getCurrentTime();
+
+        Instant from = now.minus(LONG_ONE, DAYS);
 
         List<Trade> trades = ofNullable(context.listTrades(Key.from(request), from)).orElse(emptyList())
                 .stream().filter(Objects::nonNull)

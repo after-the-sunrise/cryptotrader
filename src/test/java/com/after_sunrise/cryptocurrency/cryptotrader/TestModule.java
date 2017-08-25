@@ -7,14 +7,13 @@ import com.google.inject.Injector;
 import org.mockito.Mockito;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import static com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService;
-import static java.math.BigDecimal.ONE;
-import static java.time.Instant.now;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
@@ -29,8 +28,6 @@ public class TestModule {
 
     private final Injector injector;
 
-    private Instant now = null;
-
     public TestModule() {
 
         this.injector = Guice.createInjector();
@@ -39,14 +36,6 @@ public class TestModule {
 
         when(getMock(ExecutorFactory.class).get(any(Class.class), anyInt())).thenReturn(service);
 
-    }
-
-    public void setNow(Instant now) {
-        this.now = now;
-    }
-
-    public Instant getNow() {
-        return now == null ? Instant.now() : now;
     }
 
     public <T> T getMock(Class<T> clz) {
@@ -87,14 +76,16 @@ public class TestModule {
 
     public Request.RequestBuilder createRequestBuilder() {
 
+        Instant now = Instant.now();
+
         Request.RequestBuilder builder = Request.builder()
-                .site("test")
-                .instrument("i") //
-                .targetTime(now())
-                .tradingSpread(ONE.movePointLeft(4))
-                .tradingExposure(ONE.movePointLeft(5))
-                .tradingSplit(BigDecimal.valueOf(4));
-        ;
+                .site("s")
+                .instrument("i")
+                .currentTime(now)
+                .targetTime(now.plus(Duration.ofMillis(5)))
+                .tradingExposure(new BigDecimal("0.10"))
+                .tradingSplit(new BigDecimal("2"))
+                .tradingSpread(new BigDecimal("0.0060"));
 
         return builder;
 

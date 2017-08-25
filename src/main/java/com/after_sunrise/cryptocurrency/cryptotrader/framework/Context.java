@@ -3,7 +3,6 @@ package com.after_sunrise.cryptocurrency.cryptotrader.framework;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import lombok.*;
-import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -33,28 +32,6 @@ public interface Context extends Supplier<String> {
 
         private final Instant timestamp;
 
-        public static boolean isValid(Key value) {
-
-            if (value == null) {
-                return false;
-            }
-
-            if (StringUtils.isEmpty(value.getSite())) {
-                return false;
-            }
-
-            if (StringUtils.isEmpty(value.getInstrument())) {
-                return false;
-            }
-
-            if (value.getTimestamp() == null) {
-                return false;
-            }
-
-            return true;
-
-        }
-
         public static Key from(Trader.Request request) {
 
             Key.KeyBuilder builder = Key.builder();
@@ -65,7 +42,7 @@ public interface Context extends Supplier<String> {
 
                 builder = builder.instrument(request.getInstrument());
 
-                builder = builder.timestamp(request.getTargetTime());
+                builder = builder.timestamp(request.getCurrentTime());
 
             }
 

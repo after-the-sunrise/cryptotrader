@@ -96,10 +96,6 @@ public class TemplateInstructorTest {
 
         assertSame(target.instruct(context, request, advice), instructions);
 
-        // Null inputs
-        assertEquals(target.instruct(context, null, advice).size(), 0);
-        assertEquals(target.instruct(context, request, null).size(), 0);
-
     }
 
     @Test

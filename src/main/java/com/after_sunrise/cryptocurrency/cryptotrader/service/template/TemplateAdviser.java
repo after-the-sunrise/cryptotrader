@@ -28,8 +28,6 @@ public class TemplateAdviser implements Adviser {
 
     private static final BigDecimal EPSILON = ONE.movePointLeft(PRECISION);
 
-    private static final Advice BAIL = Advice.builder().build();
-
     private final String id;
 
     public TemplateAdviser(String id) {
@@ -44,25 +42,12 @@ public class TemplateAdviser implements Adviser {
     @Override
     public Advice advise(Context context, Request request, Estimation estimation) {
 
-        if (!Request.isValid(request)) {
-
-            log.trace("Invalid request : {}", request);
-
-            return BAIL;
-
-        }
-
-        if (!Estimation.isValid(estimation)) {
-
-            log.trace("Invalid estimation : {}", estimation);
-
-            return BAIL;
-
-        }
-
         BigDecimal bPrice = calculateBuyLimitPrice(context, request, estimation);
+
         BigDecimal sPrice = calculateSellLimitPrice(context, request, estimation);
+
         BigDecimal bSize = calculateBuyLimitSize(context, request, bPrice);
+
         BigDecimal sSize = calculateSellLimitSize(context, request, sPrice);
 
         Advice advice = Advice.builder().buyLimitPrice(bPrice).buyLimitSize(bSize) //
@@ -76,6 +61,14 @@ public class TemplateAdviser implements Adviser {
 
     @VisibleForTesting
     BigDecimal calculateWeighedPrice(Context context, Request request, Estimation estimation) {
+
+        if (estimation.getPrice() == null || estimation.getConfidence() == null) {
+
+            log.trace("Invalid estimation : {}", estimation);
+
+            return null;
+
+        }
 
         Key key = Key.from(request);
 
@@ -166,7 +159,9 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal ratio = calculatePositionRatio(context, request).max(ZERO);
 
-        BigDecimal basis = request.getTradingSpread().multiply(ONE.add(ratio)).add(comm).max(ZERO);
+        BigDecimal spread = ofNullable(request.getTradingSpread()).orElse(ZERO);
+
+        BigDecimal basis = spread.multiply(ONE.add(ratio)).add(comm).max(ZERO);
 
         BigDecimal adjSpread = adjCross.multiply(ONE.subtract(basis));
 
@@ -203,7 +198,9 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal ratio = calculatePositionRatio(context, request).min(ZERO).abs();
 
-        BigDecimal basis = request.getTradingSpread().multiply(ONE.add(ratio)).add(comm).max(ZERO);
+        BigDecimal spread = ofNullable(request.getTradingSpread()).orElse(ZERO);
+
+        BigDecimal basis = spread.multiply(ONE.add(ratio)).add(comm).max(ZERO);
 
         BigDecimal adjSpread = adjCross.multiply(ONE.add(basis));
 
@@ -240,7 +237,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal product = fund.divide(price, PRECISION, DOWN);
 
-        BigDecimal exposure = request.getTradingExposure();
+        BigDecimal exposure = ofNullable(request.getTradingExposure()).orElse(ZERO);
 
         BigDecimal exposed = product.multiply(exposure);
 
@@ -315,7 +312,7 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        BigDecimal exposure = request.getTradingExposure();
+        BigDecimal exposure = ofNullable(request.getTradingExposure()).orElse(ZERO);
 
         BigDecimal exposed = position.multiply(exposure);
 

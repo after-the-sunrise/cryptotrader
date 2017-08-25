@@ -9,9 +9,7 @@ import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
 
-import static java.math.BigDecimal.TEN;
-import static java.math.BigDecimal.ZERO;
-import static java.time.Instant.now;
+import static java.math.BigDecimal.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -43,26 +41,22 @@ public class MidEstimatorTest {
     @Test
     public void testEstimate() throws Exception {
 
-        Request request = Request.builder().site("s").instrument("i").targetTime(now()).build();
-        Key key = Key.from(request);
+        Request request = Request.builder().build();
 
-        when(context.getMidPrice(key)).thenReturn(TEN);
+        when(context.getMidPrice(Key.from(request))).thenReturn(TEN);
         Estimation result = target.estimate(context, request);
         assertEquals(result.getPrice(), TEN);
         assertEquals(result.getConfidence(), new BigDecimal("0.5"));
 
-        result = target.estimate(null, request);
-        assertEquals(result.getPrice(), null);
-        assertEquals(result.getConfidence(), ZERO);
-
-        result = target.estimate(context, null);
-        assertEquals(result.getPrice(), null);
-        assertEquals(result.getConfidence(), ZERO);
-
-        when(context.getMidPrice(key)).thenReturn(null);
+        when(context.getMidPrice(Key.from(request))).thenReturn(null);
         result = target.estimate(context, request);
         assertEquals(result.getPrice(), null);
         assertEquals(result.getConfidence(), ZERO);
+
+        when(context.getMidPrice(Key.from(null))).thenReturn(ONE);
+        result = target.estimate(context, null);
+        assertEquals(result.getPrice(), ONE);
+        assertEquals(result.getConfidence(), new BigDecimal("0.5"));
 
     }
 

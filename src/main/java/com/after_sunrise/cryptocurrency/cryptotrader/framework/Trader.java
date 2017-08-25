@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
-import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -29,6 +28,8 @@ public interface Trader extends Controllable {
 
         private String instrument;
 
+        private Instant currentTime;
+
         private Instant targetTime;
 
         private BigDecimal tradingSpread;
@@ -36,44 +37,6 @@ public interface Trader extends Controllable {
         private BigDecimal tradingExposure;
 
         private BigDecimal tradingSplit;
-
-        public boolean isValid() {
-
-            if (StringUtils.isEmpty(site)) {
-                return false;
-            }
-
-            if (StringUtils.isEmpty(instrument)) {
-                return false;
-            }
-
-            if (targetTime == null) {
-                return false;
-            }
-
-            if (tradingSpread == null) {
-                return false;
-            }
-
-            if (tradingExposure == null) {
-                return false;
-            }
-
-            if (tradingSplit == null) {
-                return false;
-            }
-
-            return true;
-
-        }
-
-        public static boolean isValid(Request value) {
-            return value != null && value.isValid();
-        }
-
-        public static boolean isInvalid(Request value) {
-            return !isValid(value);
-        }
 
     }
 

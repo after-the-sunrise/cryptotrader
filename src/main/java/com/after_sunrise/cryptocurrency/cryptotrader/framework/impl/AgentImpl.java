@@ -45,14 +45,6 @@ public class AgentImpl implements Agent {
     @Override
     public Map<Instruction, String> manage(Context ctx, Request req, List<Instruction> instructions) {
 
-        if (Request.isInvalid(req)) {
-
-            log.trace("Invalid request : {}", req);
-
-            return emptyMap();
-
-        }
-
         Agent manager = managers.get(req.getSite());
 
         if (manager == null) {
@@ -85,14 +77,6 @@ public class AgentImpl implements Agent {
 
     @Override
     public Map<Instruction, Boolean> reconcile(Context ctx, Request req, Map<Instruction, String> instructions) {
-
-        if (Request.isInvalid(req)) {
-
-            log.trace("Invalid request : {}", req);
-
-            return emptyMap();
-
-        }
 
         Agent manager = managers.get(req.getSite());
 

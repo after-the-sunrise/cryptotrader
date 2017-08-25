@@ -27,28 +27,6 @@ public interface Estimator extends Supplier<String> {
 
         private final BigDecimal confidence;
 
-        public boolean isValid() {
-
-            if (price == null) {
-                return false;
-            }
-
-            if (confidence == null) {
-                return false;
-            }
-
-            if (confidence.signum() <= 0) {
-                return false;
-            }
-
-            return true;
-
-        }
-
-        public static boolean isValid(Estimation estimation) {
-            return estimation != null && estimation.isValid();
-        }
-
     }
 
     Estimation estimate(Context context, Request request);

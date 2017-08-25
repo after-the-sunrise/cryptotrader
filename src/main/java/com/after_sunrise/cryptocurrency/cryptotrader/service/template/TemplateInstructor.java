@@ -1,9 +1,13 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instructor;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
@@ -46,23 +50,7 @@ public class TemplateInstructor implements Instructor {
     }
 
     @Override
-    public List<Instruction> instruct(Context context, Request request, Adviser.Advice advice) {
-
-        if (!Request.isValid(request)) {
-
-            log.trace("Invalid request : {}", request);
-
-            return Collections.emptyList();
-
-        }
-
-        if (advice == null) {
-
-            log.trace("Invalid advice : {}", request);
-
-            return Collections.emptyList();
-
-        }
+    public List<Instruction> instruct(Context context, Request request, Advice advice) {
 
         List<CreateInstruction> creates = new ArrayList<>();
 
@@ -96,7 +84,7 @@ public class TemplateInstructor implements Instructor {
     }
 
     @VisibleForTesting
-    List<CreateInstruction> createBuys(Context context, Request request, Adviser.Advice adv) {
+    List<CreateInstruction> createBuys(Context context, Request request, Advice adv) {
 
         List<BigDecimal> s = splitSize(context, request, adv.getBuyLimitSize());
 
@@ -115,7 +103,7 @@ public class TemplateInstructor implements Instructor {
     }
 
     @VisibleForTesting
-    List<CreateInstruction> createSells(Context context, Request request, Adviser.Advice adv) {
+    List<CreateInstruction> createSells(Context context, Request request, Advice adv) {
 
         List<BigDecimal> s = splitSize(context, request, adv.getSellLimitSize());
 

@@ -17,21 +17,10 @@ public class ContextTest {
     @Test
     public void testKey() throws Exception {
 
-        assertFalse(Key.isValid(null));
-        assertFalse(Key.isValid(Key.from(null)));
-
         Request.RequestBuilder builder = Request.builder();
-        assertFalse(Key.isValid(Key.from(builder.build())));
-
         builder = builder.site("s");
-        assertFalse(Key.isValid(Key.from(builder.build())));
-
         builder = builder.instrument("i");
-        assertFalse(Key.isValid(Key.from(builder.build())));
-
-        builder = builder.targetTime(Instant.ofEpochMilli(0L));
-        assertTrue(Key.isValid(Key.from(builder.build())));
-
+        builder = builder.currentTime(Instant.ofEpochMilli(0L));
         Key key = Key.from(builder.build());
 
         assertTrue(key.equals(key));

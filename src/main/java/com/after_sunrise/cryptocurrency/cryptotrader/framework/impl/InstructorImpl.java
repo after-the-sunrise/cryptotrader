@@ -41,14 +41,6 @@ public class InstructorImpl implements Instructor {
     @Override
     public List<Instruction> instruct(Context context, Request request, Advice advice) {
 
-        if (!Request.isValid(request)) {
-
-            log.trace("Invalid request : {}", request);
-
-            return Collections.emptyList();
-
-        }
-
         Instructor instructor = instructors.get(request.getSite());
 
         if (instructor == null) {

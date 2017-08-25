@@ -42,7 +42,9 @@ public class LastEstimator implements Estimator {
     @Override
     public Estimation estimate(Context context, Request request) {
 
-        Instant from = getNow().minus(LONG_ONE, DAYS);
+        Instant now = request.getCurrentTime();
+
+        Instant from = now.minus(LONG_ONE, DAYS);
 
         Optional<Trade> value = ofNullable(context.listTrades(Key.from(request), from))
                 .orElse(emptyList()).stream()
@@ -58,7 +60,7 @@ public class LastEstimator implements Estimator {
 
         Instant time = value.get().getTimestamp();
 
-        BigDecimal confidence = calculateConfidence(time, getNow());
+        BigDecimal confidence = calculateConfidence(time, now);
 
         BigDecimal price = value.get().getPrice();
 
@@ -66,11 +68,6 @@ public class LastEstimator implements Estimator {
 
         return Estimation.builder().price(price).confidence(confidence).build();
 
-    }
-
-    @VisibleForTesting
-    Instant getNow() {
-        return Instant.now();
     }
 
     @VisibleForTesting

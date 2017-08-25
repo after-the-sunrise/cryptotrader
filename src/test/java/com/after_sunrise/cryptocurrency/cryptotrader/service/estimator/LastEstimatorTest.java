@@ -13,13 +13,11 @@ import java.time.Instant;
 import java.util.List;
 
 import static java.math.BigDecimal.*;
-import static java.time.Instant.now;
 import static java.time.temporal.ChronoUnit.*;
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
 
 /**
  * @author takanori.takase
@@ -49,7 +47,6 @@ public class LastEstimatorTest {
     public void testEstimate() throws Exception {
 
         Instant time = Instant.now();
-        doReturn(time).when(target).getNow();
         doReturn(TEN).when(target).calculateConfidence(time.minusSeconds(1), time);
 
         Trade t1 = mock(Trade.class);
@@ -68,7 +65,7 @@ public class LastEstimatorTest {
         when(t4.getPrice()).thenReturn(null);
         when(t5.getPrice()).thenReturn(BigDecimal.valueOf(2));
 
-        Request request = Request.builder().site("s").instrument("i").targetTime(now()).build();
+        Request request = Request.builder().site("s").instrument("i").currentTime(time).build();
         Key key = Key.from(request);
         List<Trade> trades = asList(t3, t2, null, t5, null, t1, t4);
         when(context.listTrades(key, time.minus(LONG_ONE, DAYS))).thenReturn(trades);
@@ -77,11 +74,6 @@ public class LastEstimatorTest {
         Estimation result = target.estimate(context, request);
         assertEquals(result.getPrice(), t1.getPrice());
         assertEquals(result.getConfidence(), TEN);
-
-        // Invalid Request
-        result = target.estimate(context, null);
-        assertEquals(result.getPrice(), null);
-        assertEquals(result.getConfidence(), ZERO);
 
         // Null trades
         when(context.listTrades(key, time.minus(LONG_ONE, DAYS))).thenReturn(null);
@@ -94,17 +86,6 @@ public class LastEstimatorTest {
         result = target.estimate(context, request);
         assertEquals(result.getPrice(), null);
         assertEquals(result.getConfidence(), ZERO);
-
-    }
-
-    @Test
-    public void testGetNow() throws InterruptedException {
-
-        Instant t1 = target.getNow();
-
-        Thread.sleep(100L);
-
-        assertNotEquals(target.getNow(), t1);
 
     }
 

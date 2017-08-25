@@ -19,7 +19,6 @@ import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
 
 /**
  * @author takanori.takase
@@ -45,25 +44,14 @@ public class VwapEstimatorTest {
         assertEquals(target.get(), target.getClass().getSimpleName());
     }
 
-    @Test
-    public void testGetNow() throws InterruptedException {
-
-        Instant t1 = target.getNow();
-
-        Thread.sleep(100L);
-
-        assertNotEquals(target.getNow(), t1);
-
-    }
 
     @Test
     public void testEstimate() throws Exception {
 
-        Request request = Request.builder().build();
-        Key key = Key.from(request);
         Instant now = Instant.now();
-        doReturn(now).when(target).getNow();
         Instant from = now.minus(LONG_ONE, DAYS);
+        Request request = Request.builder().currentTime(now).build();
+        Key key = Key.from(request);
 
         Trade t1 = mock(Trade.class);
         Trade t2 = mock(Trade.class);

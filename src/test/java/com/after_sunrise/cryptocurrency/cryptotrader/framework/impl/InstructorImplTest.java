@@ -63,7 +63,7 @@ public class InstructorImplTest {
 
         Request.RequestBuilder builder = module.createRequestBuilder();
 
-        Request request = builder.build();
+        Request request = builder.site("test").build();
 
         // Null return
         when(service.instruct(context, request, advice)).thenReturn(null);
@@ -79,13 +79,8 @@ public class InstructorImplTest {
         verify(service, times(2)).instruct(context, request, advice);
 
         // Site not found
-        request = builder.site("hoge").build();
+        request = builder.site(null).build();
         instructions = target.instruct(context, request, advice);
-        assertEquals(instructions.size(), 0);
-        verifyNoMoreInteractions(service);
-
-        // Invalid request
-        instructions = target.instruct(context, null, advice);
         assertEquals(instructions.size(), 0);
         verifyNoMoreInteractions(service);
 

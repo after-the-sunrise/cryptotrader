@@ -39,14 +39,6 @@ public class AdviserImpl implements Adviser {
     @Override
     public Advice advise(Context context, Request request, Estimation estimation) {
 
-        if (Request.isInvalid(request)) {
-
-            log.trace("Invalid request : {}", request);
-
-            return BAIL;
-
-        }
-
         Adviser adviser = advisers.get(request.getSite());
 
         if (adviser == null) {

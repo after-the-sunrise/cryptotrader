@@ -9,10 +9,12 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Optional.ofNullable;
@@ -56,21 +58,23 @@ public class PipelineImpl implements Pipeline {
     @Override
     public void process(Instant time, String site, String instrument) {
 
-        Request request = createRequest(time, site, instrument);
+        Optional.ofNullable(createRequest(time, site, instrument)).ifPresent(request -> {
 
-        log.info("Processing : {}", request);
+            log.info("Processing : {}", request);
 
-        Estimation estimation = estimator.estimate(context, request);
+            Estimation estimation = estimator.estimate(context, request);
 
-        Advice advice = adviser.advise(context, request, estimation);
+            Advice advice = adviser.advise(context, request, estimation);
 
-        List<Instruction> instructions = instructor.instruct(context, request, advice);
+            List<Instruction> instructions = instructor.instruct(context, request, advice);
 
-        Map<Instruction, String> futures = manager.manage(context, request, instructions);
+            Map<Instruction, String> futures = manager.manage(context, request, instructions);
 
-        Map<Instruction, Boolean> results = manager.reconcile(context, request, futures);
+            Map<Instruction, Boolean> results = manager.reconcile(context, request, futures);
 
-        log.info("Processed : {}", ofNullable(results).orElse(emptyMap()).size());
+            log.info("Processed : {}", ofNullable(results).orElse(emptyMap()).size());
+
+        });
 
     }
 
@@ -78,16 +82,73 @@ public class PipelineImpl implements Pipeline {
     Request createRequest(Instant time, String site, String instrument) {
 
         Request.RequestBuilder builder = Request.builder();
+        builder = builder.site(site);
+        builder = builder.instrument(instrument);
+        builder = builder.currentTime(propertyManager.getNow());
+        builder = builder.targetTime(time);
+        builder = builder.tradingSpread(propertyManager.getTradingSpread(site, instrument));
+        builder = builder.tradingExposure(propertyManager.getTradingExposure(site, instrument));
+        builder = builder.tradingSplit(propertyManager.getTradingSplit(site, instrument));
 
-        builder = builder.targetTime(time).site(site).instrument(instrument);
+        Request request = builder.build();
 
-        builder.tradingSpread(propertyManager.getTradingSpread(site, instrument));
+        if (StringUtils.isEmpty(site)) {
 
-        builder.tradingExposure(propertyManager.getTradingExposure(site, instrument));
+            log.warn("Invalid request : site");
 
-        builder.tradingSplit(propertyManager.getTradingSplit(site, instrument));
+            return null;
 
-        return builder.build();
+        }
+
+        if (StringUtils.isEmpty(instrument)) {
+
+            log.warn("Invalid request : instrument");
+
+            return null;
+
+        }
+
+        if (request.getCurrentTime() == null) {
+
+            log.warn("Invalid request : current time");
+
+            return null;
+
+        }
+
+        if (request.getTargetTime() == null) {
+
+            log.warn("Invalid request : target time");
+
+            return null;
+
+        }
+
+        if (request.getTradingSpread() == null) {
+
+            log.warn("Invalid request : trading spread");
+
+            return null;
+
+        }
+
+        if (request.getTradingExposure() == null) {
+
+            log.warn("Invalid request : trading exposure");
+
+            return null;
+
+        }
+
+        if (request.getTradingSplit() == null) {
+
+            log.warn("Invalid request : trading split");
+
+            return null;
+
+        }
+
+        return request;
 
     }
 

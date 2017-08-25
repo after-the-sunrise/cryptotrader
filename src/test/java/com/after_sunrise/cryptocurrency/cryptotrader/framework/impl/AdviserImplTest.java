@@ -59,8 +59,7 @@ public class AdviserImplTest {
     public void testCreate() throws Exception {
 
         Request.RequestBuilder builder = module.createRequestBuilder();
-
-        Request request = builder.build();
+        Request request = builder.site("test").build();
 
         // Null return
         when(service.advise(context, request, estimation)).thenReturn(null);
@@ -74,12 +73,8 @@ public class AdviserImplTest {
         verify(service, times(2)).advise(context, request, estimation);
 
         // Site not found
-        request = builder.site("hoge").build();
+        request = builder.site(null).build();
         assertNotNull(target.advise(context, request, estimation));
-        verifyNoMoreInteractions(service);
-
-        // Invalid request
-        assertNotNull(target.advise(context, null, estimation));
         verifyNoMoreInteractions(service);
 
     }
