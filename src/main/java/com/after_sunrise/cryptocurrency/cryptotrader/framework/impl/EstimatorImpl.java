@@ -1,6 +1,7 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ExecutorFactory;
+import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
@@ -13,6 +14,7 @@ import java.math.BigDecimal;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,14 +35,19 @@ public class EstimatorImpl implements Estimator {
 
     private static final int SCALE = 8;
 
+    private final ExecutorService executor;
+
+    private final PropertyManager manager;
+
     private final Map<String, Estimator> estimators;
 
-    private final ExecutorService executor;
 
     @Inject
     public EstimatorImpl(Injector injector) {
 
         this.estimators = injector.getInstance(ServiceFactory.class).loadMap(Estimator.class);
+
+        this.manager = injector.getInstance(PropertyManager.class);
 
         this.executor = injector.getInstance(ExecutorFactory.class).get(getClass(), estimators.size());
 
@@ -64,13 +71,18 @@ public class EstimatorImpl implements Estimator {
 
     private Map<Estimator, Estimation> collect(Context context, Request request) {
 
+        Set<String> ids = manager.getEstimators(request.getSite(), request.getInstrument());
+
         Map<Estimator, CompletableFuture<Estimation>> futures = new IdentityHashMap<>();
 
-        estimators.values().forEach(estimator ->
-                futures.put(estimator,
-                        supplyAsync(() -> estimator.estimate(context, request), executor)
-                )
-        );
+        estimators.values().stream()
+                .filter(e -> ids != null)
+                .filter(e -> ids.contains(e.get()))
+                .forEach(estimator ->
+                        futures.put(estimator,
+                                supplyAsync(() -> estimator.estimate(context, request), executor)
+                        )
+                );
 
         Map<Estimator, Estimation> estimations = new IdentityHashMap<>();
 

@@ -14,14 +14,19 @@ import java.time.Instant;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.*;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.DOWN;
+import static java.util.Arrays.stream;
+import static java.util.Collections.emptySet;
+import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
@@ -323,6 +328,39 @@ public class PropertyManagerImpl implements PropertyController {
     @Override
     public void setTradingSplit(String site, String instrument, BigDecimal value) {
         set(TRADING_SPLIT, site, instrument, value, BigDecimal::toPlainString);
+    }
+
+
+    @Override
+    public Set<String> getEstimators(String site, String instrument) {
+
+        try {
+
+            String value = get(ESTIMATORS, site, instrument, Configuration::getString);
+
+            String[] values = StringUtils.split(value, SEPARATOR_ENTRY);
+
+            Set<String> ids = stream(values).filter(StringUtils::isNotEmpty).collect(toSet());
+
+            log.trace("Configured estimators : {} -> {}", ids);
+
+            return ids;
+
+        } catch (RuntimeException e) {
+
+            log.warn("Invalid property : " + ESTIMATORS.getKey(), e);
+
+            return emptySet();
+
+        }
+
+    }
+
+    @Override
+    public void setEstimators(String site, String instrument, Set<String> values) {
+        set(ESTIMATORS, site, instrument, values, ids -> ofNullable(ids).orElse(emptySet())
+                .stream().filter(StringUtils::isNotEmpty)
+                .collect(Collectors.joining(SEPARATOR_ENTRY)));
     }
 
 }

@@ -1,6 +1,7 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
+import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
@@ -15,8 +16,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static java.math.BigDecimal.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static java.util.stream.Collectors.toSet;
+import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -49,12 +50,14 @@ public class EstimatorImplTest {
         services.put("4", mock(Estimator.class));
         services.put("5", mock(Estimator.class));
         services.put("6", mock(Estimator.class));
+        services.put("7", mock(Estimator.class));
+        services.forEach((k, v) -> when(v.get()).thenReturn(k));
 
         module = new TestModule();
         when(module.getMock(ServiceFactory.class).loadMap(Estimator.class)).thenReturn(services);
 
         context = module.getMock(Context.class);
-        request = Request.builder().build();
+        request = module.createRequestBuilder().build();
 
         target = new EstimatorImpl(module.createInjector());
 
@@ -67,6 +70,9 @@ public class EstimatorImplTest {
 
     @Test
     public void testEstimate() throws Exception {
+
+        when(module.getMock(PropertyManager.class).getEstimators(request.getSite(), request.getInstrument()))
+                .thenReturn(services.keySet().stream().filter(id -> !id.equals("7")).collect(toSet()));
 
         // Valid Estimation (1st)
         Estimation estimation0 = Estimation.builder().price(TEN).confidence(HALF).build();
@@ -94,13 +100,22 @@ public class EstimatorImplTest {
         Estimation estimation6 = Estimation.builder().price(ONE).confidence(ZERO).build();
         when(services.get("6").estimate(context, request)).thenReturn(estimation6);
 
+        // Valid Estimation but filtered out.
+        Estimation estimation7 = Estimation.builder().price(ONE).confidence(ONE).build();
+        when(services.get("7").estimate(context, request)).thenReturn(estimation7);
+
         // Consensus
         // Price = [(10 * 0.5) + (1 * 1) + (1 * 0)] / (0.5 + 1 + 0) = 6 / 1.5 = 4
         // Confidence = (0.5 + 1 + 0) / 3 = 0.5
         Estimation result = target.estimate(context, request);
         assertEquals(result.getPrice(), new BigDecimal("4.00000000"));
         assertEquals(result.getConfidence(), new BigDecimal("0.50000000"));
-        services.values().forEach(mock -> Mockito.verify(mock).estimate(context, request));
+        services.values().stream()
+                .filter(e -> !"7".equals(e.get()))
+                .forEach(mock -> Mockito.verify(mock).estimate(context, request));
+        services.values().stream()
+                .filter(e -> "7".equals(e.get()))
+                .forEach(mock -> Mockito.verify(mock, never()).estimate(context, request));
 
     }
 
@@ -113,7 +128,8 @@ public class EstimatorImplTest {
 
         assertNull(result.getConfidence());
 
-        services.values().forEach(mock -> Mockito.verify(mock).estimate(context, request));
+        services.values().stream()
+                .forEach(mock -> Mockito.verify(mock, never()).estimate(context, request));
 
     }
 

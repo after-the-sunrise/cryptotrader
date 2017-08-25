@@ -20,6 +20,7 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.*;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.*;
+import static java.util.Collections.singleton;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.mockito.Mockito.*;
@@ -333,6 +334,30 @@ public class PropertyManagerImplTest {
         // Clear
         target.setTradingSplit(site, inst, null);
         assertEquals(target.getTradingSplit(site, inst), ONE);
+
+    }
+
+    @Test
+    public void testGetEstimators() throws Exception {
+
+        assertEquals(target.getEstimators(site, inst), singleton("NullEstimator"));
+
+        // Specific
+        doReturn("Test1||Test2||").when(conf).getString(ESTIMATORS.getKey());
+        assertEquals(target.getEstimators(site, inst), Sets.newHashSet("Test1", "Test2"));
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getString(ESTIMATORS.getKey());
+        assertEquals(target.getEstimators(site, inst).size(), 0);
+        reset(conf);
+
+        // Override
+        target.setEstimators(site, inst, singleton("MyEstimator"));
+        assertEquals(target.getEstimators(site, inst), singleton("MyEstimator"));
+
+        // Clear
+        target.setEstimators(site, inst, null);
+        assertEquals(target.getEstimators(site, inst), singleton("NullEstimator"));
 
     }
 

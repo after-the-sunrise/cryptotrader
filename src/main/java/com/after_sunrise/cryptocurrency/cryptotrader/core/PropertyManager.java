@@ -23,4 +23,6 @@ public interface PropertyManager extends Environment {
 
     BigDecimal getTradingSplit(String site, String instrument);
 
+    Set<String> getEstimators(String site, String instrument);
+
 }
