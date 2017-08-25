@@ -7,6 +7,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -90,7 +91,7 @@ public class ContextImplTest {
     @Test
     public void testGet() throws Exception {
 
-        assertEquals(target.get(), Key.ALL);
+        assertEquals(target.get(), Service.WILDCARD);
 
     }
 

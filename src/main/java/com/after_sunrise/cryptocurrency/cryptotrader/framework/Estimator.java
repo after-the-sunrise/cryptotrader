@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.ToString;
 
 import java.math.BigDecimal;
-import java.util.function.Supplier;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -14,7 +13,7 @@ import static lombok.AccessLevel.PRIVATE;
  * @author takanori.takase
  * @version 0.0.1
  */
-public interface Estimator extends Supplier<String> {
+public interface Estimator extends Service {
 
     @Getter
     @Builder

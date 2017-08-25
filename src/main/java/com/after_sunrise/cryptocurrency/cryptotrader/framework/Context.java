@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Supplier;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -16,7 +15,7 @@ import static lombok.AccessLevel.PRIVATE;
  * @author takanori.takase
  * @version 0.0.1
  */
-public interface Context extends Supplier<String>, AutoCloseable {
+public interface Context extends Service, AutoCloseable {
 
     @Getter
     @Builder
@@ -24,8 +23,6 @@ public interface Context extends Supplier<String>, AutoCloseable {
     @EqualsAndHashCode
     @AllArgsConstructor(access = PRIVATE)
     class Key {
-
-        public static final String ALL = Request.ALL;
 
         private final String site;
 

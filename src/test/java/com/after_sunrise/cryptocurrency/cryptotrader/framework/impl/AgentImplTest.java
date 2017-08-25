@@ -3,10 +3,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Agent;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -14,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Request.ALL;
 import static java.util.Collections.*;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
@@ -53,7 +49,7 @@ public class AgentImplTest {
     @Test
     public void testGet() throws Exception {
 
-        assertEquals(target.get(), ALL);
+        assertEquals(target.get(), Service.WILDCARD);
 
     }
 

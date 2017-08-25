@@ -20,8 +20,6 @@ import static lombok.AccessLevel.PRIVATE;
 @AllArgsConstructor(access = PRIVATE)
 public class Request {
 
-    public static final String ALL = "*";
-
     private String site;
 
     private String instrument;

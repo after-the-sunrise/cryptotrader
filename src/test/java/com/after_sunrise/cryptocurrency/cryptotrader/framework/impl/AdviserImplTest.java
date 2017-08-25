@@ -7,12 +7,12 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Map;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Request.ALL;
 import static java.util.Collections.singletonMap;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
@@ -51,7 +51,7 @@ public class AdviserImplTest {
     @Test
     public void testGet() throws Exception {
 
-        assertEquals(target.get(), ALL);
+        assertEquals(target.get(), Service.WILDCARD);
 
     }
 

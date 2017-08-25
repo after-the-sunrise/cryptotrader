@@ -2,10 +2,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instructor;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +11,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Request.ALL;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -35,7 +31,7 @@ public class InstructorImpl implements Instructor {
 
     @Override
     public String get() {
-        return ALL;
+        return Service.WILDCARD;
     }
 
     @Override

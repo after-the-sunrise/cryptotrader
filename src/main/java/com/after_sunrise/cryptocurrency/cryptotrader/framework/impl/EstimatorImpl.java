@@ -6,6 +6,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Request.ALL;
 import static java.math.BigDecimal.valueOf;
 import static java.math.RoundingMode.HALF_UP;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
@@ -41,7 +41,6 @@ public class EstimatorImpl implements Estimator {
 
     private final Map<String, Estimator> estimators;
 
-
     @Inject
     public EstimatorImpl(Injector injector) {
 
@@ -55,7 +54,7 @@ public class EstimatorImpl implements Estimator {
 
     @Override
     public String get() {
-        return ALL;
+        return Service.WILDCARD;
     }
 
     @Override
@@ -77,7 +76,7 @@ public class EstimatorImpl implements Estimator {
 
         estimators.values().stream()
                 .filter(e -> ids != null)
-                .filter(e -> ids.contains(e.get()))
+                .filter(e -> ids.contains(Service.WILDCARD) || ids.contains(e.get()))
                 .forEach(estimator ->
                         futures.put(estimator,
                                 supplyAsync(() -> estimator.estimate(context, request), executor)
