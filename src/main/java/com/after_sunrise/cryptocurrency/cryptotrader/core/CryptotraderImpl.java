@@ -45,7 +45,7 @@ public class CryptotraderImpl implements Cryptotrader {
             bind(Bitflyer4j.class).toInstance(new Bitflyer4jFactory().createInstance());
             bind(ExecutorFactory.class).to(ExecutorFactoryImpl.class).asEagerSingleton();
 
-            bind(Context.class).toProvider(ContextProvider.class).asEagerSingleton();
+            bind(Context.class).to(ContextImpl.class).asEagerSingleton();
             bind(Estimator.class).to(EstimatorImpl.class).asEagerSingleton();
             bind(Adviser.class).to(AdviserImpl.class).asEagerSingleton();
             bind(Instructor.class).to(InstructorImpl.class).asEagerSingleton();

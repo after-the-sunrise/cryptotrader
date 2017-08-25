@@ -36,6 +36,10 @@ public class TemplateContextTest {
         }
 
         @Override
+        public void close() throws Exception {
+        }
+
+        @Override
         public BigDecimal getBestAskPrice(Key key) {
             return null;
         }

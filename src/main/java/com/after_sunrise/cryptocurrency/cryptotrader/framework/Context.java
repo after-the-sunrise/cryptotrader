@@ -16,8 +16,7 @@ import static lombok.AccessLevel.PRIVATE;
  * @author takanori.takase
  * @version 0.0.1
  */
-public interface Context extends Supplier<String> {
-
+public interface Context extends Supplier<String>, AutoCloseable {
 
     @Getter
     @Builder
@@ -25,6 +24,8 @@ public interface Context extends Supplier<String> {
     @EqualsAndHashCode
     @AllArgsConstructor(access = PRIVATE)
     class Key {
+
+        public static final String ALL = Request.ALL;
 
         private final String site;
 

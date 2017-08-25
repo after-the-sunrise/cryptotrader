@@ -15,6 +15,7 @@ import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -78,6 +79,11 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
         log.debug("Initialized.");
 
+    }
+
+    @Override
+    public void close() throws IOException {
+        // TODO
     }
 
     @Override
