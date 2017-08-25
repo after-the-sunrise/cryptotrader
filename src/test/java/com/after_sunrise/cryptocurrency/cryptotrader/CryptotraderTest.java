@@ -31,7 +31,7 @@ public class CryptotraderTest {
         test(Estimator.Estimation.class);
         test(Instruction.CreateInstruction.class);
         test(Instruction.CancelInstruction.class);
-        test(Trader.Request.class);
+        test(Request.class);
     }
 
     private void test(Class<?> clazz) throws ReflectiveOperationException {

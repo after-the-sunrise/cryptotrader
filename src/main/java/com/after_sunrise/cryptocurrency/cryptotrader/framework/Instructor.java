@@ -1,7 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 
 import java.util.List;
 import java.util.function.Supplier;

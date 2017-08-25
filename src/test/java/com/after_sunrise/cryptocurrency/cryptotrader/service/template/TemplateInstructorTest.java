@@ -7,7 +7,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import org.mockito.invocation.InvocationOnMock;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;

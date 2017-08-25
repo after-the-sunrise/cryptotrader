@@ -3,8 +3,8 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

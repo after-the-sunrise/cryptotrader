@@ -6,13 +6,13 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Map;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request.ALL;
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Request.ALL;
 import static java.util.Collections.singletonMap;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;

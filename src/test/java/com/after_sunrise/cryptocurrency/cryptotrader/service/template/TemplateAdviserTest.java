@@ -4,7 +4,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import org.mockito.invocation.InvocationOnMock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

@@ -4,7 +4,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.core.ExecutorFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request.ALL;
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Request.ALL;
 import static java.math.BigDecimal.valueOf;
 import static java.math.RoundingMode.HALF_UP;
 import static java.util.concurrent.CompletableFuture.supplyAsync;

@@ -1,6 +1,5 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

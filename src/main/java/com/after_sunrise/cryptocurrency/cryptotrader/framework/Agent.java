@@ -1,7 +1,5 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;

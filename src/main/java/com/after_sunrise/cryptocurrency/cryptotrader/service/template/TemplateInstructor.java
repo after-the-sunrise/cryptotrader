@@ -1,14 +1,10 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instructor;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

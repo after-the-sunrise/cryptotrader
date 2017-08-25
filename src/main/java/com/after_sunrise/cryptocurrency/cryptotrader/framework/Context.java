@@ -32,7 +32,7 @@ public interface Context extends Supplier<String> {
 
         private final Instant timestamp;
 
-        public static Key from(Trader.Request request) {
+        public static Key from(Request request) {
 
             Key.KeyBuilder builder = Key.builder();
 

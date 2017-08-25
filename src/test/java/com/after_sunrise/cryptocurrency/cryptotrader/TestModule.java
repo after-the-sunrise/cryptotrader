@@ -1,7 +1,7 @@
 package com.after_sunrise.cryptocurrency.cryptotrader;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ExecutorFactory;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import org.mockito.Mockito;

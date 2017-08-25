@@ -1,7 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
 import org.testng.annotations.Test;
 
 import java.time.Instant;

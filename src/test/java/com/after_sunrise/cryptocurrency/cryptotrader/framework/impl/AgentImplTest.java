@@ -6,7 +6,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Agent;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader.Request.ALL;
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Request.ALL;
 import static java.util.Collections.*;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
