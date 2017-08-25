@@ -60,6 +60,13 @@ public class VwapEstimatorTest {
         Trade t5 = mock(Trade.class);
         Trade t6 = mock(Trade.class);
         Trade t7 = mock(Trade.class);
+        when(t1.getTimestamp()).thenReturn(Instant.ofEpochMilli(1));
+        when(t2.getTimestamp()).thenReturn(Instant.ofEpochMilli(2));
+        when(t3.getTimestamp()).thenReturn(Instant.ofEpochMilli(3));
+        when(t4.getTimestamp()).thenReturn(Instant.ofEpochMilli(4));
+        when(t5.getTimestamp()).thenReturn(Instant.ofEpochMilli(5));
+        when(t6.getTimestamp()).thenReturn(Instant.ofEpochMilli(6));
+        when(t7.getTimestamp()).thenReturn(Instant.ofEpochMilli(7));
         when(t1.getPrice()).thenReturn(new BigDecimal("54.20735492"));
         when(t2.getPrice()).thenReturn(new BigDecimal("46.21598752"));
         when(t3.getPrice()).thenReturn(new BigDecimal("52.06059243"));
@@ -78,13 +85,19 @@ public class VwapEstimatorTest {
         when(context.listTrades(key, from)).thenReturn(asList(t1, t3, t5, t7, null, t2, t4, t6));
         Estimation estimation = target.estimate(context, request);
         assertEquals(estimation.getPrice(), new BigDecimal("49.706304093000"));
-        assertEquals(estimation.getConfidence(), new BigDecimal("0.563121405835"));
+        assertEquals(estimation.getConfidence(), new BigDecimal("0.573471869268"));
 
         // One
         when(context.listTrades(key, from)).thenReturn(asList(t3));
         estimation = target.estimate(context, request);
         assertEquals(estimation.getPrice(), new BigDecimal("52.06059243"));
-        assertEquals(estimation.getConfidence(), ONE);
+        assertEquals(estimation.getConfidence().stripTrailingZeros(), ONE);
+
+        // One
+        when(context.listTrades(key, from)).thenReturn(asList(t1, t2));
+        estimation = target.estimate(context, request);
+        assertEquals(estimation.getPrice(), new BigDecimal("48.879776653333"));
+        assertEquals(estimation.getConfidence().stripTrailingZeros(), ONE);
 
         // Zero
         when(context.listTrades(key, from)).thenReturn(emptyList());

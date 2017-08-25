@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -28,9 +29,11 @@ public class VwapEstimator implements Estimator {
 
     private static final Estimation BAIL = Estimation.builder().confidence(ZERO).build();
 
+    private static final Comparator<Trade> COMPARATOR = Comparator.comparing(Trade::getTimestamp);
+
     private static final int SCALE = 12;
 
-    private static final int SIGMA = 6;
+    private static final int SIGMA = 3;
 
     @Override
     public String get() {
@@ -46,9 +49,11 @@ public class VwapEstimator implements Estimator {
 
         List<Trade> trades = ofNullable(context.listTrades(Key.from(request), from)).orElse(emptyList())
                 .stream().filter(Objects::nonNull)
+                .filter(t -> t.getTimestamp() != null)
                 .filter(t -> Objects.nonNull(t.getPrice()))
                 .filter(t -> Objects.nonNull(t.getSize()))
                 .filter(t -> t.getSize().signum() > 0)
+                .sorted(COMPARATOR)
                 .collect(Collectors.toList());
 
         if (trades.isEmpty()) {
@@ -67,25 +72,48 @@ public class VwapEstimator implements Estimator {
 
         } else {
 
+            double[] rates = new double[trades.size() - 1];
+            double sumRates = 0;
+
             double totalNotional = 0;
             double totalQuantity = 0;
 
-            for (Trade t : trades) {
-                totalNotional += t.getSize().doubleValue() * t.getPrice().doubleValue();
+            for (int i = 0; i < trades.size(); i++) {
+
+                Trade t = trades.get(i);
+
+                totalNotional += t.getSize().multiply(t.getPrice()).doubleValue();
                 totalQuantity += t.getSize().doubleValue();
+
+                if (i == 0) {
+                    continue;
+                }
+
+                double previous = trades.get(i - 1).getPrice().doubleValue();
+
+                double current = trades.get(i).getPrice().doubleValue();
+
+                rates[i - 1] = Math.log(current / previous);
+
+                sumRates += rates[i - 1];
+
             }
 
             double averagePrice = totalNotional / totalQuantity;
 
             double variance = 0.0;
 
-            for (Trade t : trades) {
-                variance += Math.pow(t.getPrice().doubleValue() - averagePrice, 2);
+            for (double rate : rates) {
+
+                double diff = rate - (sumRates / rates.length);
+
+                variance += diff * diff;
+
             }
 
-            double deviation = Math.sqrt(variance / (trades.size() - 1));
+            double deviation = Math.sqrt(variance / Math.max(rates.length - 1, 1));
 
-            double ratio = 1 - Math.max(Math.min(deviation * SIGMA / averagePrice, 1), 0);
+            double ratio = 1 - Math.min(deviation * SIGMA, 1);
 
             price = valueOf(averagePrice).setScale(SCALE, ROUND_HALF_UP);
 
