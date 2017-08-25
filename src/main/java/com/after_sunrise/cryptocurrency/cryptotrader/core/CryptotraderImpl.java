@@ -1,7 +1,5 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.core;
 
-import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4j;
-import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4jFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.Cryptotrader;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.*;
@@ -41,8 +39,6 @@ public class CryptotraderImpl implements Cryptotrader {
             bind(PropertyManager.class).to(PropertyController.class).asEagerSingleton();
             bind(Environment.class).to(PropertyManager.class).asEagerSingleton();
             bind(ServiceFactory.class).to(ServiceFactoryImpl.class).asEagerSingleton();
-
-            bind(Bitflyer4j.class).toInstance(new Bitflyer4jFactory().createInstance());
             bind(ExecutorFactory.class).to(ExecutorFactoryImpl.class).asEagerSingleton();
 
             bind(Context.class).to(ContextImpl.class).asEagerSingleton();
@@ -87,7 +83,7 @@ public class CryptotraderImpl implements Cryptotrader {
 
         closeQuietly(Trader.class);
 
-        closeQuietly(Bitflyer4j.class);
+        closeQuietly(Context.class);
 
         closeQuietly(ExecutorFactory.class);
 

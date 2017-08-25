@@ -1,6 +1,7 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 
 import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4j;
+import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4jFactory;
 import com.after_sunrise.cryptocurrency.bitflyer4j.entity.*;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.AccountService;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.MarketService;
@@ -10,12 +11,9 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -63,13 +61,17 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     private OrderService orderService;
 
     public BitflyerContext() {
-        super(ID, CACHE);
+
+        this(new Bitflyer4jFactory().createInstance());
+
     }
 
-    @Inject
-    public void initialize(Injector injector) {
+    @VisibleForTesting
+    BitflyerContext(Bitflyer4j api) {
 
-        bitflyer4j = injector.getInstance(Bitflyer4j.class);
+        super(ID, CACHE);
+
+        bitflyer4j = api;
 
         accountService = bitflyer4j.getAccountService();
 
@@ -82,8 +84,10 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     }
 
     @Override
-    public void close() throws IOException {
-        // TODO
+    public void close() throws Exception {
+
+        bitflyer4j.close();
+
     }
 
     @Override

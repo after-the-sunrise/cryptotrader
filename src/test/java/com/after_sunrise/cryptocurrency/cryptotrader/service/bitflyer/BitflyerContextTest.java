@@ -6,6 +6,7 @@ import com.after_sunrise.cryptocurrency.bitflyer4j.service.AccountService;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.MarketService;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.OrderService;
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
@@ -69,8 +70,16 @@ public class BitflyerContextTest {
         when(module.getMock(Bitflyer4j.class).getMarketService()).thenReturn(marketService);
         when(module.getMock(Bitflyer4j.class).getOrderService()).thenReturn(orderService);
 
-        target = spy(new BitflyerContext());
-        target.initialize(module.createInjector());
+        target = spy(new BitflyerContext(module.getMock(Bitflyer4j.class)));
+
+    }
+
+    @Test
+    public void testClose() throws Exception {
+
+        Context context = new BitflyerContext();
+
+        context.close();
 
     }
 
