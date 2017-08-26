@@ -92,7 +92,7 @@ public class EstimatorImpl implements Estimator {
 
             } catch (Exception e) {
 
-                log.warn("Skipping estimate : " + estimator, e);
+                log.warn("Skipping estimate : " + estimator.get(), e);
 
             }
         });
@@ -115,13 +115,13 @@ public class EstimatorImpl implements Estimator {
 
             if (estimation == null || estimation.getPrice() == null || estimation.getConfidence() == null) {
 
-                log.debug("Omitting estimate : {} ({})", estimation, entry.getKey());
+                log.debug("Omitting estimate : {} ({})", estimation, entry.getKey().get());
 
                 continue;
 
             }
 
-            log.debug("Including estimate : {} - {}", estimation, entry.getKey());
+            log.debug("Including estimate : {} - {}", estimation, entry.getKey().get());
 
             BigDecimal confidence = estimation.getConfidence().max(ZERO).min(ONE);
 
