@@ -31,8 +31,6 @@ public class VwapEstimator implements Estimator {
 
     private static final Comparator<Trade> COMPARATOR = Comparator.comparing(Trade::getTimestamp);
 
-    private static final int SCALE = 12;
-
     private static final int SIGMA = 3;
 
     @Override

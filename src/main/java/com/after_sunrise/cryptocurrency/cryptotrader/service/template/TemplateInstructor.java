@@ -30,8 +30,6 @@ public class TemplateInstructor implements Instructor {
 
     private static final List<Order> EMPTY = emptyList();
 
-    private static final int SCALE = 12;
-
     private static final BigDecimal EPSILON = ONE.movePointLeft(SCALE);
 
     private final String id;

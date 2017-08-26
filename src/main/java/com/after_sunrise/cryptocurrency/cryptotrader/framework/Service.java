@@ -10,4 +10,6 @@ public interface Service extends Supplier<String> {
 
     String WILDCARD = "*";
 
+    int SCALE = 12;
+
 }

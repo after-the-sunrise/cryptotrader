@@ -33,8 +33,6 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
 @Slf4j
 public class EstimatorImpl implements Estimator {
 
-    private static final int SCALE = 8;
-
     private final ExecutorService executor;
 
     private final PropertyManager manager;

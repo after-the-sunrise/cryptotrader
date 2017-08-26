@@ -24,9 +24,7 @@ import static java.util.Optional.ofNullable;
 @Slf4j
 public class TemplateAdviser implements Adviser {
 
-    private static final int PRECISION = 12;
-
-    private static final BigDecimal EPSILON = ONE.movePointLeft(PRECISION);
+    private static final BigDecimal EPSILON = ONE.movePointLeft(SCALE);
 
     private final String id;
 
@@ -114,7 +112,7 @@ public class TemplateAdviser implements Adviser {
             }
 
             // Leveraged short can be larger than the funding.
-            return equivalent.divide(funding, PRECISION, HALF_UP);
+            return equivalent.divide(funding, SCALE, HALF_UP);
 
         }
 
@@ -126,7 +124,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal diff = equivalent.subtract(funding);
 
-        BigDecimal ratio = diff.add(diff).divide(sum, PRECISION, HALF_UP);
+        BigDecimal ratio = diff.add(diff).divide(sum, SCALE, HALF_UP);
 
         log.trace("Position ratio: {} (fund=[{}], structure=[{}] equivalent=[{}])", ratio, structure, equivalent);
 
@@ -235,7 +233,7 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        BigDecimal product = fund.divide(price, PRECISION, DOWN);
+        BigDecimal product = fund.divide(price, SCALE, DOWN);
 
         BigDecimal exposure = ofNullable(request.getTradingExposure()).orElse(ZERO);
 
