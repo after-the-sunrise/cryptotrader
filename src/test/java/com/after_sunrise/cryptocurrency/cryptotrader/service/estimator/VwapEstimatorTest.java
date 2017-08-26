@@ -144,7 +144,6 @@ public class VwapEstimatorTest {
         assertEquals(estimation.getPrice(), null);
         assertEquals(estimation.getConfidence(), ZERO);
 
-
     }
 
 }
