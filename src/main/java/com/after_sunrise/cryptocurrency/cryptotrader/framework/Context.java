@@ -73,7 +73,7 @@ public interface Context extends Service, AutoCloseable {
 
     Boolean isMarginable(Key key);
 
-    Instant getExpiry(Key key);
+    ZonedDateTime getExpiry(Key key);
 
     Order findOrder(Key key, String id);
 

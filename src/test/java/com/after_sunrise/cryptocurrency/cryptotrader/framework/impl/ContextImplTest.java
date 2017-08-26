@@ -15,6 +15,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -237,7 +238,7 @@ public class ContextImplTest {
     @Test
     public void testGetExpiry() {
 
-        Instant value = Instant.now();
+        ZonedDateTime value = ZonedDateTime.now();
 
         when(contexts.get("c1").getExpiry(key)).thenReturn(value);
 

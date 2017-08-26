@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -142,7 +143,7 @@ public class ContextImpl implements Context {
     }
 
     @Override
-    public Instant getExpiry(Key key) {
+    public ZonedDateTime getExpiry(Key key) {
         return forContext(key, c -> c.getExpiry(key));
     }
 

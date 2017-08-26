@@ -1,6 +1,5 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
@@ -12,6 +11,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -91,7 +91,7 @@ public class TemplateContextTest {
         }
 
         @Override
-        public Instant getExpiry(Key key) {
+        public ZonedDateTime getExpiry(Key key) {
             return null;
         }
 

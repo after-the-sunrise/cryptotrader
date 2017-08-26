@@ -534,17 +534,17 @@ public class BitflyerContextTest {
         // Valid
         LocalDate date = LocalDate.of(2017, 9, 15);
         doReturn("BTCJPY15SEP2017").when(target).convertProductAlias(key);
-        assertEquals(target.getExpiry(key), ZonedDateTime.of(date, time, zone).toInstant());
+        assertEquals(target.getExpiry(key), ZonedDateTime.of(date, time, zone));
 
         // Invalid (Sep 31)
         date = LocalDate.of(2017, 10, 1);
         doReturn("BTCJPY31SEP2017").when(target).convertProductAlias(key);
-        assertEquals(target.getExpiry(key), ZonedDateTime.of(date, time, zone).toInstant());
+        assertEquals(target.getExpiry(key), ZonedDateTime.of(date, time, zone));
 
         // Invalid (Sep 00)
         date = LocalDate.of(2017, 8, 31);
         doReturn("BTCJPY00SEP2017").when(target).convertProductAlias(key);
-        assertEquals(target.getExpiry(key), ZonedDateTime.of(date, time, zone).toInstant());
+        assertEquals(target.getExpiry(key), ZonedDateTime.of(date, time, zone));
 
         // Invalid Month (???)
         doReturn("BTCJPY15???2017").when(target).convertProductAlias(key);

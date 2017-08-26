@@ -21,6 +21,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -380,7 +382,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     }
 
     @Override
-    public Instant getExpiry(Key key) {
+    public ZonedDateTime getExpiry(Key key) {
 
         String code = StringUtils.trimToEmpty(convertProductAlias(key));
 
@@ -388,7 +390,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
             return null;
         }
 
-        Instant expiry;
+        ZonedDateTime expiry;
 
         try {
 
@@ -396,7 +398,9 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
             Date date = EXPIRY_FORMAT.get().parse(value);
 
-            expiry = Instant.ofEpochMilli(date.getTime());
+            ZoneId zone = ZoneId.of(EXPIRY_FORMAT.get().getTimeZone().getID());
+
+            expiry = ZonedDateTime.ofInstant(Instant.ofEpochMilli(date.getTime()), zone);
 
         } catch (ParseException e) {
 
