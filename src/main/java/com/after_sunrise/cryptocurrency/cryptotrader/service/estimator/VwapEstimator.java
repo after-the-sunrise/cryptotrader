@@ -14,7 +14,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static java.math.BigDecimal.*;
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.HALF_UP;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
@@ -54,74 +55,69 @@ public class VwapEstimator implements Estimator {
                 .sorted(COMPARATOR)
                 .collect(Collectors.toList());
 
-        if (trades.isEmpty()) {
-            return BAIL;
+        if (trades.size() == 0) {
+            return BAIL; // Cannot calculate returns if less than 2 points.
         }
-
-        BigDecimal price;
-
-        BigDecimal confidence;
 
         if (trades.size() == 1) {
 
-            price = trades.get(0).getPrice();
+            BigDecimal price = trades.get(trades.size() - 1).getPrice();
 
-            confidence = ONE;
-
-        } else {
-
-            double[] rates = new double[trades.size() - 1];
-            double sumRates = 0;
-
-            double totalNotional = 0;
-            double totalQuantity = 0;
-
-            for (int i = 0; i < trades.size(); i++) {
-
-                Trade t = trades.get(i);
-
-                totalNotional += t.getSize().multiply(t.getPrice()).doubleValue();
-                totalQuantity += t.getSize().doubleValue();
-
-                if (i == 0) {
-                    continue;
-                }
-
-                double previous = trades.get(i - 1).getPrice().doubleValue();
-
-                double current = trades.get(i).getPrice().doubleValue();
-
-                rates[i - 1] = Math.log(current / previous);
-
-                sumRates += rates[i - 1];
-
-            }
-
-            double averagePrice = totalNotional / totalQuantity;
-
-            double variance = 0.0;
-
-            for (double rate : rates) {
-
-                double diff = rate - (sumRates / rates.length);
-
-                variance += diff * diff;
-
-            }
-
-            double deviation = Math.sqrt(variance / Math.max(rates.length - 1, 1));
-
-            double ratio = 1 - Math.min(deviation * SIGMA, 1);
-
-            price = valueOf(averagePrice).setScale(SCALE, ROUND_HALF_UP);
-
-            confidence = valueOf(ratio).setScale(SCALE, ROUND_HALF_UP);
+            return Estimation.builder().price(price).confidence(ZERO).build();
 
         }
 
-        log.debug("Estimated : {} (confidence=[{}] points=[{}])", price, confidence, trades.size());
+        double sumNotional = 0;
+        double sumQuantity = 0;
 
-        return Estimation.builder().price(price).confidence(confidence).build();
+        double[] rates = new double[trades.size() - 1];
+        double sumRates = 0;
+
+        for (int i = 0; i < trades.size(); i++) {
+
+            Trade t = trades.get(i);
+            sumNotional += t.getSize().multiply(t.getPrice()).doubleValue();
+            sumQuantity += t.getSize().doubleValue();
+
+            if (i == 0) {
+                continue;
+            }
+
+            double previous = trades.get(i - 1).getPrice().doubleValue();
+            double current = trades.get(i).getPrice().doubleValue();
+
+            rates[i - 1] = Math.log(current / previous);
+            sumRates += rates[i - 1];
+
+        }
+
+        double vwap = sumNotional / sumQuantity;
+
+        double variance = 0.0;
+
+        for (double rate : rates) {
+
+            double diff = rate - (sumRates / rates.length);
+
+            variance += diff * diff;
+
+        }
+
+        double deviation = Math.sqrt(variance / Math.max(rates.length - 1, 1));
+
+        double last = trades.get(trades.size() - 1).getPrice().doubleValue();
+
+        double rate = Math.log(last / vwap);
+
+        double drift = Math.min(1, Math.abs(rate / deviation));
+
+        BigDecimal p = BigDecimal.valueOf(vwap).setScale(SCALE, HALF_UP);
+
+        BigDecimal c = Double.isNaN(drift) ? ZERO : BigDecimal.valueOf(1 - drift).setScale(SCALE, HALF_UP);
+
+        log.debug("Estimated : {} (confidence=[{}] points=[{}])", p, c, trades.size());
+
+        return Estimation.builder().price(p).confidence(c).build();
 
     }
 

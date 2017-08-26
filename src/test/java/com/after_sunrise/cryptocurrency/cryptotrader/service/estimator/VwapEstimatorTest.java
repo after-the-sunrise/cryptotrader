@@ -11,13 +11,13 @@ import org.testng.annotations.Test;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 
 /**
@@ -35,7 +35,7 @@ public class VwapEstimatorTest {
 
         context = mock(Context.class);
 
-        target = spy(new VwapEstimator());
+        target = new VwapEstimator();
 
     }
 
@@ -85,21 +85,52 @@ public class VwapEstimatorTest {
         when(context.listTrades(key, from)).thenReturn(asList(t1, t3, t5, t7, null, t2, t4, t6));
         Estimation estimation = target.estimate(context, request);
         assertEquals(estimation.getPrice(), new BigDecimal("49.706304093000"));
-        assertEquals(estimation.getConfidence(), new BigDecimal("0.573471869268"));
+        assertEquals(estimation.getConfidence(), new BigDecimal("0.835966274060"));
 
-        // One
-        when(context.listTrades(key, from)).thenReturn(asList(t3));
+        when(context.listTrades(key, from)).thenReturn(asList(t1, t2, t3));
         estimation = target.estimate(context, request);
-        assertEquals(estimation.getPrice(), new BigDecimal("52.06059243"));
-        assertEquals(estimation.getConfidence().stripTrailingZeros(), ONE);
+        assertEquals(estimation.getPrice(), new BigDecimal("50.470184541667"));
+        assertEquals(estimation.getConfidence(), new BigDecimal("0.842494903748"));
 
-        // One
-        when(context.listTrades(key, from)).thenReturn(asList(t1, t2));
+        // Extreme Downtrend 1
+        when(t3.getPrice()).thenReturn(new BigDecimal("43.2"));
+        estimation = target.estimate(context, request);
+        assertEquals(estimation.getPrice(), new BigDecimal("46.039888326667"));
+        assertEquals(estimation.getConfidence(), new BigDecimal("0.021366595770"));
+
+        // Extreme Downtrend 2
+        when(t3.getPrice()).thenReturn(new BigDecimal("43.1"));
+        estimation = target.estimate(context, request);
+        assertEquals(estimation.getPrice(), new BigDecimal("45.989888326667"));
+        assertEquals(estimation.getConfidence().signum(), 0);
+
+        // Extreme Uptrend 1
+        when(t3.getPrice()).thenReturn(new BigDecimal("141"));
+        when(t3.getSize()).thenReturn(new BigDecimal("0.3"));
+        estimation = target.estimate(context, request);
+        assertEquals(estimation.getPrice(), new BigDecimal("57.254342412121"));
+        assertEquals(estimation.getConfidence(), new BigDecimal("0.000279143607"));
+
+        // Extreme Uptrend 2
+        when(t3.getPrice()).thenReturn(new BigDecimal("142"));
+        when(t3.getSize()).thenReturn(new BigDecimal("0.3"));
+        estimation = target.estimate(context, request);
+        assertEquals(estimation.getPrice(), new BigDecimal("57.345251503030"));
+        assertEquals(estimation.getConfidence().signum(), 0);
+
+        // Two points
+        when(context.listTrades(key, from)).thenReturn(asList(t1, null, t2));
         estimation = target.estimate(context, request);
         assertEquals(estimation.getPrice(), new BigDecimal("48.879776653333"));
-        assertEquals(estimation.getConfidence().stripTrailingZeros(), ONE);
+        assertEquals(estimation.getConfidence().signum(), 0);
 
-        // Zero
+        // One point
+        when(context.listTrades(key, from)).thenReturn(asList(null, t1));
+        estimation = target.estimate(context, request);
+        assertEquals(estimation.getPrice(), t1.getPrice());
+        assertEquals(estimation.getConfidence(), ZERO);
+
+        // Zero point
         when(context.listTrades(key, from)).thenReturn(emptyList());
         estimation = target.estimate(context, request);
         assertEquals(estimation.getPrice(), null);
@@ -110,6 +141,7 @@ public class VwapEstimatorTest {
         estimation = target.estimate(context, request);
         assertEquals(estimation.getPrice(), null);
         assertEquals(estimation.getConfidence(), ZERO);
+
 
     }
 
