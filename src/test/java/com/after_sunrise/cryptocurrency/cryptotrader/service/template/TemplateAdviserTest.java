@@ -14,7 +14,8 @@ import java.math.RoundingMode;
 import java.util.function.BiFunction;
 
 import static java.lang.Boolean.TRUE;
-import static java.math.BigDecimal.*;
+import static java.math.BigDecimal.ZERO;
+import static java.math.BigDecimal.valueOf;
 import static java.time.Instant.now;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 import static org.mockito.Mockito.*;
@@ -77,11 +78,14 @@ public class TemplateAdviserTest {
     public void testAdvise() throws Exception {
 
         Request request = rBuilder.build();
-        Estimation estimation = eBuilder.build();
 
-        doReturn(valueOf(1)).when(target).calculateBuyLimitPrice(context, request, estimation);
+        Estimation estimation = eBuilder.build();
+        doReturn(valueOf(9)).when(target).calculateWeighedPrice(context, request, estimation);
+        doReturn(valueOf(8)).when(target).calculateBasis(context, request);
+
+        doReturn(valueOf(1)).when(target).calculateBuyLimitPrice(context, request, valueOf(9), valueOf(8));
         doReturn(valueOf(2)).when(target).calculateBuyLimitSize(context, request, valueOf(1));
-        doReturn(valueOf(3)).when(target).calculateSellLimitPrice(context, request, estimation);
+        doReturn(valueOf(3)).when(target).calculateSellLimitPrice(context, request, valueOf(9), valueOf(8));
         doReturn(valueOf(4)).when(target).calculateSellLimitSize(context, request, valueOf(3));
 
         Advice result = target.advise(context, request, estimation);
@@ -103,6 +107,25 @@ public class TemplateAdviserTest {
         assertEquals(result.getBuyLimitSize(), ZERO);
         assertEquals(result.getSellLimitPrice(), null);
         assertEquals(result.getSellLimitSize(), ZERO);
+
+    }
+
+    @Test
+    public void testCalculateBasis() {
+
+        Request request = Request.builder().tradingSpread(new BigDecimal("0.0060")).build();
+        when(context.getCommissionRate(Key.from(request))).thenReturn(new BigDecimal("0.0020"));
+        assertEquals(target.calculateBasis(context, request), new BigDecimal("0.0080"));
+
+        // Null spread
+        request = Request.builder().tradingSpread(null).build();
+        when(context.getCommissionRate(Key.from(request))).thenReturn(new BigDecimal("0.0020"));
+        assertNull(target.calculateBasis(context, request));
+
+        // Null commission
+        request = Request.builder().tradingSpread(new BigDecimal("0.0060")).build();
+        when(context.getCommissionRate(Key.from(request))).thenReturn(null);
+        assertNull(target.calculateBasis(context, request));
 
     }
 
@@ -145,6 +168,30 @@ public class TemplateAdviserTest {
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-2.0000000000"));
 
+        // Zero Asset
+        when(context.getFundingPosition(key)).thenReturn(ZERO);
+        when(context.getInstrumentPosition(key)).thenReturn(ZERO);
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
+        assertEquals(target.calculatePositionRatio(context, request), ZERO);
+
+        // Null Funding
+        when(context.getFundingPosition(key)).thenReturn(null);
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("0"));
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
+        assertNull(target.calculatePositionRatio(context, request));
+
+        // Null Structure
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("12345"));
+        when(context.getInstrumentPosition(key)).thenReturn(null);
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
+        assertNull(target.calculatePositionRatio(context, request));
+
+        // Null Mid Price
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("12345"));
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("0"));
+        when(context.getMidPrice(key)).thenReturn(null);
+        assertNull(target.calculatePositionRatio(context, request));
+
     }
 
     @Test
@@ -153,32 +200,60 @@ public class TemplateAdviserTest {
         Request request = rBuilder.build();
         Key key = Key.from(request);
         when(context.isMarginable(key)).thenReturn(true);
-        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9800"));
-        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
 
         // Long (2345 * 3 / 9800 = 0.71785714285714..)
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("3"));
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9800"));
         assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("0.7178571429"));
 
         // Leveraged Long (2345 * 5 / 9800 = 1.19642857142857..)
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9800"));
         assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("1.1964285714"));
 
         // Short (2345 * -3 / 9800 = -0.71785714285714..)
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-3"));
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9800"));
         assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-0.7178571429"));
 
         // Leveraged Short (2345 * -5 / 9800 = -1.19642857142857..)
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-5"));
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9800"));
         assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-1.1964285714"));
 
-        // Flat
+        // Flat (2345 * 0 / 9800 = 0)
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         when(context.getInstrumentPosition(key)).thenReturn(ZERO);
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9800"));
         assertEquals(target.calculatePositionRatio(context, request).signum(), 0);
 
-        // Null
-        when(context.getInstrumentPosition(key)).thenReturn(null);
+        // Zero Funding
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
+        when(context.getInstrumentPosition(key)).thenReturn(ZERO);
+        when(context.getFundingPosition(key)).thenReturn(ZERO);
         assertEquals(target.calculatePositionRatio(context, request).signum(), 0);
+
+        // Null Funding
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
+        when(context.getInstrumentPosition(key)).thenReturn(ZERO);
+        when(context.getFundingPosition(key)).thenReturn(null);
+        assertNull(target.calculatePositionRatio(context, request));
+
+        // Null Structure
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
+        when(context.getInstrumentPosition(key)).thenReturn(null);
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9800"));
+        assertNull(target.calculatePositionRatio(context, request));
+
+        // Null Mid Price
+        when(context.getMidPrice(key)).thenReturn(null);
+        when(context.getInstrumentPosition(key)).thenReturn(ZERO);
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9800"));
+        assertNull(target.calculatePositionRatio(context, request));
 
     }
 
@@ -187,48 +262,50 @@ public class TemplateAdviserTest {
 
         Request request = rBuilder.build();
         Key key = Key.from(request);
-        Estimation estimation = eBuilder.build();
-        when(context.getMidPrice(key)).thenReturn(new BigDecimal("12349.8765"));
-        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("3"));
-        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("50000"));
-        when(context.getCommissionRate(key)).thenReturn(new BigDecimal("0.0020"));
 
-        // Estimated : price 12345.6789 | confidence 0.5
+        BigDecimal weighed = new BigDecimal("12347.7777");
+        BigDecimal basis = new BigDecimal("0.0080");
+
+        // [Net Long]
         // Weighed : 12347.7777
-        // Spread : 60 * 1.0000 = 60 bps
-        // Spread : Average * (1 - (60 + 20 bps)) = 12248.99548
-        // Rounded : 12248.9950
+        // Basis : 80 bps * (1 + 0.2) = 96 bps
+        // Target : 12347.7777 * (1 - 96 bps) = 12229.23903408
+        // Cross : min(12229.23903408, 20000)
+        // Rounded : 12229.2375
+        doReturn(new BigDecimal("0.2")).when(target).calculatePositionRatio(context, request);
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("20000"));
-        assertEquals(target.calculateBuyLimitPrice(context, request, estimation), new BigDecimal("12248.9950"));
+        BigDecimal result = target.calculateBuyLimitPrice(context, request, weighed, basis);
+        assertEquals(result, new BigDecimal("12229.2375"));
 
-        // ...
-        // Spread : 60 * 1.597712..  = 95.86272.. bps
-        // Spread : Average * (1 - (95.86 + 20 bps)) = 12204.71298..
-        // Rounded : 12204.7125
-        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("20000"));
-        assertEquals(target.calculateBuyLimitPrice(context, request, estimation), new BigDecimal("12204.7125"));
+        // [Net Short]
+        // Weighed : 12347.7777
+        // Basis : 80 bps * (1) = 80 bps
+        // Target : 12347.7777 * (1 - 80 bps) = 12248.9954784
+        // Cross : min(12248.9954784, 20000)
+        // Rounded : 12248.9950
+        doReturn(new BigDecimal("-0.2")).when(target).calculatePositionRatio(context, request);
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("20000"));
+        result = target.calculateBuyLimitPrice(context, request, weighed, basis);
+        assertEquals(result, new BigDecimal("12248.9950"));
 
-        // Cross protection : Ask 10000 * (1 - (95.86 + 20 bps)) = 9884.1372..
+        // Cross Protected
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("10000"));
-        assertEquals(target.calculateBuyLimitPrice(context, request, estimation), new BigDecimal("9884.1350"));
+        result = target.calculateBuyLimitPrice(context, request, weighed, basis);
+        assertEquals(result, new BigDecimal("9999.9975"));
 
-        // No Mid
-        when(context.getMidPrice(key)).thenReturn(null);
-        when(context.getBestAskPrice(key)).thenReturn(ONE);
-        when(context.getCommissionRate(key)).thenReturn(ZERO);
-        assertNull(target.calculateBuyLimitPrice(context, request, estimation));
+        // Invalid Input
+        assertNull(target.calculateBuyLimitPrice(context, request, null, basis));
+        assertNull(target.calculateBuyLimitPrice(context, request, weighed, null));
 
-        // No Ask
-        when(context.getMidPrice(key)).thenReturn(ONE);
+        // Null Ratio
+        doReturn(null).when(target).calculatePositionRatio(context, request);
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("20000"));
+        assertNull(target.calculateBuyLimitPrice(context, request, weighed, basis));
+
+        // Null Ask
+        doReturn(new BigDecimal("0.2")).when(target).calculatePositionRatio(context, request);
         when(context.getBestAskPrice(key)).thenReturn(null);
-        when(context.getCommissionRate(key)).thenReturn(ZERO);
-        assertNull(target.calculateBuyLimitPrice(context, request, estimation));
-
-        // No Commission
-        when(context.getMidPrice(key)).thenReturn(ONE);
-        when(context.getBestAskPrice(key)).thenReturn(ONE);
-        when(context.getCommissionRate(key)).thenReturn(null);
-        assertNull(target.calculateBuyLimitPrice(context, request, estimation));
+        assertNull(target.calculateBuyLimitPrice(context, request, weighed, basis));
 
     }
 
@@ -237,48 +314,78 @@ public class TemplateAdviserTest {
 
         Request request = rBuilder.build();
         Key key = Key.from(request);
-        Estimation estimation = eBuilder.build();
-        when(context.getMidPrice(key)).thenReturn(new BigDecimal("12349.8765"));
-        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("3"));
-        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("20000"));
-        when(context.getCommissionRate(key)).thenReturn(new BigDecimal("0.0020"));
 
-        // Estimated : price 12345.6789 | confidence 0.5
+        BigDecimal weighed = new BigDecimal("12347.7777");
+        BigDecimal basis = new BigDecimal("0.0080");
+
+        // [Net Long]
         // Weighed : 12347.7777
-        // Spread : 60 * 1.0000 = 60 bps
-        // Target : Average * (1 - (60 + 20 bps)) = 12446.55992
+        // Basis : 80 bps * (1) = 80 bps
+        // Target : 12347.7777 * (1 + 80 bps) = 12446.5599216
+        // Cross : max(12446.5599216, 10000)
         // Rounded : 12446.5600
+        doReturn(new BigDecimal("0.2")).when(target).calculatePositionRatio(context, request);
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("10000"));
-        assertEquals(target.calculateSellLimitPrice(context, request, estimation), new BigDecimal("12446.5600"));
+        BigDecimal result = target.calculateSellLimitPrice(context, request, weighed, basis);
+        assertEquals(result, new BigDecimal("12446.5600"));
 
-        // ...
-        // Spread : 60 * 1.297539933814..  = 77.85239598.. bps
-        // Target : Average * (1 + (77.85 + 20 bps)) = 12468.60..
-        // Rounded : 12468.6050
-        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("50000"));
-        assertEquals(target.calculateSellLimitPrice(context, request, estimation), new BigDecimal("12468.6050"));
+        // [Net Short]
+        // Weighed : 12347.7777
+        // Basis : 80 bps * (1 + 0.2) = 96 bps
+        // Target : 12347.7777 * (1 + 96 bps) = 12466.31636592
+        // Cross : max(12466.31636592, 10000)
+        // Rounded : 12466.3175
+        doReturn(new BigDecimal("-0.2")).when(target).calculatePositionRatio(context, request);
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("10000"));
+        result = target.calculateSellLimitPrice(context, request, weighed, basis);
+        assertEquals(result, new BigDecimal("12466.3175"));
 
-        // Cross protection : Bid 20000 * (1 + (77.85 + 20 bps)) = 20195.70..
+        // Cross Protected
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("20000"));
-        assertEquals(target.calculateSellLimitPrice(context, request, estimation), new BigDecimal("20195.7050"));
+        result = target.calculateSellLimitPrice(context, request, weighed, basis);
+        assertEquals(result, new BigDecimal("20000.0025"));
 
-        // No Mid
-        when(context.getMidPrice(key)).thenReturn(null);
-        when(context.getBestBidPrice(key)).thenReturn(ONE);
-        when(context.getCommissionRate(key)).thenReturn(ZERO);
-        assertNull(target.calculateSellLimitPrice(context, request, estimation));
+        // Invalid Input
+        assertNull(target.calculateSellLimitPrice(context, request, null, basis));
+        assertNull(target.calculateSellLimitPrice(context, request, weighed, null));
 
-        // No Bid
-        when(context.getMidPrice(key)).thenReturn(ONE);
+        // Null Ratio
+        doReturn(null).when(target).calculatePositionRatio(context, request);
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("20000"));
+        assertNull(target.calculateSellLimitPrice(context, request, weighed, basis));
+
+        // Null Ask
+        doReturn(new BigDecimal("0.2")).when(target).calculatePositionRatio(context, request);
         when(context.getBestBidPrice(key)).thenReturn(null);
-        when(context.getCommissionRate(key)).thenReturn(ZERO);
-        assertNull(target.calculateSellLimitPrice(context, request, estimation));
+        assertNull(target.calculateSellLimitPrice(context, request, weighed, basis));
 
-        // No Commission
-        when(context.getMidPrice(key)).thenReturn(ONE);
-        when(context.getBestBidPrice(key)).thenReturn(ONE);
-        when(context.getCommissionRate(key)).thenReturn(null);
-        assertNull(target.calculateSellLimitPrice(context, request, estimation));
+    }
+
+    @Test
+    public void testCalculateFundingLimitSize() {
+
+        Request request = rBuilder.tradingExposure(new BigDecimal("0.10")).build();
+        Key key = Key.from(request);
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9000"));
+        BigDecimal price = new BigDecimal("123.4567");
+
+        // Exposed = Fund * Exposure = 900
+        // Fund / Price = 900 / 123.4567 = 7.290005322...
+        // Rounded = 7.25
+        assertEquals(target.calculateFundingLimitSize(context, request, price), new BigDecimal("7.25"));
+
+        // Invalid price
+        assertEquals(target.calculateFundingLimitSize(context, request, null), ZERO);
+        assertEquals(target.calculateFundingLimitSize(context, request, ZERO), ZERO);
+
+        // Invalid Fund
+        when(context.getFundingPosition(key)).thenReturn(null);
+        assertEquals(target.calculateFundingLimitSize(context, request, price), ZERO);
+
+        // Rounding Failure
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9000"));
+        when(context.roundLotSize(any(), any(), any())).thenReturn(null);
+        assertEquals(target.calculateFundingLimitSize(context, request, price), ZERO);
 
     }
 
@@ -287,26 +394,16 @@ public class TemplateAdviserTest {
 
         Request request = rBuilder.build();
         Key key = Key.from(request);
-        BigDecimal price = new BigDecimal("123.4567");
-        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9000"));
         when(context.isMarginable(key)).thenReturn(null);
+        BigDecimal price = new BigDecimal("123.4567");
+        doReturn(new BigDecimal("7.25")).when(target).calculateFundingLimitSize(context, request, price);
 
-        // Exposed = Fund * Exposure = 900
-        // Fund / Price = 7.290005322...
-        // Rounded = 7.25
+        // With Fund
         assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("7.25"));
 
-        // No price
-        assertEquals(target.calculateBuyLimitSize(context, request, null), ZERO);
-        assertEquals(target.calculateBuyLimitSize(context, request, ZERO), ZERO);
-
-        // No Fund
-        when(context.getFundingPosition(key)).thenReturn(ZERO);
-        assertEquals(target.calculateBuyLimitSize(context, request, price), ZERO);
-
         // Null Fund
-        when(context.getFundingPosition(key)).thenReturn(null);
-        assertEquals(target.calculateBuyLimitSize(context, request, price), ZERO);
+        doReturn(null).when(target).calculateFundingLimitSize(context, request, price);
+        assertEquals(target.calculateBuyLimitSize(context, request, price), null);
 
     }
 
@@ -315,28 +412,27 @@ public class TemplateAdviserTest {
 
         Request request = rBuilder.build();
         Key key = Key.from(request);
-        when(context.isMarginable(key)).thenReturn(TRUE);
-
-        // Exposed = Fund * Exposure = 900
-        // Fund / Price = 7.290005322...
-        // Rounded = 7.25
+        when(context.isMarginable(key)).thenReturn(true);
         BigDecimal price = new BigDecimal("123.4567");
-        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9000"));
 
-        // Net Position = (ignore long position)
-        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("+4.75"));
+        // Net-Long
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("4"));
+        doReturn(new BigDecimal("7.25")).when(target).calculateFundingLimitSize(context, request, price);
         assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("7.25"));
 
-        // Net Position = (ignore long position)
-        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("+9.75"));
-        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("7.25"));
+        // Net-Short
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4"));
+        doReturn(new BigDecimal("7.25")).when(target).calculateFundingLimitSize(context, request, price);
+        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("11.25"));
 
-        // Net Position = 7.25 - (-4.75) = 12
-        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4.75"));
-        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("12.00"));
+        // Null fund
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4"));
+        doReturn(null).when(target).calculateFundingLimitSize(context, request, price);
+        assertEquals(target.calculateBuyLimitSize(context, request, price), ZERO);
 
-        // Null Position = 7.25 - null = null
+        // Null structure
         when(context.getInstrumentPosition(key)).thenReturn(null);
+        doReturn(new BigDecimal("7.25")).when(target).calculateFundingLimitSize(context, request, price);
         assertEquals(target.calculateBuyLimitSize(context, request, price), ZERO);
 
     }

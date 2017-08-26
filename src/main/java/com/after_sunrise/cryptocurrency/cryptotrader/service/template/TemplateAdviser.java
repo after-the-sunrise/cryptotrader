@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.Objects;
+import java.util.function.Function;
 
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
@@ -23,6 +24,8 @@ import static java.util.Optional.ofNullable;
  */
 @Slf4j
 public class TemplateAdviser implements Adviser {
+
+    private static final Function<BigDecimal, BigDecimal> TRIM_ZERO = b -> ofNullable(b).orElse(null);
 
     private static final BigDecimal EPSILON = ONE.movePointLeft(SCALE);
 
@@ -40,9 +43,13 @@ public class TemplateAdviser implements Adviser {
     @Override
     public Advice advise(Context context, Request request, Estimation estimation) {
 
-        BigDecimal bPrice = calculateBuyLimitPrice(context, request, estimation);
+        BigDecimal weighedPrice = calculateWeighedPrice(context, request, estimation);
 
-        BigDecimal sPrice = calculateSellLimitPrice(context, request, estimation);
+        BigDecimal basis = calculateBasis(context, request);
+
+        BigDecimal bPrice = calculateBuyLimitPrice(context, request, weighedPrice, basis);
+
+        BigDecimal sPrice = calculateSellLimitPrice(context, request, weighedPrice, basis);
 
         BigDecimal bSize = calculateBuyLimitSize(context, request, bPrice);
 
@@ -60,7 +67,10 @@ public class TemplateAdviser implements Adviser {
     @VisibleForTesting
     BigDecimal calculateWeighedPrice(Context context, Request request, Estimation estimation) {
 
-        if (estimation.getPrice() == null || estimation.getConfidence() == null) {
+        BigDecimal confidence = estimation.getConfidence();
+
+        if (estimation.getPrice() == null || confidence == null
+                || confidence.signum() <= 0 || confidence.compareTo(ONE) > 0) {
 
             log.trace("Invalid estimation : {}", estimation);
 
@@ -82,8 +92,6 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal estimate = estimation.getPrice();
 
-        BigDecimal confidence = ONE.min(ZERO.max(estimation.getConfidence()));
-
         BigDecimal weighed = mid.multiply(ONE.subtract(confidence)).add(estimate.multiply(confidence));
 
         log.trace("Weighed price : {} (mid=[[]] [{}])", weighed, mid, estimation);
@@ -93,17 +101,54 @@ public class TemplateAdviser implements Adviser {
     }
 
     @VisibleForTesting
+    BigDecimal calculateBasis(Context context, Request request) {
+
+        Key key = Key.from(request);
+
+        BigDecimal comm = context.getCommissionRate(key);
+
+        if (comm == null) {
+
+            log.trace("Basis not available. Null commission.");
+
+            return null;
+        }
+
+        BigDecimal spread = request.getTradingSpread();
+
+        if (spread == null) {
+
+            log.trace("Basis not available. Null spread.");
+
+            return null;
+        }
+
+        return spread.add(comm);
+
+    }
+
+    @VisibleForTesting
     BigDecimal calculatePositionRatio(Context context, Request request) {
 
         Key key = Key.from(request);
 
-        BigDecimal funding = ofNullable(context.getFundingPosition(key)).orElse(ZERO);
+        BigDecimal mid = context.getMidPrice(key);
 
-        BigDecimal structure = ofNullable(context.getInstrumentPosition(key)).orElse(ZERO);
+        BigDecimal funding = context.getFundingPosition(key);
 
-        BigDecimal price = ofNullable(context.getMidPrice(key)).orElse(ZERO);
+        BigDecimal structure = context.getInstrumentPosition(key);
 
-        BigDecimal equivalent = structure.multiply(price);
+        if (mid == null || funding == null || structure == null) {
+
+            log.trace("Position ratio unavailable : price=[{}] funding=[{}] structure=[{}]", mid, funding, structure);
+
+            return null;
+
+        }
+
+        BigDecimal equivalent = structure.multiply(mid);
+
+        BigDecimal ratio;
 
         if (Objects.equals(TRUE, context.isMarginable(key))) {
 
@@ -112,19 +157,21 @@ public class TemplateAdviser implements Adviser {
             }
 
             // Leveraged short can be larger than the funding.
-            return equivalent.divide(funding, SCALE, HALF_UP);
+            ratio = equivalent.divide(funding, SCALE, HALF_UP);
+
+        } else {
+
+            BigDecimal sum = equivalent.add(funding);
+
+            if (sum.signum() == 0) {
+                return ZERO;
+            }
+
+            BigDecimal diff = equivalent.subtract(funding);
+
+            ratio = diff.add(diff).divide(sum, SCALE, HALF_UP);
 
         }
-
-        BigDecimal sum = equivalent.add(funding);
-
-        if (sum.signum() == 0) {
-            return ZERO;
-        }
-
-        BigDecimal diff = equivalent.subtract(funding);
-
-        BigDecimal ratio = diff.add(diff).divide(sum, SCALE, HALF_UP);
 
         log.trace("Position ratio: {} (fund=[{}], structure=[{}] equivalent=[{}])", ratio, structure, equivalent);
 
@@ -133,78 +180,94 @@ public class TemplateAdviser implements Adviser {
     }
 
     @VisibleForTesting
-    BigDecimal calculateBuyLimitPrice(Context context, Request request, Estimation estimation) {
+    BigDecimal calculateBuyLimitPrice(Context context, Request request, BigDecimal weighedPrice, BigDecimal basis) {
 
-        Key key = Key.from(request);
+        if (weighedPrice == null || basis == null) {
 
-        BigDecimal weighed = calculateWeighedPrice(context, request, estimation);
-
-        BigDecimal ask = context.getBestAskPrice(key);
-
-        BigDecimal comm = context.getCommissionRate(key);
-
-        if (weighed == null || ask == null || comm == null) {
-
-            log.trace("Buy price not available : weighed=[{}] ask=[{}] comm=[{}]", weighed, ask, comm);
+            log.trace("Buy price not available : weighed=[{}] basis=[{}]", weighedPrice, basis);
 
             return null;
 
         }
 
-        // TODO : Cost Basis
+        Key key = Key.from(request);
 
-        BigDecimal adjCross = weighed.min(ask.subtract(EPSILON));
+        BigDecimal ask = context.getBestAskPrice(key);
 
-        BigDecimal ratio = calculatePositionRatio(context, request).max(ZERO);
+        if (ask == null) {
 
-        BigDecimal spread = ofNullable(request.getTradingSpread()).orElse(ZERO);
+            log.trace("Buy price not available : No ask price.");
 
-        BigDecimal basis = spread.multiply(ONE.add(ratio)).add(comm).max(ZERO);
+            return null;
 
-        BigDecimal adjSpread = adjCross.multiply(ONE.subtract(basis));
+        }
 
-        BigDecimal rounded = context.roundTickSize(key, adjSpread, DOWN);
+        BigDecimal ratio = calculatePositionRatio(context, request);
 
-        log.trace("Buy price : {} (spread=[{}] basis=[{}])", rounded, adjSpread, basis);
+        if (ratio == null) {
+
+            log.trace("Buy price not available : No position ratio.");
+
+            return null;
+
+        }
+
+        BigDecimal ratioBasis = basis.multiply(ONE.add(ratio.max(ZERO)));
+
+        BigDecimal ratioPrice = weighedPrice.multiply(ONE.subtract(ratioBasis));
+
+        BigDecimal boundPrice = ratioPrice.min(ask.subtract(EPSILON));
+
+        BigDecimal rounded = context.roundTickSize(key, boundPrice, DOWN);
+
+        log.trace("Buy price : {} (target=[{}] basis=[{}])", rounded, boundPrice, ratioBasis);
 
         return rounded;
 
     }
 
     @VisibleForTesting
-    BigDecimal calculateSellLimitPrice(Context context, Request request, Estimation estimation) {
+    BigDecimal calculateSellLimitPrice(Context context, Request request, BigDecimal weighedPrice, BigDecimal basis) {
 
-        Key key = Key.from(request);
+        if (weighedPrice == null || basis == null) {
 
-        BigDecimal weighed = calculateWeighedPrice(context, request, estimation);
-
-        BigDecimal bid = context.getBestBidPrice(key);
-
-        BigDecimal comm = context.getCommissionRate(key);
-
-        if (weighed == null || bid == null || comm == null) {
-
-            log.trace("Sell price not available : weighed=[{}] bid=[{}] comm=[{}]", weighed, bid, comm);
+            log.trace("Sell price not available : weighed=[{}] basis=[{}]", weighedPrice, basis);
 
             return null;
 
         }
 
-        // TODO : Cost Basis
+        Key key = Key.from(request);
 
-        BigDecimal adjCross = weighed.max(bid.add(EPSILON));
+        BigDecimal bid = context.getBestBidPrice(key);
 
-        BigDecimal ratio = calculatePositionRatio(context, request).min(ZERO).abs();
+        if (bid == null) {
 
-        BigDecimal spread = ofNullable(request.getTradingSpread()).orElse(ZERO);
+            log.trace("Buy price not available : No bid price.");
 
-        BigDecimal basis = spread.multiply(ONE.add(ratio)).add(comm).max(ZERO);
+            return null;
 
-        BigDecimal adjSpread = adjCross.multiply(ONE.add(basis));
+        }
 
-        BigDecimal rounded = context.roundTickSize(key, adjSpread, UP);
+        BigDecimal ratio = calculatePositionRatio(context, request);
 
-        log.trace("Sell price : {} (spread=[{}] basis=[{}])", rounded, adjSpread, basis);
+        if (ratio == null) {
+
+            log.trace("Sell price not available : No position ratio.");
+
+            return null;
+
+        }
+
+        BigDecimal ratioBasis = basis.multiply(ONE.add(ratio.min(ZERO).abs()));
+
+        BigDecimal ratioPrice = weighedPrice.multiply(ONE.add(ratioBasis));
+
+        BigDecimal boundPrice = ratioPrice.max(bid.add(EPSILON));
+
+        BigDecimal rounded = context.roundTickSize(key, boundPrice, UP);
+
+        log.trace("Sell price : {} (target=[{}] basis=[{}])", rounded, boundPrice, ratioBasis);
 
         return rounded;
 
@@ -215,7 +278,7 @@ public class TemplateAdviser implements Adviser {
 
         if (price == null || price.signum() == 0) {
 
-            log.trace("Invalid buy price : {}", price);
+            log.trace("No funding limit size. Price : {}", price);
 
             return ZERO;
 
@@ -225,9 +288,9 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal fund = context.getFundingPosition(key);
 
-        if (fund == null || fund.signum() == 0) {
+        if (fund == null) {
 
-            log.trace("Fund amount not available : {}", fund);
+            log.trace("No funding limit size. Null funding position.");
 
             return ZERO;
 
@@ -262,6 +325,14 @@ public class TemplateAdviser implements Adviser {
 
         }
 
+        if (limitSize == null) {
+
+            log.trace("Margin buy size not not available. Null limit size.");
+
+            return ZERO;
+
+        }
+
         BigDecimal position = context.getInstrumentPosition(key);
 
         if (position == null) {
@@ -274,7 +345,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal shortPosition = position.min(ZERO);
 
-        BigDecimal netSize = limitSize.subtract(shortPosition).max(ZERO);
+        BigDecimal netSize = limitSize.subtract(shortPosition);
 
         log.trace("Margin Buy size : {} (position=[{}] funding=[{}])", netSize, position, limitSize);
 
