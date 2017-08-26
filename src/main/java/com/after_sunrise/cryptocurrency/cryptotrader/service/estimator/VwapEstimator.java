@@ -32,7 +32,7 @@ public class VwapEstimator implements Estimator {
 
     private static final Comparator<Trade> COMPARATOR = Comparator.comparing(Trade::getTimestamp);
 
-    private static final int SIGMA = 3;
+    private static final double SIGMA = 1.96;
 
     @Override
     public String get() {
@@ -109,7 +109,7 @@ public class VwapEstimator implements Estimator {
 
         double rate = Math.log(last / vwap);
 
-        double drift = Math.min(1, Math.abs(rate / deviation));
+        double drift = Math.min(1, Math.abs(rate / (deviation * SIGMA)));
 
         BigDecimal p = BigDecimal.valueOf(vwap).setScale(SCALE, HALF_UP);
 
