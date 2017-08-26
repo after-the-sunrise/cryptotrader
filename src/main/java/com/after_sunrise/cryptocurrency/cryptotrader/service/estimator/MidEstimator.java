@@ -57,7 +57,7 @@ public class MidEstimator implements Estimator {
 
         }
 
-        log.debug("Estimated : {} (Ask=[{}] Bid=[{}] Confidence=[{}]", mid, ask, bid, confidence);
+        log.debug("Estimated : {} (Confidence=[{} Ask=[{}] Bid=[{}]]", mid, confidence, ask, bid);
 
         return Estimation.builder().price(mid).confidence(confidence).build();
 
