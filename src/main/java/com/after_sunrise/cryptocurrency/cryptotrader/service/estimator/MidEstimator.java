@@ -8,7 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 
+import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.HALF_UP;
 
 /**
  * @author takanori.takase
@@ -31,13 +33,33 @@ public class MidEstimator implements Estimator {
 
         Key key = Key.from(request);
 
-        BigDecimal price = context.getMidPrice(key);
+        BigDecimal ask = context.getBestAskPrice(key);
 
-        BigDecimal confidence = price == null ? ZERO : HALF;
+        if (ask == null) {
+            return BAIL;
+        }
 
-        log.debug("Estimated : {} - {}", price, key);
+        BigDecimal bid = context.getBestBidPrice(key);
 
-        return Estimation.builder().price(price).confidence(confidence).build();
+        if (bid == null) {
+            return BAIL;
+        }
+
+        BigDecimal mid = ask.add(bid).multiply(HALF);
+
+        BigDecimal confidence = HALF;
+
+        if (mid.signum() != 0) {
+
+            BigDecimal spread = ask.subtract(bid).divide(mid, SCALE, HALF_UP).abs();
+
+            confidence = ONE.subtract(spread).max(HALF);
+
+        }
+
+        log.debug("Estimated : {} (Ask=[{}] Bid=[{}] Confidence=[{}]", mid, ask, bid, confidence);
+
+        return Estimation.builder().price(mid).confidence(confidence).build();
 
     }
 

@@ -9,7 +9,7 @@ import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
 
-import static java.math.BigDecimal.*;
+import static java.math.BigDecimal.ZERO;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -42,20 +42,53 @@ public class MidEstimatorTest {
     public void testEstimate() throws Exception {
 
         Request request = Request.builder().build();
+        Key key = Key.from(request);
 
-        when(context.getMidPrice(Key.from(request))).thenReturn(TEN);
+        // No prices
         Estimation result = target.estimate(context, request);
-        assertEquals(result.getPrice(), TEN);
-        assertEquals(result.getConfidence(), new BigDecimal("0.5"));
-
-        when(context.getMidPrice(Key.from(request))).thenReturn(null);
-        result = target.estimate(context, request);
         assertEquals(result.getPrice(), null);
         assertEquals(result.getConfidence(), ZERO);
 
-        when(context.getMidPrice(Key.from(null))).thenReturn(ONE);
-        result = target.estimate(context, null);
-        assertEquals(result.getPrice(), ONE);
+        // Valid
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("470200"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("470100"));
+        result = target.estimate(context, request);
+        assertEquals(result.getPrice(), new BigDecimal("470150.0"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.999787301925"));
+
+        // Valid (Wide)
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("470200"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("400000"));
+        result = target.estimate(context, request);
+        assertEquals(result.getPrice(), new BigDecimal("435100.0"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.838657779821"));
+
+        // Inverse Price
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("470100"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("470200"));
+        result = target.estimate(context, request);
+        assertEquals(result.getPrice(), new BigDecimal("470150.0"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.999787301925"));
+
+        // Equilibrium
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("470100"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("470100"));
+        result = target.estimate(context, request);
+        assertEquals(result.getPrice(), new BigDecimal("470100.0"));
+        assertEquals(result.getConfidence(), new BigDecimal("1.000000000000"));
+
+        // Zero Mid
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("+450000"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("-450000"));
+        result = target.estimate(context, request);
+        assertEquals(result.getPrice(), new BigDecimal("0.0"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.5"));
+
+        // Extreme Spread
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("+450000.1"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("-450000"));
+        result = target.estimate(context, request);
+        assertEquals(result.getPrice(), new BigDecimal("0.05"));
         assertEquals(result.getConfidence(), new BigDecimal("0.5"));
 
     }
