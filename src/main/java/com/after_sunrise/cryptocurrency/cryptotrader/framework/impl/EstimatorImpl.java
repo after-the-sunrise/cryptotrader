@@ -21,7 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static java.math.BigDecimal.valueOf;
+import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.HALF_UP;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
@@ -126,9 +126,11 @@ public class EstimatorImpl implements Estimator {
 
             log.debug("Including estimate : {} - {}", estimation, entry.getKey());
 
-            numerator = numerator.add(estimation.getPrice().multiply(estimation.getConfidence()));
+            BigDecimal confidence = estimation.getConfidence().max(ZERO).min(ONE);
 
-            denominator = denominator.add(estimation.getConfidence());
+            numerator = numerator.add(estimation.getPrice().multiply(confidence));
+
+            denominator = denominator.add(confidence);
 
             total.incrementAndGet();
 
