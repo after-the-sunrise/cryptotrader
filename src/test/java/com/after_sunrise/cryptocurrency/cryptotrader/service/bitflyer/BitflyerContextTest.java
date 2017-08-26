@@ -18,6 +18,9 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -517,6 +520,43 @@ public class BitflyerContextTest {
         assertTrue(target.isMarginable(builder.instrument("FX_BTC_JPY").build()));
         assertTrue(target.isMarginable(builder.instrument("BTCJPY_MAT1WK").build()));
         assertTrue(target.isMarginable(builder.instrument("BTCJPY_MAT2WK").build()));
+
+    }
+
+    @Test
+    public void testGetExpiry() {
+
+        Key key = Key.builder().instrument("BTCJPY_MAT1WK").build();
+
+        ZoneId zone = ZoneId.of("Asia/Tokyo");
+        LocalTime time = LocalTime.of(16, 0);
+
+        // Valid
+        LocalDate date = LocalDate.of(2017, 9, 15);
+        doReturn("BTCJPY15SEP2017").when(target).convertProductAlias(key);
+        assertEquals(target.getExpiry(key), ZonedDateTime.of(date, time, zone).toInstant());
+
+        // Invalid (Sep 31)
+        date = LocalDate.of(2017, 10, 1);
+        doReturn("BTCJPY31SEP2017").when(target).convertProductAlias(key);
+        assertEquals(target.getExpiry(key), ZonedDateTime.of(date, time, zone).toInstant());
+
+        // Invalid (Sep 00)
+        date = LocalDate.of(2017, 8, 31);
+        doReturn("BTCJPY00SEP2017").when(target).convertProductAlias(key);
+        assertEquals(target.getExpiry(key), ZonedDateTime.of(date, time, zone).toInstant());
+
+        // Invalid Month (???)
+        doReturn("BTCJPY15???2017").when(target).convertProductAlias(key);
+        assertNull(target.getExpiry(key));
+
+        // Pattern Mismatch
+        doReturn("01SEP2017").when(target).convertProductAlias(key);
+        assertNull(target.getExpiry(key));
+
+        // Code not found
+        doReturn(null).when(target).convertProductAlias(key);
+        assertNull(target.getExpiry(key));
 
     }
 

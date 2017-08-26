@@ -142,6 +142,11 @@ public class ContextImpl implements Context {
     }
 
     @Override
+    public Instant getExpiry(Key key) {
+        return forContext(key, c -> c.getExpiry(key));
+    }
+
+    @Override
     public Order findOrder(Key key, String id) {
         return forContext(key, c -> c.findOrder(key, id));
     }

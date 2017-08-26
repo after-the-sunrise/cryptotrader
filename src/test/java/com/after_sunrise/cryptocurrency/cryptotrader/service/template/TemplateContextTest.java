@@ -1,5 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
@@ -86,6 +87,11 @@ public class TemplateContextTest {
 
         @Override
         public Boolean isMarginable(Key key) {
+            return null;
+        }
+
+        @Override
+        public Instant getExpiry(Key key) {
             return null;
         }
 

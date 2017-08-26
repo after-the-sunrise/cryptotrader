@@ -16,13 +16,15 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.LIMIT;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.MARKET;
@@ -43,6 +45,16 @@ import static java.util.stream.Collectors.toList;
  */
 @Slf4j
 public class BitflyerContext extends TemplateContext implements BitflyerService {
+
+    private static final Pattern EXPIRY_PATTERN = Pattern.compile("^[A-Z]{6}[0-9]{2}[A-Z]{3}[0-9]{4}$");
+
+    private static final String EXPIRY_TIME = "1600";
+
+    private static final ThreadLocal<DateFormat> EXPIRY_FORMAT = ThreadLocal.withInitial(() -> {
+        DateFormat df = new SimpleDateFormat("ddMMMyyyyHHmm", Locale.US);
+        df.setTimeZone(TimeZone.getTimeZone("Asia/Tokyo"));
+        return df;
+    });
 
     private static final Duration CACHE = Duration.ofMinutes(1);
 
@@ -364,6 +376,35 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
         }
 
         return type.getFunding() == COLLATERAL;
+
+    }
+
+    @Override
+    public Instant getExpiry(Key key) {
+
+        String code = StringUtils.trimToEmpty(convertProductAlias(key));
+
+        if (!EXPIRY_PATTERN.matcher(code).matches()) {
+            return null;
+        }
+
+        Instant expiry;
+
+        try {
+
+            String value = code.substring(6) + EXPIRY_TIME;
+
+            Date date = EXPIRY_FORMAT.get().parse(value);
+
+            expiry = Instant.ofEpochMilli(date.getTime());
+
+        } catch (ParseException e) {
+
+            expiry = null;
+
+        }
+
+        return expiry;
 
     }
 

@@ -235,6 +235,17 @@ public class ContextImplTest {
     }
 
     @Test
+    public void testGetExpiry() {
+
+        Instant value = Instant.now();
+
+        when(contexts.get("c1").getExpiry(key)).thenReturn(value);
+
+        assertEquals(target.getExpiry(key), value);
+
+    }
+
+    @Test
     public void testFindOrder() {
 
         String id = "foo";

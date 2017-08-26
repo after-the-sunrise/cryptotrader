@@ -7,6 +7,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -71,6 +72,8 @@ public interface Context extends Service, AutoCloseable {
     BigDecimal getCommissionRate(Key key);
 
     Boolean isMarginable(Key key);
+
+    Instant getExpiry(Key key);
 
     Order findOrder(Key key, String id);
 
