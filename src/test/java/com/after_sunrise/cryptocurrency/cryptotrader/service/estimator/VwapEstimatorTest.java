@@ -84,13 +84,13 @@ public class VwapEstimatorTest {
 
         when(context.listTrades(key, from)).thenReturn(asList(t1, t3, t5, t7, null, t2, t4, t6));
         Estimation estimation = target.estimate(context, request);
-        assertEquals(estimation.getPrice(), new BigDecimal("49.706304093000"));
-        assertEquals(estimation.getConfidence(), new BigDecimal("0.916309323500"));
+        assertEquals(estimation.getPrice(), new BigDecimal("49.7063040930"));
+        assertEquals(estimation.getConfidence(), new BigDecimal("0.9163093235"));
 
         when(context.listTrades(key, from)).thenReturn(asList(t1, t2, t3));
         estimation = target.estimate(context, request);
-        assertEquals(estimation.getPrice(), new BigDecimal("50.470184541667"));
-        assertEquals(estimation.getConfidence(), new BigDecimal("0.919640257014"));
+        assertEquals(estimation.getPrice(), new BigDecimal("50.4701845417"));
+        assertEquals(estimation.getConfidence(), new BigDecimal("0.9196402570"));
 
         // Extreme Cases
         when(context.listTrades(key, from)).thenReturn(asList(t1, t2, t3, t4, t5));
@@ -99,31 +99,31 @@ public class VwapEstimatorTest {
         // Extreme Downtrend 1
         when(t5.getPrice()).thenReturn(new BigDecimal("33"));
         estimation = target.estimate(context, request);
-        assertEquals(estimation.getPrice(), new BigDecimal("49.706302422370"));
-        assertEquals(estimation.getConfidence(), new BigDecimal("0.004088180324"));
+        assertEquals(estimation.getPrice(), new BigDecimal("49.7063024224"));
+        assertEquals(estimation.getConfidence(), new BigDecimal("0.0040881803"));
 
         // Extreme Downtrend 2
         when(t5.getPrice()).thenReturn(new BigDecimal("32"));
         estimation = target.estimate(context, request);
-        assertEquals(estimation.getPrice(), new BigDecimal("49.706302322370"));
+        assertEquals(estimation.getPrice(), new BigDecimal("49.7063023224"));
         assertEquals(estimation.getConfidence().signum(), 0);
 
         // Extreme Uptrend 1
         when(t5.getPrice()).thenReturn(new BigDecimal("1386"));
         estimation = target.estimate(context, request);
-        assertEquals(estimation.getPrice(), new BigDecimal("49.706437722356"));
-        assertEquals(estimation.getConfidence(), new BigDecimal("0.000005798778"));
+        assertEquals(estimation.getPrice(), new BigDecimal("49.7064377224"));
+        assertEquals(estimation.getConfidence(), new BigDecimal("0.0000057988"));
 
         // Extreme Uptrend 2
         when(t5.getPrice()).thenReturn(new BigDecimal("1388"));
         estimation = target.estimate(context, request);
-        assertEquals(estimation.getPrice(), new BigDecimal("49.706437922356"));
+        assertEquals(estimation.getPrice(), new BigDecimal("49.7064379224"));
         assertEquals(estimation.getConfidence().signum(), 0);
 
         // Two points
         when(context.listTrades(key, from)).thenReturn(asList(t1, null, t2));
         estimation = target.estimate(context, request);
-        assertEquals(estimation.getPrice(), new BigDecimal("48.879776653333"));
+        assertEquals(estimation.getPrice(), new BigDecimal("48.8797766533"));
         assertEquals(estimation.getConfidence().signum(), 0);
 
         // One point

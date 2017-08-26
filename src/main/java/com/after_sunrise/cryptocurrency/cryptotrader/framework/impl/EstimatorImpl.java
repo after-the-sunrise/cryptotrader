@@ -18,7 +18,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.math.BigDecimal.*;
@@ -110,8 +109,6 @@ public class EstimatorImpl implements Estimator {
 
         AtomicLong total = new AtomicLong();
 
-        AtomicInteger s = new AtomicInteger(SCALE);
-
         for (Entry<Estimator, Estimation> entry : estimations.entrySet()) {
 
             Estimation estimation = entry.getValue();
@@ -134,13 +131,11 @@ public class EstimatorImpl implements Estimator {
 
             total.incrementAndGet();
 
-            s.set(Math.max(estimation.getPrice().scale(), s.get()));
-
         }
 
-        BigDecimal price = denominator.signum() == 0 ? null : numerator.divide(denominator, s.get(), HALF_UP);
+        BigDecimal price = denominator.signum() == 0 ? null : numerator.divide(denominator, SCALE, HALF_UP);
 
-        BigDecimal confidence = total.get() == 0 ? null : denominator.divide(valueOf(total.get()), s.get(), HALF_UP);
+        BigDecimal confidence = total.get() == 0 ? null : denominator.divide(valueOf(total.get()), SCALE, HALF_UP);
 
         Estimation collapsed = Estimation.builder().price(price).confidence(confidence).build();
 

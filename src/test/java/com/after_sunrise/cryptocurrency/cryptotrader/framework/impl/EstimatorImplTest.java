@@ -109,8 +109,8 @@ public class EstimatorImplTest {
         // Price = [(10 * 0.5) + (1 * 1) + (1 * 0)] / (0.5 + 1 + 0) = 6 / 1.5 = 4
         // Confidence = (0.5 + 1 + 0) / 3 = 0.5
         Estimation result = target.estimate(context, request);
-        assertEquals(result.getPrice(), new BigDecimal("4.000000000000"));
-        assertEquals(result.getConfidence(), new BigDecimal("0.500000000000"));
+        assertEquals(result.getPrice(), new BigDecimal("4.0000000000"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.5000000000"));
         services.values().stream()
                 .filter(e -> !"7".equals(e.get()))
                 .forEach(mock -> Mockito.verify(mock).estimate(context, request));

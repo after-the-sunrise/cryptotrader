@@ -119,7 +119,7 @@ public class TemplateAdviserTest {
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("9800"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("0.178861788618"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("0.1788617886"));
 
         // Long-only
         // Fund = 0 : Structure = 5 * 2345 = 11,725
@@ -127,7 +127,7 @@ public class TemplateAdviserTest {
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("0"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("2.000000000000"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("2.0000000000"));
 
         // Net-Short
         // Fund = 12,345 : Structure = 5 * 2,345 = 11,725
@@ -135,7 +135,7 @@ public class TemplateAdviserTest {
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("12345"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-0.051516410469"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-0.0515164105"));
 
         // Short-Only
         // Fund = 12,345 : Structure = 0
@@ -143,7 +143,7 @@ public class TemplateAdviserTest {
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("12345"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("0"));
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-2.000000000000"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-2.0000000000"));
 
     }
 
@@ -158,19 +158,19 @@ public class TemplateAdviserTest {
 
         // Long (2345 * 3 / 9800 = 0.71785714285714..)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("3"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("0.717857142857"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("0.7178571429"));
 
         // Leveraged Long (2345 * 5 / 9800 = 1.19642857142857..)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("1.196428571429"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("1.1964285714"));
 
         // Short (2345 * -3 / 9800 = -0.71785714285714..)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-3"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-0.717857142857"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-0.7178571429"));
 
         // Leveraged Short (2345 * -5 / 9800 = -1.19642857142857..)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-5"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-1.196428571429"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-1.1964285714"));
 
         // Flat
         when(context.getInstrumentPosition(key)).thenReturn(ZERO);
