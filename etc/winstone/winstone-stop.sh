@@ -1,15 +1,36 @@
 #!/bin/bash
 
+function printProcess() {
+  ps -ef | grep "java" | grep "winstone" | grep "cryptotrader"
+}
+
+if [ "`printProcess`" == "" ]; then
+
+  echo "No process running."
+
+  exit 0
+
+fi
+
 pushd "`dirname "$0"`" > /dev/null || exit $?
 
-java -cp "`find . -name "winstone-*.jar"`" winstone.tools.WinstoneControl shutdown --host=127.0.01 --port=41422
+java -cp winstone-*.jar winstone.tools.WinstoneControl shutdown --host=127.0.01 --port=41422
 
-RET=$?
+for i in `seq 1 10`
+do
 
-sleep 1
+  if [ "`printProcess`" == "" ]; then
 
-ps -ef | grep "java" | grep "winstone" | grep "cryptotrader"
+    echo "Process stopped."
+
+    break
+
+  fi
+
+  echo "Waiting for the process to terminate... ($i)"
+
+  sleep "$i"
+
+done
 
 popd > /dev/null 2>&1
-
-exit $RET

@@ -21,8 +21,7 @@ nohup \
   -XX:GCLogFileSize=10M \
   -XX:HeapDumpPath=logs/winstone-heap_`date +%Y%m%d_%H%M%S`.log \
   -XX:+HeapDumpOnOutOfMemoryError \
-  -jar \
-  "`find . -name "winstone-*.jar"`" \
+  -jar winstone-*.jar \
   --warfile="`find . -name "cryptotrader-*.war"`" \
   --prefix="cryptotrader" \
   --httpListenAddress=127.0.0.1 \
