@@ -176,7 +176,7 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        log.trace("Position ratio: {} (fund=[{}], structure=[{}] equivalent=[{}])", ratio, structure, equivalent);
+        log.trace("Position ratio: {} (fund=[{}], structure=[{}] price=[{}])", ratio, adjFunding, structure, mid);
 
         return ratio;
 
