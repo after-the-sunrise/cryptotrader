@@ -15,8 +15,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import static java.math.BigDecimal.TEN;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * @author takanori.takase
@@ -31,11 +33,8 @@ public abstract class TemplateContext implements Context, Cached {
 
     private final String id;
 
-    private final Duration cacheExpiry;
-
-    protected TemplateContext(String id, Duration cacheExpiry) {
+    protected TemplateContext(String id) {
         this.id = id;
-        this.cacheExpiry = cacheExpiry;
     }
 
     @Override
@@ -120,8 +119,8 @@ public abstract class TemplateContext implements Context, Cached {
 
     private <K0, K1 extends K0, V0, V1 extends V0> Cache<K1, V1> createCache(Class<?> clazz) {
         return CacheBuilder.newBuilder()
-                .maximumSize(cacheExpiry.getSeconds())
-                .expireAfterWrite(cacheExpiry.toMillis(), MILLISECONDS)
+                .maximumSize(Byte.MAX_VALUE)
+                .expireAfterWrite(TEN.longValue(), SECONDS)
                 .build();
     }
 

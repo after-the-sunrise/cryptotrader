@@ -1,5 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.ExecutorFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Pipeline;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader;
@@ -10,10 +11,16 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
 /**
  * @author takanori.takase
@@ -28,6 +35,8 @@ public class TraderImpl implements Trader {
 
     private final Pipeline pipeline;
 
+    private final ExecutorService executor;
+
     @Inject
     public TraderImpl(Injector injector) {
 
@@ -36,6 +45,8 @@ public class TraderImpl implements Trader {
         this.propertyManager = injector.getInstance(PropertyManager.class);
 
         this.pipeline = injector.getInstance(Pipeline.class);
+
+        this.executor = injector.getInstance(ExecutorFactory.class).get(getClass(), INTEGER_ONE);
 
     }
 
@@ -99,11 +110,15 @@ public class TraderImpl implements Trader {
 
                 log.debug("Trade attempt : {}", time);
 
-                propertyManager.getTradingTargets().forEach((site, instruments) -> {
+                List<CompletableFuture<?>> futures = new ArrayList<>();
 
-                    instruments.forEach(i -> pipeline.process(time, site, i));
+                propertyManager.getTradingTargets().forEach((site, instruments) -> instruments.forEach(
+                        i -> futures.add(CompletableFuture.runAsync(
+                                () -> pipeline.process(time, site, i), executor
+                        ))
+                ));
 
-                });
+                allOf(futures.toArray(new CompletableFuture[futures.size()])).get();
 
                 Duration interval = calculateInterval(time);
 
@@ -113,7 +128,7 @@ public class TraderImpl implements Trader {
 
             }
 
-        } catch (RuntimeException | InterruptedException e) {
+        } catch (Exception e) {
 
             log.warn("Aborting trade.", e);
 

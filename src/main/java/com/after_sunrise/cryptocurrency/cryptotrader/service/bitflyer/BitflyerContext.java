@@ -58,8 +58,6 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
         return df;
     });
 
-    private static final Duration CACHE = Duration.ofMinutes(1);
-
     private static final Duration TIMEOUT = Duration.ofMinutes(1);
 
     private static final BigDecimal HALF = new BigDecimal("0.5");
@@ -83,7 +81,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     @VisibleForTesting
     BitflyerContext(Bitflyer4j api) {
 
-        super(ID, CACHE);
+        super(ID);
 
         bitflyer4j = api;
 

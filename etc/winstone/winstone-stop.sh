@@ -18,7 +18,7 @@ java -cp winstone-*.jar winstone.tools.WinstoneControl shutdown --host=127.0.01 
 
 popd > /dev/null 2>&1
 
-for i in `seq 1 10`
+for i in `seq 1 60`
 do
 
   if [ "`printProcess`" == "" ]; then
@@ -31,7 +31,7 @@ do
 
   echo "Waiting for the process to terminate... ($i)"
 
-  sleep "$i"
+  sleep 5
 
 done
 

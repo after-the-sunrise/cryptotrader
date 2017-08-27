@@ -33,7 +33,7 @@ public class TemplateContextTest {
     private static class TestContext extends TemplateContext {
 
         private TestContext() {
-            super("test", Duration.ofSeconds(1));
+            super("test");
         }
 
         @Override
