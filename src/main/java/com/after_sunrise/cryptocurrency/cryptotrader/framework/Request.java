@@ -34,4 +34,6 @@ public class Request {
 
     private BigDecimal tradingSplit;
 
+    private BigDecimal fundingOffset;
+
 }

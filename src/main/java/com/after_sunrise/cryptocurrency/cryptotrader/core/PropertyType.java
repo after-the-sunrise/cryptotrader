@@ -22,6 +22,8 @@ public enum PropertyType {
 
     TRADING_ACTIVE,
 
+    FUNDING_OFFSET,
+
     ESTIMATORS;
 
     private static final String PREFIX = "cryptotrader.";

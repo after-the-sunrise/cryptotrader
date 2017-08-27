@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.*;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.lang.String.format;
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.DOWN;
 import static java.util.Arrays.stream;
@@ -41,8 +42,6 @@ public class PropertyManagerImpl implements PropertyController {
     private static final long INTERVAL_MIN = SECONDS.toMillis(1);
 
     private static final long INTERVAL_MAX = DAYS.toMillis(1);
-
-    private static final BigDecimal BASIS = new BigDecimal("0.0001");
 
     private static final String SEPARATOR_ENTRY = "|";
 
@@ -68,7 +67,7 @@ public class PropertyManagerImpl implements PropertyController {
 
         if (StringUtils.isNotEmpty(site) && StringUtils.isNotEmpty(instrument)) {
 
-            String specificKey = String.format(KEY_TEMPLATE, type.getKey(), site, instrument);
+            String specificKey = format(KEY_TEMPLATE, type.getKey(), site, instrument);
 
             if (override.containsKey(specificKey)) {
                 return f.apply(override, specificKey);
@@ -94,7 +93,7 @@ public class PropertyManagerImpl implements PropertyController {
         String key;
 
         if (StringUtils.isNotEmpty(site) && StringUtils.isNotEmpty(instrument)) {
-            key = String.format(KEY_TEMPLATE, type.getKey(), site, instrument);
+            key = format(KEY_TEMPLATE, type.getKey(), site, instrument);
         } else {
             key = type.getKey();
         }
@@ -131,7 +130,7 @@ public class PropertyManagerImpl implements PropertyController {
 
         } catch (RuntimeException e) {
 
-            log.warn("Invalid property : " + VERSION.getKey(), e);
+            log.warn("Invalid : " + VERSION, e);
 
             return StringUtils.EMPTY;
 
@@ -162,15 +161,13 @@ public class PropertyManagerImpl implements PropertyController {
 
             }
 
-            log.trace("Trading targets : {}", targets);
+            log.trace("Fetched {} : {}", TRADING_TARGETS, targets);
 
             return Collections.unmodifiableMap(targets);
 
         } catch (RuntimeException e) {
 
-            String msg = "Invalid property : %s=%s";
-
-            log.warn(String.format(msg, TRADING_TARGETS.getKey(), raw), e);
+            log.warn(format("Invalid %s : %s", TRADING_TARGETS, raw), e);
 
             return Collections.emptyMap();
 
@@ -201,13 +198,13 @@ public class PropertyManagerImpl implements PropertyController {
 
             long adjusted = min(max(millis, INTERVAL_MIN), INTERVAL_MAX);
 
-            log.trace("Configured duration : {}ms -> {}ms", millis, adjusted);
+            log.trace("Fetched {} : {}ms -> {}ms", TRADING_INTERVAL, millis, adjusted);
 
             return Duration.ofMillis(adjusted);
 
         } catch (RuntimeException e) {
 
-            log.warn("Invalid property : " + TRADING_INTERVAL.getKey(), e);
+            log.warn("Invalid " + TRADING_INTERVAL, e);
 
             return Duration.ofMillis(INTERVAL_MAX);
 
@@ -227,13 +224,13 @@ public class PropertyManagerImpl implements PropertyController {
 
             boolean value = get(TRADING_ACTIVE, site, instrument, Configuration::getBoolean);
 
-            log.trace("Configured active : {}", value);
+            log.trace("Fetched {} ({}.{}) : {}", TRADING_ACTIVE, site, instrument, value);
 
             return value;
 
         } catch (RuntimeException e) {
 
-            log.warn("Invalid property : " + TRADING_ACTIVE.getKey(), e);
+            log.warn(format("Invalid %s (%s.%s)", TRADING_ACTIVE, site, instrument), e);
 
             return false;
 
@@ -255,15 +252,15 @@ public class PropertyManagerImpl implements PropertyController {
 
             BigDecimal adjusted = value.max(ZERO).min(ONE);
 
-            log.trace("Configured spread : {} -> {}", value, adjusted);
+            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_SPREAD, site, instrument, value, adjusted);
 
             return adjusted;
 
         } catch (RuntimeException e) {
 
-            log.warn("Invalid property : " + TRADING_SPREAD.getKey(), e);
+            log.warn(format("Invalid %s (%s.%s)", TRADING_SPREAD, site, instrument), e);
 
-            return BASIS;
+            return ZERO;
 
         }
 
@@ -283,13 +280,13 @@ public class PropertyManagerImpl implements PropertyController {
 
             BigDecimal adjusted = value.max(ZERO).min(ONE);
 
-            log.trace("Configured exposure : {} -> {}", value, adjusted);
+            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_EXPOSURE, site, instrument, value, adjusted);
 
             return adjusted;
 
         } catch (RuntimeException e) {
 
-            log.warn("Invalid property : " + TRADING_EXPOSURE.getKey(), e);
+            log.warn(format("Invalid %s (%s.%s)", TRADING_EXPOSURE, site, instrument), e);
 
             return ZERO;
 
@@ -311,13 +308,13 @@ public class PropertyManagerImpl implements PropertyController {
 
             BigDecimal adjusted = value.max(ONE).min(TEN).setScale(INTEGER_ZERO, DOWN);
 
-            log.trace("Configured split : {} -> {}", value, adjusted);
+            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_SPLIT, site, instrument, value, adjusted);
 
             return adjusted;
 
         } catch (RuntimeException e) {
 
-            log.warn("Invalid property : " + TRADING_SPLIT.getKey(), e);
+            log.warn(format("Invalid %s (%s.%s)", TRADING_SPLIT, site, instrument), e);
 
             return ONE;
 
@@ -330,6 +327,31 @@ public class PropertyManagerImpl implements PropertyController {
         set(TRADING_SPLIT, site, instrument, value, BigDecimal::toPlainString);
     }
 
+    @Override
+    public BigDecimal getFundingOffset(String site, String instrument) {
+
+        try {
+
+            BigDecimal value = get(FUNDING_OFFSET, site, instrument, Configuration::getBigDecimal);
+
+            log.trace("Fetched {} ({}.{}) : {}", FUNDING_OFFSET, site, instrument, value);
+
+            return value;
+
+        } catch (RuntimeException e) {
+
+            log.warn(format("Invalid %s (%s.%s)", FUNDING_OFFSET, site, instrument), e);
+
+            return ZERO;
+
+        }
+
+    }
+
+    @Override
+    public void setFundingOffset(String site, String instrument, BigDecimal value) {
+        set(FUNDING_OFFSET, site, instrument, value, BigDecimal::toPlainString);
+    }
 
     @Override
     public Set<String> getEstimators(String site, String instrument) {
@@ -342,13 +364,13 @@ public class PropertyManagerImpl implements PropertyController {
 
             Set<String> ids = stream(values).filter(StringUtils::isNotEmpty).collect(toSet());
 
-            log.trace("Configured estimators : {} -> {}", ids);
+            log.trace("Fetched {} ({}.{}) : {}", ESTIMATORS, site, instrument, ids);
 
             return ids;
 
         } catch (RuntimeException e) {
 
-            log.warn("Invalid property : " + ESTIMATORS.getKey(), e);
+            log.warn(format("Invalid %s (%s.%s)", ESTIMATORS, site, instrument), e);
 
             return emptySet();
 

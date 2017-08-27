@@ -23,6 +23,8 @@ public interface PropertyController extends PropertyManager {
 
     void setTradingSplit(String site, String instrument, BigDecimal value);
 
+    void setFundingOffset(String site, String instrument, BigDecimal value);
+
     void setEstimators(String site, String instrument, Set<String> values);
 
 }

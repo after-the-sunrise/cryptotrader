@@ -259,7 +259,7 @@ public class PropertyManagerImplTest {
 
         // Error
         doThrow(new RuntimeException("test")).when(conf).getBigDecimal(TRADING_SPREAD.getKey());
-        assertEquals(target.getTradingSpread(site, inst), new BigDecimal("0.0001"));
+        assertEquals(target.getTradingSpread(site, inst), ZERO);
         reset(conf);
 
         // Override
@@ -334,6 +334,30 @@ public class PropertyManagerImplTest {
         // Clear
         target.setTradingSplit(site, inst, null);
         assertEquals(target.getTradingSplit(site, inst), ONE);
+
+    }
+
+    @Test
+    public void testGetFundingOffset() throws Exception {
+
+        assertEquals(target.getFundingOffset(site, inst), ZERO);
+
+        // Specific
+        doReturn(new BigDecimal("2.3456")).when(conf).getBigDecimal(FUNDING_OFFSET.getKey());
+        assertEquals(target.getFundingOffset(site, inst), new BigDecimal("2.3456"));
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(FUNDING_OFFSET.getKey());
+        assertEquals(target.getFundingOffset(site, inst), ZERO);
+        reset(conf);
+
+        // Override
+        target.setFundingOffset(site, inst, TEN);
+        assertEquals(target.getFundingOffset(site, inst), TEN);
+
+        // Clear
+        target.setFundingOffset(site, inst, null);
+        assertEquals(target.getFundingOffset(site, inst), ZERO);
 
     }
 
