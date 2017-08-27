@@ -80,16 +80,16 @@ public class PipelineImpl implements Pipeline {
     @VisibleForTesting
     Request createRequest(Instant time, String site, String instrument) {
 
-        Request.RequestBuilder builder = Request.builder();
-        builder = builder.site(site);
-        builder = builder.instrument(instrument);
-        builder = builder.currentTime(propertyManager.getNow());
-        builder = builder.targetTime(time);
-        builder = builder.tradingSpread(propertyManager.getTradingSpread(site, instrument));
-        builder = builder.tradingExposure(propertyManager.getTradingExposure(site, instrument));
-        builder = builder.tradingSplit(propertyManager.getTradingSplit(site, instrument));
-
-        Request request = builder.build();
+        Request request = Request.builder()
+                .site(site)
+                .instrument(instrument)
+                .currentTime(propertyManager.getNow())
+                .targetTime(time)
+                .tradingSpread(propertyManager.getTradingSpread(site, instrument))
+                .tradingExposure(propertyManager.getTradingExposure(site, instrument))
+                .tradingSplit(propertyManager.getTradingSplit(site, instrument))
+                .fundingOffset(propertyManager.getFundingOffset(site, instrument))
+                .build();
 
         if (StringUtils.isEmpty(site)) {
 
@@ -142,6 +142,14 @@ public class PipelineImpl implements Pipeline {
         if (request.getTradingSplit() == null) {
 
             log.warn("Invalid request : trading split");
+
+            return null;
+
+        }
+
+        if (request.getFundingOffset() == null) {
+
+            log.warn("Invalid request : funding offset");
 
             return null;
 

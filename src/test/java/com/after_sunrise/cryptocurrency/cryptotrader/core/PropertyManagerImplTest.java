@@ -340,7 +340,7 @@ public class PropertyManagerImplTest {
     @Test
     public void testGetFundingOffset() throws Exception {
 
-        assertEquals(target.getFundingOffset(site, inst), ZERO);
+        assertEquals(target.getFundingOffset(site, inst), new BigDecimal("0.00"));
 
         // Specific
         doReturn(new BigDecimal("2.3456")).when(conf).getBigDecimal(FUNDING_OFFSET.getKey());
@@ -357,7 +357,7 @@ public class PropertyManagerImplTest {
 
         // Clear
         target.setFundingOffset(site, inst, null);
-        assertEquals(target.getFundingOffset(site, inst), ZERO);
+        assertEquals(target.getFundingOffset(site, inst), new BigDecimal("0.00"));
 
     }
 

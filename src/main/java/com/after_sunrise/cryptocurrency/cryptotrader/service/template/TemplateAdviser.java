@@ -145,28 +145,32 @@ public class TemplateAdviser implements Adviser {
 
         }
 
+        BigDecimal offset = ofNullable(request.getFundingOffset()).orElse(ZERO);
+
+        BigDecimal adjFunding = funding.multiply(ONE.add(offset));
+
         BigDecimal equivalent = structure.multiply(mid);
 
         BigDecimal ratio;
 
         if (Objects.equals(TRUE, context.isMarginable(key))) {
 
-            if (funding.signum() == 0) {
+            if (adjFunding.signum() == 0) {
                 return ZERO;
             }
 
             // Leveraged short can be larger than the funding.
-            ratio = equivalent.divide(funding, SCALE, HALF_UP);
+            ratio = equivalent.divide(adjFunding, SCALE, HALF_UP);
 
         } else {
 
-            BigDecimal sum = equivalent.add(funding);
+            BigDecimal sum = equivalent.add(adjFunding);
 
             if (sum.signum() == 0) {
                 return ZERO;
             }
 
-            BigDecimal diff = equivalent.subtract(funding);
+            BigDecimal diff = equivalent.subtract(adjFunding);
 
             ratio = diff.add(diff).divide(sum, SCALE, HALF_UP);
 
@@ -295,7 +299,11 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        BigDecimal product = fund.divide(price, SCALE, DOWN);
+        BigDecimal offset = ofNullable(request.getFundingOffset()).orElse(ZERO);
+
+        BigDecimal adjFund = fund.multiply(ONE.add(offset));
+
+        BigDecimal product = adjFund.divide(price, SCALE, DOWN);
 
         BigDecimal exposure = ofNullable(request.getTradingExposure()).orElse(ZERO);
 
@@ -303,7 +311,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal rounded = context.roundLotSize(key, exposed, DOWN);
 
-        log.trace("Funding limit size : {} (exposure=[{}] fund=[{}] price=[{}])", rounded, exposure, fund, price);
+        log.trace("Funding limit size : {} (exposure=[{}] fund=[{}] price=[{}])", rounded, exposure, adjFund, price);
 
         return ofNullable(rounded).orElse(ZERO);
 
