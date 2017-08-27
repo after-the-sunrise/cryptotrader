@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 import static java.lang.Boolean.TRUE;
@@ -167,21 +168,23 @@ public class TemplateInstructor implements Instructor {
 
     private List<BigDecimal> splitPrice(Context context, Request request, BigDecimal value, int size, BigDecimal delta) {
 
-        List<BigDecimal> values = new ArrayList<>(size);
-
-        BigDecimal previous = value;
-
         Key key = Key.from(request);
 
-        for (int i = 0; i < size; i++) {
+        List<BigDecimal> values = new ArrayList<>(size);
 
-            BigDecimal raw = previous == null ? null : previous.add(delta);
+        RoundingMode mode = delta.signum() >= 0 ? UP : DOWN;
 
-            BigDecimal rounded = context.roundTickSize(key, raw, delta.signum() >= 0 ? UP : DOWN);
+        values.add(context.roundTickSize(key, value, mode));
+
+        for (int i = 1; i < size; i++) {
+
+            BigDecimal previous = values.get(i - 1);
+
+            BigDecimal adjusted = previous == null ? null : previous.add(delta);
+
+            BigDecimal rounded = context.roundTickSize(key, adjusted, mode);
 
             values.add(rounded == null ? previous : rounded);
-
-            previous = rounded;
 
         }
 
