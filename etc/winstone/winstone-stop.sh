@@ -16,14 +16,16 @@ pushd "`dirname "$0"`" > /dev/null || exit $?
 
 java -cp winstone-*.jar winstone.tools.WinstoneControl shutdown --host=127.0.01 --port=41422
 
+popd > /dev/null 2>&1
+
 for i in `seq 1 10`
 do
 
   if [ "`printProcess`" == "" ]; then
 
-    echo "Process stopped."
+    echo "Process terminated."
 
-    break
+    exit 0
 
   fi
 
@@ -33,4 +35,6 @@ do
 
 done
 
-popd > /dev/null 2>&1
+echo "Could not confirm process termination."
+
+exit 1
