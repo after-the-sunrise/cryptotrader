@@ -5,6 +5,7 @@ import com.google.common.io.Resources;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.configuration2.CompositeConfiguration;
 import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.SystemConfiguration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
@@ -44,6 +45,8 @@ public class ConfigurationSupplier implements Supplier<Configuration> {
 
             createClasspath(versionPath).ifPresent(composite::addConfiguration);
 
+            createSystem().ifPresent(composite::addConfiguration);
+
             createFilePath(sitePath).ifPresent(composite::addConfiguration);
 
             createClasspath(defaultPath).ifPresent(composite::addConfiguration);
@@ -66,6 +69,10 @@ public class ConfigurationSupplier implements Supplier<Configuration> {
 
         return Optional.of(new Configurations().properties(url));
 
+    }
+
+    private Optional<Configuration> createSystem() {
+        return Optional.of(new SystemConfiguration());
     }
 
     private Optional<Configuration> createFilePath(String path) throws Exception {
