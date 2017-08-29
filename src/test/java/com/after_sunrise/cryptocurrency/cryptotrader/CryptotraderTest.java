@@ -16,6 +16,7 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.TRADING_ACTIVE;
 import static org.testng.Assert.*;
 
 /**
@@ -128,6 +129,8 @@ public class CryptotraderTest {
     }
 
     public static void main(String[] args) {
+
+        System.setProperty(TRADING_ACTIVE.getKey(), "false");
 
         CryptotraderImpl.Module module = new CryptotraderImpl.Module();
 
