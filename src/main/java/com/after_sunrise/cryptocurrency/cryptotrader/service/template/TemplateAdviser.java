@@ -155,14 +155,22 @@ public class TemplateAdviser implements Adviser {
 
         if (Objects.equals(TRUE, context.isMarginable(key))) {
 
+            // = Equivalent / (Funding / 2)
+            // = 2 * Equivalent / Funding
+            // (Funding / 2 = Funding for single side)
+
             if (adjFunding.signum() == 0) {
                 return ZERO;
             }
 
             // Leveraged short can be larger than the funding.
-            ratio = equivalent.divide(adjFunding, SCALE, HALF_UP);
+            ratio = equivalent.add(equivalent).divide(adjFunding, SCALE, HALF_UP);
 
         } else {
+
+            // = Diff / Average
+            // = (X - Y) / [(X + Y) / 2]
+            // = 2 * (X - Y) / (X + Y)
 
             BigDecimal sum = equivalent.add(adjFunding);
 

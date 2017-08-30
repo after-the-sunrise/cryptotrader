@@ -203,29 +203,29 @@ public class TemplateAdviserTest {
         Key key = Key.from(request);
         when(context.isMarginable(key)).thenReturn(true);
 
-        // Long (2345 * 3 / 9800 = 0.71785714285714..)
+        // Long (2 * 2345 * 3  / 9800 = 0.71785714285714..)
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("3"));
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("19600"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("0.7178571429"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("1.4357142857"));
 
-        // Leveraged Long (2345 * 5 / 9800 = 1.19642857142857..)
+        // Leveraged Long (2 * 2345 * 5 / 9800 = 1.19642857142857..)
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("19600"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("1.1964285714"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("2.3928571429"));
 
-        // Short (2345 * -3 / 9800 = -0.71785714285714..)
+        // Short (2 * 2345 * -3 / 9800 = -0.71785714285714..)
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-3"));
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("19600"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-0.7178571429"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-1.4357142857"));
 
-        // Leveraged Short (2345 * -5 / 9800 = -1.19642857142857..)
+        // Leveraged Short (2 * 2345 * -5 / 9800 = -1.19642857142857..)
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-5"));
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("19600"));
-        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-1.1964285714"));
+        assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-2.3928571429"));
 
         // Flat (2345 * 0 / 9800 = 0)
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
