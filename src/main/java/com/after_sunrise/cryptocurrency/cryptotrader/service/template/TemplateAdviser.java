@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.Objects;
-import java.util.function.Function;
 
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
@@ -24,8 +23,6 @@ import static java.util.Optional.ofNullable;
  */
 @Slf4j
 public class TemplateAdviser implements Adviser {
-
-    private static final Function<BigDecimal, BigDecimal> TRIM_ZERO = b -> ofNullable(b).orElse(null);
 
     private static final BigDecimal EPSILON = ONE.movePointLeft(SCALE);
 

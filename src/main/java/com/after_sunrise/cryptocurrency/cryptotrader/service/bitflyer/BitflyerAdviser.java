@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -20,8 +19,6 @@ import static java.math.RoundingMode.UP;
  */
 @Slf4j
 public class BitflyerAdviser extends TemplateAdviser implements BitflyerService {
-
-    private static final ZoneId SWAP_ZONE = ZoneId.of("Asia/Tokyo");
 
     private static final double SWAP_RATE = 0.0004;
 

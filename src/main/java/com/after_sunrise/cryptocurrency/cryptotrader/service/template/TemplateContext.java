@@ -59,7 +59,7 @@ public abstract class TemplateContext implements Context, Cached {
             return null;
         }
 
-        Cache<Key, Optional<?>> cache = singleCache.computeIfAbsent(type, this::createCache);
+        Cache<Key, Optional<?>> cache = singleCache.computeIfAbsent(type, t -> createCache());
 
         try {
 
@@ -91,7 +91,7 @@ public abstract class TemplateContext implements Context, Cached {
             return emptyList();
         }
 
-        Cache<Key, Optional<List<?>>> cache = listCache.computeIfAbsent(type, this::createCache);
+        Cache<Key, Optional<List<?>>> cache = listCache.computeIfAbsent(type, t -> createCache());
 
         try {
 
@@ -117,7 +117,7 @@ public abstract class TemplateContext implements Context, Cached {
 
     }
 
-    private <K0, K1 extends K0, V0, V1 extends V0> Cache<K1, V1> createCache(Class<?> clazz) {
+    private <K0, K1 extends K0, V0, V1 extends V0> Cache<K1, V1> createCache() {
         return CacheBuilder.newBuilder()
                 .maximumSize(Byte.MAX_VALUE)
                 .expireAfterWrite(TEN.longValue(), SECONDS)

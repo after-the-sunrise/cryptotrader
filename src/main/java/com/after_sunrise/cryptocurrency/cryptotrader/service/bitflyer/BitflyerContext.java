@@ -64,13 +64,13 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
     private static final Long PAGE = 500L;
 
-    private Bitflyer4j bitflyer4j;
+    private final Bitflyer4j bitflyer4j;
 
-    private AccountService accountService;
+    private final AccountService accountService;
 
-    private MarketService marketService;
+    private final MarketService marketService;
 
-    private OrderService orderService;
+    private final OrderService orderService;
 
     public BitflyerContext() {
 
@@ -224,7 +224,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
         return ofNullable(balances).orElse(emptyList()).stream()
                 .filter(Objects::nonNull)
                 .filter(b -> StringUtils.equals(currency, b.getCurrency()))
-                .map(b -> b.getAmount())
+                .map(Balance::getAmount)
                 .findFirst().orElse(null);
 
     }
@@ -371,11 +371,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
         ProductType type = ProductType.find(key.getInstrument());
 
-        if (type == null) {
-            return false;
-        }
-
-        return type.getFunding() == COLLATERAL;
+        return type != null && type.getFunding() == COLLATERAL;
 
     }
 
@@ -413,7 +409,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     @VisibleForTesting
     List<Order> fetchOrder(Key key) {
 
-        List<Order> values = listCached(Order.class, key, () -> {
+        return listCached(Order.class, key, () -> {
 
             OrderList request = OrderList.builder().product(key.getInstrument()).build();
 
@@ -422,8 +418,6 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
                     .filter(Objects::nonNull).map(BitflyerOrder::new).collect(toList()));
 
         });
-
-        return values;
 
     }
 

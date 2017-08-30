@@ -3,7 +3,6 @@ package com.after_sunrise.cryptocurrency.cryptotrader.core;
 import com.after_sunrise.cryptocurrency.cryptotrader.Cryptotrader;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.*;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -91,8 +90,7 @@ public class CryptotraderImpl implements Cryptotrader {
 
     }
 
-    @VisibleForTesting
-    void closeQuietly(Class<? extends AutoCloseable> clazz) {
+    private void closeQuietly(Class<? extends AutoCloseable> clazz) {
 
         try {
 

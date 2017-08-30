@@ -44,7 +44,7 @@ public interface BitflyerService {
 
         FUTURE_BTC2W(new BigDecimal("0.001"));
 
-        private static Map<String, AssetType> NAMES = stream(values()).collect(toMap(AssetType::name, t -> t));
+        private static final Map<String, AssetType> NAMES = stream(values()).collect(toMap(AssetType::name, t -> t));
 
         public static AssetType find(String name) {
             return NAMES.get(name);
@@ -57,12 +57,8 @@ public interface BitflyerService {
         private final String code;
 
         AssetType(BigDecimal unit) {
-            this(unit, null);
-        }
-
-        AssetType(BigDecimal unit, String code) {
             this.unit = unit;
-            this.code = code == null ? name() : code;
+            this.code = name();
         }
 
         public BigDecimal roundToUnit(BigDecimal value, RoundingMode mode) {
@@ -93,7 +89,7 @@ public interface BitflyerService {
 
         BTCJPY_MAT2WK(FUTURE_BTC2W, COLLATERAL, new BigDecimal("0.001"), ONE);
 
-        private static Map<String, ProductType> NAMES = stream(values()).collect(toMap(ProductType::name, t -> t));
+        private static final Map<String, ProductType> NAMES = stream(values()).collect(toMap(ProductType::name, t -> t));
 
         public static ProductType find(String name) {
             return NAMES.get(name);

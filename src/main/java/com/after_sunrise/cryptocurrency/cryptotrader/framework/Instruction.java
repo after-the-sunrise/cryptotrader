@@ -28,7 +28,7 @@ public interface Instruction {
 
         private static final AtomicLong SEQUENCE = new AtomicLong();
 
-        protected static String generateUid() {
+        static String generateUid() {
             return String.valueOf(SEQUENCE.incrementAndGet());
         }
 
