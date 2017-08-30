@@ -382,8 +382,8 @@ public class BitflyerContextTest {
         }).thenReturn(null);
 
         Collateral c = mock(Collateral.class);
-        when(c.getCollateral()).thenReturn(null, TEN.add(TEN));
-        when(c.getOpenPositionPl()).thenReturn(ONE, ONE.negate(), null);
+        when(c.getCollateral()).thenReturn(null, TEN);
+        when(c.getRequiredCollateral()).thenReturn(ONE, null);
         when(accountService.getCollateral()).thenReturn(completedFuture(c)).thenReturn(null);
 
         Key key1 = Key.from(Request.builder().instrument("BTCJPY_MAT1WK").build());
@@ -397,8 +397,7 @@ public class BitflyerContextTest {
         assertEquals(target.forMargin(key3, ProductType::getStructure), null);
         assertEquals(target.forMargin(key4, ProductType::getStructure), null);
         assertEquals(target.forMargin(key1, ProductType::getFunding), null); // No amount
-        assertEquals(target.forMargin(key1, ProductType::getFunding), TEN.add(TEN)); // Profit
-        assertEquals(target.forMargin(key1, ProductType::getFunding), TEN.add(TEN).subtract(ONE)); // Loss
+        assertEquals(target.forMargin(key1, ProductType::getFunding), TEN.subtract(ONE)); // With Position
         assertEquals(target.forMargin(key1, ProductType::getFunding), null); // No P&L
         assertEquals(target.forMargin(key2, ProductType::getFunding), null);
         assertEquals(target.forMargin(key3, ProductType::getFunding), null);

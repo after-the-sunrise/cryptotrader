@@ -258,13 +258,13 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
                 return null;
             }
 
-            BigDecimal pl = collateral.getOpenPositionPl();
+            BigDecimal required = collateral.getRequiredCollateral();
 
-            if (pl == null) {
+            if (required == null) {
                 return null;
             }
 
-            return amount.add(pl.min(ZERO));
+            return amount.subtract(required);
 
         }
 
