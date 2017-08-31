@@ -1,11 +1,8 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Execution;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 
@@ -139,13 +136,13 @@ public class TemplateAdviser implements Adviser {
 
         Key key = Key.from(request);
 
-        Optional<Execution> execution = ofNullable(context.listExecutions(key)).orElse(emptyList()).stream()
+        Optional<Order.Execution> execution = ofNullable(context.listExecutions(key)).orElse(emptyList()).stream()
                 .filter(Objects::nonNull)
                 .filter(v -> v.getPrice() != null)
                 .filter(v -> v.getPrice().signum() != 0)
                 .filter(v -> v.getSize() != null)
                 .filter(v -> v.getTime() != null)
-                .sorted(comparing(Execution::getTime).reversed())
+                .sorted(comparing(Order.Execution::getTime).reversed())
                 .findFirst();
 
         if (!execution.isPresent()) {

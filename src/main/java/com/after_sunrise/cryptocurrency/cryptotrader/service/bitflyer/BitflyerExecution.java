@@ -2,7 +2,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.entity.TradeExecution;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Execution;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import lombok.ToString;
 
 import java.math.BigDecimal;
@@ -16,7 +16,7 @@ import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
  * @version 0.0.1
  */
 @ToString
-public class BitflyerExecution implements Execution {
+public class BitflyerExecution implements Order.Execution {
 
     private final TradeExecution.Response delegate;
 

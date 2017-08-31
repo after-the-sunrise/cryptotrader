@@ -1,7 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Execution;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
@@ -107,7 +106,7 @@ public class TemplateContextTest {
         }
 
         @Override
-        public List<Execution> listExecutions(Key key) {
+        public List<Order.Execution> listExecutions(Key key) {
             return null;
         }
 

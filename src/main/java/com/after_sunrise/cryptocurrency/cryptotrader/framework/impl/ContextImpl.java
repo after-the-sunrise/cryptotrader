@@ -155,7 +155,7 @@ public class ContextImpl implements Context {
     }
 
     @Override
-    public List<Execution> listExecutions(Key key) {
+    public List<Order.Execution> listExecutions(Key key) {
         return forContext(key, c -> c.listExecutions(key));
     }
 

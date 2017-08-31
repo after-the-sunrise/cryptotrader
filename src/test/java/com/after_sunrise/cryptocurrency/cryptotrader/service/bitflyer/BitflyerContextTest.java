@@ -669,7 +669,7 @@ public class BitflyerContextTest {
         }).thenReturn(null);
 
         // Queried
-        List<com.after_sunrise.cryptocurrency.cryptotrader.framework.Execution> execs = target.listExecutions(key);
+        List<Order.Execution> execs = target.listExecutions(key);
         assertEquals(execs.size(), 2);
         assertEquals(execs.get(0).getPrice(), ONE);
         assertEquals(execs.get(1).getPrice(), TEN);

@@ -270,7 +270,7 @@ public class ContextImplTest {
     @Test
     public void testListExecutions() {
 
-        List<Execution> value = singletonList(mock(Execution.class));
+        List<Order.Execution> value = singletonList(mock(Order.Execution.class));
 
         when(contexts.get("c1").listExecutions(key)).thenReturn(value);
 

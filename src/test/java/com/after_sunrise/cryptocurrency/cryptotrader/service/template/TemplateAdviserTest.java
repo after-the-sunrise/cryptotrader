@@ -4,7 +4,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Execution;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import org.mockito.invocation.InvocationOnMock;
 import org.testng.annotations.BeforeMethod;
@@ -150,10 +150,10 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateRecentPrice() {
 
-        List<Execution> values = new ArrayList<>();
+        List<Order.Execution> values = new ArrayList<>();
 
         for (int i = 0; i < 8; i++) {
-            Execution execution = mock(Execution.class);
+            Order.Execution execution = mock(Order.Execution.class);
             when(execution.getTime()).thenReturn(Instant.ofEpochMilli(i));
             when(execution.getPrice()).thenReturn(valueOf(i * 100));
             when(execution.getSize()).thenReturn(valueOf(i % 2 == 0 ? i : -i));
