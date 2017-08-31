@@ -216,17 +216,17 @@ public class TemplateAdviserTest {
         // Null market
         doReturn(null).when(context).getBestBidPrice(key);
         doReturn(recent).when(target).calculateLatestPrice(context, request, SIGNUM_BUY);
-        assertNull(target.calculateBuyBasis(context, request, base));
+        assertEquals(target.calculateBuyBasis(context, request, base), base);
 
         // Null latest
         doReturn(market).when(context).getBestBidPrice(key);
         doReturn(null).when(target).calculateLatestPrice(context, request, SIGNUM_BUY);
-        assertNull(target.calculateBuyBasis(context, request, base));
+        assertEquals(target.calculateBuyBasis(context, request, base), base);
 
         // Zero latest
         doReturn(market).when(context).getBestBidPrice(key);
         doReturn(new BigDecimal("0.0")).when(target).calculateLatestPrice(context, request, SIGNUM_BUY);
-        assertNull(target.calculateBuyBasis(context, request, base));
+        assertEquals(target.calculateBuyBasis(context, request, base), base);
 
     }
 
@@ -257,17 +257,17 @@ public class TemplateAdviserTest {
         // Null market
         doReturn(null).when(context).getBestAskPrice(key);
         doReturn(recent).when(target).calculateLatestPrice(context, request, SIGNUM_SELL);
-        assertNull(target.calculateSellBasis(context, request, base));
+        assertEquals(target.calculateSellBasis(context, request, base), base);
 
         // Null latest
         doReturn(market).when(context).getBestAskPrice(key);
         doReturn(null).when(target).calculateLatestPrice(context, request, SIGNUM_SELL);
-        assertNull(target.calculateSellBasis(context, request, base));
+        assertEquals(target.calculateSellBasis(context, request, base), base);
 
         // Zero latest
         doReturn(market).when(context).getBestAskPrice(key);
         doReturn(new BigDecimal("0.0")).when(target).calculateLatestPrice(context, request, SIGNUM_SELL);
-        assertNull(target.calculateSellBasis(context, request, base));
+        assertEquals(target.calculateSellBasis(context, request, base), base);
 
     }
 

@@ -172,13 +172,13 @@ public class TemplateAdviser implements Adviser {
         BigDecimal market = context.getBestBidPrice(Key.from(request));
 
         if (market == null) {
-            return null;
+            return base;
         }
 
         BigDecimal latest = calculateLatestPrice(context, request, SIGNUM_BUY);
 
         if (latest == null || latest.signum() == 0) {
-            return null;
+            return base;
         }
 
         BigDecimal lossPrice = latest.subtract(market).max(ZERO);
@@ -199,13 +199,13 @@ public class TemplateAdviser implements Adviser {
         BigDecimal market = context.getBestAskPrice(Key.from(request));
 
         if (market == null) {
-            return null;
+            return base;
         }
 
         BigDecimal latest = calculateLatestPrice(context, request, SIGNUM_SELL);
 
         if (latest == null || latest.signum() == 0) {
-            return null;
+            return base;
         }
 
         BigDecimal lossPrice = market.subtract(latest).max(ZERO);
