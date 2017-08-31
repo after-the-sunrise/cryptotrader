@@ -1,8 +1,11 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 
@@ -278,6 +281,56 @@ public class TemplateAdviser implements Adviser {
     }
 
     @VisibleForTesting
+    BigDecimal calculateBuyBoundaryPrice(Context context, Request request) {
+
+        Key key = Key.from(request);
+
+        BigDecimal ask0 = context.getBestAskPrice(key);
+
+        if (ask0 == null) {
+            return null;
+        }
+
+        BigDecimal ask1 = context.roundTickSize(key, ask0.subtract(EPSILON), DOWN);
+
+        if (ask1 == null) {
+            return null;
+        }
+
+        BigDecimal bid0 = ofNullable(context.getBestBidPrice(key)).orElse(ask0);
+
+        BigDecimal bid1 = ofNullable(context.roundTickSize(key, bid0.add(EPSILON), UP)).orElse(bid0);
+
+        return ask1.min(bid1);
+
+    }
+
+    @VisibleForTesting
+    BigDecimal calculateSellBoundaryPrice(Context context, Request request) {
+
+        Key key = Key.from(request);
+
+        BigDecimal bid0 = context.getBestBidPrice(key);
+
+        if (bid0 == null) {
+            return null;
+        }
+
+        BigDecimal bid1 = context.roundTickSize(key, bid0.add(EPSILON), UP);
+
+        if (bid1 == null) {
+            return null;
+        }
+
+        BigDecimal ask0 = ofNullable(context.getBestAskPrice(key)).orElse(bid0);
+
+        BigDecimal ask1 = ofNullable(context.roundTickSize(key, ask0.subtract(EPSILON), DOWN)).orElse(ask0);
+
+        return bid1.max(ask1);
+
+    }
+
+    @VisibleForTesting
     BigDecimal calculateBuyLimitPrice(Context context, Request request, BigDecimal weighedPrice, BigDecimal basis) {
 
         if (weighedPrice == null || basis == null) {
@@ -290,11 +343,11 @@ public class TemplateAdviser implements Adviser {
 
         Key key = Key.from(request);
 
-        BigDecimal ask = context.getBestAskPrice(key);
+        BigDecimal bound = calculateBuyBoundaryPrice(context, request);
 
-        if (ask == null) {
+        if (bound == null) {
 
-            log.trace("Buy price not available : No ask price.");
+            log.trace("Buy price not available : No bound price.");
 
             return null;
 
@@ -314,7 +367,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal ratioPrice = weighedPrice.multiply(ONE.subtract(ratioBasis));
 
-        BigDecimal boundPrice = ratioPrice.min(ask.subtract(EPSILON));
+        BigDecimal boundPrice = ratioPrice.min(bound);
 
         BigDecimal rounded = context.roundTickSize(key, boundPrice, DOWN);
 
@@ -337,11 +390,11 @@ public class TemplateAdviser implements Adviser {
 
         Key key = Key.from(request);
 
-        BigDecimal bid = context.getBestBidPrice(key);
+        BigDecimal bound = calculateSellBoundaryPrice(context, request);
 
-        if (bid == null) {
+        if (bound == null) {
 
-            log.trace("Buy price not available : No bid price.");
+            log.trace("Sell price not available : No bound price.");
 
             return null;
 
@@ -361,7 +414,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal ratioPrice = weighedPrice.multiply(ONE.add(ratioBasis));
 
-        BigDecimal boundPrice = ratioPrice.max(bid.add(EPSILON));
+        BigDecimal boundPrice = ratioPrice.max(bound);
 
         BigDecimal rounded = context.roundTickSize(key, boundPrice, UP);
 

@@ -400,10 +400,75 @@ public class TemplateAdviserTest {
     }
 
     @Test
-    public void testCalculateBuyLimitPrice() throws Exception {
+    public void testCalculateBuyBoundaryPrice() {
 
         Request request = rBuilder.build();
         Key key = Key.from(request);
+
+        // Normal
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("16000.0000"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        assertEquals(target.calculateBuyBoundaryPrice(context, request), new BigDecimal("15000.0025"));
+
+        // Equal
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        assertEquals(target.calculateBuyBoundaryPrice(context, request), new BigDecimal("14999.9975"));
+
+        // Inverse
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("16000.0000"));
+        assertEquals(target.calculateBuyBoundaryPrice(context, request), new BigDecimal("14999.9975"));
+
+        // Null Bid
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        when(context.getBestBidPrice(key)).thenReturn(null);
+        assertEquals(target.calculateBuyBoundaryPrice(context, request), new BigDecimal("14999.9975"));
+
+        // Null Ask
+        when(context.getBestAskPrice(key)).thenReturn(null);
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        assertEquals(target.calculateBuyBoundaryPrice(context, request), null);
+
+    }
+
+    @Test
+    public void testCalculateSellBoundaryPrice() {
+
+        Request request = rBuilder.build();
+        Key key = Key.from(request);
+
+        // Normal
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("14000.0000"));
+        assertEquals(target.calculateSellBoundaryPrice(context, request), new BigDecimal("14999.9975"));
+
+        // Equal
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        assertEquals(target.calculateSellBoundaryPrice(context, request), new BigDecimal("15000.0025"));
+
+        // Inverse
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("16000.0000"));
+        assertEquals(target.calculateSellBoundaryPrice(context, request), new BigDecimal("16000.0025"));
+
+        // Null Bid
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        when(context.getBestBidPrice(key)).thenReturn(null);
+        assertEquals(target.calculateSellBoundaryPrice(context, request), null);
+
+        // Null Ask
+        when(context.getBestAskPrice(key)).thenReturn(null);
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        assertEquals(target.calculateSellBoundaryPrice(context, request), new BigDecimal("15000.0025"));
+
+    }
+
+    @Test
+    public void testCalculateBuyLimitPrice() throws Exception {
+
+        Request request = rBuilder.build();
 
         BigDecimal weighed = new BigDecimal("12347.7777");
         BigDecimal basis = new BigDecimal("0.0080");
@@ -415,7 +480,7 @@ public class TemplateAdviserTest {
         // Cross : min(12229.23903408, 20000)
         // Rounded : 12229.2375
         doReturn(new BigDecimal("0.2")).when(target).calculatePositionRatio(context, request);
-        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("20000"));
+        doReturn(new BigDecimal("20000")).when(target).calculateBuyBoundaryPrice(context, request);
         BigDecimal result = target.calculateBuyLimitPrice(context, request, weighed, basis);
         assertEquals(result, new BigDecimal("12229.2375"));
 
@@ -426,12 +491,12 @@ public class TemplateAdviserTest {
         // Cross : min(12248.9954784, 20000)
         // Rounded : 12248.9950
         doReturn(new BigDecimal("-0.2")).when(target).calculatePositionRatio(context, request);
-        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("20000"));
+        doReturn(new BigDecimal("20000")).when(target).calculateBuyBoundaryPrice(context, request);
         result = target.calculateBuyLimitPrice(context, request, weighed, basis);
         assertEquals(result, new BigDecimal("12248.9950"));
 
         // Cross Protected
-        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("10000"));
+        doReturn(new BigDecimal("9999.9975")).when(target).calculateBuyBoundaryPrice(context, request);
         result = target.calculateBuyLimitPrice(context, request, weighed, basis);
         assertEquals(result, new BigDecimal("9999.9975"));
 
@@ -441,12 +506,12 @@ public class TemplateAdviserTest {
 
         // Null Ratio
         doReturn(null).when(target).calculatePositionRatio(context, request);
-        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("20000"));
+        doReturn(new BigDecimal("20000")).when(target).calculateBuyBoundaryPrice(context, request);
         assertNull(target.calculateBuyLimitPrice(context, request, weighed, basis));
 
-        // Null Ask
+        // Null Bound
         doReturn(new BigDecimal("0.2")).when(target).calculatePositionRatio(context, request);
-        when(context.getBestAskPrice(key)).thenReturn(null);
+        doReturn(null).when(target).calculateBuyBoundaryPrice(context, request);
         assertNull(target.calculateBuyLimitPrice(context, request, weighed, basis));
 
     }
@@ -455,7 +520,6 @@ public class TemplateAdviserTest {
     public void testCalculateSellLimitPrice() throws Exception {
 
         Request request = rBuilder.build();
-        Key key = Key.from(request);
 
         BigDecimal weighed = new BigDecimal("12347.7777");
         BigDecimal basis = new BigDecimal("0.0080");
@@ -467,7 +531,7 @@ public class TemplateAdviserTest {
         // Cross : max(12446.5599216, 10000)
         // Rounded : 12446.5600
         doReturn(new BigDecimal("0.2")).when(target).calculatePositionRatio(context, request);
-        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("10000"));
+        doReturn(new BigDecimal("10000")).when(target).calculateSellBoundaryPrice(context, request);
         BigDecimal result = target.calculateSellLimitPrice(context, request, weighed, basis);
         assertEquals(result, new BigDecimal("12446.5600"));
 
@@ -478,12 +542,12 @@ public class TemplateAdviserTest {
         // Cross : max(12466.31636592, 10000)
         // Rounded : 12466.3175
         doReturn(new BigDecimal("-0.2")).when(target).calculatePositionRatio(context, request);
-        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("10000"));
+        doReturn(new BigDecimal("10000")).when(target).calculateSellBoundaryPrice(context, request);
         result = target.calculateSellLimitPrice(context, request, weighed, basis);
         assertEquals(result, new BigDecimal("12466.3175"));
 
         // Cross Protected
-        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("20000"));
+        doReturn(new BigDecimal("20000.0025")).when(target).calculateSellBoundaryPrice(context, request);
         result = target.calculateSellLimitPrice(context, request, weighed, basis);
         assertEquals(result, new BigDecimal("20000.0025"));
 
@@ -493,12 +557,12 @@ public class TemplateAdviserTest {
 
         // Null Ratio
         doReturn(null).when(target).calculatePositionRatio(context, request);
-        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("20000"));
+        doReturn(new BigDecimal("20000")).when(target).calculateSellBoundaryPrice(context, request);
         assertNull(target.calculateSellLimitPrice(context, request, weighed, basis));
 
-        // Null Ask
+        // Null Bound
         doReturn(new BigDecimal("0.2")).when(target).calculatePositionRatio(context, request);
-        when(context.getBestBidPrice(key)).thenReturn(null);
+        doReturn(null).when(target).calculateSellBoundaryPrice(context, request);
         assertNull(target.calculateSellLimitPrice(context, request, weighed, basis));
 
     }
