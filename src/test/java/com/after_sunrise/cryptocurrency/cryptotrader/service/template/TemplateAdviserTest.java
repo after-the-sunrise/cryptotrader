@@ -626,10 +626,15 @@ public class TemplateAdviserTest {
         doReturn(new BigDecimal("7.25")).when(target).calculateFundingLimitSize(context, request, price);
         assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("7.25"));
 
-        // Net-Short
+        // Net-Short (small)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4"));
         doReturn(new BigDecimal("7.25")).when(target).calculateFundingLimitSize(context, request, price);
-        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("11.25"));
+        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("7.25"));
+
+        // Net-Short (large)
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-8"));
+        doReturn(new BigDecimal("7.25")).when(target).calculateFundingLimitSize(context, request, price);
+        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("8"));
 
         // Null fund
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4"));
@@ -678,9 +683,13 @@ public class TemplateAdviserTest {
         BigDecimal price = new BigDecimal("123.4567");
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("18000"));
 
-        // Net Position = 7.25 + (+4.75) = 12
+        // Net Long (small)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("+4.75"));
-        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("12.00"));
+        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("7.25"));
+
+        // Net Long (large)
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("+8.75"));
+        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("8.75"));
 
         // Net Position = (ignore short)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4.75"));

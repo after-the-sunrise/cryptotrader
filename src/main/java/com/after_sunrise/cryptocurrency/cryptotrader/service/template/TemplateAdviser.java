@@ -506,9 +506,9 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        BigDecimal shortPosition = position.min(ZERO);
+        BigDecimal shortPosition = position.min(ZERO).abs();
 
-        BigDecimal netSize = limitSize.subtract(shortPosition);
+        BigDecimal netSize = limitSize.max(shortPosition);
 
         log.trace("Margin Buy size : {} (position=[{}] funding=[{}])", netSize, position, limitSize);
 
@@ -549,7 +549,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal longPosition = position.max(ZERO);
 
-        BigDecimal netSize = limitSize.add(longPosition).max(ZERO);
+        BigDecimal netSize = limitSize.max(longPosition);
 
         log.trace("Margin sell size : {} (position=[{}] funding=[{}])", netSize, position, limitSize);
 
