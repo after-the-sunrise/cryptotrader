@@ -79,6 +79,8 @@ public interface Context extends Service, AutoCloseable {
 
     List<Order> listActiveOrders(Key key);
 
+    List<Execution> listExecutions(Key key);
+
     String createOrder(Key key, CreateInstruction instruction);
 
     String cancelOrder(Key key, CancelInstruction instruction);

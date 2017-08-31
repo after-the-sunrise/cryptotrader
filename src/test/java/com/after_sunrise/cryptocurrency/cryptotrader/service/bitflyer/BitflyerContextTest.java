@@ -179,7 +179,7 @@ public class BitflyerContextTest {
     }
 
     @Test
-    public void testListExecutions() {
+    public void testListTrades() {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
 
@@ -645,6 +645,49 @@ public class BitflyerContextTest {
         assertEquals(results.size(), 2);
         assertSame(results.get(0), o2);
         assertSame(results.get(1), o4);
+
+    }
+
+    @Test
+    public void testListExecutions() {
+
+        Key key = Key.from(Request.builder().instrument("inst").build());
+
+        TradeExecution.Response r1 = mock(TradeExecution.Response.class);
+        TradeExecution.Response r2 = mock(TradeExecution.Response.class);
+        when(r1.getPrice()).thenReturn(ONE);
+        when(r2.getPrice()).thenReturn(TEN);
+        when(orderService.listExecutions(any(), any())).thenAnswer(i -> {
+
+            assertEquals(i.getArgumentAt(0, TradeExecution.class).getProduct(), "inst");
+            assertNull(i.getArgumentAt(0, TradeExecution.class).getChild_order_id());
+            assertNull(i.getArgumentAt(0, TradeExecution.class).getChild_order_acceptance_id());
+            assertNull(i.getArgumentAt(1, Pagination.class));
+
+            return completedFuture(asList(r1, null, r2));
+
+        }).thenReturn(null);
+
+        // Queried
+        List<com.after_sunrise.cryptocurrency.cryptotrader.framework.Execution> execs = target.listExecutions(key);
+        assertEquals(execs.size(), 2);
+        assertEquals(execs.get(0).getPrice(), ONE);
+        assertEquals(execs.get(1).getPrice(), TEN);
+        verify(orderService).listExecutions(any(), any());
+
+        // Cached
+        execs = target.listExecutions(key);
+        assertEquals(execs.size(), 2);
+        assertEquals(execs.get(0).getPrice(), ONE);
+        assertEquals(execs.get(1).getPrice(), TEN);
+        verify(orderService).listExecutions(any(), any());
+
+        target.clear();
+
+        // Queried
+        execs = target.listExecutions(key);
+        assertEquals(execs.size(), 0);
+        verify(orderService, times(2)).listExecutions(any(), any());
 
     }
 

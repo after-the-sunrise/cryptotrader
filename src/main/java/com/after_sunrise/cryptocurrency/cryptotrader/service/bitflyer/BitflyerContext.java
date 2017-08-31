@@ -6,6 +6,7 @@ import com.after_sunrise.cryptocurrency.bitflyer4j.entity.*;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.AccountService;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.MarketService;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.OrderService;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Execution;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
@@ -433,6 +434,21 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     public List<Order> listActiveOrders(Key key) {
 
         return fetchOrder(key).stream().filter(o -> TRUE.equals(o.getActive())).collect(toList());
+
+    }
+
+    @Override
+    public List<Execution> listExecutions(Key key) {
+
+        return listCached(Execution.class, key, () -> {
+
+            TradeExecution request = TradeExecution.builder().product(key.getInstrument()).build();
+
+            return unmodifiableList(ofNullable(orderService.listExecutions(request, null)
+                    .get(TIMEOUT.toMillis(), MILLISECONDS)).orElse(emptyList()).stream()
+                    .filter(Objects::nonNull).map(BitflyerExecution::new).collect(toList()));
+
+        });
 
     }
 

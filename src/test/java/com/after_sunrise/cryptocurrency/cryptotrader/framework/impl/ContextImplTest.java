@@ -2,13 +2,10 @@ package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -267,6 +264,17 @@ public class ContextImplTest {
         when(contexts.get("c1").listActiveOrders(key)).thenReturn(value);
 
         assertEquals(target.listActiveOrders(key), value);
+
+    }
+
+    @Test
+    public void testListExecutions() {
+
+        List<Execution> value = singletonList(mock(Execution.class));
+
+        when(contexts.get("c1").listExecutions(key)).thenReturn(value);
+
+        assertEquals(target.listExecutions(key), value);
 
     }
 

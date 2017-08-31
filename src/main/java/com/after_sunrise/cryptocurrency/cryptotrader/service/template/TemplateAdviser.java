@@ -4,17 +4,20 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Execution;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.Objects;
+import java.util.Optional;
 
 import static java.lang.Boolean.TRUE;
-import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.ZERO;
+import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.*;
+import static java.util.Collections.emptyList;
+import static java.util.Comparator.comparing;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -25,6 +28,10 @@ import static java.util.Optional.ofNullable;
 public class TemplateAdviser implements Adviser {
 
     private static final BigDecimal EPSILON = ONE.movePointLeft(SCALE);
+
+    static final int SIGNUM_BUY = 1;
+
+    static final int SIGNUM_SELL = -1;
 
     private final String id;
 
@@ -44,9 +51,13 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal basis = calculateBasis(context, request);
 
-        BigDecimal bPrice = calculateBuyLimitPrice(context, request, weighedPrice, basis);
+        BigDecimal bBasis = calculateBuyBasis(context, request, basis);
 
-        BigDecimal sPrice = calculateSellLimitPrice(context, request, weighedPrice, basis);
+        BigDecimal sBasis = calculateSellBasis(context, request, basis);
+
+        BigDecimal bPrice = calculateBuyLimitPrice(context, request, weighedPrice, bBasis);
+
+        BigDecimal sPrice = calculateSellLimitPrice(context, request, weighedPrice, sBasis);
 
         BigDecimal bSize = calculateBuyLimitSize(context, request, bPrice);
 
@@ -120,6 +131,88 @@ public class TemplateAdviser implements Adviser {
         }
 
         return spread.add(comm);
+
+    }
+
+    @VisibleForTesting
+    BigDecimal calculateRecentPrice(Context context, Request request, int signum) {
+
+        Key key = Key.from(request);
+
+        Optional<Execution> execution = ofNullable(context.listExecutions(key)).orElse(emptyList()).stream()
+                .filter(Objects::nonNull)
+                .filter(v -> v.getPrice() != null)
+                .filter(v -> v.getPrice().signum() != 0)
+                .filter(v -> v.getSize() != null)
+                .filter(v -> v.getTime() != null)
+                .sorted(comparing(Execution::getTime).reversed())
+                .findFirst();
+
+        if (!execution.isPresent()) {
+            return null; // No execution
+        }
+
+        BigDecimal size = execution.get().getSize();
+
+        if (size.signum() != signum) {
+            return null; // Side does not match.
+        }
+
+        return execution.get().getPrice();
+
+    }
+
+    @VisibleForTesting
+    BigDecimal calculateBuyBasis(Context context, Request request, BigDecimal base) {
+
+        if (base == null) {
+            return null;
+        }
+
+        BigDecimal market = context.getBestBidPrice(Key.from(request));
+
+        if (market == null) {
+            return null;
+        }
+
+        BigDecimal recent = calculateRecentPrice(context, request, SIGNUM_BUY);
+
+        if (recent == null || recent.signum() == 0) {
+            return null;
+        }
+
+        BigDecimal lossPrice = recent.subtract(market).max(ZERO);
+
+        BigDecimal lossRatio = lossPrice.divide(recent, SCALE, ROUND_UP);
+
+        return base.add(lossRatio);
+
+    }
+
+    @VisibleForTesting
+    BigDecimal calculateSellBasis(Context context, Request request, BigDecimal base) {
+
+        if (base == null) {
+            return null;
+        }
+
+        BigDecimal market = context.getBestAskPrice(Key.from(request));
+
+        if (market == null) {
+            return null;
+        }
+
+        BigDecimal recent = calculateRecentPrice(context, request, SIGNUM_SELL);
+
+        if (recent == null || recent.signum() == 0) {
+            return null;
+        }
+
+        BigDecimal lossPrice = market.subtract(recent).max(ZERO);
+
+        BigDecimal lossRatio = lossPrice.divide(recent, SCALE, ROUND_UP);
+
+        return base.add(lossRatio);
 
     }
 
