@@ -135,7 +135,7 @@ public class TemplateAdviser implements Adviser {
     }
 
     @VisibleForTesting
-    BigDecimal calculateRecentPrice(Context context, Request request, int signum) {
+    BigDecimal calculateLatestPrice(Context context, Request request, int signum) {
 
         Key key = Key.from(request);
 
@@ -175,15 +175,15 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal recent = calculateRecentPrice(context, request, SIGNUM_BUY);
+        BigDecimal latest = calculateLatestPrice(context, request, SIGNUM_BUY);
 
-        if (recent == null || recent.signum() == 0) {
+        if (latest == null || latest.signum() == 0) {
             return null;
         }
 
-        BigDecimal lossPrice = recent.subtract(market).max(ZERO);
+        BigDecimal lossPrice = latest.subtract(market).max(ZERO);
 
-        BigDecimal lossRatio = lossPrice.divide(recent, SCALE, ROUND_UP);
+        BigDecimal lossRatio = lossPrice.divide(latest, SCALE, ROUND_UP);
 
         return base.add(lossRatio);
 
@@ -202,15 +202,15 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal recent = calculateRecentPrice(context, request, SIGNUM_SELL);
+        BigDecimal latest = calculateLatestPrice(context, request, SIGNUM_SELL);
 
-        if (recent == null || recent.signum() == 0) {
+        if (latest == null || latest.signum() == 0) {
             return null;
         }
 
-        BigDecimal lossPrice = market.subtract(recent).max(ZERO);
+        BigDecimal lossPrice = market.subtract(latest).max(ZERO);
 
-        BigDecimal lossRatio = lossPrice.divide(recent, SCALE, ROUND_UP);
+        BigDecimal lossRatio = lossPrice.divide(latest, SCALE, ROUND_UP);
 
         return base.add(lossRatio);
 

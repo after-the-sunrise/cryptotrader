@@ -148,7 +148,7 @@ public class TemplateAdviserTest {
     }
 
     @Test
-    public void testCalculateRecentPrice() {
+    public void testCalculateLatestPrice() {
 
         List<Order.Execution> values = new ArrayList<>();
 
@@ -168,24 +168,24 @@ public class TemplateAdviserTest {
         Request request = rBuilder.build();
         when(context.listExecutions(Key.from(request))).thenReturn(values);
 
-        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_BUY), values.get(6).getPrice());
-        assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
-        assertNull(target.calculateRecentPrice(context, request, 0));
+        assertEquals(target.calculateLatestPrice(context, request, SIGNUM_BUY), values.get(6).getPrice());
+        assertNull(target.calculateLatestPrice(context, request, SIGNUM_SELL));
+        assertNull(target.calculateLatestPrice(context, request, 0));
 
         values.remove(6);
-        assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
-        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), values.get(5).getPrice());
-        assertNull(target.calculateRecentPrice(context, request, 0));
+        assertNull(target.calculateLatestPrice(context, request, SIGNUM_BUY));
+        assertEquals(target.calculateLatestPrice(context, request, SIGNUM_SELL), values.get(5).getPrice());
+        assertNull(target.calculateLatestPrice(context, request, 0));
 
         values.clear();
-        assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
-        assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
-        assertNull(target.calculateRecentPrice(context, request, 0));
+        assertNull(target.calculateLatestPrice(context, request, SIGNUM_BUY));
+        assertNull(target.calculateLatestPrice(context, request, SIGNUM_SELL));
+        assertNull(target.calculateLatestPrice(context, request, 0));
 
         when(context.listExecutions(Key.from(request))).thenReturn(null);
-        assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
-        assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
-        assertNull(target.calculateRecentPrice(context, request, 0));
+        assertNull(target.calculateLatestPrice(context, request, SIGNUM_BUY));
+        assertNull(target.calculateLatestPrice(context, request, SIGNUM_SELL));
+        assertNull(target.calculateLatestPrice(context, request, 0));
 
     }
 
@@ -200,14 +200,14 @@ public class TemplateAdviserTest {
         BigDecimal market = new BigDecimal("445000");
         BigDecimal recent = new BigDecimal("444000");
         doReturn(market).when(context).getBestBidPrice(key);
-        doReturn(recent).when(target).calculateRecentPrice(context, request, SIGNUM_BUY);
+        doReturn(recent).when(target).calculateLatestPrice(context, request, SIGNUM_BUY);
         assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0010000000"));
 
         // loss = (446000 - 445000) / 446000 = 0.002242152466368...
         market = new BigDecimal("445000");
         recent = new BigDecimal("446000");
         doReturn(market).when(context).getBestBidPrice(key);
-        doReturn(recent).when(target).calculateRecentPrice(context, request, SIGNUM_BUY);
+        doReturn(recent).when(target).calculateLatestPrice(context, request, SIGNUM_BUY);
         assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0032421525"));
 
         // Null base
@@ -215,17 +215,17 @@ public class TemplateAdviserTest {
 
         // Null market
         doReturn(null).when(context).getBestBidPrice(key);
-        doReturn(recent).when(target).calculateRecentPrice(context, request, SIGNUM_BUY);
+        doReturn(recent).when(target).calculateLatestPrice(context, request, SIGNUM_BUY);
         assertNull(target.calculateBuyBasis(context, request, base));
 
-        // Null recent
+        // Null latest
         doReturn(market).when(context).getBestBidPrice(key);
-        doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_BUY);
+        doReturn(null).when(target).calculateLatestPrice(context, request, SIGNUM_BUY);
         assertNull(target.calculateBuyBasis(context, request, base));
 
-        // Zero recent
+        // Zero latest
         doReturn(market).when(context).getBestBidPrice(key);
-        doReturn(new BigDecimal("0.0")).when(target).calculateRecentPrice(context, request, SIGNUM_BUY);
+        doReturn(new BigDecimal("0.0")).when(target).calculateLatestPrice(context, request, SIGNUM_BUY);
         assertNull(target.calculateBuyBasis(context, request, base));
 
     }
@@ -241,14 +241,14 @@ public class TemplateAdviserTest {
         BigDecimal market = new BigDecimal("444000");
         BigDecimal recent = new BigDecimal("445000");
         doReturn(market).when(context).getBestAskPrice(key);
-        doReturn(recent).when(target).calculateRecentPrice(context, request, SIGNUM_SELL);
+        doReturn(recent).when(target).calculateLatestPrice(context, request, SIGNUM_SELL);
         assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0010000000"));
 
         // loss = (446000 - 445000) / 445000 = 0.002247191011236...
         market = new BigDecimal("446000");
         recent = new BigDecimal("445000");
         doReturn(market).when(context).getBestAskPrice(key);
-        doReturn(recent).when(target).calculateRecentPrice(context, request, SIGNUM_SELL);
+        doReturn(recent).when(target).calculateLatestPrice(context, request, SIGNUM_SELL);
         assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0032471911"));
 
         // Null base
@@ -256,17 +256,17 @@ public class TemplateAdviserTest {
 
         // Null market
         doReturn(null).when(context).getBestAskPrice(key);
-        doReturn(recent).when(target).calculateRecentPrice(context, request, SIGNUM_SELL);
+        doReturn(recent).when(target).calculateLatestPrice(context, request, SIGNUM_SELL);
         assertNull(target.calculateSellBasis(context, request, base));
 
-        // Null recent
+        // Null latest
         doReturn(market).when(context).getBestAskPrice(key);
-        doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_SELL);
+        doReturn(null).when(target).calculateLatestPrice(context, request, SIGNUM_SELL);
         assertNull(target.calculateSellBasis(context, request, base));
 
-        // Zero recent
+        // Zero latest
         doReturn(market).when(context).getBestAskPrice(key);
-        doReturn(new BigDecimal("0.0")).when(target).calculateRecentPrice(context, request, SIGNUM_SELL);
+        doReturn(new BigDecimal("0.0")).when(target).calculateLatestPrice(context, request, SIGNUM_SELL);
         assertNull(target.calculateSellBasis(context, request, base));
 
     }
