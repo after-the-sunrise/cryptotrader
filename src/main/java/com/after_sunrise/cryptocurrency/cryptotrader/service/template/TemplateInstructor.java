@@ -20,6 +20,7 @@ import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
 /**
@@ -235,7 +236,7 @@ public class TemplateInstructor implements Instructor {
 
         instructions.addAll(remainingCancels.keySet());
 
-        instructions.addAll(remainingCreates);
+        instructions.addAll(remainingCreates.stream().filter(this::isValidInstruction).collect(toList()));
 
         instructions.forEach(v -> log.trace("Merged candidate : {}", v));
 
@@ -245,6 +246,10 @@ public class TemplateInstructor implements Instructor {
 
     private boolean isDifferent(BigDecimal v1, BigDecimal v2) {
         return v1 == null || v2 == null || v1.compareTo(v2) != 0;
+    }
+
+    private boolean isValidInstruction(CreateInstruction i) {
+        return i != null && i.getPrice() != null && i.getSize() != null && i.getSize().signum() != 0;
     }
 
 }

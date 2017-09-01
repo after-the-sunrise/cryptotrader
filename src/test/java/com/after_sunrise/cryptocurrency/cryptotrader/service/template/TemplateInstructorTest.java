@@ -226,12 +226,15 @@ public class TemplateInstructorTest {
     @Test
     public void testMerge() throws Exception {
 
-        CreateInstruction create1 = CreateInstruction.builder().price(valueOf(11)).size(valueOf(21)).build();
-        CreateInstruction create2 = CreateInstruction.builder().price(valueOf(12)).size(valueOf(22)).build();
-        CreateInstruction create3 = CreateInstruction.builder().price(valueOf(13)).size(valueOf(23)).build();
-        CreateInstruction create4 = CreateInstruction.builder().price(valueOf(14)).size(valueOf(24)).build();
-        CreateInstruction create5 = CreateInstruction.builder().price(valueOf(15)).size(valueOf(25)).build();
-        List<CreateInstruction> creates = asList(create4, create2, create3, create5, create1); // Shuffled
+        CreateInstruction new1 = CreateInstruction.builder().price(valueOf(11)).size(valueOf(21)).build();
+        CreateInstruction new2 = CreateInstruction.builder().price(valueOf(12)).size(valueOf(22)).build();
+        CreateInstruction new3 = CreateInstruction.builder().price(valueOf(13)).size(valueOf(23)).build();
+        CreateInstruction new4 = CreateInstruction.builder().price(valueOf(14)).size(valueOf(24)).build();
+        CreateInstruction new5 = CreateInstruction.builder().price(valueOf(15)).size(valueOf(25)).build();
+        CreateInstruction new6 = CreateInstruction.builder().price(null).size(valueOf(26)).build();
+        CreateInstruction new7 = CreateInstruction.builder().price(valueOf(17)).size(null).build();
+        CreateInstruction new8 = CreateInstruction.builder().price(valueOf(18)).size(valueOf(0)).build();
+        List<CreateInstruction> creates = asList(new4, new8, new2, new7, new3, new6, new5, new1); // Shuffled
 
         CancelInstruction cancel1 = CancelInstruction.builder().build();
         CancelInstruction cancel2 = CancelInstruction.builder().build();
@@ -242,22 +245,22 @@ public class TemplateInstructorTest {
         cancels.put(cancel2, mock(Order.class)); // Cancel - no price
         cancels.put(cancel3, mock(Order.class)); // Cancel - no size
         cancels.put(cancel4, mock(Order.class)); // Net
-        when(cancels.get(cancel1).getOrderPrice()).thenReturn(create1.getPrice());
-        when(cancels.get(cancel1).getRemainingQuantity()).thenReturn(create1.getSize());
+        when(cancels.get(cancel1).getOrderPrice()).thenReturn(new1.getPrice());
+        when(cancels.get(cancel1).getRemainingQuantity()).thenReturn(new1.getSize());
         when(cancels.get(cancel2).getOrderPrice()).thenReturn(null);
-        when(cancels.get(cancel2).getRemainingQuantity()).thenReturn(create2.getSize());
-        when(cancels.get(cancel3).getOrderPrice()).thenReturn(create3.getPrice());
+        when(cancels.get(cancel2).getRemainingQuantity()).thenReturn(new2.getSize());
+        when(cancels.get(cancel3).getOrderPrice()).thenReturn(new3.getPrice());
         when(cancels.get(cancel3).getRemainingQuantity()).thenReturn(null);
-        when(cancels.get(cancel4).getOrderPrice()).thenReturn(create4.getPrice());
-        when(cancels.get(cancel4).getRemainingQuantity()).thenReturn(create4.getSize());
+        when(cancels.get(cancel4).getOrderPrice()).thenReturn(new4.getPrice());
+        when(cancels.get(cancel4).getRemainingQuantity()).thenReturn(new4.getSize());
 
         List<Instruction> results = target.merge(creates, cancels);
         assertEquals(results.size(), 5); // cancel(o2, o3) + create(c2, c4, c5)
         assertTrue(results.contains(cancel2));
         assertTrue(results.contains(cancel3));
-        assertTrue(results.contains(create2));
-        assertTrue(results.contains(create3));
-        assertTrue(results.contains(create5));
+        assertTrue(results.contains(new2));
+        assertTrue(results.contains(new3));
+        assertTrue(results.contains(new5));
 
     }
 
