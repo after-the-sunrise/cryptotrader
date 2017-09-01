@@ -510,9 +510,11 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal netSize = limitSize.max(shortPosition);
 
-        log.trace("Margin Buy size : {} (position=[{}] funding=[{}])", netSize, position, limitSize);
+        BigDecimal rounded = context.roundLotSize(key, netSize, DOWN);
 
-        return netSize;
+        log.trace("Margin Buy size : {} (position=[{}] funding=[{}])", rounded, position, limitSize);
+
+        return rounded;
 
     }
 
@@ -551,9 +553,11 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal netSize = limitSize.max(longPosition);
 
-        log.trace("Margin sell size : {} (position=[{}] funding=[{}])", netSize, position, limitSize);
+        BigDecimal rounded = context.roundLotSize(key, netSize, DOWN);
 
-        return netSize;
+        log.trace("Margin sell size : {} (position=[{}] funding=[{}])", rounded, position, limitSize);
+
+        return rounded;
 
     }
 

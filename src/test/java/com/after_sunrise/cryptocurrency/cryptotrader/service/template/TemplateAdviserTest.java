@@ -632,9 +632,9 @@ public class TemplateAdviserTest {
         assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("7.25"));
 
         // Net-Short (large)
-        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-8"));
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-8.000001"));
         doReturn(new BigDecimal("7.25")).when(target).calculateFundingLimitSize(context, request, price);
-        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("8"));
+        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("8.00"));
 
         // Null fund
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4"));
@@ -688,7 +688,7 @@ public class TemplateAdviserTest {
         assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("7.25"));
 
         // Net Long (large)
-        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("+8.75"));
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("+8.7500001"));
         assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("8.75"));
 
         // Net Position = (ignore short)
