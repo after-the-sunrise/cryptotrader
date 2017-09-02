@@ -32,6 +32,12 @@ public class ContextTest {
 
         assertEquals(key.toString(), "Context.Key(site=s, instrument=i, timestamp=1970-01-01T00:00:00Z)");
 
+        Key copy = Key.build(key).build();
+        assertTrue(copy.equals(key));
+        assertTrue(key.equals(copy));
+        assertEquals(copy.hashCode(), key.hashCode());
+        assertEquals(copy.toString(), key.toString());
+
     }
 
 }

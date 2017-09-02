@@ -49,6 +49,24 @@ public interface Context extends Service, AutoCloseable {
 
         }
 
+        public static Key.KeyBuilder build(Key key) {
+
+            Key.KeyBuilder builder = Key.builder();
+
+            if (key != null) {
+
+                builder = builder.site(key.getSite());
+
+                builder = builder.instrument(key.getInstrument());
+
+                builder = builder.timestamp(key.getTimestamp());
+
+            }
+
+            return builder;
+
+        }
+
     }
 
     BigDecimal getBestAskPrice(Key key);
