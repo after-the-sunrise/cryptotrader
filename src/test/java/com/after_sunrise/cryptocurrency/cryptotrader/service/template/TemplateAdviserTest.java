@@ -20,9 +20,9 @@ import java.util.function.BiFunction;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.*;
 import static java.lang.Boolean.TRUE;
-import static java.math.BigDecimal.ZERO;
-import static java.math.BigDecimal.valueOf;
+import static java.math.BigDecimal.*;
 import static java.time.Instant.now;
+import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
@@ -453,6 +453,16 @@ public class TemplateAdviserTest {
         doReturn(valueOf(14500)).when(target).calculateRecentPrice(context, request, SIGNUM_SELL, RECENT);
         assertEquals(target.calculateBuyBoundaryPrice(context, request), new BigDecimal("14500"));
 
+        // Already at BBO
+        Order order = mock(Order.class);
+        when(order.getOrderPrice()).thenReturn(valueOf(15000));
+        when(order.getOrderQuantity()).thenReturn(ONE);
+        when(context.listActiveOrders(key)).thenReturn(singletonList(order));
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("16000.0000"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_SELL, RECENT);
+        assertEquals(target.calculateBuyBoundaryPrice(context, request), new BigDecimal("15000.0000"));
+
     }
 
     @Test
@@ -496,6 +506,16 @@ public class TemplateAdviserTest {
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("14000.0000"));
         doReturn(valueOf(15500)).when(target).calculateRecentPrice(context, request, SIGNUM_BUY, RECENT);
         assertEquals(target.calculateSellBoundaryPrice(context, request), new BigDecimal("15500"));
+
+        // Already at BBO
+        Order order = mock(Order.class);
+        when(order.getOrderPrice()).thenReturn(valueOf(15000));
+        when(order.getOrderQuantity()).thenReturn(ONE.negate());
+        when(context.listActiveOrders(key)).thenReturn(singletonList(order));
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("14000.0000"));
+        doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_BUY, RECENT);
+        assertEquals(target.calculateSellBoundaryPrice(context, request), new BigDecimal("15000.0000"));
 
     }
 

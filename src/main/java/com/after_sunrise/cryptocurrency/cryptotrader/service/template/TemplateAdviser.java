@@ -322,7 +322,19 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal bid0 = ofNullable(context.getBestBidPrice(key)).orElse(ask0);
 
-        BigDecimal bid1 = ofNullable(context.roundTickSize(key, bid0.add(EPSILON), UP)).orElse(bid0);
+        BigDecimal bid1 = bid0;
+
+        if (ofNullable(context.listActiveOrders(key)).orElse(emptyList()).stream()
+                .filter(Objects::nonNull)
+                .filter(o -> o.getOrderQuantity() != null)
+                .filter(o -> o.getOrderQuantity().signum() == SIGNUM_BUY)
+                .filter(o -> o.getOrderPrice() != null)
+                .filter(o -> o.getOrderPrice().compareTo(bid0) == 0)
+                .count() == 0) {
+
+            bid1 = ofNullable(context.roundTickSize(key, bid0.add(EPSILON), UP)).orElse(bid0);
+
+        }
 
         return ask1.min(bid1).min(recent);
 
@@ -349,7 +361,19 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal ask0 = ofNullable(context.getBestAskPrice(key)).orElse(bid0);
 
-        BigDecimal ask1 = ofNullable(context.roundTickSize(key, ask0.subtract(EPSILON), DOWN)).orElse(ask0);
+        BigDecimal ask1 = ask0;
+
+        if (ofNullable(context.listActiveOrders(key)).orElse(emptyList()).stream()
+                .filter(Objects::nonNull)
+                .filter(o -> o.getOrderQuantity() != null)
+                .filter(o -> o.getOrderQuantity().signum() == SIGNUM_SELL)
+                .filter(o -> o.getOrderPrice() != null)
+                .filter(o -> o.getOrderPrice().compareTo(ask0) == 0)
+                .count() == 0) {
+
+            ask1 = ofNullable(context.roundTickSize(key, ask0.subtract(EPSILON), DOWN)).orElse(ask0);
+
+        }
 
         return bid1.max(ask1).max(recent);
 
