@@ -338,8 +338,14 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        return ask1.min(bid1).min(recent);
+        BigDecimal price = ask1.min(bid1).min(recent);
 
+        return adjustBuyBoundaryPrice(context, request, price);
+
+    }
+
+    protected BigDecimal adjustBuyBoundaryPrice(Context context, Request request, BigDecimal price) {
+        return price;
     }
 
     @VisibleForTesting
@@ -377,8 +383,14 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        return bid1.max(ask1).max(recent);
+        BigDecimal price = bid1.max(ask1).max(recent);
 
+        return adjustSellBoundaryPrice(context, request, price);
+
+    }
+
+    protected BigDecimal adjustSellBoundaryPrice(Context context, Request request, BigDecimal price) {
+        return price;
     }
 
     @VisibleForTesting
@@ -516,14 +528,6 @@ public class TemplateAdviser implements Adviser {
 
     }
 
-    protected BigDecimal calculateExposedInstrumentPosition(Context context, Request request) {
-
-        Key key = Key.from(request);
-
-        return context.getInstrumentPosition(key);
-
-    }
-
     @VisibleForTesting
     BigDecimal calculateBuyLimitSize(Context context, Request request, BigDecimal price) {
 
@@ -547,7 +551,7 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        BigDecimal position = calculateExposedInstrumentPosition(context, request);
+        BigDecimal position = context.getInstrumentPosition(key);
 
         if (position == null) {
 
@@ -574,7 +578,7 @@ public class TemplateAdviser implements Adviser {
 
         Key key = Key.from(request);
 
-        BigDecimal position = calculateExposedInstrumentPosition(context, request);
+        BigDecimal position = context.getInstrumentPosition(key);
 
         if (position == null) {
 
