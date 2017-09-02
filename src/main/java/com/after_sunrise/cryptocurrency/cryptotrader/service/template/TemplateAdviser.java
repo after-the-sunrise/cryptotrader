@@ -318,11 +318,13 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
+        BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_SELL, RECENT)).orElse(ask0);
+
         BigDecimal bid0 = ofNullable(context.getBestBidPrice(key)).orElse(ask0);
 
         BigDecimal bid1 = ofNullable(context.roundTickSize(key, bid0.add(EPSILON), UP)).orElse(bid0);
 
-        return ask1.min(bid1);
+        return ask1.min(bid1).min(recent);
 
     }
 
@@ -343,11 +345,13 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
+        BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_BUY, RECENT)).orElse(bid0);
+
         BigDecimal ask0 = ofNullable(context.getBestAskPrice(key)).orElse(bid0);
 
         BigDecimal ask1 = ofNullable(context.roundTickSize(key, ask0.subtract(EPSILON), DOWN)).orElse(ask0);
 
-        return bid1.max(ask1);
+        return bid1.max(ask1).max(recent);
 
     }
 

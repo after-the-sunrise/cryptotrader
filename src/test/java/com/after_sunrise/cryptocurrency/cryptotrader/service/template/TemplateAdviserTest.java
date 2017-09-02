@@ -420,27 +420,38 @@ public class TemplateAdviserTest {
         // Normal
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("16000.0000"));
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_SELL, RECENT);
         assertEquals(target.calculateBuyBoundaryPrice(context, request), new BigDecimal("15000.0025"));
 
         // Equal
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_SELL, RECENT);
         assertEquals(target.calculateBuyBoundaryPrice(context, request), new BigDecimal("14999.9975"));
 
         // Inverse
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("16000.0000"));
+        doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_SELL, RECENT);
         assertEquals(target.calculateBuyBoundaryPrice(context, request), new BigDecimal("14999.9975"));
 
         // Null Bid
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
         when(context.getBestBidPrice(key)).thenReturn(null);
+        doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_SELL, RECENT);
         assertEquals(target.calculateBuyBoundaryPrice(context, request), new BigDecimal("14999.9975"));
 
         // Null Ask
         when(context.getBestAskPrice(key)).thenReturn(null);
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_SELL, RECENT);
         assertEquals(target.calculateBuyBoundaryPrice(context, request), null);
+
+        // Losing unwind
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("16000.0000"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        doReturn(valueOf(14500)).when(target).calculateRecentPrice(context, request, SIGNUM_SELL, RECENT);
+        assertEquals(target.calculateBuyBoundaryPrice(context, request), new BigDecimal("14500"));
 
     }
 
@@ -453,27 +464,38 @@ public class TemplateAdviserTest {
         // Normal
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("14000.0000"));
+        doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_BUY, RECENT);
         assertEquals(target.calculateSellBoundaryPrice(context, request), new BigDecimal("14999.9975"));
 
         // Equal
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_BUY, RECENT);
         assertEquals(target.calculateSellBoundaryPrice(context, request), new BigDecimal("15000.0025"));
 
         // Inverse
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("16000.0000"));
+        doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_BUY, RECENT);
         assertEquals(target.calculateSellBoundaryPrice(context, request), new BigDecimal("16000.0025"));
 
         // Null Bid
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
         when(context.getBestBidPrice(key)).thenReturn(null);
+        doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_BUY, RECENT);
         assertEquals(target.calculateSellBoundaryPrice(context, request), null);
 
         // Null Ask
         when(context.getBestAskPrice(key)).thenReturn(null);
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_BUY, RECENT);
         assertEquals(target.calculateSellBoundaryPrice(context, request), new BigDecimal("15000.0025"));
+
+        // Losing unwind
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("14000.0000"));
+        doReturn(valueOf(15500)).when(target).calculateRecentPrice(context, request, SIGNUM_BUY, RECENT);
+        assertEquals(target.calculateSellBoundaryPrice(context, request), new BigDecimal("15500"));
 
     }
 
