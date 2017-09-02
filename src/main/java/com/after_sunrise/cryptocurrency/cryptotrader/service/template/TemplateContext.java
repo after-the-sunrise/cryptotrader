@@ -1,6 +1,5 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.core.Cached;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -25,7 +24,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @version 0.0.1
  */
 @Slf4j
-public abstract class TemplateContext implements Context, Cached {
+public abstract class TemplateContext implements Context {
 
     private final Map<Class<?>, Cache<Key, Optional<?>>> singleCache = new ConcurrentHashMap<>();
 
@@ -42,8 +41,7 @@ public abstract class TemplateContext implements Context, Cached {
         return id;
     }
 
-    @Override
-    public void clear() {
+    protected void clear() {
 
         log.trace("Clearing cache.");
 

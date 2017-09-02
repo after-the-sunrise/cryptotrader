@@ -103,6 +103,11 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     }
 
     @Override
+    protected void clear() {
+        super.clear();
+    }
+
+    @Override
     public BigDecimal getBestAskPrice(Key key) {
 
         Tick tick = findCached(Tick.class, key, () ->
