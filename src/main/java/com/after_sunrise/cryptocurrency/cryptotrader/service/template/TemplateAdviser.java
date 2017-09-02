@@ -36,7 +36,7 @@ public class TemplateAdviser implements Adviser {
 
     static final int SIGNUM_SELL = -1;
 
-    static final Duration RECENT = Duration.ofMinutes(360);
+    static final Duration RECENT = Duration.ofHours(6);
 
     private final String id;
 

@@ -14,10 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import static java.math.BigDecimal.TEN;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * @author takanori.takase
@@ -25,6 +23,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 @Slf4j
 public abstract class TemplateContext implements Context {
+
+    private static final long CACHE_SIZE = Byte.MAX_VALUE;
+
+    private static final Duration CACHE_DURATION = Duration.ofSeconds(5);
 
     private final Map<Class<?>, Cache<Key, Optional<?>>> singleCache = new ConcurrentHashMap<>();
 
@@ -117,8 +119,8 @@ public abstract class TemplateContext implements Context {
 
     private <K0, K1 extends K0, V0, V1 extends V0> Cache<K1, V1> createCache() {
         return CacheBuilder.newBuilder()
-                .maximumSize(Byte.MAX_VALUE)
-                .expireAfterWrite(TEN.longValue(), SECONDS)
+                .maximumSize(CACHE_SIZE)
+                .expireAfterWrite(CACHE_DURATION.toMillis(), MILLISECONDS)
                 .build();
     }
 
