@@ -15,6 +15,7 @@ import java.util.*;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
 /**
  * @author takanori.takase
@@ -25,7 +26,7 @@ public class TemplateAgent implements Agent {
 
     private static final int LIMIT = 10;
 
-    private static final Duration INTERVAL = Duration.ofSeconds(6L);
+    private static final Duration INTERVAL = Duration.ofSeconds(INTEGER_ONE);
 
     private final String id;
 
