@@ -74,10 +74,6 @@ public class TemplateAdviser implements Adviser {
 
     }
 
-    protected BigDecimal calculateAdditionalBasis(Context context, Request request) {
-        return ZERO;
-    }
-
     @VisibleForTesting
     BigDecimal calculateWeighedPrice(Context context, Request request, Estimation estimation) {
 
@@ -137,10 +133,12 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal additional = ofNullable(calculateAdditionalBasis(context, request)).orElse(ZERO);
+        return adjustBasis(context, request, spread.add(comm));
 
-        return spread.add(comm).add(additional);
+    }
 
+    protected BigDecimal adjustBasis(Context context, Request request, BigDecimal basis) {
+        return basis;
     }
 
     @VisibleForTesting

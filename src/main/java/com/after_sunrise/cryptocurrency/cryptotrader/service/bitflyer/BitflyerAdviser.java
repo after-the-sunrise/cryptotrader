@@ -63,8 +63,16 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
     }
 
     @Override
-    protected BigDecimal calculateAdditionalBasis(Context context, Request request) {
-        return calculateSwapRate(context, request);
+    protected BigDecimal adjustBasis(Context context, Request request, BigDecimal basis) {
+
+        if (basis == null) {
+            return null;
+        }
+
+        BigDecimal swapRate = calculateSwapRate(context, request);
+
+        return basis.add(swapRate);
+
     }
 
 }

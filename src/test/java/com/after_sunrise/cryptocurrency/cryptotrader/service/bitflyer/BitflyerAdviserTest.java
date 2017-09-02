@@ -16,6 +16,7 @@ import java.time.ZonedDateTime;
 import static java.math.BigDecimal.ZERO;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 /**
  * @author takanori.takase
@@ -89,13 +90,17 @@ public class BitflyerAdviserTest {
     }
 
     @Test
-    public void testCalculateAdditionalBasis() {
+    public void testAdjustBasis() {
 
         Request request = Request.builder().build();
 
         doReturn(new BigDecimal("0.0005")).when(target).calculateSwapRate(context, request);
 
-        assertEquals(target.calculateAdditionalBasis(context, request), new BigDecimal("0.0005"));
+        BigDecimal result = target.adjustBasis(context, request, new BigDecimal("0.002"));
+
+        assertEquals(result, new BigDecimal("0.0025"));
+
+        assertNull(target.adjustBasis(context, request, null));
 
     }
 
