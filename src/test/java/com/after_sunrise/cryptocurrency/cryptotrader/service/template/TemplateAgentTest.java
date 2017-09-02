@@ -81,14 +81,14 @@ public class TemplateAgentTest {
         values.put(null, "i3");
         values.put(CancelInstruction.builder().build(), null);
         Request request = Request.builder().build();
-        doReturn(TRUE).when(target).checkCreated(same(context), any(), eq("i1"), any());
-        doReturn(TRUE).when(target).checkCancelled(same(context), any(), eq("i2"), any());
+        doReturn(TRUE).when(target).checkCreated(same(context), any(), eq("i1"), any(), anyLong());
+        doReturn(TRUE).when(target).checkCancelled(same(context), any(), eq("i2"), any(), anyLong());
 
         Map<Instruction, Boolean> results = target.reconcile(context, request, values);
         assertEquals(results.size(), 2);
         results.values().forEach(Assert::assertTrue);
-        verify(target).checkCreated(same(context), any(), eq("i1"), any());
-        verify(target).checkCancelled(same(context), any(), eq("i2"), any());
+        verify(target).checkCreated(same(context), any(), eq("i1"), any(), anyLong());
+        verify(target).checkCancelled(same(context), any(), eq("i2"), any(), anyLong());
 
         // No input
         assertEquals(target.reconcile(context, request, null).size(), 0);
@@ -101,18 +101,19 @@ public class TemplateAgentTest {
         Key key = Key.from(null);
         String id = "id";
         Duration interval = Duration.ofMillis(1L);
+        long limit = 10;
 
         // Not found
         when(context.findOrder(key, id)).thenReturn(null);
-        assertFalse(target.checkCreated(context, key, id, interval));
+        assertFalse(target.checkCreated(context, key, id, interval, limit));
 
         // Interrupted
         Thread.currentThread().interrupt();
-        assertFalse(target.checkCreated(context, key, id, interval));
+        assertFalse(target.checkCreated(context, key, id, interval, limit));
 
         // Found
         when(context.findOrder(key, id)).thenReturn(null, null, mock(Order.class));
-        assertTrue(target.checkCreated(context, key, id, interval));
+        assertTrue(target.checkCreated(context, key, id, interval, limit));
 
     }
 
@@ -122,26 +123,27 @@ public class TemplateAgentTest {
         Key key = Key.from(null);
         String id = "id";
         Duration interval = Duration.ofMillis(1L);
+        long limit = 10;
 
         // Found but Active
         Order order = mock(Order.class);
         when(order.getActive()).thenReturn(TRUE);
         when(context.findOrder(key, id)).thenReturn(order);
-        assertFalse(target.checkCancelled(context, key, id, interval));
+        assertFalse(target.checkCancelled(context, key, id, interval, limit));
 
         // Interrupted
         Thread.currentThread().interrupt();
-        assertFalse(target.checkCancelled(context, key, id, interval));
+        assertFalse(target.checkCancelled(context, key, id, interval, limit));
 
         // Found and inactive
         when(order.getActive()).thenReturn(FALSE);
         when(context.findOrder(key, id)).thenReturn(order);
-        assertTrue(target.checkCancelled(context, key, id, interval));
+        assertTrue(target.checkCancelled(context, key, id, interval, limit));
 
 
         // Not found
         when(context.findOrder(key, id)).thenReturn(null);
-        assertTrue(target.checkCancelled(context, key, id, interval));
+        assertTrue(target.checkCancelled(context, key, id, interval, limit));
 
     }
 

@@ -15,6 +15,7 @@ import java.util.*;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
 /**
@@ -24,9 +25,9 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 @Slf4j
 public class TemplateAgent implements Agent {
 
-    private static final int LIMIT = 10;
-
     private static final Duration INTERVAL = Duration.ofSeconds(INTEGER_ONE);
+
+    private static final long LIMIT = MINUTES.toMillis(INTEGER_ONE) / INTERVAL.toMillis();
 
     private final String id;
 
@@ -109,12 +110,12 @@ public class TemplateAgent implements Agent {
                     Boolean matched = instruction.accept(new Visitor<Boolean>() {
                         @Override
                         public Boolean visit(CreateInstruction instruction) {
-                            return checkCreated(context, key, entry.getValue(), INTERVAL);
+                            return checkCreated(context, key, entry.getValue(), INTERVAL, LIMIT);
                         }
 
                         @Override
                         public Boolean visit(CancelInstruction instruction) {
-                            return checkCancelled(context, key, entry.getValue(), INTERVAL);
+                            return checkCancelled(context, key, entry.getValue(), INTERVAL, LIMIT);
                         }
                     });
 
@@ -129,9 +130,9 @@ public class TemplateAgent implements Agent {
     }
 
     @VisibleForTesting
-    Boolean checkCreated(Context context, Key key, String id, Duration interval) {
+    Boolean checkCreated(Context context, Key key, String id, Duration interval, long limit) {
 
-        for (int i = 0; i < LIMIT; i++) {
+        for (long i = 0; i < limit; i++) {
 
             Order order = context.findOrder(key, id);
 
@@ -164,9 +165,9 @@ public class TemplateAgent implements Agent {
     }
 
     @VisibleForTesting
-    Boolean checkCancelled(Context context, Key key, String id, Duration interval) {
+    Boolean checkCancelled(Context context, Key key, String id, Duration interval, long limit) {
 
-        for (int i = 0; i < LIMIT; i++) {
+        for (long i = 0; i < limit; i++) {
 
             Order order = context.findOrder(key, id);
 
