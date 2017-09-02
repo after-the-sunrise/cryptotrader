@@ -206,7 +206,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal lossRatio = lossPrice.divide(latest, SCALE, ROUND_UP);
 
-        return base.add(lossRatio);
+        return base.max(lossRatio);
 
     }
 
@@ -233,7 +233,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal lossRatio = lossPrice.divide(latest, SCALE, ROUND_UP);
 
-        return base.add(lossRatio);
+        return base.max(lossRatio);
 
     }
 
