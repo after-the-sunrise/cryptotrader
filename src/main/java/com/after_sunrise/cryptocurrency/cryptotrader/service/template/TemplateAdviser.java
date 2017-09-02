@@ -10,8 +10,11 @@ import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.*;
@@ -32,6 +35,8 @@ public class TemplateAdviser implements Adviser {
     static final int SIGNUM_BUY = 1;
 
     static final int SIGNUM_SELL = -1;
+
+    static final Duration RECENT = Duration.ofMinutes(360);
 
     private final String id;
 
@@ -135,30 +140,46 @@ public class TemplateAdviser implements Adviser {
     }
 
     @VisibleForTesting
-    BigDecimal calculateLatestPrice(Context context, Request request, int signum) {
+    BigDecimal calculateRecentPrice(Context context, Request request, int signum, Duration duration) {
+
+        Instant cutoff = request.getCurrentTime().minus(duration);
 
         Key key = Key.from(request);
 
-        Optional<Order.Execution> execution = ofNullable(context.listExecutions(key)).orElse(emptyList()).stream()
+        List<Order.Execution> executions = ofNullable(context.listExecutions(key))
+                .orElse(emptyList()).stream()
                 .filter(Objects::nonNull)
+                .filter(v -> v.getTime() != null)
+                .filter(v -> v.getTime().isAfter(cutoff))
                 .filter(v -> v.getPrice() != null)
                 .filter(v -> v.getPrice().signum() != 0)
                 .filter(v -> v.getSize() != null)
-                .filter(v -> v.getTime() != null)
+                .filter(v -> v.getSize().signum() == signum)
                 .sorted(comparing(Order.Execution::getTime).reversed())
-                .findFirst();
+                .collect(Collectors.toList());
 
-        if (!execution.isPresent()) {
-            return null; // No execution
+        double numerator = 0;
+        double denominator = 0;
+
+        for (Order.Execution exec : executions) {
+
+            double price = exec.getPrice().doubleValue();
+
+            double size = exec.getSize().doubleValue();
+
+            double weight = exec.getTime().toEpochMilli() - cutoff.toEpochMilli();
+
+            numerator += price * size * weight;
+
+            denominator += size * weight;
+
         }
 
-        BigDecimal size = execution.get().getSize();
-
-        if (size.signum() != signum) {
-            return null; // Side does not match.
+        if (denominator == 0.0) {
+            return null;
         }
 
-        return execution.get().getPrice();
+        return BigDecimal.valueOf(numerator / denominator).setScale(SCALE, HALF_UP);
 
     }
 
@@ -175,7 +196,7 @@ public class TemplateAdviser implements Adviser {
             return base;
         }
 
-        BigDecimal latest = calculateLatestPrice(context, request, SIGNUM_BUY);
+        BigDecimal latest = calculateRecentPrice(context, request, SIGNUM_BUY, RECENT);
 
         if (latest == null || latest.signum() == 0) {
             return base;
@@ -202,7 +223,7 @@ public class TemplateAdviser implements Adviser {
             return base;
         }
 
-        BigDecimal latest = calculateLatestPrice(context, request, SIGNUM_SELL);
+        BigDecimal latest = calculateRecentPrice(context, request, SIGNUM_SELL, RECENT);
 
         if (latest == null || latest.signum() == 0) {
             return base;
