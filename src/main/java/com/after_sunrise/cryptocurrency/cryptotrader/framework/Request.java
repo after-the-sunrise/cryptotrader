@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.ToString;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -33,6 +34,8 @@ public class Request {
     private BigDecimal tradingExposure;
 
     private BigDecimal tradingSplit;
+
+    private Duration tradingDuration;
 
     private BigDecimal fundingOffset;
 

@@ -88,6 +88,7 @@ public class PipelineImpl implements Pipeline {
                 .tradingSpread(propertyManager.getTradingSpread(site, instrument))
                 .tradingExposure(propertyManager.getTradingExposure(site, instrument))
                 .tradingSplit(propertyManager.getTradingSplit(site, instrument))
+                .tradingDuration(propertyManager.getTradingDuration(site, instrument))
                 .fundingOffset(propertyManager.getFundingOffset(site, instrument))
                 .build();
 
@@ -142,6 +143,14 @@ public class PipelineImpl implements Pipeline {
         if (request.getTradingSplit() == null) {
 
             log.warn("Invalid request : trading split");
+
+            return null;
+
+        }
+
+        if (request.getTradingDuration() == null) {
+
+            log.warn("Invalid request : trading duration");
 
             return null;
 

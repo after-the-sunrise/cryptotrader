@@ -85,7 +85,8 @@ public class TestModule {
                 .targetTime(now.plus(Duration.ofMillis(5)))
                 .tradingExposure(new BigDecimal("0.10"))
                 .tradingSplit(new BigDecimal("2"))
-                .tradingSpread(new BigDecimal("0.0060"));
+                .tradingSpread(new BigDecimal("0.0060"))
+                .tradingDuration(Duration.ofMinutes(1));
 
         return builder;
 

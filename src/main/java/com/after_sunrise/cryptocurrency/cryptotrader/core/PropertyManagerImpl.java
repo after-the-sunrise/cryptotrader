@@ -31,6 +31,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
+import static org.apache.commons.lang3.math.NumberUtils.LONG_ZERO;
 
 /**
  * @author takanori.takase
@@ -325,6 +326,34 @@ public class PropertyManagerImpl implements PropertyController {
     @Override
     public void setTradingSplit(String site, String instrument, BigDecimal value) {
         set(TRADING_SPLIT, site, instrument, value, BigDecimal::toPlainString);
+    }
+
+    @Override
+    public Duration getTradingDuration(String site, String instrument) {
+
+        try {
+
+            Long value = get(TRADING_DURATION, site, instrument, Configuration::getLong);
+
+            Duration adjusted = Duration.ofMillis(Math.max(value, LONG_ZERO));
+
+            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_DURATION, site, instrument, value, adjusted);
+
+            return adjusted;
+
+        } catch (RuntimeException e) {
+
+            log.warn(format("Invalid %s (%s.%s)", TRADING_DURATION, site, instrument), e);
+
+            return Duration.ZERO;
+
+        }
+
+    }
+
+    @Override
+    public void setTradingDuration(String site, String instrument, Duration value) {
+        set(TRADING_DURATION, site, instrument, value, Duration::toMillis);
     }
 
     @Override

@@ -10,7 +10,6 @@ import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -35,8 +34,6 @@ public class TemplateAdviser implements Adviser {
     static final int SIGNUM_BUY = 1;
 
     static final int SIGNUM_SELL = -1;
-
-    static final Duration RECENT = Duration.ofHours(6);
 
     private final String id;
 
@@ -140,9 +137,9 @@ public class TemplateAdviser implements Adviser {
     }
 
     @VisibleForTesting
-    BigDecimal calculateRecentPrice(Context context, Request request, int signum, Duration duration) {
+    BigDecimal calculateRecentPrice(Context context, Request request, int signum) {
 
-        Instant cutoff = request.getCurrentTime().minus(duration);
+        Instant cutoff = request.getCurrentTime().minus(request.getTradingDuration());
 
         Key key = Key.from(request);
 
@@ -196,7 +193,7 @@ public class TemplateAdviser implements Adviser {
             return base;
         }
 
-        BigDecimal latest = calculateRecentPrice(context, request, SIGNUM_BUY, RECENT);
+        BigDecimal latest = calculateRecentPrice(context, request, SIGNUM_BUY);
 
         if (latest == null || latest.signum() == 0) {
             return base;
@@ -223,7 +220,7 @@ public class TemplateAdviser implements Adviser {
             return base;
         }
 
-        BigDecimal latest = calculateRecentPrice(context, request, SIGNUM_SELL, RECENT);
+        BigDecimal latest = calculateRecentPrice(context, request, SIGNUM_SELL);
 
         if (latest == null || latest.signum() == 0) {
             return base;
@@ -318,7 +315,7 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_SELL, RECENT)).orElse(ask0);
+        BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_SELL)).orElse(ask0);
 
         BigDecimal bid0 = ofNullable(context.getBestBidPrice(key)).orElse(ask0);
 
@@ -357,7 +354,7 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_BUY, RECENT)).orElse(bid0);
+        BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_BUY)).orElse(bid0);
 
         BigDecimal ask0 = ofNullable(context.getBestAskPrice(key)).orElse(bid0);
 

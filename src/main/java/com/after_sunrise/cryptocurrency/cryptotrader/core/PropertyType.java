@@ -22,6 +22,8 @@ public enum PropertyType {
 
     TRADING_ACTIVE,
 
+    TRADING_DURATION,
+
     FUNDING_OFFSET,
 
     ESTIMATORS;

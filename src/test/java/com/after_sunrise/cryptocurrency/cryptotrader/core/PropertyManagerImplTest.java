@@ -338,6 +338,34 @@ public class PropertyManagerImplTest {
     }
 
     @Test
+    public void testGetTradingDuration() throws Exception {
+
+        assertEquals(target.getTradingDuration(site, inst), Duration.ofMillis(60 * 1000));
+
+        // Specific
+        doReturn(300000L).when(conf).getLong(TRADING_DURATION.getKey());
+        assertEquals(target.getTradingDuration(site, inst), Duration.ofMillis(300000));
+
+        // Floor
+        doReturn(-1L).when(conf).getLong(TRADING_DURATION.getKey());
+        assertEquals(target.getTradingDuration(site, inst), Duration.ZERO);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getLong(TRADING_DURATION.getKey());
+        assertEquals(target.getTradingDuration(site, inst), Duration.ZERO);
+        reset(conf);
+
+        // Override
+        target.setTradingDuration(site, inst, Duration.ofMillis(1));
+        assertEquals(target.getTradingDuration(site, inst), Duration.ofMillis(1));
+
+        // Clear
+        target.setTradingDuration(site, inst, null);
+        assertEquals(target.getTradingDuration(site, inst), Duration.ofMillis(60 * 1000));
+
+    }
+
+    @Test
     public void testGetFundingOffset() throws Exception {
 
         assertEquals(target.getFundingOffset(site, inst), new BigDecimal("0.00"));
