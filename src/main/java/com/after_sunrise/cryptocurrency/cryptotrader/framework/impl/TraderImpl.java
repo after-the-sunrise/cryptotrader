@@ -112,11 +112,12 @@ public class TraderImpl implements Trader {
 
                 List<CompletableFuture<?>> futures = new ArrayList<>();
 
-                propertyManager.getTradingTargets().forEach((site, instruments) -> instruments.forEach(
-                        i -> futures.add(CompletableFuture.runAsync(
-                                () -> pipeline.process(time, site, i), executor
-                        ))
-                ));
+                propertyManager.getTradingTargets().forEach(
+                        (site, instruments) -> instruments.forEach(
+                                i -> futures.add(CompletableFuture.runAsync(
+                                        () -> pipeline.process(time, site, i), executor
+                                )))
+                );
 
                 allOf(futures.toArray(new CompletableFuture[futures.size()])).get();
 
