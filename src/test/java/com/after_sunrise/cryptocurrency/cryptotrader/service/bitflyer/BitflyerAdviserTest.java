@@ -14,9 +14,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 import static java.math.BigDecimal.ZERO;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
 
 /**
  * @author takanori.takase
@@ -37,7 +36,7 @@ public class BitflyerAdviserTest {
 
         context = module.getMock(Context.class);
 
-        target = new BitflyerAdviser();
+        target = spy(new BitflyerAdviser());
 
     }
 
@@ -46,51 +45,57 @@ public class BitflyerAdviserTest {
         assertEquals(target.get(), BitflyerService.ID);
     }
 
-
     @Test
-    public void testCalculateBasis() {
+    public void testCalculateSwapRate() {
 
         ZoneId zone = ZoneId.of("Asia/Tokyo");
         LocalDateTime zdt = LocalDateTime.of(2017, 8, 25, 8, 0);
         Instant now = ZonedDateTime.of(zdt, zone).toInstant();
 
-        Request.RequestBuilder b = Request.builder().tradingSpread(new BigDecimal("0.0020")).currentTime(now);
-        when(context.getCommissionRate(Key.from(b.build()))).thenReturn(new BigDecimal("0.0010"));
+        Request.RequestBuilder b = Request.builder().currentTime(now);
 
         // SD (No Swap)
         LocalDateTime exp = LocalDateTime.of(2017, 8, 25, 16, 0);
         when(context.getExpiry(Key.from(b.build()))).thenReturn(ZonedDateTime.of(exp, zone));
-        assertEquals(target.calculateBasis(context, b.build()), new BigDecimal("0.0030"));
+        assertEquals(target.calculateSwapRate(context, b.build()), ZERO);
 
         // Past (No Swap)
         exp = LocalDateTime.of(2017, 8, 24, 16, 0);
         when(context.getExpiry(Key.from(b.build()))).thenReturn(ZonedDateTime.of(exp, zone));
-        assertEquals(target.calculateBasis(context, b.build()), new BigDecimal("0.0030"));
+        assertEquals(target.calculateSwapRate(context, b.build()), ZERO);
 
         // S+1
         exp = LocalDateTime.of(2017, 8, 26, 16, 0);
         when(context.getExpiry(Key.from(b.build()))).thenReturn(ZonedDateTime.of(exp, zone));
-        assertEquals(target.calculateBasis(context, b.build()), new BigDecimal("0.0034000000"));
+        assertEquals(target.calculateSwapRate(context, b.build()), new BigDecimal("0.0004000000"));
 
         // S+7
         exp = LocalDateTime.of(2017, 9, 1, 16, 0);
         when(context.getExpiry(Key.from(b.build()))).thenReturn(ZonedDateTime.of(exp, zone));
-        assertEquals(target.calculateBasis(context, b.build()), new BigDecimal("0.0058033623"));
+        assertEquals(target.calculateSwapRate(context, b.build()), new BigDecimal("0.0028033623"));
 
         // S+14
         exp = LocalDateTime.of(2017, 9, 8, 16, 0);
         when(context.getExpiry(Key.from(b.build()))).thenReturn(ZonedDateTime.of(exp, zone));
-        assertEquals(target.calculateBasis(context, b.build()), new BigDecimal("0.0086145834"));
-
-        // Null base
-        assertNull(target.calculateBasis(context, Request.builder().currentTime(now).build()));
+        assertEquals(target.calculateSwapRate(context, b.build()), new BigDecimal("0.0056145834"));
 
         // Null current time
-        assertNull(target.calculateBasis(context, Request.builder().tradingSpread(ZERO).build()));
+        assertEquals(target.calculateSwapRate(context, Request.builder().build()), ZERO);
 
         // Null Expiry
         when(context.getExpiry(Key.from(b.build()))).thenReturn(null);
-        assertEquals(target.calculateBasis(context, b.build()), new BigDecimal("0.0030"));
+        assertEquals(target.calculateSwapRate(context, b.build()), ZERO);
+
+    }
+
+    @Test
+    public void testCalculateAdditionalBasis() {
+
+        Request request = Request.builder().build();
+
+        doReturn(new BigDecimal("0.0005")).when(target).calculateSwapRate(context, request);
+
+        assertEquals(target.calculateAdditionalBasis(context, request), new BigDecimal("0.0005"));
 
     }
 

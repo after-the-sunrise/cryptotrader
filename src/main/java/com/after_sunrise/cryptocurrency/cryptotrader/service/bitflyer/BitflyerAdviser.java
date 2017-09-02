@@ -1,8 +1,10 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser;
+import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -11,6 +13,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
+import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.UP;
 
 /**
@@ -26,25 +29,19 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
         super(ID);
     }
 
-    @Override
-    protected BigDecimal calculateBasis(Context context, Request request) {
-
-        BigDecimal base = super.calculateBasis(context, request);
-
-        if (base == null) {
-            return null;
-        }
+    @VisibleForTesting
+    BigDecimal calculateSwapRate(Context context, Request request) {
 
         Instant now = request.getCurrentTime();
 
         if (now == null) {
-            return base;
+            return ZERO;
         }
 
-        ZonedDateTime expiry = context.getExpiry(Context.Key.from(request));
+        ZonedDateTime expiry = context.getExpiry(Key.from(request));
 
         if (expiry == null) {
-            return base; // Not an expiry product.
+            return ZERO; // Not an expiry product.
         }
 
         ZonedDateTime sod = expiry.truncatedTo(ChronoUnit.DAYS);
@@ -54,15 +51,20 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
         Duration maturity = Duration.between(request.getCurrentTime(), expiry);
 
         if (maturity.compareTo(swapFree) < 0) {
-            return base; // Expiring without swap.
+            return ZERO; // Expiring without swap.
         }
 
         long swaps = maturity.toDays();
 
         double rate = Math.pow(1 + SWAP_RATE, swaps) - 1;
 
-        return base.add(BigDecimal.valueOf(rate)).setScale(SCALE, UP);
+        return BigDecimal.valueOf(rate).setScale(SCALE, UP);
 
+    }
+
+    @Override
+    protected BigDecimal calculateAdditionalBasis(Context context, Request request) {
+        return calculateSwapRate(context, request);
     }
 
 }
