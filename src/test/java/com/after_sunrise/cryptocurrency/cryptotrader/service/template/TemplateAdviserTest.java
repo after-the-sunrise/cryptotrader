@@ -670,20 +670,20 @@ public class TemplateAdviserTest {
         when(context.isMarginable(key)).thenReturn(true);
         BigDecimal price = new BigDecimal("123.4567");
 
-        // Net-Long
+        // Net-Long (exposure = 4 * 0.1 = 0.4)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("4"));
         doReturn(new BigDecimal("7.25")).when(target).calculateFundingLimitSize(context, request, price);
-        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("7.25"));
+        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("6.75"));
 
-        // Net-Short (small)
+        // Net-Long (exposure = 80 * 0.1 = 8)
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("80"));
+        doReturn(new BigDecimal("7.25")).when(target).calculateFundingLimitSize(context, request, price);
+        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("0.00"));
+
+        // Net-Short (exposure = -4 * 0.1 = -0.4)
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4"));
         doReturn(new BigDecimal("7.25")).when(target).calculateFundingLimitSize(context, request, price);
-        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("7.25"));
-
-        // Net-Short (large)
-        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-8.000001"));
-        doReturn(new BigDecimal("7.25")).when(target).calculateFundingLimitSize(context, request, price);
-        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("8.00"));
+        assertEquals(target.calculateBuyLimitSize(context, request, price), new BigDecimal("7.50"));
 
         // Null fund
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4"));
@@ -732,21 +732,17 @@ public class TemplateAdviserTest {
         BigDecimal price = new BigDecimal("123.4567");
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("18000"));
 
-        // Net Long (small)
-        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("+4.75"));
-        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("7.25"));
+        // Net Long (exposed = 4 * 0.1 = 0.4)
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("4"));
+        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("7.50"));
 
-        // Net Long (large)
-        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("+8.7500001"));
-        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("8.75"));
+        // Net Short (expose = -4 * 0.1 = -0.4)
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4"));
+        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("6.75"));
 
-        // Net Position = (ignore short)
-        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-4.75"));
-        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("7.25"));
-
-        // Net Position = 7.25 + (-9.75) = -2.5 -> 0
-        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-9.75"));
-        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("7.25"));
+        // Net Short (expose = -80 * 0.1 = -8)
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-80"));
+        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("0.00"));
 
         // Null Position = 7.25 + null = null
         when(context.getInstrumentPosition(key)).thenReturn(null);

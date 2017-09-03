@@ -564,9 +564,9 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        BigDecimal shortPosition = position.min(ZERO).abs();
+        BigDecimal exposed = position.multiply(request.getTradingExposure());
 
-        BigDecimal netSize = limitSize.max(shortPosition);
+        BigDecimal netSize = limitSize.subtract(exposed).max(ZERO);
 
         BigDecimal rounded = context.roundLotSize(key, netSize, DOWN);
 
@@ -607,9 +607,9 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal limitSize = calculateFundingLimitSize(context, request, price);
 
-        BigDecimal longPosition = position.max(ZERO);
+        BigDecimal exposed = position.multiply(request.getTradingExposure());
 
-        BigDecimal netSize = limitSize.max(longPosition);
+        BigDecimal netSize = limitSize.add(exposed).max(ZERO);
 
         BigDecimal rounded = context.roundLotSize(key, netSize, DOWN);
 
