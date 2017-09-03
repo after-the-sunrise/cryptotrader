@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -21,7 +23,6 @@ import static java.math.RoundingMode.*;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
 import static java.util.Optional.ofNullable;
-import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
 /**
  * @author takanori.takase
@@ -157,34 +158,75 @@ public class TemplateAdviser implements Adviser {
                 .filter(v -> v.getPrice() != null)
                 .filter(v -> v.getPrice().signum() != 0)
                 .filter(v -> v.getSize() != null)
-                .filter(v -> v.getSize().signum() == signum)
-                .sorted(comparing(Order.Execution::getTime).reversed())
+                .filter(v -> v.getSize().signum() != 0)
+                .sorted(comparing(Order.Execution::getTime))
                 .collect(Collectors.toList());
 
-        double numerator = 0;
-        double denominator = 0;
+        List<BigDecimal[]> execs = new ArrayList<>();
 
         for (Order.Execution exec : executions) {
 
-            double price = exec.getPrice().doubleValue();
+            BigDecimal price = exec.getPrice();
 
-            double size = exec.getSize().doubleValue();
+            BigDecimal size = exec.getSize();
 
-            double elapsed = exec.getTime().toEpochMilli() - cutoff.toEpochMilli();
+            Iterator<BigDecimal[]> itr = execs.iterator();
 
-            double weight = Math.log(elapsed + INTEGER_ONE);
+            while (itr.hasNext()) {
 
-            numerator += price * size * weight;
+                BigDecimal[] priceSize = itr.next();
 
-            denominator += size * weight;
+                if (priceSize[1].signum() == size.signum()) {
+                    break;
+                }
+
+                BigDecimal total = priceSize[1].add(size);
+
+                if (priceSize[1].signum() == total.signum()) {
+
+                    priceSize[1] = total;
+
+                    size = ZERO;
+
+                } else {
+
+                    itr.remove();
+
+                    size = total;
+
+                }
+
+            }
+
+            if (size.signum() == 0) {
+                continue;
+            }
+
+            execs.add(new BigDecimal[]{price, size});
 
         }
 
-        if (denominator == 0.0) {
+        if (execs.isEmpty()) {
             return null;
         }
 
-        return BigDecimal.valueOf(numerator / denominator).setScale(SCALE, HALF_UP);
+        BigDecimal notional = ZERO;
+
+        BigDecimal size = ZERO;
+
+        for (BigDecimal[] priceSize : execs) {
+
+            notional = notional.add(priceSize[0].multiply(priceSize[1]));
+
+            size = size.add(priceSize[1]);
+
+        }
+
+        if (size.signum() != signum) {
+            return null;
+        }
+
+        return notional.divide(size, SCALE, HALF_UP);
 
     }
 

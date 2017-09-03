@@ -5,6 +5,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order.Execution;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import org.mockito.invocation.InvocationOnMock;
 import org.testng.annotations.BeforeMethod;
@@ -151,48 +152,93 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateRecentPrice() {
 
-        List<Order.Execution> values = new ArrayList<>();
+        // Include 51 ~ 150
+        Instant now = Instant.ofEpochMilli(150);
+        Duration duration = Duration.ofMillis(100);
+        Request request = rBuilder.currentTime(now).tradingDuration(duration).build();
 
-        for (int i = 0; i < 16; i++) {
-            Order.Execution execution = mock(Order.Execution.class);
-            when(execution.getTime()).thenReturn(Instant.ofEpochMilli(i));
-            when(execution.getPrice()).thenReturn(valueOf(i * 100));
-            when(execution.getSize()).thenReturn(valueOf(i % 2 == 0 ? i : -i));
-            values.add(execution);
-        }
+        // Null Executions
+        when(context.listExecutions(Key.from(request))).thenReturn(null);
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
 
-        // Cutoff = 5
-        Instant now = Instant.ofEpochMilli(15);
-        Duration d = Duration.ofMillis(10);
-
-        // 5 or less are excluded. (duration)
-        // 6 is included.
-        when(values.get(7).getTime()).thenReturn(null);
-        when(values.get(8).getPrice()).thenReturn(null);
-        when(values.get(9).getPrice()).thenReturn(ZERO);
-        when(values.get(10).getSize()).thenReturn(null);
-        when(values.get(11).getSize()).thenReturn(ZERO);
-        // 12, 13, 14, 15 are included
-
-        Request request = rBuilder.currentTime(now).tradingDuration(d).build();
+        // Empty Executions
+        List<Execution> values = new ArrayList<>();
         when(context.listExecutions(Key.from(request))).thenReturn(values);
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
 
-        // [6, 12, 14]
-        // Notional = (600 * 6 * 1) + (1200 * 12 * 7) + (1400 * 14 * 9) = 280800
-        // Size = (6 * 1) + (12 * 7) + (14 * 9) = 1300
-        BigDecimal result = target.calculateRecentPrice(context, request, SIGNUM_BUY);
-        assertEquals(result, new BigDecimal("1264.4174934802"));
+        // New Long : 10
+        Execution exec = mock(Execution.class);
+        when(exec.getTime()).thenReturn(Instant.ofEpochMilli(55));
+        when(exec.getPrice()).thenReturn(new BigDecimal("123"));
+        when(exec.getSize()).thenReturn(new BigDecimal("10"));
+        values.add(exec);
+        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_BUY), new BigDecimal("123.0000000000"));
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
 
-        // [13, 15]
-        // Notional = (1300 * 13 * 8) + (1500 * 15 * 10) = 360200
-        // Size = (13 * 8) + (15 * 10) = 254
-        result = target.calculateRecentPrice(context, request, SIGNUM_SELL);
-        assertEquals(result, new BigDecimal("1411.4741052318"));
+        // Increased Long : 10 + 30 = 40
+        exec = mock(Execution.class);
+        when(exec.getTime()).thenReturn(Instant.ofEpochMilli(60));
+        when(exec.getPrice()).thenReturn(new BigDecimal("124"));
+        when(exec.getSize()).thenReturn(new BigDecimal("30"));
+        values.add(exec);
+        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_BUY), new BigDecimal("123.7500000000"));
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
 
-        // [14]
-        // Notional = (1400 * 0 * 9) = 0
-        // Size = (14 * 0) = 0
-        assertNull(target.calculateRecentPrice(context, request, 0));
+        // Flipped Short : (10 + 30) + -60 = -20
+        exec = mock(Execution.class);
+        when(exec.getTime()).thenReturn(Instant.ofEpochMilli(65));
+        when(exec.getPrice()).thenReturn(new BigDecimal("126"));
+        when(exec.getSize()).thenReturn(new BigDecimal("-60"));
+        values.add(exec);
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
+        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("126.0000000000"));
+
+        // Increased Short : -20 + -20 = -40
+        exec = mock(Execution.class);
+        when(exec.getTime()).thenReturn(Instant.ofEpochMilli(70));
+        when(exec.getPrice()).thenReturn(new BigDecimal("127"));
+        when(exec.getSize()).thenReturn(new BigDecimal("-20"));
+        values.add(exec);
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
+        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("126.5000000000"));
+
+        // Decreased Short : (-20 + -20) + 10 = (-10 + -20) = -30
+        exec = mock(Execution.class);
+        when(exec.getTime()).thenReturn(Instant.ofEpochMilli(75));
+        when(exec.getPrice()).thenReturn(new BigDecimal("999"));
+        when(exec.getSize()).thenReturn(new BigDecimal("10"));
+        values.add(exec);
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
+        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("126.6666666667"));
+
+        // Decreased Short : (-10 + -20) + 10 = -20
+        exec = mock(Execution.class);
+        when(exec.getTime()).thenReturn(Instant.ofEpochMilli(80));
+        when(exec.getPrice()).thenReturn(new BigDecimal("999"));
+        when(exec.getSize()).thenReturn(new BigDecimal("10"));
+        values.add(exec);
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
+        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("127.0000000000"));
+
+        // Flat (-10 + 10 = 0)
+        exec = mock(Execution.class);
+        when(exec.getTime()).thenReturn(Instant.ofEpochMilli(85));
+        when(exec.getPrice()).thenReturn(new BigDecimal("999"));
+        when(exec.getSize()).thenReturn(new BigDecimal("20"));
+        values.add(exec);
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
+
+        // New Short (-10)
+        exec = mock(Execution.class);
+        when(exec.getTime()).thenReturn(Instant.ofEpochMilli(90));
+        when(exec.getPrice()).thenReturn(new BigDecimal("131"));
+        when(exec.getSize()).thenReturn(new BigDecimal("-50"));
+        values.add(exec);
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
+        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("131.0000000000"));
 
     }
 
