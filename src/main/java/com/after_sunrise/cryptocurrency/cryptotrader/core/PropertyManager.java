@@ -15,6 +15,8 @@ public interface PropertyManager extends Environment {
 
     Duration getTradingInterval();
 
+    Integer getTradingThreads();
+
     Boolean getTradingActive(String site, String instrument);
 
     BigDecimal getTradingSpread(String site, String instrument);

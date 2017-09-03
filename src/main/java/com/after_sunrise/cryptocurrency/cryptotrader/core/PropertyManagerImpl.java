@@ -30,8 +30,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
-import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
-import static org.apache.commons.lang3.math.NumberUtils.LONG_ZERO;
+import static org.apache.commons.lang3.math.NumberUtils.*;
 
 /**
  * @author takanori.takase
@@ -216,6 +215,34 @@ public class PropertyManagerImpl implements PropertyController {
     @Override
     public void setTradingInterval(Duration value) {
         set(TRADING_INTERVAL, null, null, value, Duration::toMillis);
+    }
+
+    @Override
+    public Integer getTradingThreads() {
+
+        try {
+
+            Integer threads = get(TRADING_THREADS, null, null, Configuration::getInt);
+
+            Integer adjusted = min(max(threads, INTEGER_ONE), Byte.MAX_VALUE);
+
+            log.trace("Fetched {} : {}ms -> {}ms", TRADING_THREADS, threads, adjusted);
+
+            return adjusted;
+
+        } catch (RuntimeException e) {
+
+            log.warn("Invalid " + TRADING_THREADS, e);
+
+            return INTEGER_ONE;
+
+        }
+
+    }
+
+    @Override
+    public void setTradingThreads(Integer value) {
+        set(TRADING_THREADS, null, null, value, Integer::valueOf);
     }
 
     @Override

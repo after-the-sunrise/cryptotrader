@@ -15,6 +15,8 @@ public interface PropertyController extends PropertyManager {
 
     void setTradingInterval(Duration value);
 
+    void setTradingThreads(Integer value);
+
     void setTradingActive(String site, String instrument, Boolean value);
 
     void setTradingSpread(String site, String instrument, BigDecimal value);

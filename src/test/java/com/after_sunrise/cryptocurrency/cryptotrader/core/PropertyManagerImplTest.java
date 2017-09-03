@@ -215,6 +215,39 @@ public class PropertyManagerImplTest {
     }
 
     @Test
+    public void testGetTradingThreads() throws Exception {
+
+        // Default
+        assertEquals(target.getTradingThreads(), (Integer) 1);
+
+        // Mocked
+        doReturn(2).when(conf).getInt(TRADING_THREADS.getKey());
+        assertEquals(target.getTradingThreads(), (Integer) 2);
+
+        // Ceiling
+        doReturn(Integer.MAX_VALUE).when(conf).getInt(TRADING_THREADS.getKey());
+        assertEquals(target.getTradingThreads(), Integer.valueOf(Byte.MAX_VALUE));
+
+        // Floor
+        doReturn(Integer.MIN_VALUE).when(conf).getInt(TRADING_THREADS.getKey());
+        assertEquals(target.getTradingThreads(), (Integer) 1);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getInt(TRADING_THREADS.getKey());
+        assertEquals(target.getTradingThreads(), (Integer) 1);
+        reset(conf);
+
+        // Override
+        target.setTradingThreads(3);
+        assertEquals(target.getTradingThreads(), (Integer) 3);
+
+        // Clear
+        target.setTradingThreads(null);
+        assertEquals(target.getTradingThreads(), (Integer) 1);
+
+    }
+
+    @Test
     public void testGetTradingActive() throws Exception {
 
         // Default

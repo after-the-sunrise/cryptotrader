@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
 /**
  * @author takanori.takase
@@ -46,7 +45,9 @@ public class TraderImpl implements Trader {
 
         this.pipeline = injector.getInstance(Pipeline.class);
 
-        this.executor = injector.getInstance(ExecutorFactory.class).get(getClass(), INTEGER_ONE);
+        int threads = propertyManager.getTradingThreads();
+
+        this.executor = injector.getInstance(ExecutorFactory.class).get(getClass(), threads);
 
     }
 
