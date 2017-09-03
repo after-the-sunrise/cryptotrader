@@ -12,7 +12,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.EnumMap;
+import java.util.Map;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.*;
+import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.UP;
 
@@ -24,6 +28,13 @@ import static java.math.RoundingMode.UP;
 public class BitflyerAdviser extends TemplateAdviser implements BitflyerService {
 
     private static final double SWAP_RATE = 0.0004;
+
+    private static final Map<ProductType, ProductType> UNDERLIERS = new EnumMap<>(ProductType.class);
+
+    static {
+        UNDERLIERS.put(BTCJPY_MAT1WK, BTC_JPY);
+        UNDERLIERS.put(BTCJPY_MAT2WK, BTC_JPY);
+    }
 
     public BitflyerAdviser() {
         super(ID);
@@ -72,6 +83,83 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
         BigDecimal swapRate = calculateSwapRate(context, request);
 
         return basis.add(swapRate);
+
+    }
+
+    @VisibleForTesting
+    Key getUnderlyingKey(Request request) {
+
+        ProductType product = ProductType.find(request.getInstrument());
+
+        ProductType underlier = UNDERLIERS.get(product);
+
+        if (underlier == null) {
+            return null;
+        }
+
+        return Key.build(Key.from(request)).instrument(underlier.name()).build();
+
+    }
+
+    @Override
+    protected BigDecimal adjustBuyBoundaryPrice(Context context, Request request, BigDecimal price) {
+
+        if (price == null) {
+            return null;
+        }
+
+        Key key = getUnderlyingKey(request);
+
+        if (key == null) {
+            return price;
+        }
+
+        BigDecimal bid = context.getBestBidPrice(key);
+
+        BigDecimal comm = context.getCommissionRate(key);
+
+        BigDecimal spread = request.getTradingSpread();
+
+        BigDecimal swap = calculateSwapRate(context, request);
+
+        if (bid == null || comm == null || swap == null) {
+            return null;
+        }
+
+        BigDecimal theoretical = bid.multiply(ONE.subtract(comm).subtract(spread).subtract(swap));
+
+        return price.min(theoretical);
+
+    }
+
+    @Override
+    protected BigDecimal adjustSellBoundaryPrice(Context context, Request request, BigDecimal price) {
+
+        if (price == null) {
+            return null;
+        }
+
+        Key key = getUnderlyingKey(request);
+
+        if (key == null) {
+            return price;
+        }
+
+        BigDecimal ask = context.getBestAskPrice(key);
+
+        BigDecimal comm = context.getCommissionRate(key);
+
+        BigDecimal spread = request.getTradingSpread();
+
+        BigDecimal swap = calculateSwapRate(context, request);
+
+        if (ask == null || comm == null || swap == null) {
+            return null;
+        }
+
+        BigDecimal theoretical = ask.multiply(ONE.add(comm).add(spread).add(swap));
+
+        return price.max(theoretical);
 
     }
 

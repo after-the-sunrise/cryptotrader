@@ -104,4 +104,77 @@ public class BitflyerAdviserTest {
 
     }
 
+    @Test
+    public void testGetUnderlyingKey() {
+
+        Request.RequestBuilder builder = Request.builder().site("bf").currentTime(Instant.now());
+
+        // Null instrument
+        Key key = target.getUnderlyingKey(builder.build());
+        assertNull(key);
+
+        // Cash Instrument
+        key = target.getUnderlyingKey(builder.instrument("BTC_JPY").build());
+        assertNull(key);
+
+        // Derivatives Instrument
+        key = target.getUnderlyingKey(builder.instrument("BTCJPY_MAT1WK").build());
+        assertEquals(key.getSite(), builder.build().getSite());
+        assertEquals(key.getInstrument(), "BTC_JPY");
+        assertEquals(key.getTimestamp(), builder.build().getCurrentTime());
+
+    }
+
+    @Test
+    public void testAdjustBuyBoundaryPrice() {
+
+        Request request = Request.builder().site("s").instrument("i")
+                .tradingSpread(new BigDecimal("0.0008")).build();
+        Key key = Key.from(request);
+
+        doReturn(key).when(target).getUnderlyingKey(request);
+        doReturn(new BigDecimal("0.0004")).when(target).calculateSwapRate(context, request);
+        when(context.getCommissionRate(key)).thenReturn(new BigDecimal("0.0012"));
+        when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("5000"));
+
+        // Passive than market
+        BigDecimal result = target.adjustBuyBoundaryPrice(context, request, new BigDecimal("6000"));
+        assertEquals(result, new BigDecimal("4988.0000"));
+
+        // Aggressive than Market
+        result = target.adjustBuyBoundaryPrice(context, request, new BigDecimal("4000"));
+        assertEquals(result, new BigDecimal("4000"));
+
+        // Null Market
+        result = target.adjustBuyBoundaryPrice(context, request, null);
+        assertEquals(result, null);
+
+    }
+
+    @Test
+    public void testAdjustSellBoundaryPrice() {
+
+        Request request = Request.builder().site("s").instrument("i")
+                .tradingSpread(new BigDecimal("0.0008")).build();
+        Key key = Key.from(request);
+
+        doReturn(key).when(target).getUnderlyingKey(request);
+        doReturn(new BigDecimal("0.0004")).when(target).calculateSwapRate(context, request);
+        when(context.getCommissionRate(key)).thenReturn(new BigDecimal("0.0012"));
+        when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("5000"));
+
+        // Passive than market
+        BigDecimal result = target.adjustSellBoundaryPrice(context, request, new BigDecimal("4000"));
+        assertEquals(result, new BigDecimal("5012.0000"));
+
+        // Aggressive than Market
+        result = target.adjustSellBoundaryPrice(context, request, new BigDecimal("6000"));
+        assertEquals(result, new BigDecimal("6000"));
+
+        // Null Market
+        result = target.adjustSellBoundaryPrice(context, request, null);
+        assertEquals(result, null);
+
+    }
+
 }
