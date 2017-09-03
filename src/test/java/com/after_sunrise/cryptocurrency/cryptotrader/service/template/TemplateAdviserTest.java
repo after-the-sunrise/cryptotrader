@@ -181,19 +181,13 @@ public class TemplateAdviserTest {
         // Notional = (600 * 6 * 1) + (1200 * 12 * 7) + (1400 * 14 * 9) = 280800
         // Size = (6 * 1) + (12 * 7) + (14 * 9) = 1300
         BigDecimal result = target.calculateRecentPrice(context, request, SIGNUM_BUY);
-        assertEquals(result, new BigDecimal("1300.0000000000"));
+        assertEquals(result, new BigDecimal("1264.4174934802"));
 
         // [13, 15]
         // Notional = (1300 * 13 * 8) + (1500 * 15 * 10) = 360200
         // Size = (13 * 8) + (15 * 10) = 254
         result = target.calculateRecentPrice(context, request, SIGNUM_SELL);
-        assertEquals(result, new BigDecimal("1418.1102362205"));
-
-        // [13, 15]
-        // Notional = (1300 * 13 * 8) + (1500 * 15 * 10) = 360200
-        // Size = (13 * 8) + (15 * 10) = 254
-        result = target.calculateRecentPrice(context, request, SIGNUM_SELL);
-        assertEquals(result, new BigDecimal("1418.1102362205"));
+        assertEquals(result, new BigDecimal("1411.4741052318"));
 
         // [14]
         // Notional = (1400 * 0 * 9) = 0

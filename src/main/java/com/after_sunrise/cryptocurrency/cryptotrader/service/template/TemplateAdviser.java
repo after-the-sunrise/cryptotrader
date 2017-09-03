@@ -21,6 +21,7 @@ import static java.math.RoundingMode.*;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
 import static java.util.Optional.ofNullable;
+import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
 /**
  * @author takanori.takase
@@ -169,7 +170,9 @@ public class TemplateAdviser implements Adviser {
 
             double size = exec.getSize().doubleValue();
 
-            double weight = exec.getTime().toEpochMilli() - cutoff.toEpochMilli();
+            double elapsed = exec.getTime().toEpochMilli() - cutoff.toEpochMilli();
+
+            double weight = Math.log(elapsed + INTEGER_ONE);
 
             numerator += price * size * weight;
 
