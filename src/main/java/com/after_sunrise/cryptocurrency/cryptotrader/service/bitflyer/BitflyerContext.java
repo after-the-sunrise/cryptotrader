@@ -50,7 +50,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
     private static final Pattern EXPIRY_PATTERN = Pattern.compile("^[A-Z]{6}[0-9]{2}[A-Z]{3}[0-9]{4}$");
 
-    private static final String EXPIRY_TIME = "1600";
+    private static final String EXPIRY_TIME = "1100";
 
     private static final ThreadLocal<DateFormat> EXPIRY_FORMAT = ThreadLocal.withInitial(() -> {
         DateFormat df = new SimpleDateFormat("ddMMMyyyyHHmm", Locale.US);

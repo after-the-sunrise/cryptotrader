@@ -528,7 +528,7 @@ public class BitflyerContextTest {
         Key key = Key.builder().instrument("BTCJPY_MAT1WK").build();
 
         ZoneId zone = ZoneId.of("Asia/Tokyo");
-        LocalTime time = LocalTime.of(16, 0);
+        LocalTime time = LocalTime.of(11, 0);
 
         // Valid
         LocalDate date = LocalDate.of(2017, 9, 15);
