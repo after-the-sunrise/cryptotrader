@@ -7,18 +7,18 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Cance
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import org.mockito.InOrder;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Map;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.*;
@@ -52,19 +52,34 @@ public class TemplateAgentTest {
     public void testManage() throws Exception {
 
         CreateInstruction i1 = CreateInstruction.builder().build();
-        CreateInstruction i2 = null;
-        CancelInstruction i3 = CancelInstruction.builder().build();
-        List<Instruction> values = Arrays.asList(i1, i2, i3);
+        CancelInstruction i2 = CancelInstruction.builder().build();
+        Instruction i3 = mock(Instruction.class);
+        Instruction i4 = mock(Instruction.class);
         Request request = Request.builder().build();
         when(context.createOrder(any(), any())).thenReturn("create");
         when(context.cancelOrder(any(), any())).thenReturn("cancel");
-
-        Map<Instruction, String> results = target.manage(context, request, values);
-        assertEquals(results.size(), 2);
+        when(i3.accept(any())).thenReturn("mocked");
+        when(i4.accept(any())).thenReturn("mocked");
+        Map<Instruction, String> results = target.manage(context, request, asList(i1, null, i2, i3, i4));
+        assertEquals(results.size(), 4);
         assertEquals(results.get(i1), "create");
-        assertEquals(results.get(i3), "cancel");
-        verify(context).createOrder(any(), same(i1));
-        verify(context).cancelOrder(any(), same(i3));
+        assertEquals(results.get(i2), "cancel");
+        assertEquals(results.get(i3), "mocked");
+        assertEquals(results.get(i4), "mocked");
+
+        // Cancels are processed first. Unknowns are last.
+        InOrder inOrder = inOrder(context);
+        inOrder.verify(context).cancelOrder(any(), same(i2));
+        inOrder.verify(context).createOrder(any(), same(i1));
+        inOrder.verifyNoMoreInteractions();
+
+        // Abort if invalid response.
+        when(context.cancelOrder(any(), same(i2))).thenReturn("");
+        results = target.manage(context, request, asList(i1, i2, null, i3, i4));
+        assertEquals(results.size(), 1);
+        assertEquals(results.get(i2), "");
+        verify(context, times(2)).cancelOrder(any(), same(i2));
+        verifyNoMoreInteractions(context);
 
         // No input
         assertEquals(target.manage(context, request, null).size(), 0);

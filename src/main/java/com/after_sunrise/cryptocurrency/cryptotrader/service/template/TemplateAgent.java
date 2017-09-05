@@ -9,6 +9,7 @@ import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.time.Duration;
 import java.util.*;
@@ -16,6 +17,7 @@ import java.util.*;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 
 /**
@@ -28,6 +30,19 @@ public class TemplateAgent implements Agent {
     private static final Duration INTERVAL = Duration.ofSeconds(LONG_ONE);
 
     private static final long RETRY = MINUTES.toMillis(LONG_ONE) / INTERVAL.toMillis();
+
+    private static final List<Class<? extends Instruction>> CLASSES = Arrays.asList(
+            CreateInstruction.class, CancelInstruction.class);
+
+    private static final Comparator<Instruction> COMPARATOR = (i1, i2) -> {
+
+        int idx1 = CLASSES.indexOf(i1.getClass());
+
+        int idx2 = CLASSES.indexOf(i2.getClass());
+
+        return -Integer.compare(idx1, idx2); // Unknown (-1) is last.
+
+    };
 
     private final String id;
 
@@ -53,33 +68,35 @@ public class TemplateAgent implements Agent {
 
         Key key = Key.from(request);
 
+        Instruction.Visitor<String> visitor = new Visitor<String>() {
+            @Override
+            public String visit(CreateInstruction instruction) {
+                return context.createOrder(key, instruction);
+            }
+
+            @Override
+            public String visit(CancelInstruction instruction) {
+                return context.cancelOrder(key, instruction);
+            }
+        };
+
         Map<Instruction, String> results = new IdentityHashMap<>();
 
-        instructions.stream()
-                .filter(Objects::nonNull)
-                .forEach(i -> i.accept(new Visitor<Void>() {
-                    @Override
-                    public Void visit(CreateInstruction instruction) {
+        for (Instruction i : instructions.stream().filter(Objects::nonNull).sorted(COMPARATOR).collect(toList())) {
 
-                        log.trace("Creating : {} - {}", key, instruction);
+            String result = i.accept(visitor);
 
-                        results.put(instruction, context.createOrder(key, instruction));
+            results.put(i, result);
 
-                        return null;
+            if (StringUtils.isEmpty(result)) {
 
-                    }
+                log.debug("Aborting further instruction with no response : {}", i);
 
-                    @Override
-                    public Void visit(CancelInstruction instruction) {
+                break;
 
-                        log.trace("Cancelling : {} - {}", key, instruction);
+            }
 
-                        results.put(instruction, context.cancelOrder(key, instruction));
-
-                        return null;
-
-                    }
-                }));
+        }
 
         return results;
 
