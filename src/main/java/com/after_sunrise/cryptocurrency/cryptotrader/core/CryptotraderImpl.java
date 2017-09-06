@@ -36,7 +36,6 @@ public class CryptotraderImpl implements Cryptotrader {
             bind(Configuration.class).toInstance(new ConfigurationSupplier().get());
             bind(PropertyController.class).to(PropertyManagerImpl.class).asEagerSingleton();
             bind(PropertyManager.class).to(PropertyController.class).asEagerSingleton();
-            bind(Environment.class).to(PropertyManager.class).asEagerSingleton();
             bind(ServiceFactory.class).to(ServiceFactoryImpl.class).asEagerSingleton();
             bind(ExecutorFactory.class).to(ExecutorFactoryImpl.class).asEagerSingleton();
 
