@@ -20,6 +20,8 @@ public enum PropertyType {
 
     TRADING_EXPOSURE,
 
+    TRADING_AVERSION,
+
     TRADING_SPLIT,
 
     TRADING_ACTIVE,

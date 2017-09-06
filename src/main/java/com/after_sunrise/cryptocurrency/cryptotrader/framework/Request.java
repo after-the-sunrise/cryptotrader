@@ -33,6 +33,8 @@ public class Request {
 
     private BigDecimal tradingExposure;
 
+    private BigDecimal tradingAversion;
+
     private BigDecimal tradingSplit;
 
     private Duration tradingDuration;

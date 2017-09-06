@@ -328,6 +328,7 @@ public class TemplateAdviserTest {
     public void testCalculatePositionRatio_Cash() {
 
         Request request = rBuilder.build();
+        Request aversion = rBuilder.tradingAversion(new BigDecimal("1.5")).build();
         Key key = Key.from(request);
         when(context.isMarginable(key)).thenReturn(null);
 
@@ -338,6 +339,14 @@ public class TemplateAdviserTest {
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("0.1788617886"));
+
+        // Net-Long (aversion)
+        // Fund = 9,800 : Structure = 5 * 2345 = 11,725
+        // (11725 - 9800) / (11725 + 9800) = 0.0894308943089...
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("19600"));
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
+        assertEquals(target.calculatePositionRatio(context, aversion), new BigDecimal("0.2682926829"));
 
         // Long-only
         // Fund = 0 : Structure = 5 * 2345 = 11,725
@@ -354,6 +363,15 @@ public class TemplateAdviserTest {
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-0.0515164105"));
+
+        // Net-Short (aversion)
+        // Fund = 12,345 : Structure = 5 * 2,345 = 11,725
+        // (11,725 - 12,345) / (11,725 + 12,345) = -0.025758205234732...
+        // Aversion = 1.5
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("24690"));
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
+        assertEquals(target.calculatePositionRatio(context, aversion), new BigDecimal("-0.0772746158"));
 
         // Short-Only
         // Fund = 12,345 : Structure = 0
@@ -393,6 +411,7 @@ public class TemplateAdviserTest {
     public void testCalculatePositionRatio_Margin() {
 
         Request request = rBuilder.build();
+        Request aversion = rBuilder.tradingAversion(new BigDecimal("1.5")).build();
         Key key = Key.from(request);
         when(context.isMarginable(key)).thenReturn(true);
 
@@ -408,6 +427,12 @@ public class TemplateAdviserTest {
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("19600"));
         assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("2.3928571429"));
 
+        // Aversion Leveraged Long (2 * 2345 * 5 / 9800 = 1.19642857142857..)
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("19600"));
+        assertEquals(target.calculatePositionRatio(context, aversion), new BigDecimal("3.5892857144"));
+
         // Short (2 * 2345 * -3 / 9800 = -0.71785714285714..)
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-3"));
@@ -419,6 +444,12 @@ public class TemplateAdviserTest {
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-5"));
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("19600"));
         assertEquals(target.calculatePositionRatio(context, request), new BigDecimal("-2.3928571429"));
+
+        // Aversion Leveraged Short (2 * 2345 * -5 / 9800 = -1.19642857142857..)
+        when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("-5"));
+        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("19600"));
+        assertEquals(target.calculatePositionRatio(context, aversion), new BigDecimal("-3.5892857144"));
 
         // Flat (2345 * 0 / 9800 = 0)
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));

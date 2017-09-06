@@ -339,6 +339,35 @@ public class PropertyManagerImplTest {
     }
 
     @Test
+    public void testGetTradingAversion() throws Exception {
+
+        // Default
+        assertEquals(target.getTradingAversion(site, inst), new BigDecimal("1.0"));
+
+        // Mocked
+        doReturn(new BigDecimal("0.5")).when(conf).getBigDecimal(TRADING_AVERSION.getKey());
+        assertEquals(target.getTradingAversion(site, inst), new BigDecimal("0.5"));
+
+        // Floor
+        doReturn(ONE.negate()).when(conf).getBigDecimal(TRADING_AVERSION.getKey());
+        assertEquals(target.getTradingAversion(site, inst), ZERO);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(TRADING_AVERSION.getKey());
+        assertEquals(target.getTradingAversion(site, inst), ONE);
+        reset(conf);
+
+        // Override
+        target.setTradingAversion(site, inst, new BigDecimal("2.5"));
+        assertEquals(target.getTradingAversion(site, inst), new BigDecimal("2.5"));
+
+        // Clear
+        target.setTradingAversion(site, inst, null);
+        assertEquals(target.getTradingAversion(site, inst), new BigDecimal("1.0"));
+
+    }
+
+    @Test
     public void testGetTradingSplit() throws Exception {
 
         assertEquals(target.getTradingSplit(site, inst), ONE);

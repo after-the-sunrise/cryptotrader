@@ -87,6 +87,7 @@ public class PipelineImpl implements Pipeline {
                 .targetTime(time)
                 .tradingSpread(propertyManager.getTradingSpread(site, instrument))
                 .tradingExposure(propertyManager.getTradingExposure(site, instrument))
+                .tradingAversion(propertyManager.getTradingAversion(site, instrument))
                 .tradingSplit(propertyManager.getTradingSplit(site, instrument))
                 .tradingDuration(propertyManager.getTradingDuration(site, instrument))
                 .fundingOffset(propertyManager.getFundingOffset(site, instrument))
@@ -135,6 +136,14 @@ public class PipelineImpl implements Pipeline {
         if (request.getTradingExposure() == null) {
 
             log.warn("Invalid request : trading exposure");
+
+            return null;
+
+        }
+
+        if (request.getTradingAversion() == null) {
+
+            log.warn("Invalid request : trading aversion");
 
             return null;
 

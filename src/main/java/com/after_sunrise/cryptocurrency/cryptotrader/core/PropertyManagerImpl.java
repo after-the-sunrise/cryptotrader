@@ -328,6 +328,34 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
+    public BigDecimal getTradingAversion(String site, String instrument) {
+
+        try {
+
+            BigDecimal value = get(TRADING_AVERSION, site, instrument, Configuration::getBigDecimal);
+
+            BigDecimal adjusted = value.max(ZERO);
+
+            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_AVERSION, site, instrument, value, adjusted);
+
+            return adjusted;
+
+        } catch (RuntimeException e) {
+
+            log.warn(format("Invalid %s (%s.%s)", TRADING_AVERSION, site, instrument), e);
+
+            return ONE;
+
+        }
+
+    }
+
+    @Override
+    public void setTradingAversion(String site, String instrument, BigDecimal value) {
+        set(TRADING_AVERSION, site, instrument, value, BigDecimal::toPlainString);
+    }
+
+    @Override
     public BigDecimal getTradingSplit(String site, String instrument) {
 
         try {

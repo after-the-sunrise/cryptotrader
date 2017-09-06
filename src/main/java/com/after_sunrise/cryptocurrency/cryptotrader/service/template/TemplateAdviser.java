@@ -342,9 +342,14 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        log.trace("Position ratio: {} (fund=[{}], structure=[{}] price=[{}])", ratio, adjFunding, structure, mid);
+        BigDecimal aversion = ofNullable(request.getTradingAversion()).orElse(ONE);
 
-        return ratio;
+        BigDecimal aversionRatio = ratio.multiply(aversion).setScale(SCALE, HALF_UP);
+
+        log.trace("Position ratio: {} (ratio=[{}], fund=[{}], structure=[{}] price=[{}])",
+                aversionRatio, ratio, adjFunding, structure, mid);
+
+        return aversionRatio;
 
     }
 

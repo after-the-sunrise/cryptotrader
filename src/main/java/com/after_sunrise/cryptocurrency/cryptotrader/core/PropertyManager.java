@@ -28,6 +28,8 @@ public interface PropertyManager {
 
     BigDecimal getTradingExposure(String site, String instrument);
 
+    BigDecimal getTradingAversion(String site, String instrument);
+
     BigDecimal getTradingSplit(String site, String instrument);
 
     Duration getTradingDuration(String site, String instrument);
