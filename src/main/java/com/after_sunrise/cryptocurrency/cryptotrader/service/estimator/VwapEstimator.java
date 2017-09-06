@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -19,6 +20,7 @@ import static java.math.RoundingMode.HALF_UP;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
+import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 
 /**
@@ -67,49 +69,13 @@ public class VwapEstimator implements Estimator {
 
         }
 
-        double sumNotional = 0;
-        double sumQuantity = 0;
+        double vwap = calculateVwap(trades);
 
-        double[] rates = new double[trades.size() - 1];
-        double sumRates = 0;
-
-        for (int i = 0; i < trades.size(); i++) {
-
-            Trade t = trades.get(i);
-            sumNotional += t.getSize().multiply(t.getPrice()).doubleValue();
-            sumQuantity += t.getSize().doubleValue();
-
-            if (i == 0) {
-                continue;
-            }
-
-            double previous = trades.get(i - 1).getPrice().doubleValue();
-            double current = trades.get(i).getPrice().doubleValue();
-
-            rates[i - 1] = Math.log(current / previous);
-            sumRates += rates[i - 1];
-
-        }
-
-        double vwap = sumNotional / sumQuantity;
-
-        double variance = 0.0;
-
-        for (double rate : rates) {
-
-            double diff = rate - (sumRates / rates.length);
-
-            variance += diff * diff;
-
-        }
-
-        double deviation = Math.sqrt(variance / Math.max(rates.length - 1, 1));
+        double deviation = calculateDeviation(trades);
 
         double last = trades.get(trades.size() - 1).getPrice().doubleValue();
 
-        double rate = Math.log(last / vwap);
-
-        double drift = Math.min(1, Math.abs(rate / (deviation * SIGMA)));
+        double drift = Math.min(1, Math.abs(Math.log(last / vwap) / (deviation * SIGMA)));
 
         BigDecimal p = BigDecimal.valueOf(vwap).setScale(SCALE, HALF_UP);
 
@@ -118,6 +84,50 @@ public class VwapEstimator implements Estimator {
         log.debug("Estimated : {} (confidence=[{}] points=[{}])", p, c, trades.size());
 
         return Estimation.builder().price(p).confidence(c).build();
+
+    }
+
+    private double calculateVwap(List<Trade> trades) {
+
+        double sumNotional = 0;
+
+        double sumQuantity = 0;
+
+        for (Trade t : trades) {
+
+            sumNotional += t.getSize().multiply(t.getPrice()).doubleValue();
+
+            sumQuantity += t.getSize().doubleValue();
+
+        }
+
+        return sumNotional / sumQuantity;
+
+    }
+
+    private double calculateDeviation(List<Trade> trades) {
+
+        double[] rates = new double[trades.size() - 1];
+
+        double sum = 0;
+
+        for (int i = 1; i < trades.size(); i++) {
+
+            double previous = trades.get(i - 1).getPrice().doubleValue();
+
+            double current = trades.get(i).getPrice().doubleValue();
+
+            rates[i - 1] = Math.log(current / previous);
+
+            sum += rates[i - 1];
+
+        }
+
+        double average = sum / rates.length;
+
+        double variance = Arrays.stream(rates).map(r -> r - average).map(r -> r * r).sum();
+
+        return Math.sqrt(variance / Math.max(rates.length - INTEGER_ONE, INTEGER_ONE));
 
     }
 
