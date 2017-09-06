@@ -2,7 +2,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.StateType;
-import com.after_sunrise.cryptocurrency.bitflyer4j.entity.OrderList.Response;
+import com.after_sunrise.cryptocurrency.bitflyer4j.entity.OrderList;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import lombok.ToString;
 
@@ -15,9 +15,9 @@ import java.math.BigDecimal;
 @ToString
 public class BitflyerOrder implements Order {
 
-    private final Response delegate;
+    private final OrderList delegate;
 
-    public BitflyerOrder(Response delegate) {
+    public BitflyerOrder(OrderList delegate) {
         this.delegate = delegate;
     }
 

@@ -20,12 +20,12 @@ public class BitflyerOrderTest {
 
     private BitflyerOrder target;
 
-    private OrderList.Response delegate;
+    private OrderList delegate;
 
     @BeforeMethod
     public void setUp() throws Exception {
 
-        delegate = Mockito.mock(OrderList.Response.class);
+        delegate = Mockito.mock(OrderList.class);
 
         target = spy(new BitflyerOrder(delegate));
 

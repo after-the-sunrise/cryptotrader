@@ -18,9 +18,9 @@ import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
 @ToString
 public class BitflyerExecution implements Order.Execution {
 
-    private final TradeExecution.Response delegate;
+    private final TradeExecution delegate;
 
-    public BitflyerExecution(TradeExecution.Response delegate) {
+    public BitflyerExecution(TradeExecution delegate) {
         this.delegate = delegate;
     }
 

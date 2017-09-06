@@ -21,12 +21,12 @@ public class BitflyerExecutionTest {
 
     private BitflyerExecution target;
 
-    private TradeExecution.Response delegate;
+    private TradeExecution delegate;
 
     @BeforeMethod
     public void setUp() throws Exception {
 
-        delegate = Mockito.mock(TradeExecution.Response.class);
+        delegate = Mockito.mock(TradeExecution.class);
 
         target = spy(new BitflyerExecution(delegate));
 

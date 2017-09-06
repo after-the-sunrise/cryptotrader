@@ -95,7 +95,7 @@ public class BitflyerContextTest {
         CompletableFuture<Tick> f2 = completedFuture(mock(Tick.class));
         when(f1.get().getBestAskPrice()).thenReturn(ONE);
         when(f2.get().getBestAskPrice()).thenReturn(TEN);
-        when(marketService.getTick("i")).thenReturn(f1, f2);
+        when(marketService.getTick(any())).thenReturn(f1, f2);
 
         assertEquals(target.getBestAskPrice(key), ONE);
         assertEquals(target.getBestAskPrice(key), ONE);
@@ -114,7 +114,7 @@ public class BitflyerContextTest {
         CompletableFuture<Tick> f2 = completedFuture(mock(Tick.class));
         when(f1.get().getBestBidPrice()).thenReturn(ONE);
         when(f2.get().getBestBidPrice()).thenReturn(TEN);
-        when(marketService.getTick("i")).thenReturn(f1, f2);
+        when(marketService.getTick(any())).thenReturn(f1, f2);
 
         assertEquals(target.getBestBidPrice(key), ONE);
         assertEquals(target.getBestBidPrice(key), ONE);
@@ -129,16 +129,16 @@ public class BitflyerContextTest {
 
         Key key = Key.from(Request.builder().instrument("i").build());
 
-        when(marketService.getTick(anyString())).thenReturn(null);
+        when(marketService.getTick(any())).thenReturn(null);
         assertNull(target.getMidPrice(key));
         target.clear();
 
-        when(marketService.getTick(anyString())).thenReturn(completedFuture(null));
+        when(marketService.getTick(any())).thenReturn(completedFuture(null));
         assertNull(target.getMidPrice(key));
         target.clear();
 
         Tick tick = mock(Tick.class);
-        when(marketService.getTick(anyString())).thenReturn(completedFuture(tick)).thenReturn(null);
+        when(marketService.getTick(any())).thenReturn(completedFuture(tick)).thenReturn(null);
         assertNull(target.getMidPrice(key));
 
         when(tick.getBestAskPrice()).thenReturn(null);
@@ -168,7 +168,7 @@ public class BitflyerContextTest {
         CompletableFuture<Tick> f2 = completedFuture(mock(Tick.class));
         when(f1.get().getTradePrice()).thenReturn(ONE);
         when(f2.get().getTradePrice()).thenReturn(TEN);
-        when(marketService.getTick("i")).thenReturn(f1, f2);
+        when(marketService.getTick(any())).thenReturn(f1, f2);
 
         assertEquals(target.getLastPrice(key), ONE);
         assertEquals(target.getLastPrice(key), ONE);
@@ -200,7 +200,7 @@ public class BitflyerContextTest {
         when(e6.getTimestamp()).thenReturn(time.plusSeconds(1));
         when(e7.getTimestamp()).thenReturn(time.plusSeconds(2));
         CompletableFuture<List<Execution>> f = completedFuture(asList(e1, e2, null, e3, e4, e5, e6, e7));
-        when(marketService.getExecutions(eq("inst"), any())).thenReturn(f);
+        when(marketService.getExecutions(any())).thenReturn(f);
 
         List<Trade> results = target.listTrades(key, null);
         assertEquals(results.size(), 7);
@@ -358,12 +358,12 @@ public class BitflyerContextTest {
         when(i3.getAlias()).thenReturn("BTCJPY_MAT3WK");
         when(marketService.getProducts()).thenReturn(completedFuture(asList(i1, null, i2, i3, i4))).thenReturn(null);
 
-        TradePosition.Response p1 = mock(TradePosition.Response.class);
-        TradePosition.Response p2 = mock(TradePosition.Response.class);
-        TradePosition.Response p3 = mock(TradePosition.Response.class);
-        TradePosition.Response p4 = mock(TradePosition.Response.class);
-        TradePosition.Response p5 = mock(TradePosition.Response.class);
-        TradePosition.Response p6 = mock(TradePosition.Response.class);
+        TradePosition p1 = mock(TradePosition.class);
+        TradePosition p2 = mock(TradePosition.class);
+        TradePosition p3 = mock(TradePosition.class);
+        TradePosition p4 = mock(TradePosition.class);
+        TradePosition p5 = mock(TradePosition.class);
+        TradePosition p6 = mock(TradePosition.class);
         when(p2.getSide()).thenReturn(BUY); // No price
         when(p3.getSide()).thenReturn(BUY);
         when(p4.getSide()).thenReturn(SELL);
@@ -374,8 +374,10 @@ public class BitflyerContextTest {
         when(p6.getSize()).thenReturn(ONE); // No side
         when(orderService.listPositions(any())).thenAnswer(i -> {
 
+            TradePosition.Request request = i.getArgumentAt(0, TradePosition.Request.class);
+
             // Should be converted from "BTCJPY_MAT1WK" to "BTCJPY14APR2017"
-            assertEquals(i.getArgumentAt(0, TradePosition.class).getProduct(), "BTCJPY14APR2017");
+            assertEquals(request.getProduct(), "BTCJPY14APR2017");
 
             return completedFuture(asList(p1, p2, p3, null, p4, p5, p6));
 
@@ -383,7 +385,7 @@ public class BitflyerContextTest {
 
         Collateral c = mock(Collateral.class);
         when(c.getCollateral()).thenReturn(null, TEN);
-        when(c.getRequiredCollateral()).thenReturn(ONE, null);
+        when(c.getRequiredCollateral()).thenReturn(ONE, (BigDecimal) null);
         when(accountService.getCollateral()).thenReturn(completedFuture(c)).thenReturn(null);
 
         Key key1 = Key.from(Request.builder().instrument("BTCJPY_MAT1WK").build());
@@ -493,7 +495,7 @@ public class BitflyerContextTest {
 
         Key key = Key.from(Request.builder().instrument("i").build());
 
-        CompletableFuture<TradeCommission.Response> f = completedFuture(mock(TradeCommission.Response.class));
+        CompletableFuture<TradeCommission> f = completedFuture(mock(TradeCommission.class));
         when(f.get().getRate()).thenReturn(ONE.movePointLeft(3));
         when(orderService.getCommission(any())).thenReturn(f).thenReturn(null);
 
@@ -564,18 +566,17 @@ public class BitflyerContextTest {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
 
-        OrderList.Response r1 = mock(OrderList.Response.class);
-        OrderList.Response r2 = mock(OrderList.Response.class);
+        OrderList r1 = mock(OrderList.class);
+        OrderList r2 = mock(OrderList.class);
         when(r1.getPrice()).thenReturn(ONE);
         when(r2.getPrice()).thenReturn(TEN);
-        when(orderService.listOrders(any(), any())).thenAnswer(i -> {
+        when(orderService.listOrders(any())).thenAnswer(i -> {
 
-            assertEquals(i.getArgumentAt(0, OrderList.class).getProduct(), "inst");
-            assertNull(i.getArgumentAt(0, OrderList.class).getState());
-            assertNull(i.getArgumentAt(0, OrderList.class).getAcceptanceId());
-            assertNull(i.getArgumentAt(0, OrderList.class).getOrderId());
-            assertNull(i.getArgumentAt(0, OrderList.class).getParentId());
-            assertNull(i.getArgumentAt(1, Pagination.class));
+            assertEquals(i.getArgumentAt(0, OrderList.Request.class).getProduct(), "inst");
+            assertNull(i.getArgumentAt(0, OrderList.Request.class).getState());
+            assertNull(i.getArgumentAt(0, OrderList.Request.class).getAcceptanceId());
+            assertNull(i.getArgumentAt(0, OrderList.Request.class).getOrderId());
+            assertNull(i.getArgumentAt(0, OrderList.Request.class).getParentId());
 
             return completedFuture(asList(r1, null, r2));
 
@@ -586,21 +587,21 @@ public class BitflyerContextTest {
         assertEquals(orders.size(), 2);
         assertEquals(orders.get(0).getOrderPrice(), ONE);
         assertEquals(orders.get(1).getOrderPrice(), TEN);
-        verify(orderService).listOrders(any(), any());
+        verify(orderService).listOrders(any());
 
         // Cached
         orders = target.fetchOrder(key);
         assertEquals(orders.size(), 2);
         assertEquals(orders.get(0).getOrderPrice(), ONE);
         assertEquals(orders.get(1).getOrderPrice(), TEN);
-        verify(orderService).listOrders(any(), any());
+        verify(orderService).listOrders(any());
 
         target.clear();
 
         // Queried
         orders = target.fetchOrder(key);
         assertEquals(orders.size(), 0);
-        verify(orderService, times(2)).listOrders(any(), any());
+        verify(orderService, times(2)).listOrders(any());
 
     }
 
@@ -653,16 +654,15 @@ public class BitflyerContextTest {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
 
-        TradeExecution.Response r1 = mock(TradeExecution.Response.class);
-        TradeExecution.Response r2 = mock(TradeExecution.Response.class);
+        TradeExecution r1 = mock(TradeExecution.class);
+        TradeExecution r2 = mock(TradeExecution.class);
         when(r1.getPrice()).thenReturn(ONE);
         when(r2.getPrice()).thenReturn(TEN);
-        when(orderService.listExecutions(any(), any())).thenAnswer(i -> {
+        when(orderService.listExecutions(any())).thenAnswer(i -> {
 
-            assertEquals(i.getArgumentAt(0, TradeExecution.class).getProduct(), "inst");
-            assertNull(i.getArgumentAt(0, TradeExecution.class).getChild_order_id());
-            assertNull(i.getArgumentAt(0, TradeExecution.class).getChild_order_acceptance_id());
-            assertNull(i.getArgumentAt(1, Pagination.class));
+            assertEquals(i.getArgumentAt(0, TradeExecution.Request.class).getProduct(), "inst");
+            assertNull(i.getArgumentAt(0, TradeExecution.Request.class).getChildOrderId());
+            assertNull(i.getArgumentAt(0, TradeExecution.Request.class).getChildOrderAcceptanceId());
 
             return completedFuture(asList(r1, null, r2));
 
@@ -673,21 +673,21 @@ public class BitflyerContextTest {
         assertEquals(execs.size(), 2);
         assertEquals(execs.get(0).getPrice(), ONE);
         assertEquals(execs.get(1).getPrice(), TEN);
-        verify(orderService).listExecutions(any(), any());
+        verify(orderService).listExecutions(any());
 
         // Cached
         execs = target.listExecutions(key);
         assertEquals(execs.size(), 2);
         assertEquals(execs.get(0).getPrice(), ONE);
         assertEquals(execs.get(1).getPrice(), TEN);
-        verify(orderService).listExecutions(any(), any());
+        verify(orderService).listExecutions(any());
 
         target.clear();
 
         // Queried
         execs = target.listExecutions(key);
         assertEquals(execs.size(), 0);
-        verify(orderService, times(2)).listExecutions(any(), any());
+        verify(orderService, times(2)).listExecutions(any());
 
     }
 
@@ -696,13 +696,13 @@ public class BitflyerContextTest {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
         CreateInstruction.CreateInstructionBuilder builder = CreateInstruction.builder().price(TEN).size(ONE);
-        CompletableFuture<OrderCreate.Response> future = completedFuture(mock(OrderCreate.Response.class));
-        AtomicReference<OrderCreate> reference = new AtomicReference<>();
+        CompletableFuture<OrderCreate> future = completedFuture(mock(OrderCreate.class));
+        AtomicReference<OrderCreate.Request> reference = new AtomicReference<>();
 
         when(future.get().getAcceptanceId()).thenReturn("aid");
         when(orderService.sendOrder(any())).thenAnswer(i -> {
 
-            reference.set(i.getArgumentAt(0, OrderCreate.class));
+            reference.set(i.getArgumentAt(0, OrderCreate.Request.class));
 
             return future;
 
@@ -716,7 +716,6 @@ public class BitflyerContextTest {
         assertEquals(reference.get().getSide(), BUY);
         assertEquals(reference.get().getPrice(), TEN);
         assertEquals(reference.get().getSize(), ONE);
-
 
         // Sell
         assertEquals(target.createOrder(key, builder.size(ONE.negate()).build()), future.get().getAcceptanceId());
@@ -754,12 +753,12 @@ public class BitflyerContextTest {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
         CancelInstruction.CancelInstructionBuilder builder = CancelInstruction.builder().id("aid");
-        CompletableFuture<OrderCancel.Response> future = completedFuture(mock(OrderCancel.Response.class));
-        AtomicReference<OrderCancel> reference = new AtomicReference<>();
+        CompletableFuture<OrderCancel> future = completedFuture(mock(OrderCancel.class));
+        AtomicReference<OrderCancel.Request> reference = new AtomicReference<>();
 
         when(orderService.cancelOrder(any())).thenAnswer(i -> {
 
-            reference.set(i.getArgumentAt(0, OrderCancel.class));
+            reference.set(i.getArgumentAt(0, OrderCancel.Request.class));
 
             return future;
 
