@@ -210,23 +210,29 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal notional = ZERO;
-
-        BigDecimal size = ZERO;
+        BigDecimal result = null;
 
         for (BigDecimal[] priceSize : execs) {
 
-            notional = notional.add(priceSize[0].multiply(priceSize[1]));
+            BigDecimal size = priceSize[1];
 
-            size = size.add(priceSize[1]);
+            if (size.signum() != signum) {
+                continue;
+            }
+
+            BigDecimal price = priceSize[0];
+
+            if (size.signum() == SIGNUM_BUY) {
+                result = result == null ? price : price.max(result);
+            }
+
+            if (size.signum() == SIGNUM_SELL) {
+                result = result == null ? price : price.min(result);
+            }
 
         }
 
-        if (size.signum() != signum) {
-            return null;
-        }
-
-        return notional.divide(size, SCALE, HALF_UP);
+        return result;
 
     }
 
