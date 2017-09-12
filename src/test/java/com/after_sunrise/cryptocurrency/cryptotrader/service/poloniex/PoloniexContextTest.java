@@ -1,12 +1,15 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.io.Resources;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.io.Resources.getResource;
@@ -128,6 +131,40 @@ public class PoloniexContextTest {
 
         doReturn(Optional.empty()).when(target).queryTick(key);
         assertNull(target.getLastPrice(key));
+
+    }
+
+
+    @Test
+    public void testListTrades() throws Exception {
+
+        Key key = Key.builder().instrument("TEST").build();
+        String data = Resources.toString(getResource("json/poloniex_trade.json"), UTF_8);
+        doReturn(data).when(target).query(PoloniexContext.URL_TRADE + key.getInstrument());
+
+        // Found
+        List<Trade> values = target.listTrades(key, null);
+        assertEquals(values.size(), 2);
+        assertEquals(values.get(0).getTimestamp(), Instant.ofEpochMilli(1505230796000L));
+        assertEquals(values.get(0).getPrice(), new BigDecimal("0.07140271"));
+        assertEquals(values.get(0).getSize(), new BigDecimal("0.20000000"));
+        assertEquals(values.get(0).getBuyOrderId(), null);
+        assertEquals(values.get(0).getSellOrderId(), null);
+        assertEquals(values.get(1).getTimestamp(), Instant.ofEpochMilli(1505230180000L));
+        assertEquals(values.get(1).getPrice(), new BigDecimal("0.07124940"));
+        assertEquals(values.get(1).getSize(), new BigDecimal("0.10772398"));
+        assertEquals(values.get(1).getBuyOrderId(), null);
+        assertEquals(values.get(1).getSellOrderId(), null);
+
+        // Cached
+        doReturn(null).when(target).query(PoloniexContext.URL_TRADE);
+        List<Trade> cached = target.listTrades(key, null);
+        assertEquals(cached, values);
+
+        // Filtered
+        List<Trade> filtered = target.listTrades(key, Instant.ofEpochMilli(1505230700000L));
+        assertEquals(filtered.size(), 1);
+        assertEquals(filtered.get(0), values.get(0));
 
     }
 
