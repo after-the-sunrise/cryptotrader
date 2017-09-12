@@ -1,0 +1,50 @@
+{
+  "BTC_LTC": {
+    "id": 50,
+    "last": "0.01614396",
+    "lowestAsk": "0.01613900",
+    "highestBid": "0.01612375",
+    "percentChange": "-0.00345925",
+    "baseVolume": "2142.57309339",
+    "quoteVolume": "131530.49820865",
+    "isFrozen": "0",
+    "high24hr": "0.01650000",
+    "low24hr": "0.01610000"
+  },
+  "BTC_ETH": {
+    "id": 148,
+    "last": "0.07124943",
+    "lowestAsk": "0.07124943",
+    "highestBid": "0.07116150",
+    "percentChange": "0.01349098",
+    "baseVolume": "5156.71193313",
+    "quoteVolume": "72275.74410135",
+    "isFrozen": "0",
+    "high24hr": "0.07250000",
+    "low24hr": "0.07011001"
+  },
+  "BTC_BCH": {
+    "id": 189,
+    "last": "0.12989034",
+    "lowestAsk": "0.12989034",
+    "highestBid": "0.12985001",
+    "percentChange": "-0.02469997",
+    "baseVolume": "1072.22350628",
+    "quoteVolume": "8177.45641862",
+    "isFrozen": "0",
+    "high24hr": "0.13350000",
+    "low24hr": "0.12961000"
+  },
+  "ETH_BCH": {
+    "id": 190,
+    "last": "1.83072074",
+    "lowestAsk": "1.82692474",
+    "highestBid": "1.82000001",
+    "percentChange": "-0.03124057",
+    "baseVolume": "443.93482098",
+    "quoteVolume": "240.09059812",
+    "isFrozen": "0",
+    "high24hr": "1.88975787",
+    "low24hr": "1.80195744"
+  }
+}
