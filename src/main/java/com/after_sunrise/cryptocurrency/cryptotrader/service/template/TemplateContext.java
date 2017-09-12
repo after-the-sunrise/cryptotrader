@@ -1,11 +1,28 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,13 +51,55 @@ public abstract class TemplateContext implements Context {
 
     private final String id;
 
+    private final CloseableHttpClient client;
+
     protected TemplateContext(String id) {
+
         this.id = id;
+
+        this.client = HttpClients.createDefault();
+
     }
 
     @Override
     public String get() {
         return id;
+    }
+
+    @Override
+    public void close() throws Exception {
+        client.close();
+    }
+
+    @VisibleForTesting
+    public String query(String path) throws IOException {
+
+        ResponseHandler<String> handler = response -> {
+
+            int status = response.getStatusLine().getStatusCode();
+
+            if (HttpStatus.SC_OK != status) {
+
+                log.trace("Query failure [{}] : status={}", path, status);
+
+                return null;
+
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+            response.getEntity().writeTo(out);
+
+            String data = new String(out.toByteArray(), StandardCharsets.UTF_8);
+
+            log.trace("Queried [{}] : {}", path, data);
+
+            return data;
+
+        };
+
+        return client.execute(new HttpGet(path), handler);
+
     }
 
     protected void clear() {
@@ -138,6 +197,91 @@ public abstract class TemplateContext implements Context {
             return null;
         }
 
+    }
+
+    @Override
+    public BigDecimal getBestAskPrice(Key key) {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getBestBidPrice(Key key) {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getMidPrice(Key key) {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getLastPrice(Key key) {
+        return null;
+    }
+
+    @Override
+    public List<Trade> listTrades(Key key, Instant fromTime) {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getInstrumentPosition(Key key) {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getFundingPosition(Key key) {
+        return null;
+    }
+
+    @Override
+    public BigDecimal roundLotSize(Key key, BigDecimal value, RoundingMode mode) {
+        return null;
+    }
+
+    @Override
+    public BigDecimal roundTickSize(Key key, BigDecimal value, RoundingMode mode) {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getCommissionRate(Key key) {
+        return null;
+    }
+
+    @Override
+    public Boolean isMarginable(Key key) {
+        return null;
+    }
+
+    @Override
+    public ZonedDateTime getExpiry(Key key) {
+        return null;
+    }
+
+    @Override
+    public Order findOrder(Key key, String id) {
+        return null;
+    }
+
+    @Override
+    public List<Order> listActiveOrders(Key key) {
+        return null;
+    }
+
+    @Override
+    public List<Order.Execution> listExecutions(Key key) {
+        return null;
+    }
+
+    @Override
+    public String createOrder(Key key, CreateInstruction instruction) {
+        return null;
+    }
+
+    @Override
+    public String cancelOrder(Key key, CancelInstruction instruction) {
+        return null;
     }
 
 }

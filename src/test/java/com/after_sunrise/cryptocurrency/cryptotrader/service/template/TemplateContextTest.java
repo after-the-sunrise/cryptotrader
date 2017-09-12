@@ -1,18 +1,23 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
+import org.jboss.resteasy.plugins.server.undertow.UndertowJaxrsServer;
+import org.jboss.resteasy.test.TestPortProvider;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Application;
+import java.io.IOException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
@@ -31,98 +36,30 @@ import static org.testng.Assert.assertNull;
 public class TemplateContextTest {
 
     private static class TestContext extends TemplateContext {
-
         private TestContext() {
             super("test");
         }
+    }
+
+    @Path("/")
+    @Produces("application/json")
+    public static class TestApplication extends Application {
 
         @Override
-        public void close() throws Exception {
+        public Set<Object> getSingletons() {
+            return Collections.singleton(this);
         }
 
-        @Override
-        public BigDecimal getBestAskPrice(Key key) {
-            return null;
+        @GET
+        @Path("/foo")
+        public String getFoo() {
+            return "{foo:bar}";
         }
 
-        @Override
-        public BigDecimal getBestBidPrice(Key key) {
-            return null;
-        }
-
-        @Override
-        public BigDecimal getMidPrice(Key key) {
-            return null;
-        }
-
-        @Override
-        public BigDecimal getLastPrice(Key key) {
-            return null;
-        }
-
-        @Override
-        public BigDecimal getInstrumentPosition(Key key) {
-            return null;
-        }
-
-        @Override
-        public BigDecimal getFundingPosition(Key key) {
-            return null;
-        }
-
-        @Override
-        public BigDecimal roundLotSize(Key key, BigDecimal value, RoundingMode mode) {
-            return null;
-        }
-
-        @Override
-        public BigDecimal roundTickSize(Key key, BigDecimal value, RoundingMode mode) {
-            return null;
-        }
-
-        @Override
-        public BigDecimal getCommissionRate(Key key) {
-            return null;
-        }
-
-        @Override
-        public Boolean isMarginable(Key key) {
-            return null;
-        }
-
-        @Override
-        public ZonedDateTime getExpiry(Key key) {
-            return null;
-        }
-
-        @Override
-        public Order findOrder(Key key, String id) {
-            return null;
-        }
-
-        @Override
-        public List<Order> listActiveOrders(Key key) {
-            return null;
-        }
-
-        @Override
-        public List<Order.Execution> listExecutions(Key key) {
-            return null;
-        }
-
-        @Override
-        public String createOrder(Key key, Instruction.CreateInstruction instruction) {
-            return null;
-        }
-
-        @Override
-        public String cancelOrder(Key key, Instruction.CancelInstruction instruction) {
-            return null;
-        }
-
-        @Override
-        public List<Trade> listTrades(Key key, Instant fromTime) {
-            return null;
+        @GET
+        @Path("/bar")
+        public String getBar() throws IOException {
+            throw new IOException("test");
         }
 
     }
@@ -137,6 +74,32 @@ public class TemplateContextTest {
     @Test
     public void testGet() throws Exception {
         assertEquals(target.get(), "test");
+    }
+
+    @Test
+    public void testClose() throws Exception {
+        target.close();
+    }
+
+    @Test
+    public void testQuery() throws IOException {
+
+        UndertowJaxrsServer server = new UndertowJaxrsServer().start();
+
+        try {
+
+            String url = "http://localhost:" + TestPortProvider.getPort();
+
+            server.deploy(TestApplication.class);
+
+            assertEquals(target.query(url + "/foo"), "{foo:bar}");
+
+            assertEquals(target.query(url + "/bar"), null);
+
+        } finally {
+            server.stop();
+        }
+
     }
 
     @Test
@@ -230,6 +193,25 @@ public class TemplateContextTest {
 
         timeout = null;
         assertNull(target.getQuietly(future, timeout));
+
+    }
+
+    @Test
+    public void testInterfaceMethods() throws ReflectiveOperationException {
+
+        for (Method m : Context.class.getMethods()) {
+
+            if (m.getDeclaringClass() != Context.class) {
+                continue;
+            }
+
+            Object[] args = new Object[m.getParameterTypes().length];
+
+            Object result = m.invoke(target, args);
+
+            assertNull(result, m.getName());
+
+        }
 
     }
 

@@ -25,6 +25,7 @@ configurations {
 
 dependencies {
     compile 'com.after_sunrise.cryptocurrency:bitflyer4j:0.1.1'
+    compile 'org.apache.httpcomponents:httpclient:4.5.3'
     compile 'org.jboss.resteasy:resteasy-jaxrs:3.1.4.Final'
     compile 'org.jboss.resteasy:resteasy-guice:3.1.4.Final'
     runtime 'ch.qos.logback:logback-classic:1.2.3'
@@ -32,6 +33,7 @@ dependencies {
     compileOnly 'javax.servlet:javax.servlet-api:3.1.0'
     testCompile 'org.testng:testng:6.10'
     testCompile 'org.mockito:mockito-all:1.10.19'
+    testCompile 'org.jboss.resteasy:resteasy-undertow:3.1.4.Final'
 }
 
 war.doFirst {
