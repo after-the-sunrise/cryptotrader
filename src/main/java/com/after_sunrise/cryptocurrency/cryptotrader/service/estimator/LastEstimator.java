@@ -1,8 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.estimator;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.annotations.VisibleForTesting;
@@ -28,16 +26,9 @@ import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
  * @version 0.0.1
  */
 @Slf4j
-public class LastEstimator implements Estimator {
-
-    private static final Estimation BAIL = Estimation.builder().confidence(ZERO).build();
+public class LastEstimator extends AbstractEstimator {
 
     private static final Comparator<Trade> COMPARATOR = Comparator.comparing(Trade::getTimestamp).reversed();
-
-    @Override
-    public String get() {
-        return getClass().getSimpleName();
-    }
 
     @Override
     public Estimation estimate(Context context, Request request) {
@@ -46,7 +37,7 @@ public class LastEstimator implements Estimator {
 
         Instant from = now.minus(LONG_ONE, DAYS);
 
-        Optional<Trade> value = ofNullable(context.listTrades(Key.from(request), from))
+        Optional<Trade> value = ofNullable(context.listTrades(getKey(request), from))
                 .orElse(emptyList()).stream()
                 .filter(Objects::nonNull)
                 .filter(t -> Objects.nonNull(t.getTimestamp()))
@@ -89,7 +80,7 @@ public class LastEstimator implements Estimator {
         double confidence = 1 - multiplied;
 
         // Sanitize in case if +3000 years...
-        return BigDecimal.valueOf(confidence).max(ZERO).setScale(8, HALF_UP);
+        return BigDecimal.valueOf(confidence).max(ZERO).setScale(SCALE, HALF_UP);
 
     }
 

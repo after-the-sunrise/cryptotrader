@@ -2,14 +2,12 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.estimator;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 
 import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
 
 /**
@@ -17,21 +15,12 @@ import static java.math.RoundingMode.HALF_UP;
  * @version 0.0.1
  */
 @Slf4j
-public class MidEstimator implements Estimator {
-
-    private static final Estimation BAIL = Estimation.builder().confidence(ZERO).build();
-
-    private static final BigDecimal HALF = new BigDecimal("0.5");
-
-    @Override
-    public String get() {
-        return getClass().getSimpleName();
-    }
+public class MidEstimator extends AbstractEstimator {
 
     @Override
     public Estimation estimate(Context context, Request request) {
 
-        Key key = Key.from(request);
+        Key key = getKey(request);
 
         BigDecimal ask = context.getBestAskPrice(key);
 

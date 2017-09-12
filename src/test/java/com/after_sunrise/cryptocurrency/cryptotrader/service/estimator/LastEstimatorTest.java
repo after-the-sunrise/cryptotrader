@@ -101,34 +101,34 @@ public class LastEstimatorTest {
         assertEquals(target.calculateConfidence(now.plusSeconds(1), now), ONE);
 
         // Seconds
-        assertEquals(target.calculateConfidence(now.minusSeconds(01), now), new BigDecimal("0.81222774"));
-        assertEquals(target.calculateConfidence(now.minusSeconds(10), now), new BigDecimal("0.74963699"));
-        assertEquals(target.calculateConfidence(now.minusSeconds(20), now), new BigDecimal("0.73079530"));
-        assertEquals(target.calculateConfidence(now.minusSeconds(30), now), new BigDecimal("0.71977361"));
-        assertEquals(target.calculateConfidence(now.minusSeconds(40), now), new BigDecimal("0.71195360"));
-        assertEquals(target.calculateConfidence(now.minusSeconds(50), now), new BigDecimal("0.70588793"));
+        assertEquals(target.calculateConfidence(now.minusSeconds(01), now), new BigDecimal("0.8122277435"));
+        assertEquals(target.calculateConfidence(now.minusSeconds(10), now), new BigDecimal("0.7496369913"));
+        assertEquals(target.calculateConfidence(now.minusSeconds(20), now), new BigDecimal("0.7307952975"));
+        assertEquals(target.calculateConfidence(now.minusSeconds(30), now), new BigDecimal("0.7197736131"));
+        assertEquals(target.calculateConfidence(now.minusSeconds(40), now), new BigDecimal("0.7119536036"));
+        assertEquals(target.calculateConfidence(now.minusSeconds(50), now), new BigDecimal("0.7058879330"));
 
         // Minutes
-        assertEquals(target.calculateConfidence(now.minus(01, MINUTES), now), new BigDecimal("0.70093192"));
-        assertEquals(target.calculateConfidence(now.minus(05, MINUTES), now), new BigDecimal("0.65718286"));
-        assertEquals(target.calculateConfidence(now.minus(15, MINUTES), now), new BigDecimal("0.62731948"));
-        assertEquals(target.calculateConfidence(now.minus(30, MINUTES), now), new BigDecimal("0.60847779"));
-        assertEquals(target.calculateConfidence(now.minus(45, MINUTES), now), new BigDecimal("0.59745610"));
+        assertEquals(target.calculateConfidence(now.minus(01, MINUTES), now), new BigDecimal("0.7009319193"));
+        assertEquals(target.calculateConfidence(now.minus(05, MINUTES), now), new BigDecimal("0.6571828610"));
+        assertEquals(target.calculateConfidence(now.minus(15, MINUTES), now), new BigDecimal("0.6273194827"));
+        assertEquals(target.calculateConfidence(now.minus(30, MINUTES), now), new BigDecimal("0.6084777889"));
+        assertEquals(target.calculateConfidence(now.minus(45, MINUTES), now), new BigDecimal("0.5974561045"));
 
         // Hours
-        assertEquals(target.calculateConfidence(now.minus(1, HOURS), now), new BigDecimal("0.58963610"));
-        assertEquals(target.calculateConfidence(now.minus(4, HOURS), now), new BigDecimal("0.55195271"));
-        assertEquals(target.calculateConfidence(now.minus(8, HOURS), now), new BigDecimal("0.53311101"));
-        assertEquals(target.calculateConfidence(now.minus(16, HOURS), now), new BigDecimal("0.51426932"));
+        assertEquals(target.calculateConfidence(now.minus(1, HOURS), now), new BigDecimal("0.5896360950"));
+        assertEquals(target.calculateConfidence(now.minus(4, HOURS), now), new BigDecimal("0.5519527073"));
+        assertEquals(target.calculateConfidence(now.minus(8, HOURS), now), new BigDecimal("0.5331110135"));
+        assertEquals(target.calculateConfidence(now.minus(16, HOURS), now), new BigDecimal("0.5142693196"));
 
         // Days
-        assertEquals(target.calculateConfidence(now.minus(1, DAYS), now), new BigDecimal("0.50324764"));
-        assertEquals(target.calculateConfidence(now.minus(2, DAYS), now), new BigDecimal("0.48440594"));
-        assertEquals(target.calculateConfidence(now.minus(7, DAYS), now), new BigDecimal("0.45035231"));
-        assertEquals(target.calculateConfidence(now.minus(30, DAYS), now), new BigDecimal("0.41079350"));
-        assertEquals(target.calculateConfidence(now.minus(365, DAYS), now), new BigDecimal("0.34287180"));
-        assertEquals(target.calculateConfidence(now.minus(3650, DAYS), now), new BigDecimal("0.28028105"));
-        assertEquals(target.calculateConfidence(now.minus(365000, DAYS), now), new BigDecimal("0.15509954"));
+        assertEquals(target.calculateConfidence(now.minus(1, DAYS), now), new BigDecimal("0.5032476353"));
+        assertEquals(target.calculateConfidence(now.minus(2, DAYS), now), new BigDecimal("0.4844059414"));
+        assertEquals(target.calculateConfidence(now.minus(7, DAYS), now), new BigDecimal("0.4503523133"));
+        assertEquals(target.calculateConfidence(now.minus(30, DAYS), now), new BigDecimal("0.4107935049"));
+        assertEquals(target.calculateConfidence(now.minus(365, DAYS), now), new BigDecimal("0.3428717976"));
+        assertEquals(target.calculateConfidence(now.minus(3650, DAYS), now), new BigDecimal("0.2802810454"));
+        assertEquals(target.calculateConfidence(now.minus(365000, DAYS), now), new BigDecimal("0.1550995411"));
 
     }
 

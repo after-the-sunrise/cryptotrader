@@ -1,8 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.estimator;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import lombok.extern.slf4j.Slf4j;
@@ -28,18 +26,11 @@ import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
  * @version 0.0.1
  */
 @Slf4j
-public class VwapEstimator implements Estimator {
-
-    private static final Estimation BAIL = Estimation.builder().confidence(ZERO).build();
+public class VwapEstimator extends AbstractEstimator {
 
     private static final Comparator<Trade> COMPARATOR = Comparator.comparing(Trade::getTimestamp);
 
     private static final double SIGMA = 1.96;
-
-    @Override
-    public String get() {
-        return getClass().getSimpleName();
-    }
 
     @Override
     public Estimation estimate(Context context, Request request) {
@@ -48,7 +39,7 @@ public class VwapEstimator implements Estimator {
 
         Instant from = now.minus(LONG_ONE, DAYS);
 
-        List<Trade> trades = ofNullable(context.listTrades(Key.from(request), from)).orElse(emptyList())
+        List<Trade> trades = ofNullable(context.listTrades(getKey(request), from)).orElse(emptyList())
                 .stream().filter(Objects::nonNull)
                 .filter(t -> t.getTimestamp() != null)
                 .filter(t -> Objects.nonNull(t.getPrice()))
