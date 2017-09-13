@@ -135,7 +135,7 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        return adjustBasis(context, request, spread.add(comm));
+        return adjustBasis(context, request, spread.add(comm).add(comm));
 
     }
 
@@ -210,6 +210,8 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
+        BigDecimal basis = ofNullable(calculateBasis(context, request)).orElse(ZERO);
+
         BigDecimal result = null;
 
         for (BigDecimal[] priceSize : execs) {
@@ -223,11 +225,19 @@ public class TemplateAdviser implements Adviser {
             BigDecimal price = priceSize[0];
 
             if (size.signum() == SIGNUM_BUY) {
+
+                price = price.multiply(ONE.add(basis));
+
                 result = result == null ? price : price.max(result);
+
             }
 
             if (size.signum() == SIGNUM_SELL) {
+
+                price = price.multiply(ONE.subtract(basis));
+
                 result = result == null ? price : price.min(result);
+
             }
 
         }

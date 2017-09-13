@@ -135,7 +135,7 @@ public class TemplateAdviserTest {
 
         Request request = Request.builder().tradingSpread(new BigDecimal("0.0060")).build();
         when(context.getCommissionRate(Key.from(request))).thenReturn(new BigDecimal("0.0020"));
-        assertEquals(target.calculateBasis(context, request), new BigDecimal("0.0080"));
+        assertEquals(target.calculateBasis(context, request), new BigDecimal("0.0100"));
 
         // Null spread
         request = Request.builder().tradingSpread(null).build();
@@ -156,6 +156,7 @@ public class TemplateAdviserTest {
         Instant now = Instant.ofEpochMilli(150);
         Duration duration = Duration.ofMillis(100);
         Request request = rBuilder.currentTime(now).tradingDuration(duration).build();
+        doReturn(null).when(target).calculateBasis(context, request);
 
         // Null Executions
         when(context.listExecutions(Key.from(request))).thenReturn(null);
@@ -194,6 +195,12 @@ public class TemplateAdviserTest {
         values.add(exec);
         assertEquals(target.calculateRecentPrice(context, request, SIGNUM_BUY), new BigDecimal("124"));
         assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
+
+        // With basis
+        doReturn(new BigDecimal("0.0020")).when(target).calculateBasis(context, request);
+        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_BUY), new BigDecimal("124.2480"));
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
+        doReturn(null).when(target).calculateBasis(context, request);
 
         // Flipped Short : (10@123 + 10@124 + 20@121) + -60@126 = -20@126
         exec = mock(Execution.class);
@@ -257,6 +264,12 @@ public class TemplateAdviserTest {
         values.add(exec);
         assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
         assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("131"));
+
+        // With basis
+        doReturn(new BigDecimal("0.0020")).when(target).calculateBasis(context, request);
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
+        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("130.7380"));
+        doReturn(null).when(target).calculateBasis(context, request);
 
     }
 
