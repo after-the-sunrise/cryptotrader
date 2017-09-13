@@ -3,3 +3,6 @@ com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.NullEstimator
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.RandomEstimator
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex.PoloniexService$PoloniexLastEstimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex.PoloniexService$PoloniexMidEstimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex.PoloniexService$PoloniexVwapEstimator
