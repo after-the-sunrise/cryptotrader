@@ -269,7 +269,9 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal lossRatio = lossPrice.divide(latest, SCALE, ROUND_UP);
 
-        return base.max(lossRatio);
+        BigDecimal aversion = ofNullable(request.getTradingAversion()).orElse(ONE);
+
+        return base.add(lossRatio.multiply(aversion).max(ZERO));
 
     }
 
@@ -296,7 +298,9 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal lossRatio = lossPrice.divide(latest, SCALE, ROUND_UP);
 
-        return base.max(lossRatio);
+        BigDecimal aversion = ofNullable(request.getTradingAversion()).orElse(ONE);
+
+        return base.add(lossRatio.multiply(aversion).max(ZERO));
 
     }
 
