@@ -13,11 +13,11 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 
 /**
@@ -68,35 +68,49 @@ public class TemplateAgent implements Agent {
 
         Key key = Key.from(request);
 
+        AtomicBoolean failed = new AtomicBoolean(false);
+
         Instruction.Visitor<String> visitor = new Visitor<String>() {
             @Override
             public String visit(CreateInstruction instruction) {
-                return context.createOrder(key, instruction);
+
+                if (failed.get()) {
+                    return null;
+                }
+
+                String result = context.createOrder(key, instruction);
+
+                failed.set(failed.get() || StringUtils.isEmpty(result));
+
+                return result;
+
             }
 
             @Override
             public String visit(CancelInstruction instruction) {
-                return context.cancelOrder(key, instruction);
+
+                String result = context.cancelOrder(key, instruction);
+
+                failed.set(failed.get() || StringUtils.isEmpty(result));
+
+                return result;
+
             }
         };
 
         Map<Instruction, String> results = new IdentityHashMap<>();
 
-        for (Instruction i : instructions.stream().filter(Objects::nonNull).sorted(COMPARATOR).collect(toList())) {
+        instructions.stream().filter(Objects::nonNull).sorted(COMPARATOR).forEach(i -> {
 
             String result = i.accept(visitor);
 
-            results.put(i, result);
-
             if (StringUtils.isEmpty(result)) {
-
-                log.debug("Aborting further instruction with no response : {}", i);
-
-                break;
-
+                return;
             }
 
-        }
+            results.put(i, result);
+
+        });
 
         return results;
 

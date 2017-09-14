@@ -14,6 +14,7 @@ import org.testng.annotations.Test;
 
 import java.time.Duration;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static java.lang.Boolean.FALSE;
@@ -52,38 +53,43 @@ public class TemplateAgentTest {
     public void testManage() throws Exception {
 
         CreateInstruction i1 = CreateInstruction.builder().build();
-        CancelInstruction i2 = CancelInstruction.builder().build();
-        Instruction i3 = mock(Instruction.class);
-        Instruction i4 = mock(Instruction.class);
+        CreateInstruction i2 = CreateInstruction.builder().build();
+        CreateInstruction i3 = CreateInstruction.builder().build();
+        CancelInstruction i4 = CancelInstruction.builder().build();
+        CancelInstruction i5 = CancelInstruction.builder().build();
+        CancelInstruction i6 = CancelInstruction.builder().build();
+        Instruction i7 = mock(Instruction.class);
+        Instruction i8 = mock(Instruction.class);
         Request request = Request.builder().build();
         when(context.createOrder(any(), any())).thenReturn("create");
         when(context.cancelOrder(any(), any())).thenReturn("cancel");
-        when(i3.accept(any())).thenReturn("mocked");
-        when(i4.accept(any())).thenReturn("mocked");
-        Map<Instruction, String> results = target.manage(context, request, asList(i1, null, i2, i3, i4));
-        assertEquals(results.size(), 4);
-        assertEquals(results.get(i1), "create");
-        assertEquals(results.get(i2), "cancel");
-        assertEquals(results.get(i3), "mocked");
-        assertEquals(results.get(i4), "mocked");
+        when(i7.accept(any())).thenReturn("mocked");
+        when(i8.accept(any())).thenReturn("mocked");
+        List<Instruction> values = asList(i1, i3, i5, i7, null, i2, i4, i6, i8);
+        Map<Instruction, String> results = target.manage(context, request, values);
+        assertEquals(results.size(), values.size() - 1);
 
         // Cancels are processed first. Unknowns are last.
         InOrder inOrder = inOrder(context);
-        inOrder.verify(context).cancelOrder(any(), same(i2));
+        inOrder.verify(context).cancelOrder(any(), same(i5));
+        inOrder.verify(context).cancelOrder(any(), same(i4));
+        inOrder.verify(context).cancelOrder(any(), same(i6));
         inOrder.verify(context).createOrder(any(), same(i1));
+        inOrder.verify(context).createOrder(any(), same(i3));
+        inOrder.verify(context).createOrder(any(), same(i2));
         inOrder.verifyNoMoreInteractions();
 
         // Abort if invalid response.
-        when(context.cancelOrder(any(), same(i2))).thenReturn("");
-        results = target.manage(context, request, asList(i1, i2, null, i3, i4));
-        assertEquals(results.size(), 1);
-        assertEquals(results.get(i2), "");
-        verify(context, times(2)).cancelOrder(any(), same(i2));
-        verifyNoMoreInteractions(context);
+        when(context.cancelOrder(any(), same(i5))).thenReturn("");
+        results = target.manage(context, request, values);
+        assertEquals(results.size(), 4);
+        assertEquals(results.get(i4), "cancel");
+        assertEquals(results.get(i6), "cancel");
+        assertEquals(results.get(i7), "mocked");
+        assertEquals(results.get(i8), "mocked");
 
         // No input
         assertEquals(target.manage(context, request, null).size(), 0);
-        verifyNoMoreInteractions(context);
 
     }
 
