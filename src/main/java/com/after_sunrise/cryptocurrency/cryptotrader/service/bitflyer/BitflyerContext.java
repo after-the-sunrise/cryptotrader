@@ -62,8 +62,6 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
     private static final BigDecimal HALF = new BigDecimal("0.5");
 
-    private static final Integer PAGE = 500;
-
     private final Bitflyer4j bitflyer4j;
 
     private final AccountService accountService;
@@ -185,7 +183,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
         List<Trade> values = listCached(Trade.class, key, () -> {
 
             Execution.Request request = Execution.Request.builder()
-                    .product(key.getInstrument()).count(PAGE).build();
+                    .product(key.getInstrument()).build();
 
             return unmodifiableList(ofNullable(marketService.getExecutions(request)
                     .get(TIMEOUT.toMillis(), MILLISECONDS)).orElse(emptyList())
