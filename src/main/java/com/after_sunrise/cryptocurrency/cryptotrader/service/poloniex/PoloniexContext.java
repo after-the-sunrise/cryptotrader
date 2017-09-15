@@ -27,9 +27,9 @@ import static java.util.stream.Collectors.toList;
  */
 public class PoloniexContext extends TemplateContext implements PoloniexService {
 
-    protected static final String URL_TICKER = "https://poloniex.com/public?command=returnTicker";
+    static final String URL_TICKER = "https://poloniex.com/public?command=returnTicker";
 
-    protected static final String URL_TRADE = "https://poloniex.com/public?command=returnTradeHistory&currencyPair=";
+    static final String URL_TRADE = "https://poloniex.com/public?command=returnTradeHistory&currencyPair=";
 
     private static final Type TYPE_TICKER = new TypeToken<Map<String, PoloniexTick>>() {
     }.getType();

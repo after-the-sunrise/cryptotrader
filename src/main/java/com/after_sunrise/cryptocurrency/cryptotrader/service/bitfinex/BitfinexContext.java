@@ -28,9 +28,9 @@ import static java.util.stream.Collectors.toList;
  */
 public class BitfinexContext extends TemplateContext implements BitfinexService {
 
-    protected static final String URL_TICKER = "https://api.bitfinex.com/v1/pubticker/";
+    static final String URL_TICKER = "https://api.bitfinex.com/v1/pubticker/";
 
-    protected static final String URL_TRADE = "https://api.bitfinex.com/v1/trades/";
+    static final String URL_TRADE = "https://api.bitfinex.com/v1/trades/";
 
     private static final Type TYPE_TRADE = new TypeToken<List<BitfinexTrade>>() {
     }.getType();
