@@ -33,6 +33,8 @@ public class TemplateAdviser implements Adviser {
 
     private static final BigDecimal EPSILON = ONE.movePointLeft(SCALE);
 
+    private static final BigDecimal HALF = new BigDecimal("0.5");
+
     static final int SIGNUM_BUY = 1;
 
     static final int SIGNUM_SELL = -1;
@@ -305,75 +307,6 @@ public class TemplateAdviser implements Adviser {
     }
 
     @VisibleForTesting
-    BigDecimal calculatePositionRatio(Context context, Request request) {
-
-        Key key = Key.from(request);
-
-        BigDecimal mid = context.getMidPrice(key);
-
-        BigDecimal funding = context.getFundingPosition(key);
-
-        BigDecimal structure = context.getInstrumentPosition(key);
-
-        if (mid == null || funding == null || structure == null) {
-
-            log.trace("Position ratio unavailable : price=[{}] funding=[{}] structure=[{}]", mid, funding, structure);
-
-            return null;
-
-        }
-
-        BigDecimal offset = ofNullable(request.getFundingOffset()).orElse(ZERO);
-
-        BigDecimal adjFunding = funding.multiply(ONE.add(offset));
-
-        BigDecimal equivalent = structure.multiply(mid);
-
-        BigDecimal ratio;
-
-        if (Objects.equals(TRUE, context.isMarginable(key))) {
-
-            // = Equivalent / (Funding / 2)
-            // = 2 * Equivalent / Funding
-            // (Funding / 2 = Funding for single side)
-
-            if (adjFunding.signum() == 0) {
-                return ZERO;
-            }
-
-            // Leveraged short can be larger than the funding.
-            ratio = equivalent.add(equivalent).divide(adjFunding, SCALE, HALF_UP);
-
-        } else {
-
-            // = Diff / Average
-            // = (X - Y) / [(X + Y) / 2]
-            // = 2 * (X - Y) / (X + Y)
-
-            BigDecimal sum = equivalent.add(adjFunding);
-
-            if (sum.signum() == 0) {
-                return ZERO;
-            }
-
-            BigDecimal diff = equivalent.subtract(adjFunding);
-
-            ratio = diff.add(diff).divide(sum, SCALE, HALF_UP);
-
-        }
-
-        BigDecimal aversion = ofNullable(request.getTradingAversion()).orElse(ONE);
-
-        BigDecimal aversionRatio = ratio.multiply(aversion).setScale(SCALE, HALF_UP);
-
-        log.trace("Position ratio: {} (ratio=[{}], fund=[{}], structure=[{}] price=[{}])",
-                aversionRatio, ratio, adjFunding, structure, mid);
-
-        return aversionRatio;
-
-    }
-
-    @VisibleForTesting
     BigDecimal calculateBuyBoundaryPrice(Context context, Request request) {
 
         Key key = Key.from(request);
@@ -486,25 +419,13 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        BigDecimal ratio = calculatePositionRatio(context, request);
+        BigDecimal basisPrice = weighedPrice.multiply(ONE.subtract(basis));
 
-        if (ratio == null) {
-
-            log.trace("Buy price not available : No position ratio.");
-
-            return null;
-
-        }
-
-        BigDecimal ratioBasis = basis.multiply(ONE.add(ratio.max(ZERO)));
-
-        BigDecimal ratioPrice = weighedPrice.multiply(ONE.subtract(ratioBasis));
-
-        BigDecimal boundPrice = ratioPrice.min(bound);
+        BigDecimal boundPrice = basisPrice.min(bound);
 
         BigDecimal rounded = context.roundTickSize(key, boundPrice, DOWN);
 
-        log.trace("Buy price : {} (target=[{}] basis=[{}])", rounded, boundPrice, ratioBasis);
+        log.trace("Buy price : {} (target=[{}] basis=[{}])", rounded, boundPrice, basisPrice);
 
         return rounded;
 
@@ -533,36 +454,24 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        BigDecimal ratio = calculatePositionRatio(context, request);
+        BigDecimal basisPrice = weighedPrice.multiply(ONE.add(basis));
 
-        if (ratio == null) {
-
-            log.trace("Sell price not available : No position ratio.");
-
-            return null;
-
-        }
-
-        BigDecimal ratioBasis = basis.multiply(ONE.add(ratio.min(ZERO).abs()));
-
-        BigDecimal ratioPrice = weighedPrice.multiply(ONE.add(ratioBasis));
-
-        BigDecimal boundPrice = ratioPrice.max(bound);
+        BigDecimal boundPrice = basisPrice.max(bound);
 
         BigDecimal rounded = context.roundTickSize(key, boundPrice, UP);
 
-        log.trace("Sell price : {} (target=[{}] basis=[{}])", rounded, boundPrice, ratioBasis);
+        log.trace("Sell price : {} (target=[{}] basis=[{}])", rounded, boundPrice, basisPrice);
 
         return rounded;
 
     }
 
     @VisibleForTesting
-    BigDecimal calculateFundingLimitSize(Context context, Request request, BigDecimal price) {
+    BigDecimal calculateFundingExposureSize(Context context, Request request, BigDecimal price) {
 
         if (price == null || price.signum() == 0) {
 
-            log.trace("No funding limit size. Price : {}", price);
+            log.trace("No funding exposure size. Price : {}", price);
 
             return ZERO;
 
@@ -574,7 +483,7 @@ public class TemplateAdviser implements Adviser {
 
         if (fund == null) {
 
-            log.trace("No funding limit size. Null funding position.");
+            log.trace("No funding exposure size. Null funding position.");
 
             return ZERO;
 
@@ -584,105 +493,98 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal adjFund = fund.multiply(ONE.add(offset));
 
-        BigDecimal product = adjFund.divide(price, SCALE, DOWN);
+        BigDecimal product = adjFund.divide(price, SCALE, HALF_UP);
 
         BigDecimal exposure = ofNullable(request.getTradingExposure()).orElse(ZERO);
 
         BigDecimal exposed = product.multiply(exposure);
 
-        BigDecimal rounded = context.roundLotSize(key, exposed, DOWN);
+        log.trace("Funding exposure size : {} (fund=[{}] price=[{}])", exposed, adjFund, price);
 
-        log.trace("Funding limit size : {} (exposure=[{}] fund=[{}] price=[{}])", rounded, exposure, adjFund, price);
+        return exposed;
 
-        return ofNullable(rounded).orElse(ZERO);
+    }
+
+    @VisibleForTesting
+    BigDecimal calculateInstrumentExposureSize(Context context, Request request) {
+
+        Key key = Key.from(request);
+
+        BigDecimal position = context.getInstrumentPosition(key);
+
+        if (position == null) {
+
+            log.trace("No instrument exposure size. Null instrument position.");
+
+            return ZERO;
+
+        }
+
+        BigDecimal exposure = ofNullable(request.getTradingExposure()).orElse(ZERO);
+
+        BigDecimal exposed = position.multiply(exposure);
+
+        log.trace("Instrument exposure size : {} (position=[{}])", exposed, position);
+
+        return exposed;
 
     }
 
     @VisibleForTesting
     BigDecimal calculateBuyLimitSize(Context context, Request request, BigDecimal price) {
 
-        BigDecimal limitSize = calculateFundingLimitSize(context, request, price);
+        BigDecimal fundingSize = calculateFundingExposureSize(context, request, price);
 
-        Key key = Key.from(request);
+        BigDecimal instrumentSize = calculateInstrumentExposureSize(context, request);
 
-        if (!Objects.equals(TRUE, context.isMarginable(key))) {
+        BigDecimal size;
 
-            log.trace("Cash Buy size : {}", limitSize);
+        if (Objects.equals(TRUE, context.isMarginable(Key.from(request)))) {
 
-            return limitSize;
+            size = fundingSize.subtract(instrumentSize).max(ZERO).multiply(HALF);
 
-        }
+        } else {
 
-        if (limitSize == null) {
+            BigDecimal excess = instrumentSize.subtract(fundingSize).max(ZERO).multiply(HALF);
 
-            log.trace("Margin buy size not not available. Null limit size.");
-
-            return ZERO;
+            size = fundingSize.subtract(excess).max(ZERO);
 
         }
 
-        BigDecimal position = context.getInstrumentPosition(key);
+        BigDecimal rounded = context.roundLotSize(Key.from(request), size, HALF_UP);
 
-        if (position == null) {
+        log.trace("Buy size : {} (funding=[{}] instrument[{}])", rounded, fundingSize, instrumentSize);
 
-            log.trace("Margin buy size not not available. Null position.");
-
-            return ZERO;
-
-        }
-
-        BigDecimal exposed = position.multiply(request.getTradingExposure());
-
-        BigDecimal netSize = limitSize.subtract(exposed).max(ZERO);
-
-        BigDecimal rounded = context.roundLotSize(key, netSize, DOWN);
-
-        log.trace("Margin Buy size : {} (position=[{}] funding=[{}])", rounded, position, limitSize);
-
-        return rounded;
+        return ofNullable(rounded).orElse(ZERO);
 
     }
 
     @VisibleForTesting
     BigDecimal calculateSellLimitSize(Context context, Request request, BigDecimal price) {
 
-        Key key = Key.from(request);
+        BigDecimal instrumentSize = calculateInstrumentExposureSize(context, request);
 
-        BigDecimal position = context.getInstrumentPosition(key);
+        BigDecimal fundingSize = calculateFundingExposureSize(context, request, price);
 
-        if (position == null) {
+        BigDecimal size;
 
-            log.trace("Sell size not not available. Null position.");
+        if (Objects.equals(TRUE, context.isMarginable(Key.from(request)))) {
 
-            return ZERO;
+            size = fundingSize.add(instrumentSize).max(ZERO).multiply(HALF);
 
-        }
+        } else {
 
-        if (!Objects.equals(TRUE, context.isMarginable(key))) {
+            BigDecimal excess = fundingSize.subtract(instrumentSize).max(ZERO).multiply(HALF);
 
-            BigDecimal exposure = ofNullable(request.getTradingExposure()).orElse(ZERO);
-
-            BigDecimal exposed = position.multiply(exposure);
-
-            BigDecimal rounded = context.roundLotSize(key, exposed, DOWN);
-
-            log.trace("Cash sell size : {} (position=[{}] exposure=[{}])", rounded, position, exposure);
-
-            return ofNullable(rounded).orElse(ZERO);
+            size = instrumentSize.subtract(excess).max(ZERO);
 
         }
 
-        BigDecimal limitSize = calculateFundingLimitSize(context, request, price);
+        BigDecimal rounded = context.roundLotSize(Key.from(request), size, HALF_UP);
 
-        BigDecimal exposed = position.multiply(request.getTradingExposure());
+        log.trace("Sell size : {} (funding=[{}] instrument[{}])", rounded, fundingSize, instrumentSize);
 
-        BigDecimal netSize = limitSize.add(exposed).max(ZERO);
-
-        BigDecimal rounded = context.roundLotSize(key, netSize, DOWN);
-
-        log.trace("Margin sell size : {} (position=[{}] funding=[{}])", rounded, position, limitSize);
-
-        return rounded;
+        return ofNullable(rounded).orElse(ZERO);
 
     }
 
