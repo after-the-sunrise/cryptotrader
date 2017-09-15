@@ -34,6 +34,8 @@ public class PoloniexContextTest {
 
         target = spy(new PoloniexContext());
 
+        doReturn(null).when(target).query(anyString());
+
     }
 
     @Test
