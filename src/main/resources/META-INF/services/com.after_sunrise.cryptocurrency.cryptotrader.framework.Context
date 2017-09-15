@@ -1,2 +1,3 @@
 com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerContext
+com.after_sunrise.cryptocurrency.cryptotrader.service.bitfinex.BitfinexContext
 com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex.PoloniexContext

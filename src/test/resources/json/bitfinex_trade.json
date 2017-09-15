@@ -1,0 +1,18 @@
+[
+  {
+    "timestamp": 1505489261,
+    "tid": 67060814,
+    "price": "0.11532",
+    "amount": "0.021299",
+    "exchange": "bitfinex",
+    "type": "sell"
+  },
+  {
+    "timestamp": 1505489259,
+    "tid": 67060795,
+    "price": "0.11593",
+    "amount": "2.9992",
+    "exchange": "bitfinex",
+    "type": "buy"
+  }
+]
