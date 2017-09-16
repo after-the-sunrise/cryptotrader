@@ -555,8 +555,12 @@ public class TemplateAdviser implements Adviser {
 
         log.trace("Buy size : {} (funding=[{}] instrument[{}])", rounded, fundingSize, instrumentSize);
 
-        return ofNullable(rounded).orElse(ZERO);
+        return adjustBuyLimitSize(context, request, ofNullable(rounded).orElse(ZERO));
 
+    }
+
+    protected BigDecimal adjustBuyLimitSize(Context context, Request request, BigDecimal size) {
+        return size;
     }
 
     @VisibleForTesting
@@ -584,8 +588,12 @@ public class TemplateAdviser implements Adviser {
 
         log.trace("Sell size : {} (funding=[{}] instrument[{}])", rounded, fundingSize, instrumentSize);
 
-        return ofNullable(rounded).orElse(ZERO);
+        return adjustSellLimitSize(context, request, ofNullable(rounded).orElse(ZERO));
 
+    }
+
+    protected BigDecimal adjustSellLimitSize(Context context, Request request, BigDecimal size) {
+        return size;
     }
 
 }

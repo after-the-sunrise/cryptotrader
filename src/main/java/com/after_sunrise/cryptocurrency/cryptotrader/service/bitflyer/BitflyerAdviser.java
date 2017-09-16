@@ -6,6 +6,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -13,12 +14,16 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.*;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.HALF_UP;
 import static java.math.RoundingMode.UP;
+import static java.util.Optional.ofNullable;
 
 /**
  * @author takanori.takase
@@ -31,9 +36,12 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     private static final Map<ProductType, ProductType> UNDERLIERS = new EnumMap<>(ProductType.class);
 
+    private static final Map<ProductType, Set<ProductType>> HEDGES = new EnumMap<>(ProductType.class);
+
     static {
         UNDERLIERS.put(BTCJPY_MAT1WK, BTC_JPY);
         UNDERLIERS.put(BTCJPY_MAT2WK, BTC_JPY);
+        HEDGES.put(FX_BTC_JPY, EnumSet.of(BTCJPY_MAT1WK, BTCJPY_MAT2WK));
     }
 
     public BitflyerAdviser() {
@@ -160,6 +168,78 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
         BigDecimal theoretical = ask.multiply(ONE.add(comm).add(spread).add(swap));
 
         return price.max(theoretical);
+
+    }
+
+    @VisibleForTesting
+    BigDecimal getHedgeSize(Context context, Request request, Set<ProductType> products) {
+
+        Key source = Key.from(request);
+
+        BigDecimal hedged = context.getInstrumentPosition(source);
+
+        if (hedged == null) {
+            return null;
+        }
+
+        Key.KeyBuilder builder = Key.build(source);
+
+        BigDecimal outright = ZERO;
+
+        for (ProductType type : products) {
+
+            Key key = builder.instrument(type.name()).build();
+
+            BigDecimal position = context.getInstrumentPosition(key);
+
+            if (position == null) {
+                return null;
+            }
+
+            outright = outright.add(ofNullable(position).orElse(ZERO));
+
+        }
+
+        return outright.add(hedged).negate();
+
+    }
+
+    @Override
+    protected BigDecimal adjustBuyLimitSize(Context context, Request request, BigDecimal size) {
+
+        Set<ProductType> hedgeProducts = HEDGES.get(ProductType.find(request.getInstrument()));
+
+        if (CollectionUtils.isEmpty(hedgeProducts)) {
+            return size;
+        }
+
+        BigDecimal hedgeSize = getHedgeSize(context, request, hedgeProducts);
+
+        if (hedgeSize == null) {
+            return ZERO;
+        }
+
+        return context.roundLotSize(Key.from(request), hedgeSize.max(ZERO), HALF_UP);
+
+    }
+
+
+    @Override
+    protected BigDecimal adjustSellLimitSize(Context context, Request request, BigDecimal size) {
+
+        Set<ProductType> hedgeProducts = HEDGES.get(ProductType.find(request.getInstrument()));
+
+        if (CollectionUtils.isEmpty(hedgeProducts)) {
+            return size;
+        }
+
+        BigDecimal hedgeSize = getHedgeSize(context, request, hedgeProducts);
+
+        if (hedgeSize == null) {
+            return ZERO;
+        }
+
+        return context.roundLotSize(Key.from(request), hedgeSize.min(ZERO).abs(), HALF_UP);
 
     }
 

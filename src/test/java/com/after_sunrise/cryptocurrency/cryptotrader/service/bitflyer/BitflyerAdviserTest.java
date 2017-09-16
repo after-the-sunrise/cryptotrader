@@ -4,16 +4,23 @@ import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.EnumSet;
+import java.util.Set;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.*;
 import static java.math.BigDecimal.ZERO;
+import static java.math.BigDecimal.valueOf;
+import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -38,6 +45,24 @@ public class BitflyerAdviserTest {
         context = module.getMock(Context.class);
 
         target = spy(new BitflyerAdviser());
+
+        when(context.roundLotSize(any(), any(), any())).thenAnswer(i -> {
+
+            BigDecimal value = i.getArgumentAt(1, BigDecimal.class);
+
+            RoundingMode mode = i.getArgumentAt(2, RoundingMode.class);
+
+            if (value == null || mode == null) {
+                return null;
+            }
+
+            BigDecimal unit = new BigDecimal("0.5");
+
+            BigDecimal units = value.divide(unit, INTEGER_ZERO, mode);
+
+            return units.multiply(unit);
+
+        });
 
     }
 
@@ -174,6 +199,148 @@ public class BitflyerAdviserTest {
         // Null Market
         result = target.adjustSellBoundaryPrice(context, request, null);
         assertEquals(result, null);
+
+    }
+
+    @Test
+    public void testGetHedgeSize() {
+
+        Request request = Request.builder().instrument(FX_BTC_JPY.name()).build();
+        Key k0 = Key.from(request);
+        Key k1 = Key.build(k0).instrument(BTCJPY_MAT1WK.name()).build();
+        Key k2 = Key.build(k0).instrument(BTCJPY_MAT2WK.name()).build();
+        Set<ProductType> products = EnumSet.of(BTCJPY_MAT1WK, BTCJPY_MAT2WK);
+
+        //
+        // Zero hedged
+        //
+        when(context.getInstrumentPosition(k0)).thenReturn(valueOf(0));
+
+        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(0));
+        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(0));
+        assertEquals(target.getHedgeSize(context, request, products), valueOf(0));
+
+        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-1));
+        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+1));
+        assertEquals(target.getHedgeSize(context, request, products), valueOf(0));
+
+        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-2));
+        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+1));
+        assertEquals(target.getHedgeSize(context, request, products), valueOf(+1));
+
+        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-1));
+        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+2));
+        assertEquals(target.getHedgeSize(context, request, products), valueOf(-1));
+
+        //
+        // Long hedged
+        //
+        when(context.getInstrumentPosition(k0)).thenReturn(valueOf(+1));
+
+        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(0));
+        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(0));
+        assertEquals(target.getHedgeSize(context, request, products), valueOf(-1));
+
+        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-1));
+        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+1));
+        assertEquals(target.getHedgeSize(context, request, products), valueOf(-1));
+
+        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-2));
+        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+1));
+        assertEquals(target.getHedgeSize(context, request, products), valueOf(0));
+
+        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-1));
+        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+2));
+        assertEquals(target.getHedgeSize(context, request, products), valueOf(-2));
+
+        //
+        // Short hedged
+        //
+        when(context.getInstrumentPosition(k0)).thenReturn(valueOf(-1));
+
+        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(0));
+        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(0));
+        assertEquals(target.getHedgeSize(context, request, products), valueOf(+1));
+
+        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-1));
+        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+1));
+        assertEquals(target.getHedgeSize(context, request, products), valueOf(+1));
+
+        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-2));
+        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+1));
+        assertEquals(target.getHedgeSize(context, request, products), valueOf(2));
+
+        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-1));
+        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+2));
+        assertEquals(target.getHedgeSize(context, request, products), valueOf(0));
+
+        //
+        // Null hedged
+        //
+        when(context.getInstrumentPosition(k0)).thenReturn(null);
+        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(0));
+        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(0));
+        assertEquals(target.getHedgeSize(context, request, products), null);
+
+        when(context.getInstrumentPosition(k0)).thenReturn(valueOf(0));
+        when(context.getInstrumentPosition(k1)).thenReturn(null);
+        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(0));
+        assertEquals(target.getHedgeSize(context, request, products), null);
+
+        when(context.getInstrumentPosition(k0)).thenReturn(valueOf(0));
+        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(0));
+        when(context.getInstrumentPosition(k2)).thenReturn(null);
+        assertEquals(target.getHedgeSize(context, request, products), null);
+
+    }
+
+    @Test
+    public void testAdjustBuyLimitSize() {
+
+        Request request1 = Request.builder().instrument(FX_BTC_JPY.name()).build();
+        Request request2 = Request.builder().instrument(BTC_JPY.name()).build();
+        BigDecimal size = new BigDecimal("123.45");
+
+        doReturn(valueOf(0)).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.0"));
+        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
+
+        doReturn(valueOf(+1)).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("1.0"));
+        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
+
+        doReturn(valueOf(-1)).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.0"));
+        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
+
+        doReturn(null).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustBuyLimitSize(context, request1, size), ZERO);
+        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
+
+    }
+
+    @Test
+    public void testAdjustSellLimitSize() {
+
+        Request request1 = Request.builder().instrument(FX_BTC_JPY.name()).build();
+        Request request2 = Request.builder().instrument(BTC_JPY.name()).build();
+        BigDecimal size = new BigDecimal("123.45");
+
+        doReturn(valueOf(0)).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.0"));
+        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
+
+        doReturn(valueOf(-1)).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("1.0"));
+        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
+
+        doReturn(valueOf(+1)).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.0"));
+        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
+
+        doReturn(null).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustSellLimitSize(context, request1, size), ZERO);
+        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
 
     }
 
