@@ -146,6 +146,75 @@ public class TemplateAdviser implements Adviser {
     }
 
     @VisibleForTesting
+    BigDecimal calculatePositionRatio(Context context, Request request) {
+
+        Key key = Key.from(request);
+
+        BigDecimal mid = context.getMidPrice(key);
+
+        BigDecimal funding = context.getFundingPosition(key);
+
+        BigDecimal structure = context.getInstrumentPosition(key);
+
+        if (mid == null || funding == null || structure == null) {
+
+            log.trace("Position ratio unavailable : price=[{}] funding=[{}] structure=[{}]", mid, funding, structure);
+
+            return null;
+
+        }
+
+        BigDecimal offset = ofNullable(request.getFundingOffset()).orElse(ZERO);
+
+        BigDecimal adjFunding = funding.multiply(ONE.add(offset));
+
+        BigDecimal equivalent = structure.multiply(mid);
+
+        BigDecimal ratio;
+
+        if (Objects.equals(TRUE, context.isMarginable(key))) {
+
+            // = Equivalent / (Funding / 2)
+            // = 2 * Equivalent / Funding
+            // (Funding / 2 = Funding for single side)
+
+            if (adjFunding.signum() == 0) {
+                return ZERO;
+            }
+
+            // Leveraged short can be larger than the funding.
+            ratio = equivalent.add(equivalent).divide(adjFunding, SCALE, HALF_UP);
+
+        } else {
+
+            // = Diff / Average
+            // = (X - Y) / [(X + Y) / 2]
+            // = 2 * (X - Y) / (X + Y)
+
+            BigDecimal sum = equivalent.add(adjFunding);
+
+            if (sum.signum() == 0) {
+                return ZERO;
+            }
+
+            BigDecimal diff = equivalent.subtract(adjFunding);
+
+            ratio = diff.add(diff).divide(sum, SCALE, HALF_UP);
+
+        }
+
+        BigDecimal aversion = ofNullable(request.getTradingAversion()).orElse(ONE);
+
+        BigDecimal aversionRatio = ratio.multiply(aversion).setScale(SCALE, HALF_UP);
+
+        log.trace("Position ratio: {} (ratio=[{}], fund=[{}], structure=[{}] price=[{}])",
+                aversionRatio, ratio, adjFunding, structure, mid);
+
+        return aversionRatio;
+
+    }
+
+    @VisibleForTesting
     BigDecimal calculateRecentPrice(Context context, Request request, int signum) {
 
         Instant cutoff = request.getCurrentTime().minus(request.getTradingDuration());
@@ -280,9 +349,13 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal lossRatio = calculateBuyLossRatio(context, request);
+        BigDecimal positionRatio = ofNullable(calculatePositionRatio(context, request)).orElse(ZERO);
 
-        return base.add(lossRatio);
+        BigDecimal positionBase = base.multiply(ONE.add(positionRatio.max(ZERO)));
+
+        BigDecimal lossRatio = ofNullable(calculateBuyLossRatio(context, request)).orElse(ZERO);
+
+        return positionBase.add(lossRatio);
 
     }
 
@@ -319,9 +392,13 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal lossRatio = calculateSellLossRatio(context, request);
+        BigDecimal positionRatio = ofNullable(calculatePositionRatio(context, request)).orElse(ZERO);
 
-        return base.add(lossRatio);
+        BigDecimal positionBase = base.multiply(ONE.add(positionRatio.min(ZERO).abs()));
+
+        BigDecimal lossRatio = ofNullable(calculateSellLossRatio(context, request)).orElse(ZERO);
+
+        return positionBase.add(lossRatio);
 
     }
 
