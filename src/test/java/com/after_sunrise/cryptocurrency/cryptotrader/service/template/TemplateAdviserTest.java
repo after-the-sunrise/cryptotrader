@@ -432,7 +432,7 @@ public class TemplateAdviserTest {
     }
 
     @Test
-    public void testCalculateBuyLossRatio() {
+    public void testCalculateBuyLossBasis() {
 
         Request request = rBuilder.build();
         Key key = Key.from(request);
@@ -442,34 +442,34 @@ public class TemplateAdviserTest {
         BigDecimal recent = new BigDecimal("444000");
         doReturn(market).when(context).getBestBidPrice(key);
         doReturn(recent).when(target).calculateRecentPrice(context, request, SIGNUM_BUY);
-        assertEquals(target.calculateBuyLossRatio(context, request).signum(), 0);
+        assertEquals(target.calculateBuyLossBasis(context, request).signum(), 0);
 
         // loss = (446000 - 445000) / 446000 = 0.002242152466368...
         market = new BigDecimal("445000");
         recent = new BigDecimal("446000");
         doReturn(market).when(context).getBestBidPrice(key);
         doReturn(recent).when(target).calculateRecentPrice(context, request, SIGNUM_BUY);
-        assertEquals(target.calculateBuyLossRatio(context, request), new BigDecimal("0.0022421525"));
+        assertEquals(target.calculateBuyLossBasis(context, request), new BigDecimal("0.0022421525"));
 
         // With aversion
         request = rBuilder.tradingAversion(new BigDecimal("3")).build();
         doReturn(recent).when(target).calculateRecentPrice(context, request, SIGNUM_BUY);
-        assertEquals(target.calculateBuyLossRatio(context, request), new BigDecimal("0.0067264575"));
+        assertEquals(target.calculateBuyLossBasis(context, request), new BigDecimal("0.0067264575"));
 
         // Null market
         doReturn(null).when(context).getBestBidPrice(key);
         doReturn(recent).when(target).calculateRecentPrice(context, request, SIGNUM_BUY);
-        assertEquals(target.calculateBuyLossRatio(context, request), ZERO);
+        assertEquals(target.calculateBuyLossBasis(context, request), ZERO);
 
         // Null latest
         doReturn(market).when(context).getBestBidPrice(key);
         doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_BUY);
-        assertEquals(target.calculateBuyLossRatio(context, request), ZERO);
+        assertEquals(target.calculateBuyLossBasis(context, request), ZERO);
 
         // Zero latest
         doReturn(market).when(context).getBestBidPrice(key);
         doReturn(new BigDecimal("0.0")).when(target).calculateRecentPrice(context, request, SIGNUM_BUY);
-        assertEquals(target.calculateBuyLossRatio(context, request), ZERO);
+        assertEquals(target.calculateBuyLossBasis(context, request), ZERO);
 
     }
 
@@ -480,19 +480,19 @@ public class TemplateAdviserTest {
         BigDecimal base = new BigDecimal("0.0010");
 
         doReturn(new BigDecimal("-0.987")).when(target).calculatePositionRatio(context, request);
-        doReturn(new BigDecimal("+0.012")).when(target).calculateBuyLossRatio(context, request);
+        doReturn(new BigDecimal("+0.012")).when(target).calculateBuyLossBasis(context, request);
         assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0130"));
 
         doReturn(new BigDecimal("+0.987")).when(target).calculatePositionRatio(context, request);
-        doReturn(new BigDecimal("+0.012")).when(target).calculateBuyLossRatio(context, request);
+        doReturn(new BigDecimal("+0.012")).when(target).calculateBuyLossBasis(context, request);
         assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0139870"));
 
         doReturn(null).when(target).calculatePositionRatio(context, request);
-        doReturn(new BigDecimal("+0.012")).when(target).calculateBuyLossRatio(context, request);
+        doReturn(new BigDecimal("+0.012")).when(target).calculateBuyLossBasis(context, request);
         assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0130"));
 
         doReturn(new BigDecimal("+0.987")).when(target).calculatePositionRatio(context, request);
-        doReturn(null).when(target).calculateBuyLossRatio(context, request);
+        doReturn(null).when(target).calculateBuyLossBasis(context, request);
         assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0019870"));
 
         assertEquals(target.calculateBuyBasis(context, request, null), null);
@@ -500,7 +500,7 @@ public class TemplateAdviserTest {
     }
 
     @Test
-    public void testCalculateSellLossRatio() {
+    public void testCalculateSellLossBasis() {
 
         Request request = rBuilder.build();
         Key key = Key.from(request);
@@ -510,34 +510,34 @@ public class TemplateAdviserTest {
         BigDecimal recent = new BigDecimal("445000");
         doReturn(market).when(context).getBestAskPrice(key);
         doReturn(recent).when(target).calculateRecentPrice(context, request, SIGNUM_SELL);
-        assertEquals(target.calculateSellLossRatio(context, request).signum(), 0);
+        assertEquals(target.calculateSellLossBasis(context, request).signum(), 0);
 
         // loss = (446000 - 445000) / 445000 = 0.002247191011236...
         market = new BigDecimal("446000");
         recent = new BigDecimal("445000");
         doReturn(market).when(context).getBestAskPrice(key);
         doReturn(recent).when(target).calculateRecentPrice(context, request, SIGNUM_SELL);
-        assertEquals(target.calculateSellLossRatio(context, request), new BigDecimal("0.0022471911"));
+        assertEquals(target.calculateSellLossBasis(context, request), new BigDecimal("0.0022471911"));
 
         // With aversion
         request = rBuilder.tradingAversion(new BigDecimal("3")).build();
         doReturn(recent).when(target).calculateRecentPrice(context, request, SIGNUM_SELL);
-        assertEquals(target.calculateSellLossRatio(context, request), new BigDecimal("0.0067415733"));
+        assertEquals(target.calculateSellLossBasis(context, request), new BigDecimal("0.0067415733"));
 
         // Null market
         doReturn(null).when(context).getBestAskPrice(key);
         doReturn(recent).when(target).calculateRecentPrice(context, request, SIGNUM_SELL);
-        assertEquals(target.calculateSellLossRatio(context, request), ZERO);
+        assertEquals(target.calculateSellLossBasis(context, request), ZERO);
 
         // Null latest
         doReturn(market).when(context).getBestAskPrice(key);
         doReturn(null).when(target).calculateRecentPrice(context, request, SIGNUM_SELL);
-        assertEquals(target.calculateSellLossRatio(context, request), ZERO);
+        assertEquals(target.calculateSellLossBasis(context, request), ZERO);
 
         // Zero latest
         doReturn(market).when(context).getBestAskPrice(key);
         doReturn(new BigDecimal("0.0")).when(target).calculateRecentPrice(context, request, SIGNUM_SELL);
-        assertEquals(target.calculateSellLossRatio(context, request), ZERO);
+        assertEquals(target.calculateSellLossBasis(context, request), ZERO);
 
     }
 
@@ -548,19 +548,19 @@ public class TemplateAdviserTest {
         BigDecimal base = new BigDecimal("0.0010");
 
         doReturn(new BigDecimal("+0.987")).when(target).calculatePositionRatio(context, request);
-        doReturn(new BigDecimal("+0.012")).when(target).calculateSellLossRatio(context, request);
+        doReturn(new BigDecimal("+0.012")).when(target).calculateSellLossBasis(context, request);
         assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0130"));
 
         doReturn(new BigDecimal("-0.987")).when(target).calculatePositionRatio(context, request);
-        doReturn(new BigDecimal("+0.012")).when(target).calculateSellLossRatio(context, request);
+        doReturn(new BigDecimal("+0.012")).when(target).calculateSellLossBasis(context, request);
         assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0139870"));
 
         doReturn(null).when(target).calculatePositionRatio(context, request);
-        doReturn(new BigDecimal("+0.012")).when(target).calculateSellLossRatio(context, request);
+        doReturn(new BigDecimal("+0.012")).when(target).calculateSellLossBasis(context, request);
         assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0130"));
 
         doReturn(new BigDecimal("-0.987")).when(target).calculatePositionRatio(context, request);
-        doReturn(null).when(target).calculateSellLossRatio(context, request);
+        doReturn(null).when(target).calculateSellLossBasis(context, request);
         assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0019870"));
 
         assertEquals(target.calculateSellBasis(context, request, null), null);

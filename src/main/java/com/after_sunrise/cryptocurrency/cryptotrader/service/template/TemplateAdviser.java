@@ -318,7 +318,7 @@ public class TemplateAdviser implements Adviser {
     }
 
     @VisibleForTesting
-    BigDecimal calculateBuyLossRatio(Context context, Request request) {
+    BigDecimal calculateBuyLossBasis(Context context, Request request) {
 
         BigDecimal market = context.getBestBidPrice(Key.from(request));
 
@@ -334,11 +334,11 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal lossPrice = latest.subtract(market).max(ZERO);
 
-        BigDecimal lossRatio = lossPrice.divide(latest, SCALE, ROUND_UP);
+        BigDecimal lossBasis = lossPrice.divide(latest, SCALE, ROUND_UP);
 
         BigDecimal aversion = ofNullable(request.getTradingAversion()).orElse(ONE);
 
-        return lossRatio.multiply(aversion).max(ZERO);
+        return lossBasis.multiply(aversion).max(ZERO);
 
     }
 
@@ -353,14 +353,14 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal positionBase = base.multiply(ONE.add(positionRatio.max(ZERO)));
 
-        BigDecimal lossRatio = ofNullable(calculateBuyLossRatio(context, request)).orElse(ZERO);
+        BigDecimal lossBasis = ofNullable(calculateBuyLossBasis(context, request)).orElse(ZERO);
 
-        return positionBase.add(lossRatio);
+        return positionBase.add(lossBasis);
 
     }
 
     @VisibleForTesting
-    BigDecimal calculateSellLossRatio(Context context, Request request) {
+    BigDecimal calculateSellLossBasis(Context context, Request request) {
 
         BigDecimal market = context.getBestAskPrice(Key.from(request));
 
@@ -376,11 +376,11 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal lossPrice = market.subtract(latest).max(ZERO);
 
-        BigDecimal lossRatio = lossPrice.divide(latest, SCALE, ROUND_UP);
+        BigDecimal lossBasis = lossPrice.divide(latest, SCALE, ROUND_UP);
 
         BigDecimal aversion = ofNullable(request.getTradingAversion()).orElse(ONE);
 
-        return lossRatio.multiply(aversion).max(ZERO);
+        return lossBasis.multiply(aversion).max(ZERO);
 
     }
 
@@ -396,9 +396,9 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal positionBase = base.multiply(ONE.add(positionRatio.min(ZERO).abs()));
 
-        BigDecimal lossRatio = ofNullable(calculateSellLossRatio(context, request)).orElse(ZERO);
+        BigDecimal lossBasis = ofNullable(calculateSellLossBasis(context, request)).orElse(ZERO);
 
-        return positionBase.add(lossRatio);
+        return positionBase.add(lossBasis);
 
     }
 
