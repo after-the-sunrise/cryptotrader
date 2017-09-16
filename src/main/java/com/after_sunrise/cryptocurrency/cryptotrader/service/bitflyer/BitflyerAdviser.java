@@ -219,7 +219,9 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
             return ZERO;
         }
 
-        return context.roundLotSize(Key.from(request), hedgeSize.max(ZERO), HALF_UP);
+        BigDecimal limitSize = hedgeSize.multiply(request.getTradingExposure());
+
+        return context.roundLotSize(Key.from(request), limitSize.max(ZERO), HALF_UP);
 
     }
 
@@ -239,7 +241,9 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
             return ZERO;
         }
 
-        return context.roundLotSize(Key.from(request), hedgeSize.min(ZERO).abs(), HALF_UP);
+        BigDecimal limitSize = hedgeSize.multiply(request.getTradingExposure());
+
+        return context.roundLotSize(Key.from(request), limitSize.min(ZERO).abs(), HALF_UP);
 
     }
 
