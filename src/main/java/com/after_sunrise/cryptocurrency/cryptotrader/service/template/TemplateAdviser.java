@@ -249,22 +249,18 @@ public class TemplateAdviser implements Adviser {
     }
 
     @VisibleForTesting
-    BigDecimal calculateBuyBasis(Context context, Request request, BigDecimal base) {
-
-        if (base == null) {
-            return null;
-        }
+    BigDecimal calculateBuyLossRatio(Context context, Request request) {
 
         BigDecimal market = context.getBestBidPrice(Key.from(request));
 
         if (market == null) {
-            return base;
+            return ZERO;
         }
 
         BigDecimal latest = calculateRecentPrice(context, request, SIGNUM_BUY);
 
         if (latest == null || latest.signum() == 0) {
-            return base;
+            return ZERO;
         }
 
         BigDecimal lossPrice = latest.subtract(market).max(ZERO);
@@ -273,27 +269,36 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal aversion = ofNullable(request.getTradingAversion()).orElse(ONE);
 
-        return base.add(lossRatio.multiply(aversion).max(ZERO));
+        return lossRatio.multiply(aversion).max(ZERO);
 
     }
 
     @VisibleForTesting
-    BigDecimal calculateSellBasis(Context context, Request request, BigDecimal base) {
+    BigDecimal calculateBuyBasis(Context context, Request request, BigDecimal base) {
 
         if (base == null) {
             return null;
         }
 
+        BigDecimal lossRatio = calculateBuyLossRatio(context, request);
+
+        return base.add(lossRatio);
+
+    }
+
+    @VisibleForTesting
+    BigDecimal calculateSellLossRatio(Context context, Request request) {
+
         BigDecimal market = context.getBestAskPrice(Key.from(request));
 
         if (market == null) {
-            return base;
+            return ZERO;
         }
 
         BigDecimal latest = calculateRecentPrice(context, request, SIGNUM_SELL);
 
         if (latest == null || latest.signum() == 0) {
-            return base;
+            return ZERO;
         }
 
         BigDecimal lossPrice = market.subtract(latest).max(ZERO);
@@ -302,7 +307,21 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal aversion = ofNullable(request.getTradingAversion()).orElse(ONE);
 
-        return base.add(lossRatio.multiply(aversion).max(ZERO));
+        return lossRatio.multiply(aversion).max(ZERO);
+
+    }
+
+
+    @VisibleForTesting
+    BigDecimal calculateSellBasis(Context context, Request request, BigDecimal base) {
+
+        if (base == null) {
+            return null;
+        }
+
+        BigDecimal lossRatio = calculateSellLossRatio(context, request);
+
+        return base.add(lossRatio);
 
     }
 
