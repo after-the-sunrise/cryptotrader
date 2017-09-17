@@ -1,0 +1,18 @@
+[
+  {
+    "date": 1505657008,
+    "price": 407470,
+    "amount": 0.1871,
+    "tid": 67764258,
+    "currency_pair": "btc_jpy",
+    "trade_type": "ask"
+  },
+  {
+    "date": 1505657007,
+    "price": 407505,
+    "amount": 0.0011,
+    "tid": 67764257,
+    "currency_pair": "btc_jpy",
+    "trade_type": "ask"
+  }
+]

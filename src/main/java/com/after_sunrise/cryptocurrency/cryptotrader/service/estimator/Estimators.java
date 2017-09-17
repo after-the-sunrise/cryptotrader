@@ -29,7 +29,8 @@ public class Estimators {
 
     static {
         addMapping("bitflyer", "BTC_JPY", "coincheck", "btc_jpy");
-        addMapping("bitflyer", "BTC_JPY", "zaif", "BTC/JPY");
+        addMapping("bitflyer", "BTC_JPY", "zaif", "btc_jpy");
+        addMapping("bitflyer", "BCH_BTC", "zaif", "bch_btc");
         addMapping("bitflyer", "BCH_BTC", "poloniex", "BTC_BCH");
         addMapping("bitflyer", "ETH_BTC", "poloniex", "BTC_ETH");
         addMapping("bitflyer", "BCH_BTC", "bitfinex", "bchbtc");

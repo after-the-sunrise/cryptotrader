@@ -12,3 +12,6 @@ com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex.PoloniexService$P
 com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckService$CoincheckLastEstimator
 com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckService$CoincheckMidEstimator
 com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckService$CoincheckVwapEstimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifService$ZaifLastEstimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifService$ZaifMidEstimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifService$ZaifVwapEstimator
