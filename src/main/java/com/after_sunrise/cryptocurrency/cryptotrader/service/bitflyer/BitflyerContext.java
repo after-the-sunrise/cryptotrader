@@ -207,11 +207,13 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
             return forMargin(key, mapper);
         }
 
-        String currency = mapper.apply(product).name();
+        Key all = Key.build(key).instrument(null).build();
 
-        List<Balance> balances = listCached(Balance.class, key, () ->
+        List<Balance> balances = listCached(Balance.class, all, () ->
                 accountService.getBalances().get(TIMEOUT.toMillis(), MILLISECONDS)
         );
+
+        String currency = mapper.apply(product).name();
 
         return ofNullable(balances).orElse(emptyList()).stream()
                 .filter(Objects::nonNull)
@@ -314,7 +316,9 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
             return null;
         }
 
-        List<Product> products = listCached(Product.class, key, () ->
+        Key all = Key.build(key).instrument(null).build();
+
+        List<Product> products = listCached(Product.class, all, () ->
                 marketService.getProducts().get(TIMEOUT.toMillis(), MILLISECONDS)
         );
 

@@ -275,7 +275,8 @@ public class BitflyerContextTest {
 
         CompletableFuture<List<Balance>> f1 = completedFuture(asList(b1, null, b2));
         CompletableFuture<List<Balance>> f2 = completedFuture(asList(b2, null, b3));
-        when(accountService.getBalances()).thenReturn(f1, f2, null);
+        CompletableFuture<List<Balance>> f3 = completedFuture(null);
+        when(accountService.getBalances()).thenReturn(f1).thenReturn(f2).thenReturn(f3);
 
         // Null key
         Key key = null;
@@ -296,16 +297,27 @@ public class BitflyerContextTest {
         key = Key.from(Request.builder().instrument("BTC_JPY").build());
         assertEquals(target.forBalance(key, ProductType::getStructure), TEN);
         assertEquals(target.forBalance(key, ProductType::getStructure), TEN);
+        verify(accountService, times(1)).getBalances();
+
+        // Not Found
+        key = Key.from(Request.builder().instrument("ETH_BTC").build());
+        assertEquals(target.forBalance(key, ProductType::getStructure), null);
+        assertEquals(target.forBalance(key, ProductType::getStructure), null);
+        verify(accountService, times(1)).getBalances();
 
         // Next query
         target.clear();
+        key = Key.from(Request.builder().instrument("BTC_JPY").build());
         assertEquals(target.forBalance(key, ProductType::getStructure), TEN);
         assertEquals(target.forBalance(key, ProductType::getStructure), TEN);
+        verify(accountService, times(2)).getBalances();
 
         // Null result
         target.clear();
+        key = Key.from(Request.builder().instrument("BTC_JPY").build());
         assertNull(target.forBalance(key, ProductType::getStructure));
         assertNull(target.forBalance(key, ProductType::getStructure));
+        verify(accountService, times(3)).getBalances();
 
     }
 
@@ -439,7 +451,7 @@ public class BitflyerContextTest {
                 return completedFuture(asList(p1, p2, p3, null, p4, p5, p6));
             }
 
-            return completedFuture(emptyList());
+            return completedFuture(null);
 
         }).thenReturn(completedFuture(null));
 
@@ -481,8 +493,7 @@ public class BitflyerContextTest {
         when(products.get(1).getAlias()).thenReturn("BTCJPY_MAT1WK");
         when(products.get(3).getAlias()).thenReturn("BTCJPY_MAT2WK");
         when(products.get(4).getAlias()).thenReturn("BTCJPY_MAT3WK");
-
-        when(marketService.getProducts()).thenReturn(completedFuture(products));
+        when(marketService.getProducts()).thenReturn(completedFuture(products)).thenReturn(completedFuture(null));
 
         Key.KeyBuilder b = Key.builder();
         assertEquals(target.convertProductAlias(b.instrument("BTCJPY08JAN2017").build()), "BTCJPY08JAN2017");
@@ -494,7 +505,8 @@ public class BitflyerContextTest {
         assertEquals(target.convertProductAlias(b.instrument("TEST").build()), null);
         assertEquals(target.convertProductAlias(b.instrument(null).build()), null);
         assertEquals(target.convertProductAlias(null), null);
-        reset(marketService);
+        verify(marketService, times(1)).getProducts();
+
         target.clear();
         assertEquals(target.convertProductAlias(b.instrument("BTCJPY08JAN2017").build()), null);
         assertEquals(target.convertProductAlias(b.instrument("BTCJPY14APR2017").build()), null);
@@ -505,6 +517,7 @@ public class BitflyerContextTest {
         assertEquals(target.convertProductAlias(b.instrument("TEST").build()), null);
         assertEquals(target.convertProductAlias(b.instrument(null).build()), null);
         assertEquals(target.convertProductAlias(null), null);
+        verify(marketService, times(2)).getProducts();
 
     }
 
