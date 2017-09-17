@@ -98,29 +98,6 @@ public class CoincheckContextTest {
     }
 
     @Test
-    public void testGetMidPrice() throws Exception {
-
-        Key key = Key.builder().instrument("foo").build();
-
-        doReturn(null).when(target).getBestAskPrice(key);
-        doReturn(null).when(target).getBestBidPrice(key);
-        assertNull(target.getMidPrice(key));
-
-        doReturn(BigDecimal.TEN).when(target).getBestAskPrice(key);
-        doReturn(null).when(target).getBestBidPrice(key);
-        assertNull(target.getMidPrice(key));
-
-        doReturn(null).when(target).getBestAskPrice(key);
-        doReturn(BigDecimal.ONE).when(target).getBestBidPrice(key);
-        assertNull(target.getMidPrice(key));
-
-        doReturn(BigDecimal.TEN).when(target).getBestAskPrice(key);
-        doReturn(BigDecimal.ONE).when(target).getBestBidPrice(key);
-        assertEquals(target.getMidPrice(key), new BigDecimal("5.5"));
-
-    }
-
-    @Test
     public void testGetLastPrice() throws Exception {
 
         Key key = Key.builder().instrument("foo").build();
@@ -135,7 +112,6 @@ public class CoincheckContextTest {
         assertNull(target.getLastPrice(key));
 
     }
-
 
     @Test
     public void testListTrades() throws Exception {

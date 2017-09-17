@@ -35,8 +35,6 @@ public class BitfinexContext extends TemplateContext implements BitfinexService 
     private static final Type TYPE_TRADE = new TypeToken<List<BitfinexTrade>>() {
     }.getType();
 
-    private static final BigDecimal HALF = new BigDecimal("0.5");
-
     private final Gson gson;
 
     public BitfinexContext() {
@@ -88,21 +86,6 @@ public class BitfinexContext extends TemplateContext implements BitfinexService 
     @Override
     public BigDecimal getBestBidPrice(Key key) {
         return queryTick(key).map(BitfinexTick::getBid).orElse(null);
-    }
-
-    @Override
-    public BigDecimal getMidPrice(Key key) {
-
-        BigDecimal ask = getBestAskPrice(key);
-
-        BigDecimal bid = getBestBidPrice(key);
-
-        if (ask == null || bid == null) {
-            return null;
-        }
-
-        return ask.add(bid).multiply(HALF);
-
     }
 
     @Override

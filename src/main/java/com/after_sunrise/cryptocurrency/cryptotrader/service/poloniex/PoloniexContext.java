@@ -98,21 +98,6 @@ public class PoloniexContext extends TemplateContext implements PoloniexService 
     }
 
     @Override
-    public BigDecimal getMidPrice(Key key) {
-
-        BigDecimal ask = getBestAskPrice(key);
-
-        BigDecimal bid = getBestBidPrice(key);
-
-        if (ask == null || bid == null) {
-            return null;
-        }
-
-        return ask.add(bid).multiply(HALF);
-
-    }
-
-    @Override
     public BigDecimal getLastPrice(Key key) {
         return queryTick(key).map(PoloniexTick::getLast).orElse(null);
     }

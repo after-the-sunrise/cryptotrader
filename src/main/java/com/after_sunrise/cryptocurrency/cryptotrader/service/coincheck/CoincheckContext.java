@@ -36,8 +36,6 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     private static final Type TYPE_TRADE = new TypeToken<List<CoincheckTrade>>() {
     }.getType();
 
-    private static final BigDecimal HALF = new BigDecimal("0.5");
-
     private final Gson gson;
 
     public CoincheckContext() {
@@ -96,21 +94,6 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     @Override
     public BigDecimal getBestBidPrice(Key key) {
         return queryTick(key).map(CoincheckTick::getBid).orElse(null);
-    }
-
-    @Override
-    public BigDecimal getMidPrice(Key key) {
-
-        BigDecimal ask = getBestAskPrice(key);
-
-        BigDecimal bid = getBestBidPrice(key);
-
-        if (ask == null || bid == null) {
-            return null;
-        }
-
-        return ask.add(bid).multiply(HALF);
-
     }
 
     @Override

@@ -125,41 +125,6 @@ public class BitflyerContextTest {
     }
 
     @Test
-    public void testGetMidPrice() throws Exception {
-
-        Key key = Key.from(Request.builder().instrument("i").build());
-
-        when(marketService.getTick(any())).thenReturn(null);
-        assertNull(target.getMidPrice(key));
-        target.clear();
-
-        when(marketService.getTick(any())).thenReturn(completedFuture(null));
-        assertNull(target.getMidPrice(key));
-        target.clear();
-
-        Tick tick = mock(Tick.class);
-        when(marketService.getTick(any())).thenReturn(completedFuture(tick)).thenReturn(null);
-        assertNull(target.getMidPrice(key));
-
-        when(tick.getBestAskPrice()).thenReturn(null);
-        when(tick.getBestBidPrice()).thenReturn(ONE);
-        assertNull(target.getMidPrice(key));
-
-        when(tick.getBestAskPrice()).thenReturn(TEN);
-        when(tick.getBestBidPrice()).thenReturn(null);
-        assertNull(target.getMidPrice(key));
-
-        when(tick.getBestAskPrice()).thenReturn(TEN);
-        when(tick.getBestBidPrice()).thenReturn(ONE);
-        assertEquals(target.getMidPrice(key), new BigDecimal("5.5"));
-        assertEquals(target.getMidPrice(key), new BigDecimal("5.5"));
-        target.clear();
-        assertNull(target.getMidPrice(key));
-        assertNull(target.getMidPrice(key));
-
-    }
-
-    @Test
     public void testGetLastPrice() throws Exception {
 
         Key key = Key.from(Request.builder().instrument("i").build());

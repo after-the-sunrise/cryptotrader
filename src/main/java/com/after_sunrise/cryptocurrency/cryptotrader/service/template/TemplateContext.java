@@ -211,7 +211,17 @@ public abstract class TemplateContext implements Context {
 
     @Override
     public BigDecimal getMidPrice(Key key) {
-        return null;
+
+        BigDecimal ask = getBestAskPrice(key);
+
+        BigDecimal bid = getBestBidPrice(key);
+
+        if (ask == null || bid == null) {
+            return null;
+        }
+
+        return ask.add(bid).multiply(HALF);
+
     }
 
     @Override

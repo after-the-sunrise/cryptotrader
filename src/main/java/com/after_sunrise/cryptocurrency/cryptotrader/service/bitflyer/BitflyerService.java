@@ -1,5 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
 import lombok.Getter;
 
 import java.math.BigDecimal;
@@ -16,11 +17,14 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
  * @author takanori.takase
  * @version 0.0.1
  */
-public interface BitflyerService {
+public interface BitflyerService extends Service {
 
     String ID = "bitflyer";
 
-    BigDecimal SATOSHI = new BigDecimal("0.00000001");
+    @Override
+    default String get() {
+        return ID;
+    }
 
     enum AssetType {
 

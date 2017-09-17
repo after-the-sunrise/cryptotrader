@@ -27,6 +27,11 @@ public interface Estimator extends Service {
 
     }
 
+    @Override
+    default String get() {
+        return getClass().getSimpleName();
+    }
+
     Estimation estimate(Context context, Request request);
 
 }

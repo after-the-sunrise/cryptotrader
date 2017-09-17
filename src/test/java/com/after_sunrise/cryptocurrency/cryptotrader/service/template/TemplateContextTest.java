@@ -68,7 +68,7 @@ public class TemplateContextTest {
 
     @BeforeMethod
     public void setUp() {
-        target = new TestContext();
+        target = spy(new TestContext());
     }
 
     @Test
@@ -193,6 +193,29 @@ public class TemplateContextTest {
 
         timeout = null;
         assertNull(target.getQuietly(future, timeout));
+
+    }
+
+    @Test
+    public void testGetMidPrice() throws Exception {
+
+        Key key = Key.builder().instrument("foo").build();
+
+        doReturn(null).when(target).getBestAskPrice(key);
+        doReturn(null).when(target).getBestBidPrice(key);
+        assertNull(target.getMidPrice(key));
+
+        doReturn(BigDecimal.TEN).when(target).getBestAskPrice(key);
+        doReturn(null).when(target).getBestBidPrice(key);
+        assertNull(target.getMidPrice(key));
+
+        doReturn(null).when(target).getBestAskPrice(key);
+        doReturn(BigDecimal.ONE).when(target).getBestBidPrice(key);
+        assertNull(target.getMidPrice(key));
+
+        doReturn(BigDecimal.TEN).when(target).getBestAskPrice(key);
+        doReturn(BigDecimal.ONE).when(target).getBestBidPrice(key);
+        assertEquals(target.getMidPrice(key), new BigDecimal("5.5"));
 
     }
 
