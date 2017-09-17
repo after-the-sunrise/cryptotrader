@@ -12,6 +12,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
@@ -33,6 +34,8 @@ import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.MAR
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.SELL;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.COLLATERAL;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.COLLATERAL_BTC;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.COLLATERAL_JPY;
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
@@ -231,9 +234,13 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
             return null;
         }
 
-        if (mapper.apply(product) == COLLATERAL) {
+        AssetType asset = mapper.apply(product);
 
-            Collateral collateral = findCached(Collateral.class, key, () ->
+        if (asset == COLLATERAL) {
+
+            Key all = Key.build(key).instrument(null).build();
+
+            Collateral collateral = findCached(Collateral.class, all, () ->
                     accountService.getCollateral().get(TIMEOUT.toMillis(), MILLISECONDS)
             );
 
@@ -254,6 +261,27 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
             }
 
             return amount.subtract(required);
+
+        }
+
+        if (product == COLLATERAL_JPY || product == COLLATERAL_BTC) {
+
+            Key all = Key.build(key).instrument(null).build();
+
+            List<Margin> margins = listCached(Margin.class, all, () ->
+                    accountService.getMargins().get(TIMEOUT.toMillis(), MILLISECONDS)
+            );
+
+            if (CollectionUtils.isEmpty(margins)) {
+                return null;
+            }
+
+            return margins.stream()
+                    .filter(Objects::nonNull)
+                    .filter(c -> asset == AssetType.find(c.getCurrency()))
+                    .findFirst()
+                    .map(Margin::getAmount)
+                    .orElse(null);
 
         }
 

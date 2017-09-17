@@ -39,6 +39,7 @@ import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.mockito.Matchers.any;
@@ -309,19 +310,111 @@ public class BitflyerContextTest {
     }
 
     @Test
-    public void testForMargin() {
+    public void testForMargin_Collateral() {
+
+        Collateral c = mock(Collateral.class);
+        when(accountService.getCollateral()).thenReturn(completedFuture(c));
+
+        Key key1 = Key.from(Request.builder().instrument("BTCJPY_MAT1WK").build());
+        Key key2 = Key.from(Request.builder().instrument("BTC_JPY").build());
+        Key key3 = Key.from(Request.builder().instrument("HOGE").build());
+        Key key4 = null;
+
+        when(c.getCollateral()).thenReturn(null);
+        when(c.getRequiredCollateral()).thenReturn(ONE);
+        assertEquals(target.forMargin(key1, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key2, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key3, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key4, ProductType::getFunding), null);
+        verify(accountService, times(1)).getCollateral();
+
+        when(c.getCollateral()).thenReturn(TEN);
+        when(c.getRequiredCollateral()).thenReturn(null);
+        assertEquals(target.forMargin(key1, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key2, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key3, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key4, ProductType::getFunding), null);
+        verify(accountService, times(1)).getCollateral();
+
+        when(c.getCollateral()).thenReturn(TEN);
+        when(c.getRequiredCollateral()).thenReturn(ONE);
+        assertEquals(target.forMargin(key1, ProductType::getFunding), TEN.subtract(ONE));
+        assertEquals(target.forMargin(key2, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key3, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key4, ProductType::getFunding), null);
+        verify(accountService, times(1)).getCollateral();
+
+        // Cached
+        when(accountService.getCollateral()).thenReturn(null);
+        assertEquals(target.forMargin(key1, ProductType::getFunding), TEN.subtract(ONE));
+        assertEquals(target.forMargin(key2, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key3, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key4, ProductType::getFunding), null);
+        verify(accountService, times(1)).getCollateral();
+
+        // Not found
+        target.clear();
+        assertEquals(target.forMargin(key1, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key2, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key3, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key4, ProductType::getFunding), null);
+        verify(accountService, times(2)).getCollateral();
+
+    }
+
+    @Test
+    public void testForMargin_Margin() {
+
+        Margin m1 = mock(Margin.class);
+        Margin m2 = mock(Margin.class);
+        when(m1.getCurrency()).thenReturn("JPY");
+        when(m2.getCurrency()).thenReturn("BTC");
+        when(m1.getAmount()).thenReturn(new BigDecimal("12345"));
+        when(m2.getAmount()).thenReturn(new BigDecimal("2.5"));
+        when(accountService.getMargins())
+                .thenReturn(completedFuture(asList(m1, null)))
+                .thenReturn(completedFuture(asList(null, m2)))
+                .thenReturn(completedFuture(asList(m1, null, m2)))
+                .thenReturn(completedFuture(null));
+
+        Key key1 = Key.from(Request.builder().instrument("COLLATERAL_JPY").build());
+        Key key2 = Key.from(Request.builder().instrument("COLLATERAL_BTC").build());
+
+        // Only JPY
+        target.clear();
+        assertEquals(target.forMargin(key1, ProductType::getStructure), new BigDecimal("12345"));
+        assertEquals(target.forMargin(key2, ProductType::getStructure), null);
+        verify(accountService, times(1)).getMargins();
+
+        // Only BTC
+        target.clear();
+        assertEquals(target.forMargin(key1, ProductType::getStructure), null);
+        assertEquals(target.forMargin(key2, ProductType::getStructure), new BigDecimal("2.5"));
+        verify(accountService, times(2)).getMargins();
+
+        // Both
+        target.clear();
+        assertEquals(target.forMargin(key1, ProductType::getStructure), new BigDecimal("12345"));
+        assertEquals(target.forMargin(key2, ProductType::getStructure), new BigDecimal("2.5"));
+        verify(accountService, times(3)).getMargins();
+
+        // Null
+        target.clear();
+        assertEquals(target.forMargin(key1, ProductType::getStructure), null);
+        assertEquals(target.forMargin(key2, ProductType::getStructure), null);
+        verify(accountService, times(4)).getMargins();
+
+    }
+
+    @Test
+    public void testForMargin_Position() {
 
         Product i1 = mock(Product.class);
         Product i2 = mock(Product.class);
-        Product i3 = mock(Product.class);
-        Product i4 = mock(Product.class);
-        when(i1.getProduct()).thenReturn("BTCJPY08JAN2017");
+        when(i1.getProduct()).thenReturn("BTC_JPY");
         when(i2.getProduct()).thenReturn("BTCJPY14APR2017");
-        when(i3.getProduct()).thenReturn("BTCJPY08OCT2017");
         when(i2.getAlias()).thenReturn("BTCJPY_MAT1WK");
-        when(i3.getAlias()).thenReturn("BTCJPY_MAT2WK");
-        when(i3.getAlias()).thenReturn("BTCJPY_MAT3WK");
-        when(marketService.getProducts()).thenReturn(completedFuture(asList(i1, null, i2, i3, i4))).thenReturn(null);
+        when(marketService.getProducts()).thenReturn(completedFuture(asList(i1, null, i2)));
 
         TradePosition p1 = mock(TradePosition.class);
         TradePosition p2 = mock(TradePosition.class);
@@ -342,42 +435,32 @@ public class BitflyerContextTest {
             TradePosition.Request request = i.getArgumentAt(0, TradePosition.Request.class);
 
             // Should be converted from "BTCJPY_MAT1WK" to "BTCJPY14APR2017"
-            assertEquals(request.getProduct(), "BTCJPY14APR2017");
+            if ("BTCJPY14APR2017".equals(request.getProduct())) {
+                return completedFuture(asList(p1, p2, p3, null, p4, p5, p6));
+            }
 
-            return completedFuture(asList(p1, p2, p3, null, p4, p5, p6));
+            return completedFuture(emptyList());
 
-        }).thenReturn(null);
-
-        Collateral c = mock(Collateral.class);
-        when(c.getCollateral()).thenReturn(null, TEN);
-        when(c.getRequiredCollateral()).thenReturn(ONE, (BigDecimal) null);
-        when(accountService.getCollateral()).thenReturn(completedFuture(c)).thenReturn(null);
+        }).thenReturn(completedFuture(null));
 
         Key key1 = Key.from(Request.builder().instrument("BTCJPY_MAT1WK").build());
-        Key key2 = Key.from(Request.builder().instrument("BTC_JPY").build());
-        Key key3 = Key.from(Request.builder().instrument("TEST").build());
-        Key key4 = null;
+        Key key2 = Key.from(Request.builder().instrument("BTCJPY_MAT2WK").build());
 
+        // Found
         assertEquals(target.forMargin(key1, ProductType::getStructure), TEN.subtract(ONE).subtract(ONE));
+        assertEquals(target.forMargin(key2, ProductType::getStructure), ZERO);
+        verify(orderService, times(2)).listPositions(any());
+
+        // Cached
         assertEquals(target.forMargin(key1, ProductType::getStructure), TEN.subtract(ONE).subtract(ONE));
-        assertEquals(target.forMargin(key2, ProductType::getStructure), null);
-        assertEquals(target.forMargin(key3, ProductType::getStructure), null);
-        assertEquals(target.forMargin(key4, ProductType::getStructure), null);
-        assertEquals(target.forMargin(key1, ProductType::getFunding), null); // No amount
-        assertEquals(target.forMargin(key1, ProductType::getFunding), TEN.subtract(ONE)); // With Position
-        assertEquals(target.forMargin(key1, ProductType::getFunding), null); // No P&L
-        assertEquals(target.forMargin(key2, ProductType::getFunding), null);
-        assertEquals(target.forMargin(key3, ProductType::getFunding), null);
-        assertEquals(target.forMargin(key4, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key2, ProductType::getStructure), ZERO);
+        verify(orderService, times(2)).listPositions(any());
+
+        // No data
         target.clear();
         assertEquals(target.forMargin(key1, ProductType::getStructure), ZERO);
-        assertEquals(target.forMargin(key2, ProductType::getStructure), null);
-        assertEquals(target.forMargin(key3, ProductType::getStructure), null);
-        assertEquals(target.forMargin(key4, ProductType::getStructure), null);
-        assertEquals(target.forMargin(key1, ProductType::getFunding), null);
-        assertEquals(target.forMargin(key2, ProductType::getFunding), null);
-        assertEquals(target.forMargin(key3, ProductType::getFunding), null);
-        assertEquals(target.forMargin(key4, ProductType::getFunding), null);
+        assertEquals(target.forMargin(key2, ProductType::getStructure), ZERO);
+        verify(orderService, times(4)).listPositions(any());
 
     }
 

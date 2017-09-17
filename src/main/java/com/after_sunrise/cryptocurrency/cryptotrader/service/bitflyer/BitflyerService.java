@@ -91,7 +91,11 @@ public interface BitflyerService extends Service {
 
         BTCJPY_MAT1WK(FUTURE_BTC1W, COLLATERAL, new BigDecimal("0.001"), ONE),
 
-        BTCJPY_MAT2WK(FUTURE_BTC2W, COLLATERAL, new BigDecimal("0.001"), ONE);
+        BTCJPY_MAT2WK(FUTURE_BTC2W, COLLATERAL, new BigDecimal("0.001"), ONE),
+
+        COLLATERAL_JPY(JPY, COLLATERAL, ONE, ONE),
+
+        COLLATERAL_BTC(BTC, COLLATERAL, SATOSHI, SATOSHI);
 
         private static final Map<String, ProductType> NAMES = stream(values()).collect(toMap(ProductType::name, t -> t));
 
