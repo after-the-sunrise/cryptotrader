@@ -5,6 +5,7 @@ import com.after_sunrise.cryptocurrency.bitflyer4j.entity.*;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.AccountService;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.MarketService;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.OrderService;
+import com.after_sunrise.cryptocurrency.bitflyer4j.service.RealtimeService;
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
@@ -39,7 +40,6 @@ import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.mockito.Matchers.any;
@@ -62,6 +62,8 @@ public class BitflyerContextTest {
 
     private OrderService orderService;
 
+    private RealtimeService realtimeService;
+
     @BeforeMethod
     public void setUp() {
 
@@ -69,10 +71,12 @@ public class BitflyerContextTest {
         accountService = module.getMock(AccountService.class);
         marketService = module.getMock(MarketService.class);
         orderService = module.getMock(OrderService.class);
+        realtimeService = module.getMock(RealtimeService.class);
 
         when(module.getMock(Bitflyer4j.class).getAccountService()).thenReturn(accountService);
         when(module.getMock(Bitflyer4j.class).getMarketService()).thenReturn(marketService);
         when(module.getMock(Bitflyer4j.class).getOrderService()).thenReturn(orderService);
+        when(module.getMock(Bitflyer4j.class).getRealtimeService()).thenReturn(realtimeService);
 
         target = spy(new BitflyerContext(module.getMock(Bitflyer4j.class)));
 
@@ -88,21 +92,78 @@ public class BitflyerContextTest {
     }
 
     @Test
+    public void testListener() {
+
+        verify(realtimeService).addListener(any());
+
+        target.onBoards(null, null);
+
+        target.onTicks(null, null);
+
+        target.onExecutions(null, null);
+
+    }
+
+    @Test
+    public void testGetTick() throws Exception {
+
+        Tick tick = mock(Tick.class);
+        when(tick.getProduct()).thenReturn("i");
+        ZonedDateTime now = ZonedDateTime.now();
+        Key key = Key.from(Request.builder().instrument(tick.getProduct()).currentTime(now.toInstant()).build());
+        when(marketService.getTick(any())).thenReturn(completedFuture(tick)).thenReturn(completedFuture(null));
+
+        // Initial
+        assertSame(target.getTick(key), tick);
+        verify(marketService, times(1)).getTick(any());
+        verify(realtimeService, times(1)).subscribeTick(singletonList(key.getInstrument()));
+
+        // Cached
+        assertSame(target.getTick(key), tick);
+        verify(marketService, times(1)).getTick(any());
+        verify(realtimeService, times(1)).subscribeTick(singletonList(key.getInstrument()));
+
+        // Not found
+        target.clear();
+        assertSame(target.getTick(key), null);
+        verify(marketService, times(2)).getTick(any());
+        verify(realtimeService, times(1)).subscribeTick(singletonList(key.getInstrument()));
+
+        // Realtime found, but no time.
+        target.clear();
+        target.onTicks(key.getInstrument(), singletonList(tick));
+        assertSame(target.getTick(key), null);
+        verify(marketService, times(3)).getTick(any());
+        verify(realtimeService, times(1)).subscribeTick(singletonList(key.getInstrument()));
+
+        // Realtime found, but old.
+        target.clear();
+        when(tick.getTimestamp()).thenReturn(now.minusMinutes(10));
+        assertSame(target.getTick(key), null);
+        verify(marketService, times(4)).getTick(any());
+        verify(realtimeService, times(1)).subscribeTick(singletonList(key.getInstrument()));
+
+        // Realtime found.
+        target.clear();
+        when(tick.getTimestamp()).thenReturn(now.plusMinutes(10));
+        assertSame(target.getTick(key), tick);
+        verify(marketService, times(4)).getTick(any());
+        verify(realtimeService, times(1)).subscribeTick(singletonList(key.getInstrument()));
+
+    }
+
+    @Test
     public void testGetBesAskPrice() throws Exception {
 
         Key key = Key.from(Request.builder().instrument("i").build());
+        Tick tick = mock(Tick.class);
+        when(tick.getBestAskPrice()).thenReturn(ONE);
 
-        CompletableFuture<Tick> f1 = completedFuture(mock(Tick.class));
-        CompletableFuture<Tick> f2 = completedFuture(mock(Tick.class));
-        when(f1.get().getBestAskPrice()).thenReturn(ONE);
-        when(f2.get().getBestAskPrice()).thenReturn(TEN);
-        when(marketService.getTick(any())).thenReturn(f1, f2);
+        doReturn(tick).when(target).getTick(key);
+        assertEquals(target.getBestAskPrice(key), ONE);
 
-        assertEquals(target.getBestAskPrice(key), ONE);
-        assertEquals(target.getBestAskPrice(key), ONE);
-        target.clear();
-        assertEquals(target.getBestAskPrice(key), TEN);
-        assertEquals(target.getBestAskPrice(key), TEN);
+        doReturn(null).when(target).getTick(key);
+        assertEquals(target.getBestAskPrice(key), null);
 
     }
 
@@ -110,18 +171,14 @@ public class BitflyerContextTest {
     public void testGetBesBidPrice() throws Exception {
 
         Key key = Key.from(Request.builder().instrument("i").build());
+        Tick tick = mock(Tick.class);
+        when(tick.getBestBidPrice()).thenReturn(ONE);
 
-        CompletableFuture<Tick> f1 = completedFuture(mock(Tick.class));
-        CompletableFuture<Tick> f2 = completedFuture(mock(Tick.class));
-        when(f1.get().getBestBidPrice()).thenReturn(ONE);
-        when(f2.get().getBestBidPrice()).thenReturn(TEN);
-        when(marketService.getTick(any())).thenReturn(f1, f2);
+        doReturn(tick).when(target).getTick(key);
+        assertEquals(target.getBestBidPrice(key), ONE);
 
-        assertEquals(target.getBestBidPrice(key), ONE);
-        assertEquals(target.getBestBidPrice(key), ONE);
-        target.clear();
-        assertEquals(target.getBestBidPrice(key), TEN);
-        assertEquals(target.getBestBidPrice(key), TEN);
+        doReturn(null).when(target).getTick(key);
+        assertEquals(target.getBestBidPrice(key), null);
 
     }
 
@@ -129,18 +186,14 @@ public class BitflyerContextTest {
     public void testGetLastPrice() throws Exception {
 
         Key key = Key.from(Request.builder().instrument("i").build());
+        Tick tick = mock(Tick.class);
+        when(tick.getTradePrice()).thenReturn(ONE);
 
-        CompletableFuture<Tick> f1 = completedFuture(mock(Tick.class));
-        CompletableFuture<Tick> f2 = completedFuture(mock(Tick.class));
-        when(f1.get().getTradePrice()).thenReturn(ONE);
-        when(f2.get().getTradePrice()).thenReturn(TEN);
-        when(marketService.getTick(any())).thenReturn(f1, f2);
+        doReturn(tick).when(target).getTick(key);
+        assertEquals(target.getLastPrice(key), ONE);
 
-        assertEquals(target.getLastPrice(key), ONE);
-        assertEquals(target.getLastPrice(key), ONE);
-        target.clear();
-        assertEquals(target.getLastPrice(key), TEN);
-        assertEquals(target.getLastPrice(key), TEN);
+        doReturn(null).when(target).getTick(key);
+        assertEquals(target.getLastPrice(key), null);
 
     }
 

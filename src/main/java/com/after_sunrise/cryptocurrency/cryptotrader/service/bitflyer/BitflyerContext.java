@@ -3,9 +3,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4j;
 import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4jFactory;
 import com.after_sunrise.cryptocurrency.bitflyer4j.entity.*;
-import com.after_sunrise.cryptocurrency.bitflyer4j.service.AccountService;
-import com.after_sunrise.cryptocurrency.bitflyer4j.service.MarketService;
-import com.after_sunrise.cryptocurrency.bitflyer4j.service.OrderService;
+import com.after_sunrise.cryptocurrency.bitflyer4j.service.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
@@ -26,6 +24,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -38,8 +37,7 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.Bit
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.COLLATERAL_JPY;
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ZERO;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.*;
 import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
@@ -49,7 +47,7 @@ import static java.util.stream.Collectors.toList;
  * @version 0.0.1
  */
 @Slf4j
-public class BitflyerContext extends TemplateContext implements BitflyerService {
+public class BitflyerContext extends TemplateContext implements BitflyerService, RealtimeListener {
 
     private static final Pattern EXPIRY_PATTERN = Pattern.compile("^[A-Z]{6}[0-9]{2}[A-Z]{3}[0-9]{4}$");
 
@@ -63,6 +61,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
     private static final Duration TIMEOUT = Duration.ofMinutes(1);
 
+    private static final Duration REALTIME_EXPIRY = Duration.ofMinutes(1);
+
     private final Bitflyer4j bitflyer4j;
 
     private final AccountService accountService;
@@ -70,6 +70,10 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     private final MarketService marketService;
 
     private final OrderService orderService;
+
+    private final RealtimeService realtimeService;
+
+    private final Map<String, Optional<Tick>> realtimeTicks;
 
     public BitflyerContext() {
 
@@ -82,6 +86,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
 
         super(ID);
 
+        realtimeTicks = new ConcurrentHashMap<>();
+
         bitflyer4j = api;
 
         accountService = bitflyer4j.getAccountService();
@@ -89,6 +95,10 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
         marketService = bitflyer4j.getMarketService();
 
         orderService = bitflyer4j.getOrderService();
+
+        realtimeService = bitflyer4j.getRealtimeService();
+
+        realtimeService.addListener(this);
 
         log.debug("Initialized.");
 
@@ -107,15 +117,81 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     }
 
     @Override
-    public BigDecimal getBestAskPrice(Key key) {
+    public void onBoards(String product, Board value) {
+        // Do nothing
+    }
 
-        Tick tick = findCached(Tick.class, key, () -> {
+    @Override
+    public void onTicks(String product, List<Tick> values) {
 
-            Tick.Request request = Tick.Request.builder().product(key.getInstrument()).build();
+        if (CollectionUtils.isEmpty(values)) {
+            return;
+        }
+
+        values.stream().filter(Objects::nonNull).forEach(t -> {
+
+            String key = StringUtils.trimToEmpty(product);
+
+            realtimeTicks.put(key, Optional.of(t));
+
+        });
+
+    }
+
+    @Override
+    public void onExecutions(String product, List<Execution> values) {
+        // Do nothing
+    }
+
+    @VisibleForTesting
+    Tick getTick(Key key) {
+
+        return findCached(Tick.class, key, () -> {
+
+            String instrument = StringUtils.trimToEmpty(key.getInstrument());
+
+            Optional<Tick> realtime = realtimeTicks.get(instrument);
+
+            if (realtime == null) {
+
+                // Initiate subscription if nothing is cached.
+
+                realtime = Optional.empty();
+
+                realtimeTicks.put(instrument, realtime);
+
+                realtimeService.subscribeTick(singletonList(instrument));
+
+            }
+
+            if (realtime.isPresent() && realtime.get().getTimestamp() != null) {
+
+                // Use cached if the timestamp is not old.
+
+                Instant cachedTime = realtime.get().getTimestamp().toInstant();
+
+                Instant currentTime = key.getTimestamp();
+
+                if (Duration.between(cachedTime, currentTime).compareTo(REALTIME_EXPIRY) <= 0) {
+                    return realtime.get();
+                }
+
+            }
+
+            // Fall back to request/response.
+
+            Tick.Request request = Tick.Request.builder().product(instrument).build();
 
             return marketService.getTick(request).get(TIMEOUT.toMillis(), MILLISECONDS);
 
         });
+
+    }
+
+    @Override
+    public BigDecimal getBestAskPrice(Key key) {
+
+        Tick tick = getTick(key);
 
         return tick == null ? null : tick.getBestAskPrice();
 
@@ -124,13 +200,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     @Override
     public BigDecimal getBestBidPrice(Key key) {
 
-        Tick tick = findCached(Tick.class, key, () -> {
-
-            Tick.Request request = Tick.Request.builder().product(key.getInstrument()).build();
-
-            return marketService.getTick(request).get(TIMEOUT.toMillis(), MILLISECONDS);
-
-        });
+        Tick tick = getTick(key);
 
         return tick == null ? null : tick.getBestBidPrice();
 
@@ -139,13 +209,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService 
     @Override
     public BigDecimal getLastPrice(Key key) {
 
-        Tick tick = findCached(Tick.class, key, () -> {
-
-            Tick.Request request = Tick.Request.builder().product(key.getInstrument()).build();
-
-            return marketService.getTick(request).get(TIMEOUT.toMillis(), MILLISECONDS);
-
-        });
+        Tick tick = getTick(key);
 
         return tick == null ? null : tick.getTradePrice();
 
