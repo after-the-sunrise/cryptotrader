@@ -41,7 +41,14 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
     static {
         UNDERLIERS.put(BTCJPY_MAT1WK, BTC_JPY);
         UNDERLIERS.put(BTCJPY_MAT2WK, BTC_JPY);
-        HEDGES.put(FX_BTC_JPY, EnumSet.of(BTCJPY_MAT1WK, BTCJPY_MAT2WK, COLLATERAL_BTC));
+        HEDGES.put(FX_BTC_JPY, EnumSet.of(
+                BTC_JPY,
+                // ETH_BTC, TODO : Rate Conversion
+                // BCH_BTC, TODO : Rate Conversion
+                BTCJPY_MAT1WK,
+                BTCJPY_MAT2WK,
+                COLLATERAL_BTC
+        ));
     }
 
     public BitflyerAdviser() {
