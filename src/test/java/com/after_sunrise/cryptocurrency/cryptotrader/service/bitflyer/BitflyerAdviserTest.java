@@ -18,7 +18,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.*;
-import static java.math.BigDecimal.ZERO;
+import static java.math.BigDecimal.*;
 import static java.math.BigDecimal.valueOf;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 import static org.mockito.Mockito.*;
@@ -203,93 +203,133 @@ public class BitflyerAdviserTest {
     }
 
     @Test
+    public void testGetEquivalentSize() {
+
+        Request request1 = Request.builder().instrument(FX_BTC_JPY.name()).build();
+        Request request2 = Request.builder().instrument(ETH_BTC.name()).build();
+        when(context.getInstrumentPosition(Key.from(request1))).thenReturn(TEN);
+
+        // Mid * Size
+        when(context.getMidPrice(Key.from(request2))).thenReturn(new BigDecimal("0.0765"));
+        when(context.getLastPrice(Key.from(request2))).thenReturn(new BigDecimal("0.0789"));
+        when(context.getInstrumentPosition(Key.from(request2))).thenReturn(new BigDecimal("5.5"));
+        assertEquals(target.getEquivalentSize(context, request1, ETH_BTC), new BigDecimal("0.42075"));
+
+        // Last * Size
+        when(context.getMidPrice(Key.from(request2))).thenReturn(null);
+        when(context.getLastPrice(Key.from(request2))).thenReturn(new BigDecimal("0.0789"));
+        when(context.getInstrumentPosition(Key.from(request2))).thenReturn(new BigDecimal("5.5"));
+        assertEquals(target.getEquivalentSize(context, request1, ETH_BTC), new BigDecimal("0.43395"));
+
+        // Null price
+        when(context.getMidPrice(Key.from(request2))).thenReturn(null);
+        when(context.getLastPrice(Key.from(request2))).thenReturn(null);
+        when(context.getInstrumentPosition(Key.from(request2))).thenReturn(new BigDecimal("5.5"));
+        assertEquals(target.getEquivalentSize(context, request1, ETH_BTC), null);
+
+        // Null price + Flat position
+        when(context.getMidPrice(Key.from(request2))).thenReturn(null);
+        when(context.getLastPrice(Key.from(request2))).thenReturn(null);
+        when(context.getInstrumentPosition(Key.from(request2))).thenReturn(new BigDecimal("0.00"));
+        assertEquals(target.getEquivalentSize(context, request1, ETH_BTC), ZERO);
+
+        // Null price + Null Position
+        when(context.getMidPrice(Key.from(request2))).thenReturn(null);
+        when(context.getLastPrice(Key.from(request2))).thenReturn(null);
+        when(context.getInstrumentPosition(Key.from(request2))).thenReturn(null);
+        assertEquals(target.getEquivalentSize(context, request1, ETH_BTC), null);
+
+        // No conversion
+        assertEquals(target.getEquivalentSize(context, request1, FX_BTC_JPY), TEN);
+
+    }
+
+    @Test
     public void testGetHedgeSize() {
 
         Request request = Request.builder().instrument(FX_BTC_JPY.name()).build();
-        Key k0 = Key.from(request);
-        Key k1 = Key.build(k0).instrument(BTCJPY_MAT1WK.name()).build();
-        Key k2 = Key.build(k0).instrument(BTCJPY_MAT2WK.name()).build();
+        Key key = Key.from(request);
         Set<ProductType> products = EnumSet.of(BTCJPY_MAT1WK, BTCJPY_MAT2WK);
 
         //
         // Zero hedged
         //
-        when(context.getInstrumentPosition(k0)).thenReturn(valueOf(0));
+        when(context.getInstrumentPosition(key)).thenReturn(valueOf(0));
 
-        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(0));
-        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(0));
+        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), valueOf(0));
 
-        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-1));
-        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+1));
+        doReturn(valueOf(-1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(valueOf(+1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), valueOf(0));
 
-        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-2));
-        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+1));
+        doReturn(valueOf(-2)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(valueOf(+1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), valueOf(+1));
 
-        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-1));
-        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+2));
+        doReturn(valueOf(-1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(valueOf(+2)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), valueOf(-1));
 
         //
         // Long hedged
         //
-        when(context.getInstrumentPosition(k0)).thenReturn(valueOf(+1));
+        when(context.getInstrumentPosition(key)).thenReturn(valueOf(+1));
 
-        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(0));
-        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(0));
+        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), valueOf(-1));
 
-        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-1));
-        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+1));
+        doReturn(valueOf(-1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(valueOf(+1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), valueOf(-1));
 
-        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-2));
-        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+1));
+        doReturn(valueOf(-2)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(valueOf(+1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), valueOf(0));
 
-        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-1));
-        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+2));
+        doReturn(valueOf(-1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(valueOf(+2)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), valueOf(-2));
 
         //
         // Short hedged
         //
-        when(context.getInstrumentPosition(k0)).thenReturn(valueOf(-1));
+        when(context.getInstrumentPosition(key)).thenReturn(valueOf(-1));
 
-        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(0));
-        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(0));
+        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), valueOf(+1));
 
-        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-1));
-        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+1));
+        doReturn(valueOf(-1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(valueOf(+1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), valueOf(+1));
 
-        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-2));
-        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+1));
+        doReturn(valueOf(-2)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(valueOf(+1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), valueOf(2));
 
-        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(-1));
-        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(+2));
+        doReturn(valueOf(-1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(valueOf(+2)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), valueOf(0));
 
         //
         // Null hedged
         //
-        when(context.getInstrumentPosition(k0)).thenReturn(null);
-        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(0));
-        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(0));
+        when(context.getInstrumentPosition(key)).thenReturn(null);
+        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), null);
 
-        when(context.getInstrumentPosition(k0)).thenReturn(valueOf(0));
-        when(context.getInstrumentPosition(k1)).thenReturn(null);
-        when(context.getInstrumentPosition(k2)).thenReturn(valueOf(0));
+        when(context.getInstrumentPosition(key)).thenReturn(valueOf(0));
+        doReturn(null).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), null);
 
-        when(context.getInstrumentPosition(k0)).thenReturn(valueOf(0));
-        when(context.getInstrumentPosition(k1)).thenReturn(valueOf(0));
-        when(context.getInstrumentPosition(k2)).thenReturn(null);
+        when(context.getInstrumentPosition(key)).thenReturn(valueOf(0));
+        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
+        doReturn(null).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
         assertEquals(target.getHedgeSize(context, request, products), null);
 
     }

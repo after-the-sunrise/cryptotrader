@@ -36,19 +36,16 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     private static final Map<ProductType, ProductType> UNDERLIERS = new EnumMap<>(ProductType.class);
 
+    private static final Set<ProductType> HEDGE_RAW = EnumSet.of(BTC_JPY, BTCJPY_MAT1WK, BTCJPY_MAT2WK, COLLATERAL_BTC);
+
+    private static final Set<ProductType> HEDGE_CCY = EnumSet.of(ETH_BTC, BCH_BTC);
+
     private static final Map<ProductType, Set<ProductType>> HEDGES = new EnumMap<>(ProductType.class);
 
     static {
         UNDERLIERS.put(BTCJPY_MAT1WK, BTC_JPY);
         UNDERLIERS.put(BTCJPY_MAT2WK, BTC_JPY);
-        HEDGES.put(FX_BTC_JPY, EnumSet.of(
-                BTC_JPY,
-                // ETH_BTC, TODO : Rate Conversion
-                // BCH_BTC, TODO : Rate Conversion
-                BTCJPY_MAT1WK,
-                BTCJPY_MAT2WK,
-                COLLATERAL_BTC
-        ));
+        HEDGES.put(FX_BTC_JPY, EnumSet.copyOf(CollectionUtils.union(HEDGE_RAW, HEDGE_CCY)));
     }
 
     public BitflyerAdviser() {
@@ -179,25 +176,54 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
     }
 
     @VisibleForTesting
+    BigDecimal getEquivalentSize(Context context, Request request, ProductType type) {
+
+        Key key = Key.build(Key.from(request)).instrument(type.name()).build();
+
+        BigDecimal position = context.getInstrumentPosition(key);
+
+        if (position == null) {
+            return null;
+        }
+
+        if (position.signum() == 0) {
+            return ZERO;
+        }
+
+        if (HEDGE_CCY.contains(type)) {
+
+            BigDecimal price = context.getMidPrice(key);
+
+            if (price == null) {
+                price = context.getLastPrice(key);
+            }
+
+            if (price == null) {
+                return null;
+            }
+
+            position = position.multiply(price);
+
+        }
+
+        return position;
+
+    }
+
+    @VisibleForTesting
     BigDecimal getHedgeSize(Context context, Request request, Set<ProductType> products) {
 
-        Key source = Key.from(request);
-
-        BigDecimal hedged = context.getInstrumentPosition(source);
+        BigDecimal hedged = context.getInstrumentPosition(Key.from(request));
 
         if (hedged == null) {
             return null;
         }
 
-        Key.KeyBuilder builder = Key.build(source);
-
         BigDecimal outright = ZERO;
 
         for (ProductType type : products) {
 
-            Key key = builder.instrument(type.name()).build();
-
-            BigDecimal position = context.getInstrumentPosition(key);
+            BigDecimal position = getEquivalentSize(context, request, type);
 
             if (position == null) {
                 return null;
