@@ -1,0 +1,11 @@
+{
+  "prices": [
+    {
+      "instrument": "USD_JPY",
+      "time": "2017-09-15T20:59:58.654262Z",
+      "bid": 110.819,
+      "ask": 110.859,
+      "status": "halted"
+    }
+  ]
+}

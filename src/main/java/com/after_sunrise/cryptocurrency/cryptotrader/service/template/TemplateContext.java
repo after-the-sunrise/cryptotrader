@@ -73,6 +73,11 @@ public abstract class TemplateContext implements Context {
 
     @VisibleForTesting
     public String query(String path) throws IOException {
+        return query(path, null);
+    }
+
+    @VisibleForTesting
+    public String query(String path, Map<String, String> headers) throws IOException {
 
         ResponseHandler<String> handler = response -> {
 
@@ -98,7 +103,11 @@ public abstract class TemplateContext implements Context {
 
         };
 
-        return client.execute(new HttpGet(path), handler);
+        HttpGet get = new HttpGet(path);
+
+        Optional.ofNullable(headers).ifPresent(h -> h.forEach(get::setHeader));
+
+        return client.execute(get, handler);
 
     }
 
