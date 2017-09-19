@@ -21,7 +21,6 @@ import java.util.Set;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.*;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.HALF_UP;
 import static java.math.RoundingMode.UP;
 import static java.util.Optional.ofNullable;
 
@@ -254,7 +253,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         BigDecimal limitSize = hedgeSize.multiply(request.getTradingExposure());
 
-        return context.roundLotSize(Key.from(request), limitSize.max(ZERO), HALF_UP);
+        return context.roundLotSize(Key.from(request), limitSize.max(ZERO), UP);
 
     }
 
@@ -276,7 +275,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         BigDecimal limitSize = hedgeSize.multiply(request.getTradingExposure());
 
-        return context.roundLotSize(Key.from(request), limitSize.min(ZERO).abs(), HALF_UP);
+        return context.roundLotSize(Key.from(request), limitSize.min(ZERO).abs(), UP);
 
     }
 

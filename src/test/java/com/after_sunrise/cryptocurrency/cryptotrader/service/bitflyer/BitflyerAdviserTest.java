@@ -338,7 +338,7 @@ public class BitflyerAdviserTest {
     public void testAdjustBuyLimitSize() {
 
         BigDecimal size = new BigDecimal("123.45");
-        BigDecimal exposure = new BigDecimal("0.55");
+        BigDecimal exposure = new BigDecimal("0.45");
         Request request1 = Request.builder().instrument(FX_BTC_JPY.name()).tradingExposure(exposure).build();
         Request request2 = Request.builder().instrument(BTC_JPY.name()).build();
 
@@ -365,7 +365,7 @@ public class BitflyerAdviserTest {
     public void testAdjustSellLimitSize() {
 
         BigDecimal size = new BigDecimal("123.45");
-        BigDecimal exposure = new BigDecimal("0.55");
+        BigDecimal exposure = new BigDecimal("0.45");
         Request request1 = Request.builder().instrument(FX_BTC_JPY.name()).tradingExposure(exposure).build();
         Request request2 = Request.builder().instrument(BTC_JPY.name()).build();
 
