@@ -130,6 +130,80 @@ public class BitflyerAdviserTest {
     }
 
     @Test
+    public void testAdjustBuyBasis() {
+
+        BigDecimal base = new BigDecimal("0.0010");
+        Request request1 = Request.builder().instrument("BTC_JPY").build();
+        Request request2 = Request.builder().instrument("FX_BTC_JPY").build();
+
+        // Discount
+        when(context.getMidPrice(Key.from(request1))).thenReturn(new BigDecimal("10000"));
+        when(context.getMidPrice(Key.from(request2))).thenReturn(new BigDecimal("10025"));
+        assertEquals(target.adjustBuyBasis(context, request1, base), base);
+
+        // Premium
+        when(context.getMidPrice(Key.from(request1))).thenReturn(new BigDecimal("10025"));
+        when(context.getMidPrice(Key.from(request2))).thenReturn(new BigDecimal("10000"));
+        assertEquals(target.adjustBuyBasis(context, request1, base), new BigDecimal("0.0035000000"));
+
+        // Unknown source
+        assertEquals(target.adjustBuyBasis(context, Request.builder().build(), base), base);
+
+        // Null source
+        when(context.getMidPrice(Key.from(request1))).thenReturn(null);
+        when(context.getMidPrice(Key.from(request2))).thenReturn(new BigDecimal("10025"));
+        assertEquals(target.adjustBuyBasis(context, request1, base), base);
+
+        // Null target
+        when(context.getMidPrice(Key.from(request1))).thenReturn(new BigDecimal("10000"));
+        when(context.getMidPrice(Key.from(request2))).thenReturn(null);
+        assertEquals(target.adjustBuyBasis(context, request1, base), base);
+
+        // Zero target
+        when(context.getMidPrice(Key.from(request1))).thenReturn(new BigDecimal("10000"));
+        when(context.getMidPrice(Key.from(request2))).thenReturn(new BigDecimal("0.000"));
+        assertEquals(target.adjustBuyBasis(context, request1, base), base);
+
+    }
+
+    @Test
+    public void testAdjustSellBasis() {
+
+        BigDecimal base = new BigDecimal("0.0010");
+        Request request1 = Request.builder().instrument("BTC_JPY").build();
+        Request request2 = Request.builder().instrument("FX_BTC_JPY").build();
+
+        // Discount
+        when(context.getMidPrice(Key.from(request1))).thenReturn(new BigDecimal("10000"));
+        when(context.getMidPrice(Key.from(request2))).thenReturn(new BigDecimal("10025"));
+        assertEquals(target.adjustSellBasis(context, request1, base), new BigDecimal("0.0034937656"));
+
+        // Unknown source
+        assertEquals(target.adjustSellBasis(context, Request.builder().build(), base), base);
+
+        // Premium
+        when(context.getMidPrice(Key.from(request1))).thenReturn(new BigDecimal("10025"));
+        when(context.getMidPrice(Key.from(request2))).thenReturn(new BigDecimal("10000"));
+        assertEquals(target.adjustSellBasis(context, request1, base), base);
+
+        // Null source
+        when(context.getMidPrice(Key.from(request1))).thenReturn(null);
+        when(context.getMidPrice(Key.from(request2))).thenReturn(new BigDecimal("10025"));
+        assertEquals(target.adjustSellBasis(context, request1, base), base);
+
+        // Null target
+        when(context.getMidPrice(Key.from(request1))).thenReturn(new BigDecimal("10000"));
+        when(context.getMidPrice(Key.from(request2))).thenReturn(null);
+        assertEquals(target.adjustSellBasis(context, request1, base), base);
+
+        // Zero target
+        when(context.getMidPrice(Key.from(request1))).thenReturn(new BigDecimal("10000"));
+        when(context.getMidPrice(Key.from(request2))).thenReturn(new BigDecimal("0.000"));
+        assertEquals(target.adjustSellBasis(context, request1, base), base);
+
+    }
+
+    @Test
     public void testGetUnderlyingKey() {
 
         Request.RequestBuilder builder = Request.builder().site("bf").currentTime(Instant.now());
