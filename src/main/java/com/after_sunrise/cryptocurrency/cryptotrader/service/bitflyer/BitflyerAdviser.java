@@ -125,7 +125,9 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
             return ZERO;
         }
 
-        return sourcePrice.divide(targetPrice, SCALE, HALF_UP).subtract(ONE);
+        BigDecimal ratio = sourcePrice.divide(targetPrice, SCALE, HALF_UP);
+
+        return ratio.subtract(ONE).multiply(HALF);
 
     }
 

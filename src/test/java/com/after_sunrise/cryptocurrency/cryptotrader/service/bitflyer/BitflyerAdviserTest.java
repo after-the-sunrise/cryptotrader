@@ -144,7 +144,7 @@ public class BitflyerAdviserTest {
         // Premium
         when(context.getMidPrice(Key.from(request1))).thenReturn(new BigDecimal("10025"));
         when(context.getMidPrice(Key.from(request2))).thenReturn(new BigDecimal("10000"));
-        assertEquals(target.adjustBuyBasis(context, request1, base), new BigDecimal("0.0035000000"));
+        assertEquals(target.adjustBuyBasis(context, request1, base), new BigDecimal("0.00225000000"));
 
         // Unknown source
         assertEquals(target.adjustBuyBasis(context, Request.builder().build(), base), base);
@@ -176,7 +176,7 @@ public class BitflyerAdviserTest {
         // Discount
         when(context.getMidPrice(Key.from(request1))).thenReturn(new BigDecimal("10000"));
         when(context.getMidPrice(Key.from(request2))).thenReturn(new BigDecimal("10025"));
-        assertEquals(target.adjustSellBasis(context, request1, base), new BigDecimal("0.0034937656"));
+        assertEquals(target.adjustSellBasis(context, request1, base), new BigDecimal("0.00224688280"));
 
         // Unknown source
         assertEquals(target.adjustSellBasis(context, Request.builder().build(), base), base);
