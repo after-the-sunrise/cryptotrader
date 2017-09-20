@@ -355,8 +355,12 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal lossBasis = ofNullable(calculateBuyLossBasis(context, request)).orElse(ZERO);
 
-        return positionBase.add(lossBasis);
+        return adjustBuyBasis(context, request, positionBase.add(lossBasis));
 
+    }
+
+    protected BigDecimal adjustBuyBasis(Context context, Request request, BigDecimal basis) {
+        return basis;
     }
 
     @VisibleForTesting
@@ -398,8 +402,12 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal lossBasis = ofNullable(calculateSellLossBasis(context, request)).orElse(ZERO);
 
-        return positionBase.add(lossBasis);
+        return adjustSellBasis(context, request, positionBase.add(lossBasis));
 
+    }
+
+    protected BigDecimal adjustSellBasis(Context context, Request request, BigDecimal basis) {
+        return basis;
     }
 
     @VisibleForTesting
