@@ -347,8 +347,24 @@ public class BitflyerAdviserTest {
         assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.0"));
         assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
 
+        // 1 * 0.45 = 0.45 -> 0.5
         doReturn(valueOf(+1)).when(target).getHedgeSize(any(), any(), any());
         assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.5"));
+        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
+
+        // 0.6 * 0.45 = 0.27 -> 0.5
+        doReturn(valueOf(0.5)).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.5"));
+        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
+
+        // 0.5 * 0.45 = 0.225 -> 0.5
+        doReturn(valueOf(0.5)).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.5"));
+        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
+
+        // 0.4 * 0.45 = 0.18 -> 0.0 (round up exceeds original size)
+        doReturn(valueOf(0.4)).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0"));
         assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
 
         doReturn(valueOf(-1)).when(target).getHedgeSize(any(), any(), any());
@@ -373,8 +389,24 @@ public class BitflyerAdviserTest {
         assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.0"));
         assertEquals(target.adjustSellLimitSize(context, request2, size), size);
 
+        // -1 * 0.45 = 0.45 -> 0.5
         doReturn(valueOf(-1)).when(target).getHedgeSize(any(), any(), any());
         assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.5"));
+        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
+
+        // -0.6 * 0.45 = -0.27 -> -0.5
+        doReturn(valueOf(-0.6)).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.5"));
+        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
+
+        // -0.5 * 0.45 = -0.225 -> -0.5
+        doReturn(valueOf(-0.5)).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.5"));
+        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
+
+        // -0.4 * 0.45 = -0.18 -> 0.0 (round up exceeds original size)
+        doReturn(valueOf(-0.4)).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0"));
         assertEquals(target.adjustSellLimitSize(context, request2, size), size);
 
         doReturn(valueOf(+1)).when(target).getHedgeSize(any(), any(), any());

@@ -236,6 +236,20 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     }
 
+    private BigDecimal roundExposureSize(Context context, Request request, BigDecimal size) {
+
+        BigDecimal exposed = size.multiply(request.getTradingExposure());
+
+        BigDecimal rounded = context.roundLotSize(Key.from(request), exposed, UP);
+
+        if (rounded != null && size.compareTo(rounded) < 0) {
+            return ZERO;
+        }
+
+        return rounded;
+
+    }
+
     @Override
     protected BigDecimal adjustBuyLimitSize(Context context, Request request, BigDecimal size) {
 
@@ -251,9 +265,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
             return ZERO;
         }
 
-        BigDecimal limitSize = hedgeSize.multiply(request.getTradingExposure());
-
-        return context.roundLotSize(Key.from(request), limitSize.max(ZERO), UP);
+        return roundExposureSize(context, request, hedgeSize.max(ZERO));
 
     }
 
@@ -273,9 +285,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
             return ZERO;
         }
 
-        BigDecimal limitSize = hedgeSize.multiply(request.getTradingExposure());
-
-        return context.roundLotSize(Key.from(request), limitSize.min(ZERO).abs(), UP);
+        return roundExposureSize(context, request, hedgeSize.min(ZERO).abs());
 
     }
 
