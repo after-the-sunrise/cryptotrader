@@ -412,37 +412,23 @@ public class BitflyerAdviserTest {
     public void testAdjustBuyLimitSize() {
 
         BigDecimal size = new BigDecimal("123.45");
-        BigDecimal exposure = new BigDecimal("0.45");
+        BigDecimal exposure = new BigDecimal("0.55");
         Request request1 = Request.builder().instrument(FX_BTC_JPY.name()).tradingExposure(exposure).build();
         Request request2 = Request.builder().instrument(BTC_JPY.name()).build();
 
-
+        // 0 + Epsilon -> 0.5
         doReturn(valueOf(0)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.0"));
+        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.5"));
         assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
 
-        // 1 * 0.45 = 0.45 -> 0.5
+        // 1 * 0.55 = 0.55 -> 1.0
         doReturn(valueOf(+1)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.5"));
+        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("1.0"));
         assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
 
-        // 0.6 * 0.45 = 0.27 -> 0.5
-        doReturn(valueOf(0.5)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.5"));
-        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
-
-        // 0.5 * 0.45 = 0.225 -> 0.5
-        doReturn(valueOf(0.5)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.5"));
-        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
-
-        // 0.4 * 0.45 = 0.18 -> 0.0 (round up exceeds original size)
-        doReturn(valueOf(0.4)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0"));
-        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
-
+        // Epsilon -> 0.5
         doReturn(valueOf(-1)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.0"));
+        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.5"));
         assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
 
         doReturn(null).when(target).getHedgeSize(any(), any(), any());
@@ -455,36 +441,23 @@ public class BitflyerAdviserTest {
     public void testAdjustSellLimitSize() {
 
         BigDecimal size = new BigDecimal("123.45");
-        BigDecimal exposure = new BigDecimal("0.45");
+        BigDecimal exposure = new BigDecimal("0.55");
         Request request1 = Request.builder().instrument(FX_BTC_JPY.name()).tradingExposure(exposure).build();
         Request request2 = Request.builder().instrument(BTC_JPY.name()).build();
 
+        // 0 + Epsilon -> 0.5
         doReturn(valueOf(0)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.0"));
+        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.5"));
         assertEquals(target.adjustSellLimitSize(context, request2, size), size);
 
-        // -1 * 0.45 = 0.45 -> 0.5
+        // -1 * 0.55 = 0.55 -> 1.0
         doReturn(valueOf(-1)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.5"));
+        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("1.0"));
         assertEquals(target.adjustSellLimitSize(context, request2, size), size);
 
-        // -0.6 * 0.45 = -0.27 -> -0.5
-        doReturn(valueOf(-0.6)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.5"));
-        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
-
-        // -0.5 * 0.45 = -0.225 -> -0.5
-        doReturn(valueOf(-0.5)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.5"));
-        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
-
-        // -0.4 * 0.45 = -0.18 -> 0.0 (round up exceeds original size)
-        doReturn(valueOf(-0.4)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0"));
-        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
-
+        // Epsilon -> 0.5
         doReturn(valueOf(+1)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.0"));
+        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.5"));
         assertEquals(target.adjustSellLimitSize(context, request2, size), size);
 
         doReturn(null).when(target).getHedgeSize(any(), any(), any());
