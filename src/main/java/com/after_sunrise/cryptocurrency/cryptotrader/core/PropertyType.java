@@ -12,6 +12,8 @@ public enum PropertyType {
 
     TRADING_TARGETS,
 
+    TRADING_FREQUENCY,
+
     TRADING_INTERVAL,
 
     TRADING_THREADS,

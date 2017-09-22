@@ -131,57 +131,6 @@ public class PropertyManagerImplTest {
     }
 
     @Test
-    public void testGetTradingTargets() throws Exception {
-
-        // Default
-        Map<String, Set<String>> targets = target.getTradingTargets();
-        assertEquals(targets.size(), 1);
-        assertEquals(targets.get("bitflyer").size(), 1);
-        assertTrue(targets.get("bitflyer").contains("BTC_JPY"));
-
-        // Mocked
-        String value = "exch1:ccy1|exch1:ccy2|exch2:ccy1||exch2:|:ccy2|exch3:ccy2:test|";
-        doReturn(value).when(conf).getString(TRADING_TARGETS.getKey());
-        targets = target.getTradingTargets();
-        assertEquals(targets.size(), 3);
-        assertEquals(targets.get("exch1").size(), 2);
-        assertTrue(targets.get("exch1").contains("ccy1"));
-        assertTrue(targets.get("exch1").contains("ccy2"));
-        assertEquals(targets.get("exch2").size(), 1);
-        assertTrue(targets.get("exch2").contains("ccy1"));
-        assertEquals(targets.get("exch3").size(), 1);
-        assertTrue(targets.get("exch3").contains("ccy2:test"));
-
-        // Error
-        doThrow(new RuntimeException("test")).when(conf).getString(TRADING_TARGETS.getKey());
-        targets = target.getTradingTargets();
-        assertTrue(targets.isEmpty());
-        reset(conf);
-
-        // Overwrite
-        Map<String, Set<String>> newTargets = new TreeMap<>();
-        newTargets.put("s1", Sets.newTreeSet(Arrays.asList("i1", "i2")));
-        newTargets.put("s2", Sets.newTreeSet(Arrays.asList("i2", "i3")));
-        target.setTradingTargets(newTargets);
-        targets = target.getTradingTargets();
-        assertEquals(targets.size(), 2);
-        assertEquals(targets.get("s1").size(), 2, target.toString());
-        assertTrue(targets.get("s1").contains("i2"));
-        assertTrue(targets.get("s1").contains("i2"));
-        assertEquals(targets.get("s2").size(), 2);
-        assertTrue(targets.get("s2").contains("i2"));
-        assertTrue(targets.get("s2").contains("i3"));
-
-        // Clear
-        target.setTradingTargets(null);
-        targets = target.getTradingTargets();
-        assertEquals(targets.size(), 1);
-        assertEquals(targets.get("bitflyer").size(), 1);
-        assertTrue(targets.get("bitflyer").contains("BTC_JPY"));
-
-    }
-
-    @Test
     public void testGetTradingInterval() throws Exception {
 
         // Default
@@ -248,6 +197,57 @@ public class PropertyManagerImplTest {
     }
 
     @Test
+    public void testGetTradingTargets() throws Exception {
+
+        // Default
+        Map<String, Set<String>> targets = target.getTradingTargets();
+        assertEquals(targets.size(), 1);
+        assertEquals(targets.get("bitflyer").size(), 1);
+        assertTrue(targets.get("bitflyer").contains("BTC_JPY"));
+
+        // Mocked
+        String value = "exch1:ccy1|exch1:ccy2|exch2:ccy1||exch2:|:ccy2|exch3:ccy2:test|";
+        doReturn(value).when(conf).getString(TRADING_TARGETS.getKey());
+        targets = target.getTradingTargets();
+        assertEquals(targets.size(), 3);
+        assertEquals(targets.get("exch1").size(), 2);
+        assertTrue(targets.get("exch1").contains("ccy1"));
+        assertTrue(targets.get("exch1").contains("ccy2"));
+        assertEquals(targets.get("exch2").size(), 1);
+        assertTrue(targets.get("exch2").contains("ccy1"));
+        assertEquals(targets.get("exch3").size(), 1);
+        assertTrue(targets.get("exch3").contains("ccy2:test"));
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getString(TRADING_TARGETS.getKey());
+        targets = target.getTradingTargets();
+        assertTrue(targets.isEmpty());
+        reset(conf);
+
+        // Overwrite
+        Map<String, Set<String>> newTargets = new TreeMap<>();
+        newTargets.put("s1", Sets.newTreeSet(Arrays.asList("i1", "i2")));
+        newTargets.put("s2", Sets.newTreeSet(Arrays.asList("i2", "i3")));
+        target.setTradingTargets(newTargets);
+        targets = target.getTradingTargets();
+        assertEquals(targets.size(), 2);
+        assertEquals(targets.get("s1").size(), 2, target.toString());
+        assertTrue(targets.get("s1").contains("i2"));
+        assertTrue(targets.get("s1").contains("i2"));
+        assertEquals(targets.get("s2").size(), 2);
+        assertTrue(targets.get("s2").contains("i2"));
+        assertTrue(targets.get("s2").contains("i3"));
+
+        // Clear
+        target.setTradingTargets(null);
+        targets = target.getTradingTargets();
+        assertEquals(targets.size(), 1);
+        assertEquals(targets.get("bitflyer").size(), 1);
+        assertTrue(targets.get("bitflyer").contains("BTC_JPY"));
+
+    }
+
+    @Test
     public void testGetTradingActive() throws Exception {
 
         // Default
@@ -272,6 +272,33 @@ public class PropertyManagerImplTest {
 
     }
 
+    @Test
+    public void testGetTradingFrequency() throws Exception {
+
+        assertEquals(target.getTradingFrequency(site, inst), (Integer) 1);
+
+        // Specific
+        doReturn(2).when(conf).getInt(TRADING_FREQUENCY.getKey());
+        assertEquals(target.getTradingFrequency(site, inst), (Integer) 2);
+
+        // Floor
+        doReturn(0).when(conf).getInt(TRADING_FREQUENCY.getKey());
+        assertEquals(target.getTradingFrequency(site, inst), (Integer) 1);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getInt(TRADING_FREQUENCY.getKey());
+        assertEquals(target.getTradingFrequency(site, inst), (Integer) 1);
+        reset(conf);
+
+        // Override
+        target.setTradingFrequency(site, inst, 3);
+        assertEquals(target.getTradingFrequency(site, inst), (Integer) 3);
+
+        // Clear
+        target.setTradingFrequency(site, inst, null);
+        assertEquals(target.getTradingFrequency(site, inst), (Integer) 1);
+
+    }
 
     @Test
     public void testGetTradingSpread() throws Exception {

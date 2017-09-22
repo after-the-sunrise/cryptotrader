@@ -272,6 +272,34 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
+    public Integer getTradingFrequency(String site, String instrument) {
+
+        try {
+
+            Integer value = get(TRADING_FREQUENCY, site, instrument, Configuration::getInt);
+
+            Integer adjusted = Math.max(value, INTEGER_ONE);
+
+            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_FREQUENCY, site, instrument, value, adjusted);
+
+            return adjusted;
+
+        } catch (RuntimeException e) {
+
+            log.warn(format("Invalid %s (%s.%s)", TRADING_FREQUENCY, site, instrument), e);
+
+            return INTEGER_ONE;
+
+        }
+
+    }
+
+    @Override
+    public void setTradingFrequency(String site, String instrument, Integer value) {
+        set(TRADING_FREQUENCY, site, instrument, value, input -> input);
+    }
+
+    @Override
     public BigDecimal getTradingSpread(String site, String instrument) {
 
         try {

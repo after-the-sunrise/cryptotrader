@@ -24,6 +24,8 @@ public interface PropertyManager {
 
     Boolean getTradingActive(String site, String instrument);
 
+    Integer getTradingFrequency(String site, String instrument);
+
     BigDecimal getTradingSpread(String site, String instrument);
 
     BigDecimal getTradingExposure(String site, String instrument);
