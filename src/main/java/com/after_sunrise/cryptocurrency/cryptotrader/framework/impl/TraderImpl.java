@@ -195,7 +195,7 @@ public class TraderImpl implements Trader {
 
             } else {
 
-                log.trace("Skipping : {} : {}", site, instrument);
+                log.debug("Skipping : {} : {} (frequency={})", site, instrument, frequency);
 
             }
 
