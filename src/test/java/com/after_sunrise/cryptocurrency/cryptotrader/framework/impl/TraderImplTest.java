@@ -75,7 +75,7 @@ public class TraderImplTest {
         when(module.getMock(PropertyManager.class).getNow()).thenReturn(time);
         when(module.getMock(PropertyManager.class).getTradingInterval()).thenReturn(interval);
         when(module.getMock(PropertyManager.class).getTradingTargets()).thenReturn(targets);
-        when(module.getMock(PropertyManager.class).getTradingFrequency(site, instrument)).thenReturn(2);
+        when(module.getMock(PropertyManager.class).getTradingFrequency(site, instrument)).thenReturn(3);
 
         AtomicInteger count = new AtomicInteger(3);
 
@@ -93,7 +93,7 @@ public class TraderImplTest {
 
         target.trade();
 
-        verify(target, times(6)).processPipeline(any(), any(), any());
+        verify(target, times(3 + 3 + 1)).processPipeline(any(), any(), any());
         verify(pipeline, times(3)).process(time.plus(interval), site, instrument);
 
     }

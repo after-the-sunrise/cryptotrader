@@ -189,13 +189,13 @@ public class TraderImpl implements Trader {
 
             Integer frequency = propertyManager.getTradingFrequency(site, instrument);
 
-            if (count.getAndIncrement() % frequency != 0) {
+            if (count.getAndIncrement() % frequency == 0) {
 
                 pipeline.process(time, site, instrument);
 
             } else {
 
-                log.debug("Skipping : {} : {} (frequency={})", site, instrument, frequency);
+                log.debug("Skipping : {} : {}", site, instrument);
 
             }
 
