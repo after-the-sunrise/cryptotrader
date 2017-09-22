@@ -153,6 +153,7 @@ public class TemplateAdviserTest {
 
         Request request = rBuilder.build();
         Request aversion = rBuilder.tradingAversion(new BigDecimal("1.5")).build();
+        Request ignore = rBuilder.tradingAversion(new BigDecimal("0.0")).build();
         Key key = Key.from(request);
         when(context.isMarginable(key)).thenReturn(null);
 
@@ -171,6 +172,9 @@ public class TemplateAdviserTest {
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
         assertEquals(target.calculatePositionRatio(context, aversion), new BigDecimal("0.2682926829"));
+
+        // Zero aversion
+        assertEquals(target.calculatePositionRatio(context, ignore), ZERO);
 
         // Long-only
         // Fund = 0 : Structure = 5 * 2345 = 11,725
@@ -236,6 +240,7 @@ public class TemplateAdviserTest {
 
         Request request = rBuilder.build();
         Request aversion = rBuilder.tradingAversion(new BigDecimal("1.5")).build();
+        Request ignore = rBuilder.tradingAversion(new BigDecimal("0.0")).build();
         Key key = Key.from(request);
         when(context.isMarginable(key)).thenReturn(true);
 
@@ -256,6 +261,9 @@ public class TemplateAdviserTest {
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("5"));
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("19600"));
         assertEquals(target.calculatePositionRatio(context, aversion), new BigDecimal("3.5892857144"));
+
+        // Zero aversion
+        assertEquals(target.calculatePositionRatio(context, ignore), ZERO);
 
         // Short (2 * 2345 * -3 / 9800 = -0.71785714285714..)
         when(context.getMidPrice(key)).thenReturn(new BigDecimal("2345"));
@@ -428,6 +436,11 @@ public class TemplateAdviserTest {
         assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
         assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("130.7380"));
         doReturn(null).when(target).calculateBasis(context, request);
+
+        // Zero duration
+        request = rBuilder.tradingDuration(Duration.ofMillis(0)).build();
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
+        assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
 
     }
 

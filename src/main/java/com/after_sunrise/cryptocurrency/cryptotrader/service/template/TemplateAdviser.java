@@ -148,6 +148,12 @@ public class TemplateAdviser implements Adviser {
     @VisibleForTesting
     BigDecimal calculatePositionRatio(Context context, Request request) {
 
+        BigDecimal aversion = ofNullable(request.getTradingAversion()).orElse(ONE);
+
+        if (aversion.signum() == 0) {
+            return ZERO;
+        }
+
         Key key = Key.from(request);
 
         BigDecimal mid = context.getMidPrice(key);
@@ -203,8 +209,6 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        BigDecimal aversion = ofNullable(request.getTradingAversion()).orElse(ONE);
-
         BigDecimal aversionRatio = ratio.multiply(aversion).setScale(SCALE, HALF_UP);
 
         log.trace("Position ratio: {} (ratio=[{}], fund=[{}], structure=[{}] price=[{}])",
@@ -218,6 +222,10 @@ public class TemplateAdviser implements Adviser {
     BigDecimal calculateRecentPrice(Context context, Request request, int signum) {
 
         Instant cutoff = request.getCurrentTime().minus(request.getTradingDuration());
+
+        if (cutoff.compareTo(request.getCurrentTime()) >= 0) {
+            return null;
+        }
 
         Key key = Key.from(request);
 
