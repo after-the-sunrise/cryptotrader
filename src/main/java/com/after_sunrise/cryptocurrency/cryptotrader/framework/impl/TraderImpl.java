@@ -116,7 +116,7 @@ public class TraderImpl implements Trader {
                 propertyManager.getTradingTargets().forEach(
                         (site, instruments) -> instruments.forEach(
                                 i -> futures.add(CompletableFuture.runAsync(
-                                        () -> pipeline.process(time, site, i), executor
+                                        () -> processPipeline(time, site, i), executor
                                 )))
                 );
 
@@ -165,6 +165,13 @@ public class TraderImpl implements Trader {
         }
 
         return Duration.between(now, target);
+
+    }
+
+    @VisibleForTesting
+    void processPipeline(Instant time, String site, String instrument) {
+
+        pipeline.process(time, site, instrument);
 
     }
 

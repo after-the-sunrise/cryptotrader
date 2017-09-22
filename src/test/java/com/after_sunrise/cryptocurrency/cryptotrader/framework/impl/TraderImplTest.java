@@ -85,6 +85,7 @@ public class TraderImplTest {
             if (c == 0) {
                 target.close();
             }
+
             return null;
 
         }).when(pipeline).process(any(), any(), any());
