@@ -305,7 +305,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         BigDecimal exposed = hedgeSize.max(ZERO).multiply(request.getTradingExposure());
 
-        return context.roundLotSize(Key.from(request), exposed, UP);
+        return context.roundLotSize(Key.from(request), exposed, HALF_UP);
 
     }
 
@@ -327,7 +327,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         BigDecimal exposed = hedgeSize.min(ZERO).abs().multiply(request.getTradingExposure());
 
-        return context.roundLotSize(Key.from(request), exposed, UP);
+        return context.roundLotSize(Key.from(request), exposed, HALF_UP);
 
     }
 

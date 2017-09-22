@@ -426,6 +426,11 @@ public class BitflyerAdviserTest {
         assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.5"));
         assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
 
+        // 6 * 0.45 = 2.70 -> 2.5
+        doReturn(valueOf(+6)).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("2.5"));
+        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
+
         // No hedge
         doReturn(valueOf(-1)).when(target).getHedgeSize(any(), any(), any());
         assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.0"));
@@ -453,6 +458,11 @@ public class BitflyerAdviserTest {
         // -1 * 0.45 = 0.45 -> 0.5
         doReturn(valueOf(-1)).when(target).getHedgeSize(any(), any(), any());
         assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.5"));
+        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
+
+        // -6 * 0.45 = 2.70 -> 2.5
+        doReturn(valueOf(-6)).when(target).getHedgeSize(any(), any(), any());
+        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("2.5"));
         assertEquals(target.adjustSellLimitSize(context, request2, size), size);
 
         // No hedge
