@@ -139,57 +139,6 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
-    public Map<String, Set<String>> getTradingTargets() {
-
-        String raw = null;
-
-        try {
-
-            raw = get(TRADING_TARGETS, null, null, Configuration::getString);
-
-            Map<String, Set<String>> targets = new LinkedHashMap<>();
-
-            for (String entry : split(trimToEmpty(raw), SEPARATOR_ENTRY)) {
-
-                String[] kv = split(entry, SEPARATOR_KEYVAL, 2);
-
-                if (kv.length != 2) {
-                    continue;
-                }
-
-                targets.computeIfAbsent(kv[0], key -> new LinkedHashSet<>()).add(kv[1]);
-
-            }
-
-            log.trace("Fetched {} : {}", TRADING_TARGETS, targets);
-
-            return Collections.unmodifiableMap(targets);
-
-        } catch (RuntimeException e) {
-
-            log.warn(format("Invalid %s : %s", TRADING_TARGETS, raw), e);
-
-            return Collections.emptyMap();
-
-        }
-
-    }
-
-    @Override
-    public void setTradingTargets(Map<String, Set<String>> values) {
-        set(TRADING_TARGETS, null, null, values, input -> StringUtils.join(
-                input.entrySet().stream()
-                        .filter(e -> StringUtils.isNotEmpty(e.getKey()))
-                        .filter(e -> CollectionUtils.isNotEmpty(e.getValue()))
-                        .map(entry -> StringUtils.join(entry.getValue().stream()
-                                .filter(StringUtils::isNotEmpty)
-                                .map(v -> entry.getKey() + SEPARATOR_KEYVAL + v)
-                                .toArray(), SEPARATOR_ENTRY))
-                        .toArray()
-                , SEPARATOR_ENTRY));
-    }
-
-    @Override
     public Duration getTradingInterval() {
 
         try {
@@ -243,6 +192,57 @@ public class PropertyManagerImpl implements PropertyController {
     @Override
     public void setTradingThreads(Integer value) {
         set(TRADING_THREADS, null, null, value, Integer::valueOf);
+    }
+
+    @Override
+    public Map<String, Set<String>> getTradingTargets() {
+
+        String raw = null;
+
+        try {
+
+            raw = get(TRADING_TARGETS, null, null, Configuration::getString);
+
+            Map<String, Set<String>> targets = new LinkedHashMap<>();
+
+            for (String entry : split(trimToEmpty(raw), SEPARATOR_ENTRY)) {
+
+                String[] kv = split(entry, SEPARATOR_KEYVAL, 2);
+
+                if (kv.length != 2) {
+                    continue;
+                }
+
+                targets.computeIfAbsent(kv[0], key -> new LinkedHashSet<>()).add(kv[1]);
+
+            }
+
+            log.trace("Fetched {} : {}", TRADING_TARGETS, targets);
+
+            return Collections.unmodifiableMap(targets);
+
+        } catch (RuntimeException e) {
+
+            log.warn(format("Invalid %s : %s", TRADING_TARGETS, raw), e);
+
+            return Collections.emptyMap();
+
+        }
+
+    }
+
+    @Override
+    public void setTradingTargets(Map<String, Set<String>> values) {
+        set(TRADING_TARGETS, null, null, values, input -> StringUtils.join(
+                input.entrySet().stream()
+                        .filter(e -> StringUtils.isNotEmpty(e.getKey()))
+                        .filter(e -> CollectionUtils.isNotEmpty(e.getValue()))
+                        .map(entry -> StringUtils.join(entry.getValue().stream()
+                                .filter(StringUtils::isNotEmpty)
+                                .map(v -> entry.getKey() + SEPARATOR_KEYVAL + v)
+                                .toArray(), SEPARATOR_ENTRY))
+                        .toArray()
+                , SEPARATOR_ENTRY));
     }
 
     @Override

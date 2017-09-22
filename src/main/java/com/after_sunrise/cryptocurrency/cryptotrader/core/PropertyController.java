@@ -11,11 +11,11 @@ import java.util.Set;
  */
 public interface PropertyController extends PropertyManager {
 
-    void setTradingTargets(Map<String, Set<String>> values);
-
     void setTradingInterval(Duration value);
 
     void setTradingThreads(Integer value);
+
+    void setTradingTargets(Map<String, Set<String>> values);
 
     void setTradingActive(String site, String instrument, Boolean value);
 

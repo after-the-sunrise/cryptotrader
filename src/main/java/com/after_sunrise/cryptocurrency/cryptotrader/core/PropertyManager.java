@@ -16,11 +16,11 @@ public interface PropertyManager {
 
     String getVersion();
 
-    Map<String, Set<String>> getTradingTargets();
-
     Duration getTradingInterval();
 
     Integer getTradingThreads();
+
+    Map<String, Set<String>> getTradingTargets();
 
     Boolean getTradingActive(String site, String instrument);
 
