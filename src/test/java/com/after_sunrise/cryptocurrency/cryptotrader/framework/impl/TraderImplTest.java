@@ -37,7 +37,7 @@ public class TraderImplTest {
 
         pipeline = module.getMock(Pipeline.class);
 
-        target = new TraderImpl(module.createInjector());
+        target = spy(new TraderImpl(module.createInjector()));
 
     }
 
@@ -68,13 +68,14 @@ public class TraderImplTest {
     public void testTrade() throws Exception {
 
         Instant time = Instant.now();
-        Duration interval = Duration.ofMillis(10);
+        Duration interval = Duration.ofMillis(50);
         String site = "s";
         String instrument = "i";
         Map<String, Set<String>> targets = singletonMap(site, singleton(instrument));
         when(module.getMock(PropertyManager.class).getNow()).thenReturn(time);
         when(module.getMock(PropertyManager.class).getTradingInterval()).thenReturn(interval);
         when(module.getMock(PropertyManager.class).getTradingTargets()).thenReturn(targets);
+        when(module.getMock(PropertyManager.class).getTradingFrequency(site, instrument)).thenReturn(2);
 
         AtomicInteger count = new AtomicInteger(3);
 
@@ -92,6 +93,7 @@ public class TraderImplTest {
 
         target.trade();
 
+        verify(target, times(6)).processPipeline(any(), any(), any());
         verify(pipeline, times(3)).process(time.plus(interval), site, instrument);
 
     }

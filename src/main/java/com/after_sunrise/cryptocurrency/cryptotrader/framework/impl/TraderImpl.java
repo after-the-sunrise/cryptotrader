@@ -13,13 +13,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 
 /**
  * @author takanori.takase
@@ -36,6 +40,8 @@ public class TraderImpl implements Trader {
 
     private final ExecutorService executor;
 
+    private final Map<String, Map<String, AtomicLong>> frequencies;
+
     @Inject
     public TraderImpl(Injector injector) {
 
@@ -44,6 +50,8 @@ public class TraderImpl implements Trader {
         this.propertyManager = injector.getInstance(PropertyManager.class);
 
         this.pipeline = injector.getInstance(Pipeline.class);
+
+        this.frequencies = new ConcurrentHashMap<>();
 
         int threads = propertyManager.getTradingThreads();
 
@@ -115,10 +123,8 @@ public class TraderImpl implements Trader {
 
                 propertyManager.getTradingTargets().forEach(
                         (site, instruments) -> instruments.forEach(
-                                i -> futures.add(CompletableFuture.runAsync(
-                                        () -> processPipeline(time, site, i), executor
-                                )))
-                );
+                                i -> futures.add(processPipeline(time, site, i))
+                        ));
 
                 allOf(futures.toArray(new CompletableFuture[futures.size()])).get();
 
@@ -169,9 +175,32 @@ public class TraderImpl implements Trader {
     }
 
     @VisibleForTesting
-    void processPipeline(Instant time, String site, String instrument) {
+    CompletableFuture<?> processPipeline(Instant time, String site, String instrument) {
 
-        pipeline.process(time, site, instrument);
+        return CompletableFuture.runAsync(() -> {
+
+            String s = trimToEmpty(site);
+
+            Map<String, AtomicLong> instruments = frequencies.computeIfAbsent(s, k -> new ConcurrentHashMap<>());
+
+            String i = trimToEmpty(instrument);
+
+            AtomicLong count = instruments.computeIfAbsent(i, k -> new AtomicLong());
+
+            Integer frequency = propertyManager.getTradingFrequency(site, instrument);
+
+            if (count.getAndIncrement() % frequency != 0) {
+
+                pipeline.process(time, site, instrument);
+
+            } else {
+
+                log.trace("Skipping : {} : {}", site, instrument);
+
+            }
+
+
+        }, executor);
 
     }
 
