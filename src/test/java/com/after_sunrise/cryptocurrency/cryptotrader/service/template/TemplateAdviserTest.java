@@ -19,15 +19,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.SIGNUM_BUY;
-import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.SIGNUM_SELL;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.*;
 import static java.math.BigDecimal.*;
 import static java.time.Instant.now;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
+import static org.testng.Assert.*;
 
 /**
  * @author takanori.takase
@@ -581,10 +579,37 @@ public class TemplateAdviserTest {
     }
 
     @Test
+    public void testGetRandomEpsilon() {
+
+        int count = 1000;
+
+        int positive = 0;
+        int negative = 0;
+
+        for (int i = 0; i < count; i++) {
+
+            int signum = target.getRandomEpsilon().signum();
+
+            if (signum >= 0) {
+                positive++;
+            } else {
+                negative++;
+            }
+
+        }
+
+        assertTrue(positive > count * 8 / 10, "Positive : " + positive);
+
+        assertTrue(negative < count * 2 / 10, "Negative : " + negative);
+
+    }
+
+    @Test
     public void testCalculateBuyBoundaryPrice() {
 
         Request request = rBuilder.build();
         Key key = Key.from(request);
+        doReturn(EPSILON).when(target).getRandomEpsilon();
 
         // Normal
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("16000.0000"));
@@ -639,6 +664,7 @@ public class TemplateAdviserTest {
 
         Request request = rBuilder.build();
         Key key = Key.from(request);
+        doReturn(EPSILON).when(target).getRandomEpsilon();
 
         // Normal
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));

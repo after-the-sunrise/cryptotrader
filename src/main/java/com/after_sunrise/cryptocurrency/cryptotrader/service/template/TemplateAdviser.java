@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static java.lang.Boolean.TRUE;
@@ -31,9 +32,9 @@ import static java.util.Optional.ofNullable;
 @Slf4j
 public class TemplateAdviser implements Adviser {
 
-    private static final BigDecimal EPSILON = ONE.movePointLeft(SCALE);
+    static final BigDecimal EPSILON = ONE.movePointLeft(SCALE);
 
-    private static final BigDecimal HALF = new BigDecimal("0.5");
+    static final int RANDOM = 10;
 
     static final int SIGNUM_BUY = 1;
 
@@ -419,6 +420,11 @@ public class TemplateAdviser implements Adviser {
     }
 
     @VisibleForTesting
+    BigDecimal getRandomEpsilon() {
+        return ThreadLocalRandom.current().nextInt() % RANDOM == 0 ? EPSILON.negate() : EPSILON;
+    }
+
+    @VisibleForTesting
     BigDecimal calculateBuyBoundaryPrice(Context context, Request request) {
 
         Key key = Key.from(request);
@@ -449,7 +455,9 @@ public class TemplateAdviser implements Adviser {
                 .filter(o -> o.getOrderPrice().compareTo(bid0) == 0)
                 .count() == 0) {
 
-            bid1 = ofNullable(context.roundTickSize(key, bid0.add(EPSILON), UP)).orElse(bid0);
+            BigDecimal epsilon = getRandomEpsilon();
+
+            bid1 = ofNullable(context.roundTickSize(key, bid0.add(epsilon), UP)).orElse(bid0);
 
         }
 
@@ -494,7 +502,9 @@ public class TemplateAdviser implements Adviser {
                 .filter(o -> o.getOrderPrice().compareTo(ask0) == 0)
                 .count() == 0) {
 
-            ask1 = ofNullable(context.roundTickSize(key, ask0.subtract(EPSILON), DOWN)).orElse(ask0);
+            BigDecimal epsilon = getRandomEpsilon();
+
+            ask1 = ofNullable(context.roundTickSize(key, ask0.subtract(epsilon), DOWN)).orElse(ask0);
 
         }
 
