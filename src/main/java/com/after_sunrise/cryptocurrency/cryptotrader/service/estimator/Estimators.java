@@ -29,19 +29,26 @@ public class Estimators {
 
     static {
 
-        addMapping("bitflyer", "BTC_JPY", "coincheck", "btc_jpy");
-        addMapping("bitflyer", "BTC_JPY", "zaif", "btc_jpy");
-
-        addMapping("bitflyer", "FX_BTC_JPY", "coincheck", "btc_jpy");
-        addMapping("bitflyer", "FX_BTC_JPY", "zaif", "btc_jpy");
-
+        // bitflyer -> bitflyer
+        addMapping("bitflyer", "BTC_JPY", "bitflyer", "FX_BTC_JPY");
+        addMapping("bitflyer", "FX_BTC_JPY", "bitflyer", "BTC_JPY");
         addMapping("bitflyer", "BTCJPY_MAT1WK", "bitflyer", "BTC_JPY");
         addMapping("bitflyer", "BTCJPY_MAT2WK", "bitflyer", "BTC_JPY");
 
-        addMapping("bitflyer", "ETH_BTC", "bitfinex", "ethbtc");
-        addMapping("bitflyer", "ETH_BTC", "poloniex", "BTC_ETH");
+        // bitflyer -> coincheck
+        addMapping("bitflyer", "BTC_JPY", "coincheck", "btc_jpy");
+        addMapping("bitflyer", "FX_BTC_JPY", "coincheck", "btc_jpy");
 
+        // bitflyer -> zaif
+        addMapping("bitflyer", "BTC_JPY", "zaif", "btc_jpy");
+        addMapping("bitflyer", "FX_BTC_JPY", "zaif", "btc_jpy");
+
+        // bitflyer -> bitfinex
+        addMapping("bitflyer", "ETH_BTC", "bitfinex", "ethbtc");
         addMapping("bitflyer", "BCH_BTC", "bitfinex", "bchbtc");
+
+        // bitflyer -> poloniex
+        addMapping("bitflyer", "ETH_BTC", "poloniex", "BTC_ETH");
         addMapping("bitflyer", "BCH_BTC", "poloniex", "BTC_BCH");
 
     }
