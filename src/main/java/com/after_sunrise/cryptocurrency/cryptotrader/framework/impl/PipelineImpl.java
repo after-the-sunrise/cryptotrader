@@ -86,6 +86,8 @@ public class PipelineImpl implements Pipeline {
                 .currentTime(propertyManager.getNow())
                 .targetTime(time)
                 .tradingSpread(propertyManager.getTradingSpread(site, instrument))
+                .tradingSpreadAsk(propertyManager.getTradingSpreadAsk(site, instrument))
+                .tradingSpreadBid(propertyManager.getTradingSpreadBid(site, instrument))
                 .tradingExposure(propertyManager.getTradingExposure(site, instrument))
                 .tradingAversion(propertyManager.getTradingAversion(site, instrument))
                 .tradingSplit(propertyManager.getTradingSplit(site, instrument))
@@ -94,83 +96,63 @@ public class PipelineImpl implements Pipeline {
                 .build();
 
         if (StringUtils.isEmpty(site)) {
-
             log.warn("Invalid request : site");
-
             return null;
-
         }
 
         if (StringUtils.isEmpty(instrument)) {
-
             log.warn("Invalid request : instrument");
-
             return null;
-
         }
 
         if (request.getCurrentTime() == null) {
-
             log.warn("Invalid request : current time");
-
             return null;
-
         }
 
         if (request.getTargetTime() == null) {
-
             log.warn("Invalid request : target time");
-
             return null;
-
         }
 
         if (request.getTradingSpread() == null) {
-
             log.warn("Invalid request : trading spread");
-
             return null;
+        }
 
+        if (request.getTradingSpreadAsk() == null) {
+            log.warn("Invalid request : trading spread ask");
+            return null;
+        }
+
+        if (request.getTradingSpreadBid() == null) {
+            log.warn("Invalid request : trading spread bid");
+            return null;
         }
 
         if (request.getTradingExposure() == null) {
-
             log.warn("Invalid request : trading exposure");
-
             return null;
-
         }
 
         if (request.getTradingAversion() == null) {
-
             log.warn("Invalid request : trading aversion");
-
             return null;
-
         }
 
         if (request.getTradingSplit() == null) {
-
             log.warn("Invalid request : trading split");
-
             return null;
-
         }
 
         if (request.getTradingDuration() == null) {
-
             log.warn("Invalid request : trading duration");
-
             return null;
-
         }
 
         if (request.getFundingOffset() == null) {
-
             log.warn("Invalid request : funding offset");
-
             return null;
-
         }
 
         return request;

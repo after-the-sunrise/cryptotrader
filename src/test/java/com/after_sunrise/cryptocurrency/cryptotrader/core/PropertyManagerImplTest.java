@@ -333,6 +333,70 @@ public class PropertyManagerImplTest {
     }
 
     @Test
+    public void testGetTradingSpreadAsk() throws Exception {
+
+        assertEquals(target.getTradingSpreadAsk(site, inst), new BigDecimal("0.0100"));
+
+        // Specific
+        doReturn(new BigDecimal("0.1234")).when(conf).getBigDecimal(TRADING_SPREAD_ASK.getKey());
+        assertEquals(target.getTradingSpreadAsk(site, inst), new BigDecimal("0.1234"));
+
+        // Floor
+        doReturn(BigDecimal.TEN.negate()).when(conf).getBigDecimal(TRADING_SPREAD_ASK.getKey());
+        assertEquals(target.getTradingSpreadAsk(site, inst), ZERO);
+
+        // Ceiling
+        doReturn(BigDecimal.TEN).when(conf).getBigDecimal(TRADING_SPREAD_ASK.getKey());
+        assertEquals(target.getTradingSpreadAsk(site, inst), ONE);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(TRADING_SPREAD_ASK.getKey());
+        assertEquals(target.getTradingSpreadAsk(site, inst), ZERO);
+        reset(conf);
+
+        // Override
+        target.setTradingSpreadAsk(site, inst, new BigDecimal("0.02"));
+        assertEquals(target.getTradingSpreadAsk(site, inst), new BigDecimal("0.02"));
+
+        // Clear
+        target.setTradingSpreadAsk(site, inst, null);
+        assertEquals(target.getTradingSpreadAsk(site, inst), new BigDecimal("0.0100"));
+
+    }
+
+    @Test
+    public void testGetTradingSpreadBid() throws Exception {
+
+        assertEquals(target.getTradingSpreadBid(site, inst), new BigDecimal("0.0100"));
+
+        // Specific
+        doReturn(new BigDecimal("0.1234")).when(conf).getBigDecimal(TRADING_SPREAD_BID.getKey());
+        assertEquals(target.getTradingSpreadBid(site, inst), new BigDecimal("0.1234"));
+
+        // Floor
+        doReturn(BigDecimal.TEN.negate()).when(conf).getBigDecimal(TRADING_SPREAD_BID.getKey());
+        assertEquals(target.getTradingSpreadBid(site, inst), ZERO);
+
+        // Ceiling
+        doReturn(BigDecimal.TEN).when(conf).getBigDecimal(TRADING_SPREAD_BID.getKey());
+        assertEquals(target.getTradingSpreadBid(site, inst), ONE);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(TRADING_SPREAD_BID.getKey());
+        assertEquals(target.getTradingSpreadBid(site, inst), ZERO);
+        reset(conf);
+
+        // Override
+        target.setTradingSpreadBid(site, inst, new BigDecimal("0.02"));
+        assertEquals(target.getTradingSpreadBid(site, inst), new BigDecimal("0.02"));
+
+        // Clear
+        target.setTradingSpreadBid(site, inst, null);
+        assertEquals(target.getTradingSpreadBid(site, inst), new BigDecimal("0.0100"));
+
+    }
+
+    @Test
     public void testGetTradingExposure() throws Exception {
 
         // Default

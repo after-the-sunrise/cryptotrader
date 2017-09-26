@@ -23,6 +23,10 @@ public interface PropertyController extends PropertyManager {
 
     void setTradingSpread(String site, String instrument, BigDecimal value);
 
+    void setTradingSpreadAsk(String site, String instrument, BigDecimal value);
+
+    void setTradingSpreadBid(String site, String instrument, BigDecimal value);
+
     void setTradingExposure(String site, String instrument, BigDecimal value);
 
     void setTradingAversion(String site, String instrument, BigDecimal value);

@@ -100,6 +100,8 @@ public class PipelineImplTest {
         Runnable initializer = () -> {
             when(module.getMock(PropertyManager.class).getNow()).thenReturn(currentTime);
             when(module.getMock(PropertyManager.class).getTradingSpread(any(), any())).thenReturn(valueOf(2));
+            when(module.getMock(PropertyManager.class).getTradingSpreadAsk(any(), any())).thenReturn(valueOf(7));
+            when(module.getMock(PropertyManager.class).getTradingSpreadBid(any(), any())).thenReturn(valueOf(8));
             when(module.getMock(PropertyManager.class).getTradingExposure(any(), any())).thenReturn(valueOf(3));
             when(module.getMock(PropertyManager.class).getTradingAversion(any(), any())).thenReturn(valueOf(6));
             when(module.getMock(PropertyManager.class).getTradingSplit(any(), any())).thenReturn(valueOf(4));
@@ -114,6 +116,8 @@ public class PipelineImplTest {
         assertEquals(request.getCurrentTime(), currentTime);
         assertEquals(request.getTargetTime(), targetTime);
         assertEquals(request.getTradingSpread(), valueOf(2));
+        assertEquals(request.getTradingSpreadAsk(), valueOf(7));
+        assertEquals(request.getTradingSpreadBid(), valueOf(8));
         assertEquals(request.getTradingExposure(), valueOf(3));
         assertEquals(request.getTradingAversion(), valueOf(6));
         assertEquals(request.getTradingSplit(), valueOf(4));
@@ -131,6 +135,14 @@ public class PipelineImplTest {
 
         initializer.run();
         doReturn(null).when(module.getMock(PropertyManager.class)).getTradingSpread(any(), any());
+        assertNull(target.createRequest(targetTime, site, instrument));
+
+        initializer.run();
+        doReturn(null).when(module.getMock(PropertyManager.class)).getTradingSpreadAsk(any(), any());
+        assertNull(target.createRequest(targetTime, site, instrument));
+
+        initializer.run();
+        doReturn(null).when(module.getMock(PropertyManager.class)).getTradingSpreadBid(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();

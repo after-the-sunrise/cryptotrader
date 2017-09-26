@@ -328,6 +328,62 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
+    public BigDecimal getTradingSpreadAsk(String site, String instrument) {
+
+        try {
+
+            BigDecimal value = get(TRADING_SPREAD_ASK, site, instrument, Configuration::getBigDecimal);
+
+            BigDecimal adjusted = value.max(ZERO).min(ONE);
+
+            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_SPREAD_ASK, site, instrument, value, adjusted);
+
+            return adjusted;
+
+        } catch (RuntimeException e) {
+
+            log.warn(format("Invalid %s (%s.%s)", TRADING_SPREAD_ASK, site, instrument), e);
+
+            return ZERO;
+
+        }
+
+    }
+
+    @Override
+    public void setTradingSpreadAsk(String site, String instrument, BigDecimal value) {
+        set(TRADING_SPREAD_ASK, site, instrument, value, BigDecimal::toPlainString);
+    }
+
+    @Override
+    public BigDecimal getTradingSpreadBid(String site, String instrument) {
+
+        try {
+
+            BigDecimal value = get(TRADING_SPREAD_BID, site, instrument, Configuration::getBigDecimal);
+
+            BigDecimal adjusted = value.max(ZERO).min(ONE);
+
+            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_SPREAD_BID, site, instrument, value, adjusted);
+
+            return adjusted;
+
+        } catch (RuntimeException e) {
+
+            log.warn(format("Invalid %s (%s.%s)", TRADING_SPREAD_BID, site, instrument), e);
+
+            return ZERO;
+
+        }
+
+    }
+
+    @Override
+    public void setTradingSpreadBid(String site, String instrument, BigDecimal value) {
+        set(TRADING_SPREAD_BID, site, instrument, value, BigDecimal::toPlainString);
+    }
+
+    @Override
     public BigDecimal getTradingExposure(String site, String instrument) {
 
         try {

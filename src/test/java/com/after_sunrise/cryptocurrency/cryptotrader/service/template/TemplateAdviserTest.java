@@ -487,8 +487,8 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateBuyBasis() {
 
-        Request request = rBuilder.build();
-        BigDecimal base = new BigDecimal("0.0010");
+        Request request = rBuilder.tradingSpreadBid(new BigDecimal("0.0002")).build();
+        BigDecimal base = new BigDecimal("0.0008");
 
         doReturn(new BigDecimal("-0.987")).when(target).calculatePositionRatio(context, request);
         doReturn(new BigDecimal("+0.012")).when(target).calculateBuyLossBasis(context, request);
@@ -555,8 +555,8 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateSellBasis() {
 
-        Request request = rBuilder.build();
-        BigDecimal base = new BigDecimal("0.0010");
+        Request request = rBuilder.tradingSpreadAsk(new BigDecimal("0.0002")).build();
+        BigDecimal base = new BigDecimal("0.0008");
 
         doReturn(new BigDecimal("+0.987")).when(target).calculatePositionRatio(context, request);
         doReturn(new BigDecimal("+0.012")).when(target).calculateSellLossBasis(context, request);

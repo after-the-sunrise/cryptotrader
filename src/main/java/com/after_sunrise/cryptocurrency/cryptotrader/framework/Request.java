@@ -31,6 +31,10 @@ public class Request {
 
     private BigDecimal tradingSpread;
 
+    private BigDecimal tradingSpreadAsk;
+
+    private BigDecimal tradingSpreadBid;
+
     private BigDecimal tradingExposure;
 
     private BigDecimal tradingAversion;

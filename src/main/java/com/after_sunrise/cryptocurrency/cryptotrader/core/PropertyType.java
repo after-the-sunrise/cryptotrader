@@ -20,6 +20,10 @@ public enum PropertyType {
 
     TRADING_SPREAD,
 
+    TRADING_SPREAD_ASK,
+
+    TRADING_SPREAD_BID,
+
     TRADING_EXPOSURE,
 
     TRADING_AVERSION,
