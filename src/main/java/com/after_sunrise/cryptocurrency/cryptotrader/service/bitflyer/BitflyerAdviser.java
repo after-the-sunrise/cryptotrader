@@ -97,7 +97,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
         return basis.add(swapRate);
 
     }
-    
+
     @VisibleForTesting
     Key getUnderlyingKey(Request request) {
 
