@@ -334,7 +334,7 @@ public class PropertyManagerImpl implements PropertyController {
 
             BigDecimal value = get(TRADING_SPREAD_ASK, site, instrument, Configuration::getBigDecimal);
 
-            BigDecimal adjusted = value.max(ZERO).min(ONE);
+            BigDecimal adjusted = value.max(ONE.negate()).min(ONE);
 
             log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_SPREAD_ASK, site, instrument, value, adjusted);
 
@@ -362,7 +362,7 @@ public class PropertyManagerImpl implements PropertyController {
 
             BigDecimal value = get(TRADING_SPREAD_BID, site, instrument, Configuration::getBigDecimal);
 
-            BigDecimal adjusted = value.max(ZERO).min(ONE);
+            BigDecimal adjusted = value.max(ONE.negate()).min(ONE);
 
             log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_SPREAD_BID, site, instrument, value, adjusted);
 

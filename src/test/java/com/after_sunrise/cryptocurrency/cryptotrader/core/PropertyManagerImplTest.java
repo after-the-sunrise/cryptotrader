@@ -343,7 +343,7 @@ public class PropertyManagerImplTest {
 
         // Floor
         doReturn(BigDecimal.TEN.negate()).when(conf).getBigDecimal(TRADING_SPREAD_ASK.getKey());
-        assertEquals(target.getTradingSpreadAsk(site, inst), ZERO);
+        assertEquals(target.getTradingSpreadAsk(site, inst), ONE.negate());
 
         // Ceiling
         doReturn(BigDecimal.TEN).when(conf).getBigDecimal(TRADING_SPREAD_ASK.getKey());
@@ -375,7 +375,7 @@ public class PropertyManagerImplTest {
 
         // Floor
         doReturn(BigDecimal.TEN.negate()).when(conf).getBigDecimal(TRADING_SPREAD_BID.getKey());
-        assertEquals(target.getTradingSpreadBid(site, inst), ZERO);
+        assertEquals(target.getTradingSpreadBid(site, inst), ONE.negate());
 
         // Ceiling
         doReturn(BigDecimal.TEN).when(conf).getBigDecimal(TRADING_SPREAD_BID.getKey());
