@@ -34,8 +34,6 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     private static final double SWAP_RATE = 0.0004;
 
-    private static final Map<ProductType, ProductType> RATIOS = new EnumMap<>(ProductType.class);
-
     private static final Map<ProductType, ProductType> UNDERLIERS = new EnumMap<>(ProductType.class);
 
     private static final Set<ProductType> HEDGE_RAW = EnumSet.of(BTC_JPY, BTCJPY_MAT1WK, BTCJPY_MAT2WK, COLLATERAL_BTC);
@@ -45,7 +43,6 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
     private static final Map<ProductType, Set<ProductType>> HEDGES = new EnumMap<>(ProductType.class);
 
     static {
-        RATIOS.put(BTC_JPY, FX_BTC_JPY);
         UNDERLIERS.put(BTCJPY_MAT1WK, BTC_JPY);
         UNDERLIERS.put(BTCJPY_MAT2WK, BTC_JPY);
         HEDGES.put(FX_BTC_JPY, EnumSet.copyOf(CollectionUtils.union(HEDGE_RAW, HEDGE_CCY)));
@@ -100,55 +97,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
         return basis.add(swapRate);
 
     }
-
-    private BigDecimal calculatePriceRatioBasis(Context context, Request request) {
-
-        ProductType targetType = RATIOS.get(ProductType.find(request.getInstrument()));
-
-        if (targetType == null) {
-            return ZERO;
-        }
-
-        Key sourceKey = Key.from(request);
-
-        BigDecimal sourcePrice = context.getMidPrice(sourceKey);
-
-        if (sourcePrice == null) {
-            return ZERO;
-        }
-
-        Key targetKey = Key.build(sourceKey).instrument(targetType.name()).build();
-
-        BigDecimal targetPrice = context.getMidPrice(targetKey);
-
-        if (targetPrice == null || targetPrice.signum() == 0) {
-            return ZERO;
-        }
-
-        BigDecimal ratio = sourcePrice.divide(targetPrice, SCALE, HALF_UP);
-
-        return ratio.subtract(ONE);
-
-    }
-
-    @Override
-    protected BigDecimal adjustBuyBasis(Context context, Request request, BigDecimal basis) {
-
-        BigDecimal ratio = calculatePriceRatioBasis(context, request);
-
-        return basis.add(ratio.max(ZERO));
-
-    }
-
-    @Override
-    protected BigDecimal adjustSellBasis(Context context, Request request, BigDecimal basis) {
-
-        BigDecimal ratio = calculatePriceRatioBasis(context, request);
-
-        return basis.add(ratio.min(ZERO).abs());
-
-    }
-
+    
     @VisibleForTesting
     Key getUnderlyingKey(Request request) {
 
