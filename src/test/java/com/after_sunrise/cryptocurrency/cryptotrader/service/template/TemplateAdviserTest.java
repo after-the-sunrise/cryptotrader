@@ -487,24 +487,24 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateBuyBasis() {
 
-        Request request = rBuilder.tradingSpreadBid(new BigDecimal("0.0002")).build();
-        BigDecimal base = new BigDecimal("0.0008");
+        Request request = rBuilder.tradingSpreadBid(new BigDecimal("-0.0005")).build();
+        BigDecimal base = new BigDecimal("0.0010");
 
         doReturn(new BigDecimal("-0.987")).when(target).calculatePositionRatio(context, request);
         doReturn(new BigDecimal("+0.012")).when(target).calculateBuyLossBasis(context, request);
-        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0130"));
+        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0125"));
 
         doReturn(new BigDecimal("+0.987")).when(target).calculatePositionRatio(context, request);
         doReturn(new BigDecimal("+0.012")).when(target).calculateBuyLossBasis(context, request);
-        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0139870"));
+        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0134870"));
 
         doReturn(null).when(target).calculatePositionRatio(context, request);
         doReturn(new BigDecimal("+0.012")).when(target).calculateBuyLossBasis(context, request);
-        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0130"));
+        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0125"));
 
         doReturn(new BigDecimal("+0.987")).when(target).calculatePositionRatio(context, request);
         doReturn(null).when(target).calculateBuyLossBasis(context, request);
-        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0019870"));
+        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0014870"));
 
         assertEquals(target.calculateBuyBasis(context, request, null), null);
 
@@ -555,24 +555,24 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateSellBasis() {
 
-        Request request = rBuilder.tradingSpreadAsk(new BigDecimal("0.0002")).build();
-        BigDecimal base = new BigDecimal("0.0008");
+        Request request = rBuilder.tradingSpreadAsk(new BigDecimal("-0.0005")).build();
+        BigDecimal base = new BigDecimal("0.0010");
 
         doReturn(new BigDecimal("+0.987")).when(target).calculatePositionRatio(context, request);
         doReturn(new BigDecimal("+0.012")).when(target).calculateSellLossBasis(context, request);
-        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0130"));
+        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0125"));
 
         doReturn(new BigDecimal("-0.987")).when(target).calculatePositionRatio(context, request);
         doReturn(new BigDecimal("+0.012")).when(target).calculateSellLossBasis(context, request);
-        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0139870"));
+        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0134870"));
 
         doReturn(null).when(target).calculatePositionRatio(context, request);
         doReturn(new BigDecimal("+0.012")).when(target).calculateSellLossBasis(context, request);
-        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0130"));
+        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0125"));
 
         doReturn(new BigDecimal("-0.987")).when(target).calculatePositionRatio(context, request);
         doReturn(null).when(target).calculateSellLossBasis(context, request);
-        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0019870"));
+        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0014870"));
 
         assertEquals(target.calculateSellBasis(context, request, null), null);
 

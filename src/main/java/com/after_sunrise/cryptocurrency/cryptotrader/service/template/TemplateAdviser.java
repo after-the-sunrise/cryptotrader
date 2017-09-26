@@ -358,15 +358,15 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal additional = ofNullable(request.getTradingSpreadBid()).orElse(ZERO);
-
         BigDecimal positionRatio = ofNullable(calculatePositionRatio(context, request)).orElse(ZERO);
 
-        BigDecimal positionBase = base.add(additional).multiply(ONE.add(positionRatio.max(ZERO)));
+        BigDecimal positionBase = base.multiply(ONE.add(positionRatio.max(ZERO)));
 
         BigDecimal lossBasis = ofNullable(calculateBuyLossBasis(context, request)).orElse(ZERO);
 
-        return adjustBuyBasis(context, request, positionBase.add(lossBasis));
+        BigDecimal additional = ofNullable(request.getTradingSpreadBid()).orElse(ZERO);
+
+        return adjustBuyBasis(context, request, positionBase.add(lossBasis).add(additional));
 
     }
 
@@ -407,15 +407,15 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal additional = ofNullable(request.getTradingSpreadAsk()).orElse(ZERO);
-
         BigDecimal positionRatio = ofNullable(calculatePositionRatio(context, request)).orElse(ZERO);
 
-        BigDecimal positionBase = base.add(additional).multiply(ONE.add(positionRatio.min(ZERO).abs()));
+        BigDecimal positionBase = base.multiply(ONE.add(positionRatio.min(ZERO).abs()));
 
         BigDecimal lossBasis = ofNullable(calculateSellLossBasis(context, request)).orElse(ZERO);
 
-        return adjustSellBasis(context, request, positionBase.add(lossBasis));
+        BigDecimal additional = ofNullable(request.getTradingSpreadAsk()).orElse(ZERO);
+
+        return adjustSellBasis(context, request, positionBase.add(lossBasis).add(additional));
 
     }
 
