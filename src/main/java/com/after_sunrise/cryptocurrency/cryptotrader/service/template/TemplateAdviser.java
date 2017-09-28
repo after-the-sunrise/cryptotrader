@@ -8,6 +8,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -24,6 +25,7 @@ import static java.math.RoundingMode.*;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
 import static java.util.Optional.ofNullable;
+import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
 /**
  * @author takanori.takase
@@ -671,7 +673,7 @@ public class TemplateAdviser implements Adviser {
 
         } else {
 
-            BigDecimal excess = instrumentSize.subtract(fundingSize).max(ZERO).multiply(HALF);
+            BigDecimal excess = instrumentSize.subtract(fundingSize).max(ZERO).movePointLeft(INTEGER_ONE);
 
             size = fundingSize.subtract(excess).max(ZERO);
 
@@ -704,7 +706,7 @@ public class TemplateAdviser implements Adviser {
 
         } else {
 
-            BigDecimal excess = fundingSize.subtract(instrumentSize).max(ZERO).multiply(HALF);
+            BigDecimal excess = fundingSize.subtract(instrumentSize).max(ZERO).movePointLeft(INTEGER_ONE);
 
             size = instrumentSize.subtract(excess).max(ZERO);
 
