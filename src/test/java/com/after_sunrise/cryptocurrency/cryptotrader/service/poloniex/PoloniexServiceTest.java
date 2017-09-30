@@ -79,4 +79,17 @@ public class PoloniexServiceTest {
 
     }
 
+    @Test
+    public void testPoloniexCompositeMidEstimator() {
+
+        PoloniexService.PoloniexCompositeMidEstimator target = new PoloniexService.PoloniexCompositeMidEstimator();
+
+        assertEquals(target.get(), "PoloniexCompositeMidEstimator");
+
+        assertTrue(MidEstimator.class.isInstance(target));
+
+        assertEquals(target.getKey(request), key);
+
+    }
+
 }

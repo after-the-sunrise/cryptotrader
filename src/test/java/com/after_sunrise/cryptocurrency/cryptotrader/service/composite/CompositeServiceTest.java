@@ -10,7 +10,6 @@ import org.testng.annotations.Test;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.service.composite.CompositeService.ID;
 import static java.math.BigDecimal.ONE;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
@@ -40,7 +39,7 @@ public class CompositeServiceTest {
         Estimation e2 = Estimation.builder().price(p2).confidence(c2).build();
         Estimation e3 = Estimation.builder().price(p3).confidence(c3).build();
 
-        Key k0 = Key.builder().site(ID).instrument("a:x|b:y|c:z|d:|e|").timestamp(now).build();
+        Key k0 = Key.builder().site("*").instrument("a:x|b:y|c:z|d:|e|").timestamp(now).build();
         Key k1 = Key.builder().site("a").instrument("x").timestamp(now).build();
         Key k2 = Key.builder().site("b").instrument("y").timestamp(now).build();
         Key k3 = Key.builder().site("c").instrument("z").timestamp(now).build();

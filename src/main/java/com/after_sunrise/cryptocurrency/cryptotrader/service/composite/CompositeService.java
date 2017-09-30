@@ -4,7 +4,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.Estimators;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
 import com.google.common.annotations.VisibleForTesting;
 
@@ -20,17 +19,15 @@ import static org.apache.commons.lang3.StringUtils.trimToEmpty;
  */
 public interface CompositeService extends Service {
 
-    String ID = "composite";
-
     class CompositeMidEstimator extends MidEstimator {
 
         private static final String DELIMITER = "|";
 
         private static final String INSTRUMENT = ":";
 
-        @Override
-        public Context.Key getKey(Request request) {
-            return Estimators.getKey(request, ID);
+        @VisibleForTesting
+        protected Key getKey(Request request) {
+            return super.getKey(request);
         }
 
         @VisibleForTesting

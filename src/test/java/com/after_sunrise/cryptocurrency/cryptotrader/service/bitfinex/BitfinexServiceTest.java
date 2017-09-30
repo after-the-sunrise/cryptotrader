@@ -79,4 +79,17 @@ public class BitfinexServiceTest {
 
     }
 
+    @Test
+    public void testBitfinexCompositeMidEstimator() {
+
+        BitfinexService.BitfinexCompositeMidEstimator target = new BitfinexService.BitfinexCompositeMidEstimator();
+
+        assertEquals(target.get(), "BitfinexCompositeMidEstimator");
+
+        assertTrue(MidEstimator.class.isInstance(target));
+
+        assertEquals(target.getKey(request), key);
+
+    }
+
 }

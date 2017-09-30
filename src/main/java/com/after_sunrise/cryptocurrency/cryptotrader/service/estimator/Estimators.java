@@ -50,10 +50,14 @@ public class Estimators {
         // bitflyer -> bitfinex
         addMapping("bitflyer", "ETH_BTC", "bitfinex", "ethbtc");
         addMapping("bitflyer", "BCH_BTC", "bitfinex", "bchbtc");
+        addMapping("bitflyer", "BTC_JPY", "bitfinex", "oanda:USD_JPY|bitfinex:btcusd");
+        addMapping("bitflyer", "FX_BTC_JPY", "bitfinex", "oanda:USD_JPY|bitfinex:btcusd");
 
         // bitflyer -> poloniex
         addMapping("bitflyer", "ETH_BTC", "poloniex", "BTC_ETH");
         addMapping("bitflyer", "BCH_BTC", "poloniex", "BTC_BCH");
+        addMapping("bitflyer", "BTC_JPY", "poloniex", "oanda:USD_JPY|poloniex:USDT_BTC");
+        addMapping("bitflyer", "FX_BTC_JPY", "poloniex", "oanda:USD_JPY|poloniex:USDT_BTC");
 
     }
 
