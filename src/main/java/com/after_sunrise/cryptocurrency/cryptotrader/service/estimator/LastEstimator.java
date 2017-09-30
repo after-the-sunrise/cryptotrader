@@ -40,8 +40,7 @@ public class LastEstimator extends AbstractEstimator {
 
     }
 
-    @VisibleForTesting
-    Estimation estimate(Context context, Key key) {
+    protected Estimation estimate(Context context, Key key) {
 
         Instant now = key.getTimestamp();
 

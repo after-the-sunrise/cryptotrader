@@ -4,7 +4,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
-import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -43,8 +42,7 @@ public class VwapEstimator extends AbstractEstimator {
 
     }
 
-    @VisibleForTesting
-    Estimation estimate(Context context, Key key) {
+    protected Estimation estimate(Context context, Key key) {
 
         Instant now = key.getTimestamp();
 
