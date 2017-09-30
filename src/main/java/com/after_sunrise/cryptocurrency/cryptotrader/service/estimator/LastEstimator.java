@@ -1,6 +1,7 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.estimator;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.annotations.VisibleForTesting;
@@ -33,11 +34,20 @@ public class LastEstimator extends AbstractEstimator {
     @Override
     public Estimation estimate(Context context, Request request) {
 
-        Instant now = request.getCurrentTime();
+        Key key = getKey(request);
+
+        return estimate(context, key);
+
+    }
+
+    @VisibleForTesting
+    Estimation estimate(Context context, Key key) {
+
+        Instant now = key.getTimestamp();
 
         Instant from = now.minus(LONG_ONE, DAYS);
 
-        Optional<Trade> value = ofNullable(context.listTrades(getKey(request), from))
+        Optional<Trade> value = ofNullable(context.listTrades(key, from))
                 .orElse(emptyList()).stream()
                 .filter(Objects::nonNull)
                 .filter(t -> Objects.nonNull(t.getTimestamp()))

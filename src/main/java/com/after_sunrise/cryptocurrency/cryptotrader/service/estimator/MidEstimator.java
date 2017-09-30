@@ -3,6 +3,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -21,6 +22,13 @@ public class MidEstimator extends AbstractEstimator {
     public Estimation estimate(Context context, Request request) {
 
         Key key = getKey(request);
+
+        return estimate(context, key);
+
+    }
+
+    @VisibleForTesting
+    Estimation estimate(Context context, Key key) {
 
         BigDecimal ask = context.getBestAskPrice(key);
 
