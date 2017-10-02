@@ -46,6 +46,8 @@ public class Estimators {
         addMapping("bitflyer", "FX_BTC_JPY", "zaif", "btc_jpy");
         addMapping("bitflyer", "BTCJPY_MAT1WK", "zaif", "btc_jpy");
         addMapping("bitflyer", "BTCJPY_MAT2WK", "zaif", "btc_jpy");
+        addMapping("bitflyer", "ETH_BTC", "zaif", "eth_btc");
+        addMapping("bitflyer", "BCH_BTC", "zaif", "bch_btc");
 
         // bitflyer -> bitfinex
         addMapping("bitflyer", "ETH_BTC", "bitfinex", "ethbtc");
