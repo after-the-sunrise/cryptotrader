@@ -59,7 +59,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
         return df;
     });
 
-    private static final Duration TIMEOUT = Duration.ofMinutes(1);
+    private static final Duration TIMEOUT = Duration.ofMinutes(3);
 
     private static final Duration REALTIME_EXPIRY = Duration.ofMinutes(1);
 
