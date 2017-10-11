@@ -39,7 +39,6 @@ import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.*;
 import static java.util.Optional.ofNullable;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -182,7 +181,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             Tick.Request request = Tick.Request.builder().product(instrument).build();
 
-            return marketService.getTick(request).get(TIMEOUT.toMillis(), MILLISECONDS);
+            return extract(marketService.getTick(request), TIMEOUT);
 
         });
 
@@ -223,9 +222,9 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             Execution.Request request = Execution.Request.builder()
                     .product(key.getInstrument()).build();
 
-            return unmodifiableList(ofNullable(marketService.getExecutions(request)
-                    .get(TIMEOUT.toMillis(), MILLISECONDS)).orElse(emptyList())
-                    .stream().filter(Objects::nonNull).map(BitflyerTrade::new).collect(toList()));
+            return unmodifiableList(ofNullable(extract(marketService.getExecutions(request), TIMEOUT))
+                    .orElse(emptyList()).stream().filter(Objects::nonNull)
+                    .map(BitflyerTrade::new).collect(toList()));
 
         });
 
@@ -274,7 +273,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
         Key all = Key.build(key).instrument(null).build();
 
         List<Balance> balances = listCached(Balance.class, all, () ->
-                accountService.getBalances().get(TIMEOUT.toMillis(), MILLISECONDS)
+                extract(accountService.getBalances(), TIMEOUT)
         );
 
         String currency = mapper.apply(product).name();
@@ -307,7 +306,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             Key all = Key.build(key).instrument(null).build();
 
             Collateral collateral = findCached(Collateral.class, all, () ->
-                    accountService.getCollateral().get(TIMEOUT.toMillis(), MILLISECONDS)
+                    extract(accountService.getCollateral(), TIMEOUT)
             );
 
             if (collateral == null) {
@@ -335,7 +334,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             Key all = Key.build(key).instrument(null).build();
 
             List<Margin> margins = listCached(Margin.class, all, () ->
-                    accountService.getMargins().get(TIMEOUT.toMillis(), MILLISECONDS)
+                    extract(accountService.getMargins(), TIMEOUT)
             );
 
             if (CollectionUtils.isEmpty(margins)) {
@@ -358,7 +357,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             TradePosition.Request request = TradePosition.Request.builder().product(productId).build();
 
-            return orderService.listPositions(request).get(TIMEOUT.toMillis(), MILLISECONDS);
+            return extract(orderService.listPositions(request), TIMEOUT);
 
         });
 
@@ -383,7 +382,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
         Key all = Key.build(key).instrument(null).build();
 
         List<Product> products = listCached(Product.class, all, () ->
-                marketService.getProducts().get(TIMEOUT.toMillis(), MILLISECONDS)
+                extract(marketService.getProducts(), TIMEOUT)
         );
 
         return ofNullable(products).orElse(emptyList()).stream()
@@ -440,7 +439,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             TradeCommission.Request request = TradeCommission.Request.builder()
                     .product(key.getInstrument()).build();
 
-            return orderService.getCommission(request).get(TIMEOUT.toMillis(), MILLISECONDS);
+            return extract(orderService.getCommission(request), TIMEOUT);
 
         });
 
@@ -499,9 +498,9 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             OrderList.Request request = OrderList.Request.builder().product(key.getInstrument()).build();
 
-            return unmodifiableList(ofNullable(orderService.listOrders(request)
-                    .get(TIMEOUT.toMillis(), MILLISECONDS)).orElse(emptyList()).stream()
-                    .filter(Objects::nonNull).map(BitflyerOrder::new).collect(toList()));
+            return unmodifiableList(ofNullable(extract(orderService.listOrders(request), TIMEOUT))
+                    .orElse(emptyList()).stream().filter(Objects::nonNull)
+                    .map(BitflyerOrder::new).collect(toList()));
 
         });
 
@@ -530,9 +529,9 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             TradeExecution.Request request = TradeExecution.Request.builder()
                     .product(key.getInstrument()).build();
 
-            return unmodifiableList(ofNullable(orderService.listExecutions(request)
-                    .get(TIMEOUT.toMillis(), MILLISECONDS)).orElse(emptyList()).stream()
-                    .filter(Objects::nonNull).map(BitflyerExecution::new).collect(toList()));
+            return unmodifiableList(ofNullable(extract(orderService.listExecutions(request), TIMEOUT))
+                    .orElse(emptyList()).stream().filter(Objects::nonNull)
+                    .map(BitflyerExecution::new).collect(toList()));
 
         });
 
@@ -559,7 +558,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         CompletableFuture<OrderCreate> future = orderService.sendOrder(request);
 
-        return getQuietly(future.thenApply(r -> r == null ? null : r.getAcceptanceId()), TIMEOUT);
+        return extractQuietly(future.thenApply(r -> r == null ? null : r.getAcceptanceId()), TIMEOUT);
 
     }
 
@@ -581,7 +580,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         CompletableFuture<OrderCancel> future = orderService.cancelOrder(request);
 
-        return getQuietly(future.thenApply(r -> instruction.getId()), TIMEOUT);
+        return extractQuietly(future.thenApply(r -> instruction.getId()), TIMEOUT);
 
     }
 

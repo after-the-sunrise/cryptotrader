@@ -26,8 +26,7 @@ import static java.math.BigDecimal.TEN;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
+import static org.testng.Assert.*;
 
 /**
  * @author takanori.takase
@@ -171,28 +170,37 @@ public class TemplateContextTest {
     }
 
     @Test
-    public void testGetQuietly() throws Exception {
+    public void testExtractQuietly() throws Exception {
 
+        // Null args
         CompletableFuture<BigDecimal> future = null;
         Duration timeout = null;
-        assertNull(target.getQuietly(future, timeout));
+        assertNull(target.extractQuietly(future, timeout));
 
-        future = CompletableFuture.completedFuture(ONE);
-        assertEquals(target.getQuietly(future, timeout), ONE);
-
-        timeout = Duration.ofMillis(1);
-        assertEquals(target.getQuietly(future, timeout), ONE);
-
+        // Null future
         future = null;
         timeout = Duration.ofMillis(1);
-        assertNull(target.getQuietly(future, timeout));
+        assertNull(target.extractQuietly(future, timeout));
 
+        // Completed without timeout
+        future = CompletableFuture.completedFuture(ONE);
+        timeout = null;
+        assertEquals(target.extractQuietly(future, timeout), ONE);
+
+        // Completed with timeout
+        future = CompletableFuture.completedFuture(ONE);
+        timeout = Duration.ofMillis(1);
+        assertEquals(target.extractQuietly(future, timeout), ONE);
+
+        // Exceptionally completed
         future = new CompletableFuture<>();
         future.completeExceptionally(new Exception("test"));
-        assertNull(target.getQuietly(future, timeout));
+        assertNull(target.extractQuietly(future, timeout));
 
-        timeout = null;
-        assertNull(target.getQuietly(future, timeout));
+        // Timeout
+        future = new CompletableFuture<>();
+        assertNull(target.extractQuietly(future, timeout));
+        assertTrue(future.isCancelled());
 
     }
 

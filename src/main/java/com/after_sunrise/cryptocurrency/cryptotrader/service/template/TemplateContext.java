@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
@@ -192,20 +193,32 @@ public abstract class TemplateContext implements Context {
                 .build();
     }
 
-    protected <V> V getQuietly(Future<V> future, Duration timeout) {
+    protected <V> V extract(Future<V> future, Duration timeout) throws Exception {
 
-        try {
-
-            if (future == null) {
-                return null;
-            }
-
-            return timeout == null ? future.get() : future.get(timeout.toMillis(), MILLISECONDS);
-
-        } catch (Exception e) {
+        if (future == null) {
             return null;
         }
 
+        try {
+
+            return timeout == null ? future.get() : future.get(timeout.toMillis(), MILLISECONDS);
+
+        } catch (TimeoutException e) {
+
+            future.cancel(true);
+
+            throw e;
+
+        }
+
+    }
+
+    protected <V> V extractQuietly(Future<V> future, Duration timeout) {
+        try {
+            return extract(future, timeout);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Override
