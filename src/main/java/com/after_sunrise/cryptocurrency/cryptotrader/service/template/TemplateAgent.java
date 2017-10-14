@@ -13,7 +13,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -30,19 +29,6 @@ public class TemplateAgent implements Agent {
     private static final Duration INTERVAL = Duration.ofSeconds(LONG_ONE);
 
     private static final long RETRY = MINUTES.toMillis(LONG_ONE) / INTERVAL.toMillis();
-
-    private static final List<Class<? extends Instruction>> CLASSES = Arrays.asList(
-            CreateInstruction.class, CancelInstruction.class);
-
-    private static final Comparator<Instruction> COMPARATOR = (i1, i2) -> {
-
-        int idx1 = CLASSES.indexOf(i1.getClass());
-
-        int idx2 = CLASSES.indexOf(i2.getClass());
-
-        return -Integer.compare(idx1, idx2); // Unknown (-1) is last.
-
-    };
 
     private final String id;
 
@@ -66,51 +52,38 @@ public class TemplateAgent implements Agent {
 
         }
 
-        Key key = Key.from(request);
+        Set<CreateInstruction> creates = new HashSet<>();
+        Set<CancelInstruction> cancels = new HashSet<>();
 
-        AtomicBoolean failed = new AtomicBoolean(false);
-
-        Instruction.Visitor<String> visitor = new Visitor<String>() {
+        Instruction.Visitor<Boolean> visitor = new Visitor<Boolean>() {
             @Override
-            public String visit(CreateInstruction instruction) {
-
-                if (failed.get()) {
-                    return null;
-                }
-
-                String result = context.createOrder(key, instruction);
-
-                failed.set(failed.get() || StringUtils.isEmpty(result));
-
-                return result;
-
+            public Boolean visit(CreateInstruction instruction) {
+                return creates.add(instruction);
             }
 
             @Override
-            public String visit(CancelInstruction instruction) {
-
-                String result = context.cancelOrder(key, instruction);
-
-                failed.set(failed.get() || StringUtils.isEmpty(result));
-
-                return result;
-
+            public Boolean visit(CancelInstruction instruction) {
+                return cancels.add(instruction);
             }
         };
 
+        instructions.stream().filter(Objects::nonNull).forEach(i -> i.accept(visitor));
+
+        Key key = Key.from(request);
+
         Map<Instruction, String> results = new IdentityHashMap<>();
 
-        instructions.stream().filter(Objects::nonNull).sorted(COMPARATOR).forEach(i -> {
+        results.putAll(context.cancelOrders(key, cancels));
 
-            String result = i.accept(visitor);
+        if (results.values().stream().anyMatch(StringUtils::isEmpty)) {
 
-            if (StringUtils.isEmpty(result)) {
-                return;
-            }
+            log.trace("Skipping create instructions : {}", creates.size());
 
-            results.put(i, result);
+            return results;
 
-        });
+        }
+
+        results.putAll(context.createOrders(key, creates));
 
         return results;
 

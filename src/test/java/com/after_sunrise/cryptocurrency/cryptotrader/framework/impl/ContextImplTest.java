@@ -22,7 +22,7 @@ import java.util.Map;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.RoundingMode.DOWN;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.*;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -288,9 +288,11 @@ public class ContextImplTest {
 
         String value = "testid";
 
-        when(contexts.get("c1").createOrder(key, instruction)).thenReturn(value);
+        Map<CreateInstruction, String> results = singletonMap(instruction, value);
 
-        assertEquals(target.createOrder(key, instruction), value);
+        when(contexts.get("c1").createOrders(key, singleton(instruction))).thenReturn(results);
+
+        assertEquals(target.createOrders(key, singleton(instruction)), results);
 
     }
 
@@ -301,9 +303,11 @@ public class ContextImplTest {
 
         String value = "testid";
 
-        when(contexts.get("c1").cancelOrder(key, instruction)).thenReturn(value);
+        Map<CancelInstruction, String> results = singletonMap(instruction, value);
 
-        assertEquals(target.cancelOrder(key, instruction), value);
+        when(contexts.get("c1").cancelOrders(key, singleton(instruction))).thenReturn(results);
+
+        assertEquals(target.cancelOrders(key, singleton(instruction)), results);
 
     }
 

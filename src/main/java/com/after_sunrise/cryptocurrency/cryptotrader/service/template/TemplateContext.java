@@ -26,6 +26,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
@@ -307,12 +308,12 @@ public abstract class TemplateContext implements Context {
     }
 
     @Override
-    public String createOrder(Key key, CreateInstruction instruction) {
+    public Map<CreateInstruction, String> createOrders(Key key, Set<CreateInstruction> instructions) {
         return null;
     }
 
     @Override
-    public String cancelOrder(Key key, CancelInstruction instruction) {
+    public Map<CancelInstruction, String> cancelOrders(Key key, Set<CancelInstruction> instructions) {
         return null;
     }
 

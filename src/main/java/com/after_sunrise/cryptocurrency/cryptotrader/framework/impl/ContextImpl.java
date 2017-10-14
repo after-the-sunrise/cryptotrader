@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -163,13 +164,13 @@ public class ContextImpl implements Context {
     }
 
     @Override
-    public String createOrder(Key key, CreateInstruction instruction) {
-        return forContext(key, c -> c.createOrder(key, instruction));
+    public Map<CreateInstruction, String> createOrders(Key key, Set<CreateInstruction> instructions) {
+        return forContext(key, c -> c.createOrders(key, instructions));
     }
 
     @Override
-    public String cancelOrder(Key key, CancelInstruction instruction) {
-        return forContext(key, c -> c.cancelOrder(key, instruction));
+    public Map<CancelInstruction, String> cancelOrders(Key key, Set<CancelInstruction> instructions) {
+        return forContext(key, c -> c.cancelOrders(key, instructions));
     }
 
 }

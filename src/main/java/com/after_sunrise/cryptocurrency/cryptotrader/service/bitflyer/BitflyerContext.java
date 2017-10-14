@@ -4,7 +4,8 @@ import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4j;
 import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4jFactory;
 import com.after_sunrise.cryptocurrency.bitflyer4j.entity.*;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.*;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
@@ -538,49 +539,85 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     }
 
     @Override
-    public String createOrder(Key key, Instruction.CreateInstruction instruction) {
+    public Map<CreateInstruction, String> createOrders(Key key, Set<CreateInstruction> instructions) {
 
-        if (key == null || StringUtils.isBlank(key.getInstrument())) {
-            return null;
+        if (CollectionUtils.isEmpty(instructions)) {
+            return emptyMap();
         }
 
-        if (instruction == null || instruction.getPrice() == null || instruction.getSize() == null) {
-            return null;
+        Map<CreateInstruction, CompletableFuture<String>> futures = new IdentityHashMap<>();
+
+        for (CreateInstruction instruction : instructions) {
+
+            if (key == null || StringUtils.isBlank(key.getInstrument())) {
+                futures.put(instruction, CompletableFuture.completedFuture(null));
+                continue;
+            }
+
+            if (instruction == null || instruction.getPrice() == null || instruction.getSize() == null) {
+                futures.put(instruction, CompletableFuture.completedFuture(null));
+                continue;
+            }
+
+            OrderCreate.Request.RequestBuilder builder = OrderCreate.Request.builder();
+            builder.product(key.getInstrument());
+            builder.type(instruction.getPrice().signum() == 0 ? MARKET : LIMIT);
+            builder.side(instruction.getSize().signum() > 0 ? BUY : SELL);
+            builder.price(instruction.getPrice());
+            builder.size(instruction.getSize().abs());
+            OrderCreate.Request request = builder.build();
+
+            CompletableFuture<OrderCreate> future = orderService.sendOrder(request);
+
+            futures.put(instruction, future.thenApply(r -> r == null ? null : r.getAcceptanceId()));
+
         }
 
-        OrderCreate.Request.RequestBuilder builder = OrderCreate.Request.builder();
-        builder.product(key.getInstrument());
-        builder.type(instruction.getPrice().signum() == 0 ? MARKET : LIMIT);
-        builder.side(instruction.getSize().signum() > 0 ? BUY : SELL);
-        builder.price(instruction.getPrice());
-        builder.size(instruction.getSize().abs());
-        OrderCreate.Request request = builder.build();
+        Map<CreateInstruction, String> results = new IdentityHashMap<>();
 
-        CompletableFuture<OrderCreate> future = orderService.sendOrder(request);
+        futures.forEach((k, v) -> results.put(k, extractQuietly(v, TIMEOUT)));
 
-        return extractQuietly(future.thenApply(r -> r == null ? null : r.getAcceptanceId()), TIMEOUT);
+        return results;
 
     }
 
     @Override
-    public String cancelOrder(Key key, Instruction.CancelInstruction instruction) {
+    public Map<CancelInstruction, String> cancelOrders(Key key, Set<CancelInstruction> instructions) {
 
-        if (key == null || StringUtils.isBlank(key.getInstrument())) {
-            return null;
+        if (CollectionUtils.isEmpty(instructions)) {
+            return emptyMap();
         }
 
-        if (instruction == null || StringUtils.isEmpty(instruction.getId())) {
-            return null;
+        Map<CancelInstruction, CompletableFuture<String>> futures = new IdentityHashMap<>();
+
+        for (CancelInstruction instruction : instructions) {
+
+            if (key == null || StringUtils.isBlank(key.getInstrument())) {
+                futures.put(instruction, CompletableFuture.completedFuture(null));
+                continue;
+            }
+
+            if (instruction == null || StringUtils.isEmpty(instruction.getId())) {
+                futures.put(instruction, CompletableFuture.completedFuture(null));
+                continue;
+            }
+
+            OrderCancel.Request.RequestBuilder builder = OrderCancel.Request.builder();
+            builder.product(key.getInstrument());
+            builder.acceptanceId(instruction.getId());
+            OrderCancel.Request request = builder.build();
+
+            CompletableFuture<OrderCancel> future = orderService.cancelOrder(request);
+
+            futures.put(instruction, future.thenApply(r -> r == null ? null : instruction.getId()));
+
         }
 
-        OrderCancel.Request.RequestBuilder builder = OrderCancel.Request.builder();
-        builder.product(key.getInstrument());
-        builder.acceptanceId(instruction.getId());
-        OrderCancel.Request request = builder.build();
+        Map<CancelInstruction, String> results = new IdentityHashMap<>();
 
-        CompletableFuture<OrderCancel> future = orderService.cancelOrder(request);
+        futures.forEach((k, v) -> results.put(k, extractQuietly(v, TIMEOUT)));
 
-        return extractQuietly(future.thenApply(r -> instruction.getId()), TIMEOUT);
+        return results;
 
     }
 

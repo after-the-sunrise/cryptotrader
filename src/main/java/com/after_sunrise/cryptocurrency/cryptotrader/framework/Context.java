@@ -9,6 +9,8 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -99,8 +101,8 @@ public interface Context extends Service, AutoCloseable {
 
     List<Order.Execution> listExecutions(Key key);
 
-    String createOrder(Key key, CreateInstruction instruction);
+    Map<CreateInstruction, String> createOrders(Key key, Set<CreateInstruction> instructions);
 
-    String cancelOrder(Key key, CancelInstruction instruction);
+    Map<CancelInstruction, String> cancelOrders(Key key, Set<CancelInstruction> instructions);
 
 }

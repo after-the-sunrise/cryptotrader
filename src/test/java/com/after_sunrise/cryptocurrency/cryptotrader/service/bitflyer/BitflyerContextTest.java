@@ -25,6 +25,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -40,6 +41,7 @@ import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.mockito.Matchers.any;
@@ -823,7 +825,9 @@ public class BitflyerContextTest {
         });
 
         // Buy
-        assertEquals(target.createOrder(key, builder.build()), future.get().getAcceptanceId());
+        CreateInstruction instruction = builder.build();
+        Map<CreateInstruction, String> results = target.createOrders(key, singleton(instruction));
+        assertEquals(results.get(instruction), future.get().getAcceptanceId());
         verify(orderService, times(1)).sendOrder(any());
         assertEquals(reference.get().getProduct(), key.getInstrument());
         assertEquals(reference.get().getType(), LIMIT);
@@ -832,7 +836,9 @@ public class BitflyerContextTest {
         assertEquals(reference.get().getSize(), ONE);
 
         // Sell
-        assertEquals(target.createOrder(key, builder.size(ONE.negate()).build()), future.get().getAcceptanceId());
+        instruction = builder.size(ONE.negate()).build();
+        results = target.createOrders(key, singleton(instruction));
+        assertEquals(results.get(instruction), future.get().getAcceptanceId());
         verify(orderService, times(2)).sendOrder(any());
         assertEquals(reference.get().getProduct(), key.getInstrument());
         assertEquals(reference.get().getType(), LIMIT);
@@ -841,7 +847,9 @@ public class BitflyerContextTest {
         assertEquals(reference.get().getSize(), ONE);
 
         // Market
-        assertEquals(target.createOrder(key, builder.price(ZERO).build()), future.get().getAcceptanceId());
+        instruction = builder.price(ZERO).build();
+        results = target.createOrders(key, singleton(instruction));
+        assertEquals(results.get(instruction), future.get().getAcceptanceId());
         verify(orderService, times(3)).sendOrder(any());
         assertEquals(reference.get().getProduct(), key.getInstrument());
         assertEquals(reference.get().getType(), MARKET);
@@ -849,15 +857,22 @@ public class BitflyerContextTest {
         assertEquals(reference.get().getPrice(), ZERO);
         assertEquals(reference.get().getSize(), ONE);
 
-        // Invalid Key
-        assertNull(target.createOrder(null, builder.build()));
-        assertNull(target.createOrder(Key.from(Request.builder().build()), builder.build()));
+        // Invalid Key (Null)
+        instruction = builder.build();
+        results = target.createOrders(null, singleton(instruction));
+        assertEquals(results.get(instruction), null);
+
+        // Invalid Key (Empty)
+        instruction = builder.build();
+        results = target.createOrders(Key.from(Request.builder().build()), singleton(instruction));
+        assertEquals(results.get(instruction), null);
         verifyNoMoreInteractions(orderService);
 
         // Invalid Instruction
-        assertNull(target.createOrder(key, null));
-        assertNull(target.createOrder(key, builder.price(null).size(ONE).build()));
-        assertNull(target.createOrder(key, builder.price(TEN).size(null).build()));
+        assertEquals(target.createOrders(key, null).size(), 0);
+        assertEquals(target.createOrders(key, singleton(null)).size(), 1);
+        assertEquals(target.createOrders(key, singleton(builder.price(null).size(ONE).build())).size(), 1);
+        assertEquals(target.createOrders(key, singleton(builder.price(TEN).size(null).build())).size(), 1);
         verifyNoMoreInteractions(orderService);
 
     }
@@ -878,19 +893,28 @@ public class BitflyerContextTest {
 
         });
 
-        assertSame(target.cancelOrder(key, builder.build()), "aid");
+        CancelInstruction instruction = builder.build();
+        Map<CancelInstruction, String> results = target.cancelOrders(key, singleton(instruction));
+        assertEquals(results.get(instruction), instruction.getId());
         verify(orderService, times(1)).cancelOrder(any());
         assertEquals(reference.get().getProduct(), key.getInstrument());
         assertEquals(reference.get().getAcceptanceId(), "aid");
 
-        // Invalid Key
-        assertNull(target.cancelOrder(null, builder.build()));
-        assertNull(target.cancelOrder(Key.from(Request.builder().build()), builder.build()));
+        // Invalid Key (Null)
+        instruction = builder.build();
+        results = target.cancelOrders(null, singleton(instruction));
+        assertEquals(results.get(instruction), null);
+
+        // Invalid Key (Empty)
+        instruction = builder.build();
+        results = target.cancelOrders(Key.from(Request.builder().build()), singleton(instruction));
+        assertEquals(results.get(instruction), null);
         verifyNoMoreInteractions(orderService);
 
         // Invalid Instruction
-        assertNull(target.cancelOrder(key, null));
-        assertNull(target.cancelOrder(key, builder.id(null).build()));
+        assertEquals(target.cancelOrders(key, null).size(), 0);
+        assertEquals(target.cancelOrders(key, singleton(null)).size(), 1);
+        assertEquals(target.cancelOrders(key, singleton(builder.id(null).build())).size(), 1);
         verifyNoMoreInteractions(orderService);
 
     }

@@ -7,6 +7,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Cance
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.google.common.collect.Sets;
 import org.mockito.InOrder;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -16,10 +17,12 @@ import java.time.Duration;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonMap;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.*;
@@ -55,38 +58,43 @@ public class TemplateAgentTest {
         CreateInstruction i1 = CreateInstruction.builder().build();
         CreateInstruction i2 = CreateInstruction.builder().build();
         CreateInstruction i3 = CreateInstruction.builder().build();
-        CancelInstruction i4 = CancelInstruction.builder().build();
-        CancelInstruction i5 = CancelInstruction.builder().build();
-        CancelInstruction i6 = CancelInstruction.builder().build();
+        CancelInstruction i4 = CancelInstruction.builder().id("i4").build();
+        CancelInstruction i5 = CancelInstruction.builder().id("i5").build();
+        CancelInstruction i6 = CancelInstruction.builder().id("i6").build();
         Instruction i7 = mock(Instruction.class);
         Instruction i8 = mock(Instruction.class);
         Request request = Request.builder().build();
-        when(context.createOrder(any(), any())).thenReturn("create");
-        when(context.cancelOrder(any(), any())).thenReturn("cancel");
-        when(i7.accept(any())).thenReturn("mocked");
-        when(i8.accept(any())).thenReturn("mocked");
+
+        when(context.createOrders(any(), any())).thenAnswer(invocation -> {
+            Map<CreateInstruction, String> results = new IdentityHashMap<>();
+            Set<?> instructions = invocation.getArgumentAt(1, Set.class);
+            instructions.stream().map(CreateInstruction.class::cast).forEach(i -> results.put(i, i.getUid()));
+            return results;
+        });
+
+        when(context.cancelOrders(any(), any())).thenAnswer(invocation -> {
+            Map<CancelInstruction, String> results = new IdentityHashMap<>();
+            Set<?> instructions = invocation.getArgumentAt(1, Set.class);
+            instructions.stream().map(CancelInstruction.class::cast).forEach(i -> results.put(i, i.getId()));
+            return results;
+        });
+
+        // Invoke
         List<Instruction> values = asList(i1, i3, i5, i7, null, i2, i4, i6, i8);
         Map<Instruction, String> results = target.manage(context, request, values);
-        assertEquals(results.size(), values.size() - 1);
+        assertEquals(results.size(), 3 + 3); // Mocks are ignored.
 
         // Cancels are processed first. Unknowns are last.
         InOrder inOrder = inOrder(context);
-        inOrder.verify(context).cancelOrder(any(), same(i5));
-        inOrder.verify(context).cancelOrder(any(), same(i4));
-        inOrder.verify(context).cancelOrder(any(), same(i6));
-        inOrder.verify(context).createOrder(any(), same(i1));
-        inOrder.verify(context).createOrder(any(), same(i3));
-        inOrder.verify(context).createOrder(any(), same(i2));
+        inOrder.verify(context).cancelOrders(any(), eq(Sets.newHashSet(i4, i5, i6)));
+        inOrder.verify(context).createOrders(any(), eq(Sets.newHashSet(i1, i2, i3)));
         inOrder.verifyNoMoreInteractions();
 
         // Abort if invalid response.
-        when(context.cancelOrder(any(), same(i5))).thenReturn("");
+        doReturn(singletonMap(i4, null)).when(context).cancelOrders(any(), any());
         results = target.manage(context, request, values);
-        assertEquals(results.size(), 4);
-        assertEquals(results.get(i4), "cancel");
-        assertEquals(results.get(i6), "cancel");
-        assertEquals(results.get(i7), "mocked");
-        assertEquals(results.get(i8), "mocked");
+        assertEquals(results.size(), 1);
+        assertEquals(results.get(i4), null);
 
         // No input
         assertEquals(target.manage(context, request, null).size(), 0);
