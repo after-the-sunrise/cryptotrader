@@ -600,7 +600,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal exposure = ofNullable(request.getTradingExposure()).orElse(ZERO);
 
-        BigDecimal exposed = product.multiply(exposure);
+        BigDecimal exposed = product.multiply(exposure).min(fund.divide(price, SCALE, DOWN));
 
         log.trace("Funding exposure size : {} (fund=[{}] price=[{}])", exposed, adjFund, price);
 

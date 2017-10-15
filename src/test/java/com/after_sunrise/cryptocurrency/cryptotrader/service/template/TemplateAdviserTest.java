@@ -741,23 +741,37 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateFundingExposureSize() {
 
-        Request request = rBuilder.tradingExposure(new BigDecimal("0.10")).build();
-        Key key = Key.from(request);
-        when(context.getFundingPosition(key)).thenReturn(new BigDecimal("18000"));
+        Request.RequestBuilder builder = rBuilder.tradingExposure(new BigDecimal("0.10"));
+        when(context.getFundingPosition(any())).thenReturn(new BigDecimal("18000"));
         BigDecimal price = new BigDecimal("123.4567");
 
         // Exposed = Fund * Exposure = 900
-        // Fund / Price = 900 / 123.4567 = 7.290005322...
+        // Exposed / Price = 900 / 123.4567 = 7.290005322...
         BigDecimal expect = new BigDecimal("7.290005321700");
-        assertEquals(target.calculateFundingExposureSize(context, request, price), expect);
+        assertEquals(target.calculateFundingExposureSize(context, builder.build(), price), expect);
+
+        // Leveraged
+        // Exposed = Fund * (1 + 5) * Exposure = 10800
+        // Exposed / Price = 10800 / 123.4567 = 87.4800638...
+        builder = builder.fundingOffset(BigDecimal.valueOf(5));
+        expect = new BigDecimal("87.480063860450");
+        assertEquals(target.calculateFundingExposureSize(context, builder.build(), price), expect);
+
+        // Leveraged (Over)
+        // Exposed = Fund * (1 + 100) * Exposure = 180000
+        // Exposed / Price = 180000 / 123.4567 = 1,458.00106434...
+        // Actual Fund / Price = 18000 / 123.4567 = 145.800106434077697
+        builder = builder.fundingOffset(BigDecimal.valueOf(100));
+        expect = new BigDecimal("145.8001064340");
+        assertEquals(target.calculateFundingExposureSize(context, builder.build(), price), expect);
 
         // Invalid price
-        assertEquals(target.calculateFundingExposureSize(context, request, null), ZERO);
-        assertEquals(target.calculateFundingExposureSize(context, request, ZERO), ZERO);
+        assertEquals(target.calculateFundingExposureSize(context, builder.build(), null), ZERO);
+        assertEquals(target.calculateFundingExposureSize(context, builder.build(), ZERO), ZERO);
 
         // Invalid Fund
-        when(context.getFundingPosition(key)).thenReturn(null);
-        assertEquals(target.calculateFundingExposureSize(context, request, price), ZERO);
+        when(context.getFundingPosition(any())).thenReturn(null);
+        assertEquals(target.calculateFundingExposureSize(context, builder.build(), price), ZERO);
 
     }
 
