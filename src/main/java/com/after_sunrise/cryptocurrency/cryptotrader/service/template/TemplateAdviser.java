@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static java.lang.Boolean.TRUE;
@@ -34,8 +33,6 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 public class TemplateAdviser implements Adviser {
 
     static final BigDecimal EPSILON = ONE.movePointLeft(SCALE);
-
-    static final int RANDOM = 10;
 
     static final int SIGNUM_BUY = 1;
 
@@ -139,7 +136,7 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        return adjustBasis(context, request, spread.add(comm).add(comm));
+        return adjustBasis(context, request, spread.add(comm));
 
     }
 
@@ -291,8 +288,6 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal basis = ofNullable(calculateBasis(context, request)).orElse(ZERO);
-
         BigDecimal result = null;
 
         for (BigDecimal[] priceSize : execs) {
@@ -306,19 +301,11 @@ public class TemplateAdviser implements Adviser {
             BigDecimal price = priceSize[0];
 
             if (size.signum() == SIGNUM_BUY) {
-
-                price = price.multiply(ONE.add(basis));
-
                 result = result == null ? price : price.max(result);
-
             }
 
             if (size.signum() == SIGNUM_SELL) {
-
-                price = price.multiply(ONE.subtract(basis));
-
                 result = result == null ? price : price.min(result);
-
             }
 
         }
@@ -425,11 +412,6 @@ public class TemplateAdviser implements Adviser {
     }
 
     @VisibleForTesting
-    BigDecimal getRandomEpsilon() {
-        return ThreadLocalRandom.current().nextInt() % RANDOM == 0 ? EPSILON.negate() : EPSILON;
-    }
-
-    @VisibleForTesting
     BigDecimal calculateBuyBoundaryPrice(Context context, Request request) {
 
         Key key = Key.from(request);
@@ -440,13 +422,12 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal ask1 = context.roundTickSize(key, ask0.subtract(EPSILON), DOWN);
+        BigDecimal ask1 = ask0.subtract(EPSILON);
 
-        if (ask1 == null) {
-            return null;
-        }
+        BigDecimal basis = ofNullable(calculateBasis(context, request)).orElse(ZERO);
 
-        BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_SELL)).orElse(ask0);
+        BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_SELL))
+                .map(r -> r.multiply(ONE.subtract(basis).subtract(basis))).orElse(ask0);
 
         BigDecimal bid0 = ofNullable(context.getBestBidPrice(key)).orElse(ask0);
 
@@ -460,15 +441,13 @@ public class TemplateAdviser implements Adviser {
                 .filter(o -> o.getOrderPrice().compareTo(bid0) == 0)
                 .count() == 0) {
 
-            BigDecimal epsilon = getRandomEpsilon();
-
-            bid1 = ofNullable(context.roundTickSize(key, bid0.add(epsilon), UP)).orElse(bid0);
+            bid1 = ofNullable(context.roundTickSize(key, bid0.add(EPSILON), UP)).orElse(bid0);
 
         }
 
         BigDecimal price = ask1.min(bid1).min(recent);
 
-        return adjustBuyBoundaryPrice(context, request, price);
+        return adjustBuyBoundaryPrice(context, request, context.roundTickSize(key, price, DOWN));
 
     }
 
@@ -487,13 +466,12 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal bid1 = context.roundTickSize(key, bid0.add(EPSILON), UP);
+        BigDecimal bid1 = bid0.add(EPSILON);
 
-        if (bid1 == null) {
-            return null;
-        }
+        BigDecimal basis = ofNullable(calculateBasis(context, request)).orElse(ZERO);
 
-        BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_BUY)).orElse(bid0);
+        BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_BUY))
+                .map(r -> r.multiply(ONE.add(basis).add(basis))).orElse(bid0);
 
         BigDecimal ask0 = ofNullable(context.getBestAskPrice(key)).orElse(bid0);
 
@@ -507,15 +485,13 @@ public class TemplateAdviser implements Adviser {
                 .filter(o -> o.getOrderPrice().compareTo(ask0) == 0)
                 .count() == 0) {
 
-            BigDecimal epsilon = getRandomEpsilon();
-
-            ask1 = ofNullable(context.roundTickSize(key, ask0.subtract(epsilon), DOWN)).orElse(ask0);
+            ask1 = ofNullable(context.roundTickSize(key, ask0.subtract(EPSILON), DOWN)).orElse(ask0);
 
         }
 
         BigDecimal price = bid1.max(ask1).max(recent);
 
-        return adjustSellBoundaryPrice(context, request, price);
+        return adjustSellBoundaryPrice(context, request, context.roundTickSize(key, price, UP));
 
     }
 

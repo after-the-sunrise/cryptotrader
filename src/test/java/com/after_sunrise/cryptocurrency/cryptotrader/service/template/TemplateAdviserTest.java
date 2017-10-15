@@ -19,13 +19,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.*;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.SIGNUM_BUY;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.SIGNUM_SELL;
 import static java.math.BigDecimal.*;
 import static java.time.Instant.now;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 /**
  * @author takanori.takase
@@ -132,7 +134,7 @@ public class TemplateAdviserTest {
 
         Request request = Request.builder().tradingSpread(new BigDecimal("0.0060")).build();
         when(context.getCommissionRate(Key.from(request))).thenReturn(new BigDecimal("0.0020"));
-        assertEquals(target.calculateBasis(context, request), new BigDecimal("0.0100"));
+        assertEquals(target.calculateBasis(context, request), new BigDecimal("0.0080"));
 
         // Null spread
         request = Request.builder().tradingSpread(null).build();
@@ -360,12 +362,6 @@ public class TemplateAdviserTest {
         assertEquals(target.calculateRecentPrice(context, request, SIGNUM_BUY), new BigDecimal("124"));
         assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
 
-        // With basis
-        doReturn(new BigDecimal("0.0020")).when(target).calculateBasis(context, request);
-        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_BUY), new BigDecimal("124.2480"));
-        assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
-        doReturn(null).when(target).calculateBasis(context, request);
-
         // Flipped Short : (10@123 + 10@124 + 20@121) + -60@126 = -20@126
         exec = mock(Execution.class);
         when(exec.getTime()).thenReturn(Instant.ofEpochMilli(65));
@@ -428,12 +424,6 @@ public class TemplateAdviserTest {
         values.add(exec);
         assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
         assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("131"));
-
-        // With basis
-        doReturn(new BigDecimal("0.0020")).when(target).calculateBasis(context, request);
-        assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
-        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("130.7380"));
-        doReturn(null).when(target).calculateBasis(context, request);
 
         // Zero duration
         request = rBuilder.tradingDuration(Duration.ofMillis(0)).build();
@@ -579,37 +569,11 @@ public class TemplateAdviserTest {
     }
 
     @Test
-    public void testGetRandomEpsilon() {
-
-        int count = 1000;
-
-        int positive = 0;
-        int negative = 0;
-
-        for (int i = 0; i < count; i++) {
-
-            int signum = target.getRandomEpsilon().signum();
-
-            if (signum >= 0) {
-                positive++;
-            } else {
-                negative++;
-            }
-
-        }
-
-        assertTrue(positive > count * 8 / 10, "Positive : " + positive);
-
-        assertTrue(negative < count * 2 / 10, "Negative : " + negative);
-
-    }
-
-    @Test
     public void testCalculateBuyBoundaryPrice() {
 
         Request request = rBuilder.build();
         Key key = Key.from(request);
-        doReturn(EPSILON).when(target).getRandomEpsilon();
+        doReturn(new BigDecimal("0.0001")).when(target).calculateBasis(context, request);
 
         // Normal
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("16000.0000"));
@@ -645,7 +609,7 @@ public class TemplateAdviserTest {
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("16000.0000"));
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("15000.0000"));
         doReturn(valueOf(14500)).when(target).calculateRecentPrice(context, request, SIGNUM_SELL);
-        assertEquals(target.calculateBuyBoundaryPrice(context, request), new BigDecimal("14500"));
+        assertEquals(target.calculateBuyBoundaryPrice(context, request), new BigDecimal("14497.1000"));
 
         // Already at BBO
         Order order = mock(Order.class);
@@ -664,7 +628,7 @@ public class TemplateAdviserTest {
 
         Request request = rBuilder.build();
         Key key = Key.from(request);
-        doReturn(EPSILON).when(target).getRandomEpsilon();
+        doReturn(new BigDecimal("0.0001")).when(target).calculateBasis(context, request);
 
         // Normal
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
@@ -700,7 +664,7 @@ public class TemplateAdviserTest {
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("14000.0000"));
         doReturn(valueOf(15500)).when(target).calculateRecentPrice(context, request, SIGNUM_BUY);
-        assertEquals(target.calculateSellBoundaryPrice(context, request), new BigDecimal("15500"));
+        assertEquals(target.calculateSellBoundaryPrice(context, request), new BigDecimal("15503.1000"));
 
         // Already at BBO
         Order order = mock(Order.class);
