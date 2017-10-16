@@ -11,17 +11,13 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.Comparator;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.*;
 import static java.util.Collections.emptyList;
-import static java.util.Comparator.comparing;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
@@ -228,7 +224,9 @@ public class TemplateAdviser implements Adviser {
 
         Key key = Key.from(request);
 
-        List<Order.Execution> executions = ofNullable(context.listExecutions(key))
+        Comparator<BigDecimal> comparator = signum == SIGNUM_BUY ? Comparator.reverseOrder() : Comparator.naturalOrder();
+
+        return ofNullable(context.listExecutions(key))
                 .orElse(emptyList()).stream()
                 .filter(Objects::nonNull)
                 .filter(v -> v.getTime() != null)
@@ -236,81 +234,10 @@ public class TemplateAdviser implements Adviser {
                 .filter(v -> v.getPrice() != null)
                 .filter(v -> v.getPrice().signum() != 0)
                 .filter(v -> v.getSize() != null)
-                .filter(v -> v.getSize().signum() != 0)
-                .sorted(comparing(Order.Execution::getTime))
-                .collect(Collectors.toList());
-
-        List<BigDecimal[]> execs = new ArrayList<>();
-
-        for (Order.Execution exec : executions) {
-
-            BigDecimal price = exec.getPrice();
-
-            BigDecimal size = exec.getSize();
-
-            Iterator<BigDecimal[]> itr = execs.iterator();
-
-            while (itr.hasNext()) {
-
-                BigDecimal[] priceSize = itr.next();
-
-                if (priceSize[1].signum() == size.signum()) {
-                    break;
-                }
-
-                BigDecimal total = priceSize[1].add(size);
-
-                if (priceSize[1].signum() == total.signum()) {
-
-                    priceSize[1] = total;
-
-                    size = ZERO;
-
-                } else {
-
-                    itr.remove();
-
-                    size = total;
-
-                }
-
-            }
-
-            if (size.signum() == 0) {
-                continue;
-            }
-
-            execs.add(new BigDecimal[]{price, size});
-
-        }
-
-        if (execs.isEmpty()) {
-            return null;
-        }
-
-        BigDecimal result = null;
-
-        for (BigDecimal[] priceSize : execs) {
-
-            BigDecimal size = priceSize[1];
-
-            if (size.signum() != signum) {
-                continue;
-            }
-
-            BigDecimal price = priceSize[0];
-
-            if (size.signum() == SIGNUM_BUY) {
-                result = result == null ? price : price.max(result);
-            }
-
-            if (size.signum() == SIGNUM_SELL) {
-                result = result == null ? price : price.min(result);
-            }
-
-        }
-
-        return result;
+                .filter(v -> v.getSize().signum() == signum)
+                .map(Order.Execution::getPrice)
+                .sorted(comparator)
+                .findFirst().orElse(null);
 
     }
 
