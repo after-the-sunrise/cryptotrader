@@ -23,7 +23,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,9 +39,11 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.Bit
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.COLLATERAL_JPY;
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ZERO;
+import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Collections.*;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 
 /**
  * @author takanori.takase
@@ -180,9 +181,9 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
                 .filter(exec -> exec.getSize().signum() != 0)
                 .forEach(exec -> {
 
-                    Instant timestamp = exec.getTimestamp().truncatedTo(ChronoUnit.SECONDS).toInstant();
+                    Instant time = exec.getTimestamp().plus(LONG_ONE, SECONDS).truncatedTo(SECONDS).toInstant();
 
-                    BitflyerTrade trade = trades.get(timestamp);
+                    BitflyerTrade trade = trades.get(time);
 
                     if (trade != null) {
 
@@ -192,7 +193,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
                     }
 
-                    trades.put(timestamp, new BitflyerTrade(timestamp, exec.getPrice(), exec.getSize()));
+                    trades.put(time, new BitflyerTrade(time, exec.getPrice(), exec.getSize()));
 
                 });
 

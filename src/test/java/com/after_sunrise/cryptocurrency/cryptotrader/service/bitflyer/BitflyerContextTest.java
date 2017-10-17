@@ -236,7 +236,7 @@ public class BitflyerContextTest {
 
         // Filtered by time (cached)
         List<Trade> filtered = target.listTrades(key, time.toInstant().plusSeconds(2));
-        assertEquals(filtered.size(), 4);
+        assertEquals(filtered.size(), 5);
         verify(marketService, times(1)).getExecutions(any());
         verify(realtimeService, times(1)).subscribeExecution(any());
 
