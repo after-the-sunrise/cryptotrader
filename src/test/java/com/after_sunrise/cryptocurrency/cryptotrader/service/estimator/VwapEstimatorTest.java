@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 import static java.math.BigDecimal.ZERO;
-import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.HOURS;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
@@ -48,7 +48,7 @@ public class VwapEstimatorTest {
     public void testEstimate() throws Exception {
 
         Instant now = Instant.now();
-        Instant from = now.minus(LONG_ONE, DAYS);
+        Instant from = now.minus(LONG_ONE, HOURS);
         Request request = Request.builder().currentTime(now).build();
         Key key = Key.from(request);
 

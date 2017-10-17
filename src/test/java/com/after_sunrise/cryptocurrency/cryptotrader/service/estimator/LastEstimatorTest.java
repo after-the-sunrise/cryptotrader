@@ -68,7 +68,7 @@ public class LastEstimatorTest {
         Request request = Request.builder().site("s").instrument("i").currentTime(time).build();
         Key key = Key.from(request);
         List<Trade> trades = asList(t3, t2, null, t5, null, t1, t4);
-        when(context.listTrades(key, time.minus(LONG_ONE, DAYS))).thenReturn(trades);
+        when(context.listTrades(key, time.minus(LONG_ONE, HOURS))).thenReturn(trades);
 
         // Estimated
         Estimation result = target.estimate(context, request);
@@ -76,13 +76,13 @@ public class LastEstimatorTest {
         assertEquals(result.getConfidence(), TEN);
 
         // Null trades
-        when(context.listTrades(key, time.minus(LONG_ONE, DAYS))).thenReturn(null);
+        when(context.listTrades(key, time.minus(LONG_ONE, HOURS))).thenReturn(null);
         result = target.estimate(context, request);
         assertEquals(result.getPrice(), null);
         assertEquals(result.getConfidence(), ZERO);
 
         // Invalid trades
-        when(context.listTrades(key, time.minus(LONG_ONE, DAYS))).thenReturn(asList((Trade) null));
+        when(context.listTrades(key, time.minus(LONG_ONE, HOURS))).thenReturn(asList((Trade) null));
         result = target.estimate(context, request);
         assertEquals(result.getPrice(), null);
         assertEquals(result.getConfidence(), ZERO);
