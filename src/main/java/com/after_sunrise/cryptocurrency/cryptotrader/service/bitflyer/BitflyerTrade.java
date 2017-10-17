@@ -1,48 +1,120 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 
-import com.after_sunrise.cryptocurrency.bitflyer4j.entity.Execution;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import lombok.ToString;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * @author takanori.takase
  * @version 0.0.1
  */
-@ToString
+@ToString(exclude = "lock")
 public class BitflyerTrade implements Trade {
 
-    private final Execution delegate;
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-    public BitflyerTrade(Execution delegate) {
-        this.delegate = delegate;
+    private final AtomicLong count = new AtomicLong();
+
+    private final Instant timestamp;
+
+    private final AtomicReference<BigDecimal> notional = new AtomicReference<>();
+
+    private final AtomicReference<BigDecimal> volume = new AtomicReference<>();
+
+    public BitflyerTrade(Instant timestamp, BigDecimal price, BigDecimal size) {
+        this.count.incrementAndGet();
+        this.timestamp = timestamp;
+        this.notional.set(price.multiply(size));
+        this.volume.set(size);
     }
 
     @Override
     public Instant getTimestamp() {
-        return delegate.getTimestamp() == null ? null : delegate.getTimestamp().toInstant();
+        return timestamp;
     }
 
     @Override
     public BigDecimal getPrice() {
-        return delegate.getPrice();
+
+        BigDecimal n;
+
+        BigDecimal s;
+
+        try {
+
+            lock.readLock().lock();
+
+            n = notional.get();
+
+            s = volume.get();
+
+        } finally {
+            lock.readLock().unlock();
+        }
+
+        return s.signum() == 0 ? null : n.divide(s, BitflyerService.SCALE, RoundingMode.HALF_UP);
+
     }
 
     @Override
     public BigDecimal getSize() {
-        return delegate.getSize();
+        return volume.get();
     }
 
     @Override
     public String getBuyOrderId() {
-        return delegate.getBuyOrderId();
+        return null;
     }
 
     @Override
     public String getSellOrderId() {
-        return delegate.getSellOrderId();
+        return null;
+    }
+
+    public void accumulate(BigDecimal price, BigDecimal size) {
+
+        try {
+
+            lock.writeLock().lock();
+
+            count.incrementAndGet();
+
+            notional.accumulateAndGet(price.multiply(size), BigDecimal::add);
+
+            volume.accumulateAndGet(size, BigDecimal::add);
+
+        } finally {
+            lock.writeLock().unlock();
+        }
+
+    }
+
+    public Trade snapshot() {
+
+        BigDecimal p;
+
+        BigDecimal s;
+
+        try {
+
+            lock.readLock().lock();
+
+            p = getPrice();
+
+            s = getSize();
+
+        } finally {
+            lock.readLock().unlock();
+        }
+
+        return new BitflyerTrade(getTimestamp(), p, s);
+
     }
 
 }

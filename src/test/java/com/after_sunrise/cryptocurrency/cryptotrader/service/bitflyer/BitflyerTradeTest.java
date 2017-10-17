@@ -1,13 +1,12 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 
-import com.after_sunrise.cryptocurrency.bitflyer4j.entity.Execution;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.time.ZonedDateTime;
+import java.math.BigDecimal;
+import java.time.Instant;
 
-import static java.math.BigDecimal.TEN;
-import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -19,79 +18,57 @@ public class BitflyerTradeTest {
 
     private BitflyerTrade target;
 
-    private Execution execution;
-
     @BeforeMethod
     public void setUp() throws Exception {
 
-        execution = mock(Execution.class);
+        Instant t = Instant.ofEpochSecond(1234567890);
 
-        target = new BitflyerTrade(execution);
-
-    }
-
-    @Test
-    public void testGetTimestamp() throws Exception {
-
-        when(execution.getTimestamp()).thenReturn(null);
-        assertNull(target.getTimestamp());
-
-        ZonedDateTime time = ZonedDateTime.now();
-        when(execution.getTimestamp()).thenReturn(time);
-        assertEquals(target.getTimestamp(), time.toInstant());
-
-    }
-
-    @Test
-    public void testGetPrice() throws Exception {
-
-        when(execution.getPrice()).thenReturn(null);
-        assertNull(target.getPrice());
-
-        when(execution.getPrice()).thenReturn(TEN);
-        assertEquals(target.getPrice(), TEN);
-
-    }
-
-    @Test
-    public void testGetSize() throws Exception {
-
-        when(execution.getSize()).thenReturn(null);
-        assertNull(target.getSize());
-
-        when(execution.getSize()).thenReturn(TEN);
-        assertEquals(target.getSize(), TEN);
-
-    }
-
-    @Test
-    public void testGetBuyOrderId() throws Exception {
-
-        when(execution.getBuyOrderId()).thenReturn(null);
-        assertNull(target.getBuyOrderId());
-
-        when(execution.getBuyOrderId()).thenReturn("test");
-        assertEquals(target.getBuyOrderId(), "test");
-
-    }
-
-    @Test
-    public void testGetSellOrderId() throws Exception {
-
-        when(execution.getSellOrderId()).thenReturn(null);
-        assertNull(target.getSellOrderId());
-
-        when(execution.getSellOrderId()).thenReturn("test");
-        assertEquals(target.getSellOrderId(), "test");
+        target = new BitflyerTrade(t, new BigDecimal("1234"), new BigDecimal("0.5"));
 
     }
 
     @Test
     public void testToString() throws Exception {
 
-        doReturn("mock").when(execution).toString();
+        assertEquals(target.toString(), "BitflyerTrade(" +
+                "count=1, timestamp=2009-02-13T23:31:30Z, notional=617.0, volume=0.5)");
 
-        assertEquals(target.toString(), "BitflyerTrade(delegate=mock)");
+    }
+
+    @Test
+    public void testAccumulate() throws Exception {
+
+        assertEquals(target.getTimestamp(), Instant.ofEpochSecond(1234567890));
+        assertNull(target.getBuyOrderId());
+        assertNull(target.getSellOrderId());
+
+        // Notional = 617, Volume = 0.5
+        assertEquals(target.getPrice(), new BigDecimal("1234.0000000000"));
+        assertEquals(target.getSize(), new BigDecimal("0.5"));
+
+        // Notional = 617 + 1000 * 0.1 = 717, Volume = 0.5 * 0.1 = 0.6
+        target.accumulate(new BigDecimal("1000"), new BigDecimal("0.1"));
+        assertEquals(target.getPrice(), new BigDecimal("1195.0000000000"));
+        assertEquals(target.getSize(), new BigDecimal("0.6"));
+
+        // Snapshot
+        Trade snapshot = target.snapshot();
+        assertEquals(snapshot.getPrice(), new BigDecimal("1195.0000000000"));
+        assertEquals(snapshot.getSize(), new BigDecimal("0.6"));
+
+        // Notional = 717 + 1234 * 0.3 = 1087.2, Volume = 0.6 * 0.3 = 0.9
+        target.accumulate(new BigDecimal("1234"), new BigDecimal("0.3"));
+        assertEquals(target.getPrice(), new BigDecimal("1208.0000000000"));
+        assertEquals(target.getSize(), new BigDecimal("0.9"));
+
+        // Notional = 1087.2, Volume = 0.9 - 0.9 = 0
+        target.accumulate(new BigDecimal("0.0"), new BigDecimal("-0.9"));
+        assertEquals(target.getPrice(), null);
+        assertEquals(target.getSize(), new BigDecimal("0.0"));
+
+        // Snapshot remains the same.
+        assertEquals(snapshot.getPrice(), new BigDecimal("1195.0000000000"));
+        assertEquals(snapshot.getSize(), new BigDecimal("0.6"));
 
     }
 

@@ -24,6 +24,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -202,35 +203,42 @@ public class BitflyerContextTest {
     @Test
     public void testListTrades() {
 
-        Key key = Key.from(Request.builder().instrument("inst").build());
-
         ZonedDateTime time = ZonedDateTime.now();
+        doReturn(time.toInstant()).when(target).getNow();
 
-        Execution e1 = mock(Execution.class);
-        Execution e2 = mock(Execution.class);
-        Execution e3 = mock(Execution.class);
-        Execution e4 = mock(Execution.class);
-        Execution e5 = mock(Execution.class);
-        Execution e6 = mock(Execution.class);
-        Execution e7 = mock(Execution.class);
-        when(e1.getTimestamp()).thenReturn(null);
-        when(e2.getTimestamp()).thenReturn(time.minusSeconds(2));
-        when(e3.getTimestamp()).thenReturn(time.minusSeconds(1));
-        when(e4.getTimestamp()).thenReturn(time);
-        when(e5.getTimestamp()).thenReturn(null);
-        when(e6.getTimestamp()).thenReturn(time.plusSeconds(1));
-        when(e7.getTimestamp()).thenReturn(time.plusSeconds(2));
-        CompletableFuture<List<Execution>> f = completedFuture(asList(e1, e2, null, e3, e4, e5, e6, e7));
-        when(marketService.getExecutions(any())).thenReturn(f);
+        List<Execution> execs = new ArrayList<>();
 
+        for (int i = 0; i < 10; i++) {
+            Execution exec = mock(Execution.class);
+            when(exec.getTimestamp()).thenReturn(time.plusSeconds(i));
+            when(exec.getPrice()).thenReturn(BigDecimal.valueOf(100 + i));
+            when(exec.getSize()).thenReturn(BigDecimal.valueOf(1000 + i));
+            execs.add(exec);
+        }
+
+        // Skip
+        when(execs.get(0).getTimestamp()).thenReturn(null);
+        when(execs.get(4).getTimestamp()).thenReturn(null);
+        when(execs.get(7).getPrice()).thenReturn(null);
+        when(execs.get(8).getSize()).thenReturn(null);
+
+        // Randomize response
+        List<Execution> shuffled = new ArrayList<>(execs);
+        Collections.shuffle(shuffled);
+        when(marketService.getExecutions(any())).thenReturn(completedFuture(shuffled));
+
+        // All
+        Key key = Key.from(Request.builder().instrument("inst").build());
         List<Trade> results = target.listTrades(key, null);
-        assertEquals(results.size(), 7);
+        assertEquals(results.size(), 6);
+        verify(marketService).getExecutions(any());
+        verify(realtimeService).subscribeExecution(singletonList("inst"));
 
-        List<Trade> filtered = target.listTrades(key, time.toInstant());
-        assertEquals(filtered.size(), 3);
-        assertEquals(filtered.get(0).getTimestamp(), time.toInstant());
-        assertEquals(filtered.get(1).getTimestamp(), time.plusSeconds(1).toInstant());
-        assertEquals(filtered.get(2).getTimestamp(), time.plusSeconds(2).toInstant());
+        // Filtered by time (cached)
+        List<Trade> filtered = target.listTrades(key, time.toInstant().plusSeconds(2));
+        assertEquals(filtered.size(), 4);
+        verify(marketService, times(1)).getExecutions(any());
+        verify(realtimeService, times(1)).subscribeExecution(any());
 
     }
 

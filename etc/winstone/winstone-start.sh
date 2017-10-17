@@ -10,7 +10,7 @@ nohup \
   java \
   -server \
   -Xms256m \
-  -Xmx256m \
+  -Xmx512m \
   -XX:+UseParallelGC \
   -XX:+UseParallelOldGC \
   -Xloggc:logs/winstone-gc.log \

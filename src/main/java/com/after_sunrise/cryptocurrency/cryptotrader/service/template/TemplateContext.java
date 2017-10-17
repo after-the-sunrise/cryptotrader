@@ -74,6 +74,11 @@ public abstract class TemplateContext implements Context {
     }
 
     @VisibleForTesting
+    public Instant getNow() {
+        return Instant.now();
+    }
+
+    @VisibleForTesting
     public String query(String path) throws IOException {
         return query(path, null);
     }

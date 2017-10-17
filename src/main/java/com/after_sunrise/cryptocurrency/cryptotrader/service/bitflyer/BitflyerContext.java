@@ -23,9 +23,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -63,6 +65,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
     private static final Duration REALTIME_EXPIRY = Duration.ofMinutes(1);
 
+    private static final Duration REALTIME_TRADE = Duration.ofDays(1);
+
     private final Bitflyer4j bitflyer4j;
 
     private final AccountService accountService;
@@ -74,6 +78,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     private final RealtimeService realtimeService;
 
     private final Map<String, Optional<Tick>> realtimeTicks;
+
+    private final Map<String, NavigableMap<Instant, BitflyerTrade>> realtimeTrades;
 
     public BitflyerContext() {
 
@@ -87,6 +93,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
         super(ID);
 
         realtimeTicks = new ConcurrentHashMap<>();
+
+        realtimeTrades = new ConcurrentHashMap<>();
 
         bitflyer4j = api;
 
@@ -140,7 +148,72 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
     @Override
     public void onExecutions(String product, List<Execution> values) {
-        // Do nothing
+
+        if (CollectionUtils.isEmpty(values)) {
+            return;
+        }
+
+        String id = StringUtils.trimToEmpty(product);
+
+        NavigableMap<Instant, BitflyerTrade> trades = realtimeTrades.get(id);
+
+        if (trades == null) {
+            return;
+        }
+
+        updateExecutions(trades, values);
+
+    }
+
+    @VisibleForTesting
+    void updateExecutions(NavigableMap<Instant, BitflyerTrade> trades, List<Execution> values) {
+
+        if (trades == null || values == null) {
+            return;
+        }
+
+        values.stream().filter(Objects::nonNull)
+                .filter(exec -> exec.getTimestamp() != null)
+                .filter(exec -> exec.getPrice() != null)
+                .filter(exec -> exec.getPrice().signum() != 0)
+                .filter(exec -> exec.getSize() != null)
+                .filter(exec -> exec.getSize().signum() != 0)
+                .forEach(exec -> {
+
+                    Instant timestamp = exec.getTimestamp().truncatedTo(ChronoUnit.SECONDS).toInstant();
+
+                    BitflyerTrade trade = trades.get(timestamp);
+
+                    if (trade != null) {
+
+                        trade.accumulate(exec.getPrice(), exec.getSize());
+
+                        return;
+
+                    }
+
+                    trades.put(timestamp, new BitflyerTrade(timestamp, exec.getPrice(), exec.getSize()));
+
+                });
+
+        Instant cutoff = getNow().minus(REALTIME_TRADE);
+
+        while (true) {
+
+            Map.Entry<Instant, BitflyerTrade> entry = trades.firstEntry();
+
+            if (entry == null) {
+                break;
+            }
+
+            if (entry.getKey().isAfter(cutoff)) {
+                break;
+            }
+
+            trades.remove(entry.getKey());
+
+        }
+
     }
 
     @VisibleForTesting
@@ -218,25 +291,28 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     @Override
     public List<Trade> listTrades(Key key, Instant fromTime) {
 
-        List<Trade> values = listCached(Trade.class, key, () -> {
+        String id = StringUtils.trimToEmpty(key.getInstrument());
 
-            Execution.Request request = Execution.Request.builder()
-                    .product(key.getInstrument()).build();
+        NavigableMap<Instant, BitflyerTrade> trades = realtimeTrades.get(id);
 
-            return unmodifiableList(ofNullable(extract(marketService.getExecutions(request), TIMEOUT))
-                    .orElse(emptyList()).stream().filter(Objects::nonNull)
-                    .map(BitflyerTrade::new).collect(toList()));
+        if (trades == null) {
 
-        });
+            trades = new ConcurrentSkipListMap<>();
 
-        if (fromTime == null) {
-            return values;
+            Execution.Request r = Execution.Request.builder().product(id).count((int) Short.MAX_VALUE).build();
+
+            updateExecutions(trades, extractQuietly(marketService.getExecutions(r), TIMEOUT));
+
+            realtimeTrades.put(id, trades);
+
+            realtimeService.subscribeExecution(singletonList(id));
+
         }
 
-        return unmodifiableList(values.stream()
-                .filter(e -> Objects.nonNull(e.getTimestamp()))
-                .filter(e -> !e.getTimestamp().isBefore(fromTime))
-                .collect(toList()));
+        return trades.values().stream()
+                .filter(trade -> fromTime == null || trade.getTimestamp().isAfter(fromTime))
+                .map(BitflyerTrade::snapshot)
+                .collect(toList());
 
     }
 

@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -78,6 +79,22 @@ public class TemplateContextTest {
     @Test
     public void testClose() throws Exception {
         target.close();
+    }
+
+    @Test
+    public void testGetNow() throws InterruptedException {
+
+        Instant t0 = Instant.now();
+
+        Thread.sleep(10);
+        Instant t1 = target.getNow();
+
+        Thread.sleep(10);
+        Instant t2 = Instant.now();
+
+        assertTrue(t0.isBefore(t1));
+        assertTrue(t1.isBefore(t2));
+
     }
 
     @Test
