@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -115,24 +116,26 @@ public class TraderImpl implements Trader {
 
             while ((latch = tradeLatch.get()) != null) {
 
-                Instant time = calculateTime();
+                Instant now = propertyManager.getNow();
 
-                log.debug("Trade attempt : {}", time);
+                log.debug("Trade attempt : {}", now);
 
                 List<CompletableFuture<?>> futures = new ArrayList<>();
 
                 propertyManager.getTradingTargets().forEach(
                         (site, instruments) -> instruments.forEach(
-                                i -> futures.add(processPipeline(time, site, i))
+                                i -> futures.add(processPipeline(now, site, i))
                         ));
 
                 allOf(futures.toArray(new CompletableFuture[futures.size()])).get();
 
-                Duration interval = calculateInterval(time);
+                Duration interval = propertyManager.getTradingInterval();
 
-                log.debug("Sleeping for interval : {}", interval);
+                Duration sleep = calculateInterval(now.plus(interval));
 
-                latch.await(interval.toMillis(), MILLISECONDS);
+                log.debug("Sleeping for interval : {}", sleep);
+
+                latch.await(sleep.toMillis(), MILLISECONDS);
 
             }
 
@@ -143,17 +146,6 @@ public class TraderImpl implements Trader {
         }
 
         log.info("Trading finished.");
-
-    }
-
-    @VisibleForTesting
-    Instant calculateTime() {
-
-        Duration interval = propertyManager.getTradingInterval();
-
-        Instant now = propertyManager.getNow();
-
-        return interval == null ? now : now.plus(interval);
 
     }
 
@@ -175,7 +167,7 @@ public class TraderImpl implements Trader {
     }
 
     @VisibleForTesting
-    CompletableFuture<?> processPipeline(Instant time, String site, String instrument) {
+    CompletableFuture<?> processPipeline(Instant now, String site, String instrument) {
 
         return CompletableFuture.runAsync(() -> {
 
@@ -188,6 +180,10 @@ public class TraderImpl implements Trader {
             AtomicLong count = instruments.computeIfAbsent(i, k -> new AtomicLong());
 
             Integer frequency = propertyManager.getTradingFrequency(site, instrument);
+
+            Duration interval = propertyManager.getTradingInterval();
+
+            Instant time = now.plus(interval.toMillis() * frequency, ChronoUnit.MILLIS);
 
             if (count.getAndIncrement() % frequency == 0) {
 

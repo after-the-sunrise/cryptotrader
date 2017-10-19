@@ -8,6 +8,7 @@ import org.testng.annotations.Test;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -67,12 +68,13 @@ public class TraderImplTest {
     @Test(timeOut = 5000)
     public void testTrade() throws Exception {
 
-        Instant time = Instant.now();
+        Instant now = Instant.now();
         Duration interval = Duration.ofMillis(50);
+        Instant estimate = now.plus(interval.toMillis() * 3, ChronoUnit.MILLIS);
         String site = "s";
         String instrument = "i";
         Map<String, Set<String>> targets = singletonMap(site, singleton(instrument));
-        when(module.getMock(PropertyManager.class).getNow()).thenReturn(time);
+        when(module.getMock(PropertyManager.class).getNow()).thenReturn(now);
         when(module.getMock(PropertyManager.class).getTradingInterval()).thenReturn(interval);
         when(module.getMock(PropertyManager.class).getTradingTargets()).thenReturn(targets);
         when(module.getMock(PropertyManager.class).getTradingFrequency(site, instrument)).thenReturn(3);
@@ -94,7 +96,7 @@ public class TraderImplTest {
         target.trade();
 
         verify(target, times(3 + 3 + 1)).processPipeline(any(), any(), any());
-        verify(pipeline, times(3)).process(time.plus(interval), site, instrument);
+        verify(pipeline, times(3)).process(estimate, site, instrument);
 
     }
 
@@ -113,21 +115,6 @@ public class TraderImplTest {
         Thread.currentThread().interrupt();
 
         target.trade();
-
-    }
-
-    @Test
-    public void testCalculateTime() throws Exception {
-
-        Instant time = Instant.now();
-        Duration interval = Duration.ofMillis(10);
-        when(module.getMock(PropertyManager.class).getNow()).thenReturn(time);
-
-        when(module.getMock(PropertyManager.class).getTradingInterval()).thenReturn(interval);
-        assertEquals(target.calculateTime(), time.plus(interval));
-
-        when(module.getMock(PropertyManager.class).getTradingInterval()).thenReturn(null);
-        assertEquals(target.calculateTime(), time);
 
     }
 
