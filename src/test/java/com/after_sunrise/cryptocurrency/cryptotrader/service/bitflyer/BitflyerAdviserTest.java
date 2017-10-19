@@ -138,15 +138,23 @@ public class BitflyerAdviserTest {
         Key key = target.getUnderlyingKey(builder.build());
         assertNull(key);
 
-        // Cash Instrument
-        key = target.getUnderlyingKey(builder.instrument("BTC_JPY").build());
-        assertNull(key);
+        for (ProductType p : ProductType.values()) {
 
-        // Derivatives Instrument
-        key = target.getUnderlyingKey(builder.instrument("BTCJPY_MAT1WK").build());
-        assertEquals(key.getSite(), builder.build().getSite());
-        assertEquals(key.getInstrument(), "BTC_JPY");
-        assertEquals(key.getTimestamp(), builder.build().getCurrentTime());
+            key = target.getUnderlyingKey(builder.instrument(p.name()).build());
+
+            switch (p) {
+                case BTCJPY_MAT1WK:
+                case BTCJPY_MAT2WK:
+                    assertEquals(key.getSite(), builder.build().getSite());
+                    assertEquals(key.getInstrument(), "BTC_JPY");
+                    assertEquals(key.getTimestamp(), builder.build().getCurrentTime());
+                    break;
+                default:
+                    assertNull(key, p.name());
+                    break;
+            }
+
+        }
 
     }
 
@@ -249,7 +257,7 @@ public class BitflyerAdviserTest {
 
         Request request = Request.builder().instrument(FX_BTC_JPY.name()).build();
         Key key = Key.from(request);
-        Set<ProductType> products = EnumSet.of(BTCJPY_MAT1WK, BTCJPY_MAT2WK);
+        Set<ProductType> products = EnumSet.of(FX_BTC_JPY, BTCJPY_MAT1WK, BTCJPY_MAT2WK);
 
         //
         // Zero hedged
@@ -362,6 +370,7 @@ public class BitflyerAdviserTest {
         assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.0"));
         assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
 
+        // Null Hedge
         doReturn(null).when(target).getHedgeSize(any(), any(), any());
         assertEquals(target.adjustBuyLimitSize(context, request1, size), ZERO);
         assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
@@ -396,6 +405,7 @@ public class BitflyerAdviserTest {
         assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.0"));
         assertEquals(target.adjustSellLimitSize(context, request2, size), size);
 
+        // Null Hedge
         doReturn(null).when(target).getHedgeSize(any(), any(), any());
         assertEquals(target.adjustSellLimitSize(context, request1, size), ZERO);
         assertEquals(target.adjustSellLimitSize(context, request2, size), size);

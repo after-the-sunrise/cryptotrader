@@ -6,17 +6,17 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.*;
 import static java.math.BigDecimal.ONE;
@@ -24,6 +24,7 @@ import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
 import static java.math.RoundingMode.UP;
 import static java.util.Optional.ofNullable;
+import static org.apache.commons.collections4.CollectionUtils.union;
 
 /**
  * @author takanori.takase
@@ -34,19 +35,22 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     private static final double SWAP_RATE = 0.0004;
 
-    private static final Map<ProductType, ProductType> UNDERLIERS = new EnumMap<>(ProductType.class);
+    private static final Map<ProductType, ProductType> UNDERLIERS = Stream.of(
+            BTCJPY_MAT1WK,
+            BTCJPY_MAT2WK
+    ).collect(Collectors.toMap(k -> k, v -> BTC_JPY));
 
-    private static final Set<ProductType> HEDGE_RAW = EnumSet.of(BTC_JPY, BTCJPY_MAT1WK, BTCJPY_MAT2WK, COLLATERAL_BTC);
+    private static final Set<ProductType> HEDGE_RAW = EnumSet.of(
+            BTC_JPY, COLLATERAL_BTC, FX_BTC_JPY, BTCJPY_MAT1WK, BTCJPY_MAT2WK
+    );
 
-    private static final Set<ProductType> HEDGE_CCY = EnumSet.of(ETH_BTC, BCH_BTC);
+    private static final Set<ProductType> HEDGE_CCY = EnumSet.of(
+            ETH_BTC, BCH_BTC
+    );
 
-    private static final Map<ProductType, Set<ProductType>> HEDGES = new EnumMap<>(ProductType.class);
+    private static final Set<ProductType> HEDGE_ALL = EnumSet.copyOf(union(HEDGE_RAW, HEDGE_CCY));
 
-    static {
-        UNDERLIERS.put(BTCJPY_MAT1WK, BTC_JPY);
-        UNDERLIERS.put(BTCJPY_MAT2WK, BTC_JPY);
-        HEDGES.put(FX_BTC_JPY, EnumSet.copyOf(CollectionUtils.union(HEDGE_RAW, HEDGE_CCY)));
-    }
+    private static final Set<ProductType> HEDGE_USE = EnumSet.of(FX_BTC_JPY);
 
     public BitflyerAdviser() {
         super(ID);
@@ -213,12 +217,6 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
     @VisibleForTesting
     BigDecimal getHedgeSize(Context context, Request request, Set<ProductType> products) {
 
-        BigDecimal hedged = context.getInstrumentPosition(Key.from(request));
-
-        if (hedged == null) {
-            return null;
-        }
-
         BigDecimal outright = ZERO;
 
         for (ProductType type : products) {
@@ -233,20 +231,18 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         }
 
-        return outright.add(hedged).negate();
+        return outright.negate();
 
     }
 
     @Override
     protected BigDecimal adjustBuyLimitSize(Context context, Request request, BigDecimal size) {
 
-        Set<ProductType> hedgeProducts = HEDGES.get(ProductType.find(request.getInstrument()));
-
-        if (CollectionUtils.isEmpty(hedgeProducts)) {
+        if (!HEDGE_USE.contains(ProductType.find(request.getInstrument()))) {
             return size;
         }
 
-        BigDecimal hedgeSize = getHedgeSize(context, request, hedgeProducts);
+        BigDecimal hedgeSize = getHedgeSize(context, request, HEDGE_ALL);
 
         if (hedgeSize == null) {
             return ZERO;
@@ -262,13 +258,11 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
     @Override
     protected BigDecimal adjustSellLimitSize(Context context, Request request, BigDecimal size) {
 
-        Set<ProductType> hedgeProducts = HEDGES.get(ProductType.find(request.getInstrument()));
-
-        if (CollectionUtils.isEmpty(hedgeProducts)) {
+        if (!HEDGE_USE.contains(ProductType.find(request.getInstrument()))) {
             return size;
         }
 
-        BigDecimal hedgeSize = getHedgeSize(context, request, hedgeProducts);
+        BigDecimal hedgeSize = getHedgeSize(context, request, HEDGE_ALL);
 
         if (hedgeSize == null) {
             return ZERO;
