@@ -165,9 +165,9 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        BigDecimal offset = ofNullable(request.getFundingOffset()).orElse(ZERO);
+        BigDecimal offset = adjustFundingOffset(context, request, request.getFundingOffset());
 
-        BigDecimal adjFunding = funding.multiply(ONE.add(offset));
+        BigDecimal adjFunding = funding.multiply(ONE.add(ofNullable(offset).orElse(ZERO)));
 
         BigDecimal equivalent = structure.multiply(mid);
 
@@ -211,6 +211,10 @@ public class TemplateAdviser implements Adviser {
 
         return aversionRatio;
 
+    }
+
+    protected BigDecimal adjustFundingOffset(Context context, Request request, BigDecimal offset) {
+        return offset;
     }
 
     @VisibleForTesting
@@ -519,9 +523,9 @@ public class TemplateAdviser implements Adviser {
 
         }
 
-        BigDecimal offset = ofNullable(request.getFundingOffset()).orElse(ZERO);
+        BigDecimal offset = adjustFundingOffset(context, request, request.getFundingOffset());
 
-        BigDecimal adjFund = fund.multiply(ONE.add(offset));
+        BigDecimal adjFund = fund.multiply(ONE.add(ofNullable(offset).orElse(ZERO)));
 
         BigDecimal product = adjFund.divide(price, SCALE, HALF_UP);
 
