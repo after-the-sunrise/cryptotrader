@@ -26,16 +26,16 @@ public abstract class AbstractEstimator implements Estimator {
         return Key.from(request);
     }
 
-    protected NavigableMap<Instant, BigDecimal> calculateReturns(List<Trade> values,
-                                                                 Duration interval, Instant from, Instant to) {
+    protected NavigableMap<Instant, BigDecimal> collapsePrices(List<Trade> values,
+                                                               Duration interval, Instant from, Instant to) {
 
-        NavigableMap<Instant, double[]> collapsed = new TreeMap<>();
+        NavigableMap<Instant, BigDecimal[]> collapsed = new TreeMap<>();
 
         for (long i = from.toEpochMilli(); i < to.toEpochMilli(); i += interval.toMillis()) {
 
             Instant instant = Instant.ofEpochMilli(i);
 
-            collapsed.put(instant, new double[3]); // [count, size, notional]
+            collapsed.put(instant, new BigDecimal[2]); // [size, notional]
 
         }
 
@@ -49,29 +49,31 @@ public abstract class AbstractEstimator implements Estimator {
 
             Instant timestamp = t.getTimestamp();
 
-            Entry<Instant, double[]> entry = collapsed.ceilingEntry(timestamp);
+            Entry<Instant, BigDecimal[]> entry = collapsed.ceilingEntry(timestamp);
 
             if (entry == null) {
                 return;
             }
 
-            double[] elements = entry.getValue();
-
-            elements[0] = elements[0] + 1;
-            elements[1] = elements[1] + t.getSize().doubleValue();
-            elements[2] = elements[2] + t.getSize().doubleValue() * t.getPrice().doubleValue();
+            BigDecimal[] elements = entry.getValue();
+            elements[0] = (elements[0] == null ? ZERO : elements[0]).add(t.getSize());
+            elements[1] = (elements[1] == null ? ZERO : elements[1]).add(t.getSize().multiply(t.getPrice()));
 
         });
 
-        NavigableMap<Instant, Double> prices = new TreeMap<>();
+        NavigableMap<Instant, BigDecimal> prices = new TreeMap<>();
 
-        Double previous = null;
+        BigDecimal previous = null;
 
-        for (Entry<Instant, double[]> entry : collapsed.entrySet()) {
+        for (Entry<Instant, BigDecimal[]> entry : collapsed.entrySet()) {
 
-            double[] elements = entry.getValue();
+            BigDecimal[] elements = entry.getValue();
 
-            Double current = elements[0] == 0 ? previous : Double.valueOf(elements[2] / elements[1]);
+            BigDecimal current = previous;
+
+            if (elements[0] != null && elements[0].signum() != 0) {
+                current = elements[1].divide(elements[0], SCALE, HALF_UP);
+            }
 
             prices.put(entry.getKey(), current);
 
@@ -79,21 +81,31 @@ public abstract class AbstractEstimator implements Estimator {
 
         }
 
+        return prices;
+
+    }
+
+    protected NavigableMap<Instant, BigDecimal> calculateReturns(SortedMap<Instant, BigDecimal> prices) {
+
+        if (prices == null) {
+            return Collections.emptyNavigableMap();
+        }
+
         NavigableMap<Instant, BigDecimal> returns = new TreeMap<>();
 
-        List<Entry<Instant, Double>> entries = new ArrayList<>(prices.entrySet());
+        List<Entry<Instant, BigDecimal>> entries = new ArrayList<>(prices.entrySet());
 
         for (int i = 1; i < entries.size(); i++) {
 
-            Double p0 = entries.get(i - 1).getValue();
+            BigDecimal p0 = entries.get(i - 1).getValue();
 
-            Double p1 = entries.get(i).getValue();
+            BigDecimal p1 = entries.get(i).getValue();
 
             BigDecimal value = null;
 
-            if (p0 != null) {
+            if (p0 != null && p1 != null) {
 
-                double diff = Math.log(p1 / p0);
+                double diff = Math.log(p1.doubleValue() / p0.doubleValue());
 
                 if (Double.isFinite(diff)) {
 
