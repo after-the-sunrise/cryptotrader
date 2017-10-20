@@ -42,6 +42,8 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     private static final double SWAP_RATE = 0.0004;
 
+    private static final BigDecimal PHYSICAL_RATE = new BigDecimal("0.20");
+
     private static final String KEY_OFFSET_PRODUCTS = BitflyerAdviser.class.getName() + ".products.offset";
 
     private static final String KEY_HEDGE_PRODUCTS = BitflyerAdviser.class.getName() + ".products.hedge";
@@ -253,7 +255,8 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
             return offset;
         }
 
-        BigDecimal basis = offsetPrice.divide(price, SCALE, HALF_UP).subtract(ONE);
+        BigDecimal basis = offsetPrice.divide(price, SCALE, HALF_UP).subtract(ONE)
+                .min(PHYSICAL_RATE).max(PHYSICAL_RATE.negate());
 
         BigDecimal adjustment;
 
