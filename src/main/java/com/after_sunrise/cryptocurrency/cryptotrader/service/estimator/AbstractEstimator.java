@@ -4,7 +4,10 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.configuration2.ImmutableConfiguration;
 
+import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
@@ -21,6 +24,58 @@ import static java.math.RoundingMode.HALF_UP;
 public abstract class AbstractEstimator implements Estimator {
 
     protected static final Estimation BAIL = Estimation.builder().confidence(ZERO).build();
+
+    private final String prefix = getClass().getName() + ".";
+
+    private ImmutableConfiguration configuration;
+
+    @Inject
+    @VisibleForTesting
+    public void setConfiguration(ImmutableConfiguration configuration) {
+        this.configuration = configuration;
+    }
+
+    protected int getIntConfiguration(String key, int defaultValue) {
+
+        int value;
+
+        try {
+            value = configuration.getInt(prefix + key, defaultValue);
+        } catch (RuntimeException e) {
+            value = defaultValue;
+        }
+
+        return value;
+
+    }
+
+    protected BigDecimal getDecimalConfiguration(String key, BigDecimal defaultValue) {
+
+        BigDecimal value;
+
+        try {
+            value = configuration.getBigDecimal(prefix + key, defaultValue);
+        } catch (RuntimeException e) {
+            value = defaultValue;
+        }
+
+        return value;
+
+    }
+
+    protected String getStringConfiguration(String key, String defaultValue) {
+
+        String value;
+
+        try {
+            value = configuration.getString(prefix + key, defaultValue);
+        } catch (RuntimeException e) {
+            value = defaultValue;
+        }
+
+        return value;
+
+    }
 
     protected Key getKey(Request request) {
         return Key.from(request);
@@ -42,7 +97,7 @@ public abstract class AbstractEstimator implements Estimator {
         Optional.ofNullable(values).orElse(Collections.emptyList()).stream()
                 .filter(Objects::nonNull)
                 .filter(t -> t.getTimestamp() != null)
-                .filter(t -> t.getTimestamp().isAfter(from))
+                .filter(t -> t.getTimestamp().isAfter(from.minus(interval)))
                 .filter(t -> t.getTimestamp().isBefore(to))
                 .filter(t -> t.getPrice() != null)
                 .filter(t -> t.getSize() != null).forEach(t -> {

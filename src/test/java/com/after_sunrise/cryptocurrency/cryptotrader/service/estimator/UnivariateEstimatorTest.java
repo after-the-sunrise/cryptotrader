@@ -5,21 +5,18 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 
 import static java.math.BigDecimal.ONE;
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertSame;
+import static org.testng.Assert.*;
 
 /**
  * @author takanori.takase
@@ -31,14 +28,20 @@ public class UnivariateEstimatorTest {
 
     private Context context;
 
+    private Map<String, Object> configuration;
+
     private SortedMap<Instant, BigDecimal> prices;
 
     @BeforeMethod
     public void setUp() throws Exception {
 
-        target = spy(new UnivariateEstimator());
+        configuration = new HashMap<>();
 
         context = mock(Context.class);
+
+        target = spy(new UnivariateEstimator());
+
+        target.setConfiguration(new MapConfiguration(configuration));
 
         prices = new TreeMap<>();
         prices.put(parseDate("2017-05-31"), new BigDecimal("19650.57"));
@@ -106,12 +109,19 @@ public class UnivariateEstimatorTest {
         Key key = Key.from(request);
 
         List<Trade> trades = Collections.singletonList(mock(Trade.class));
-        when(context.listTrades(key, from)).thenReturn(trades);
+        when(context.listTrades(key, from.minus(interval))).thenReturn(trades);
         doReturn(prices).when(target).collapsePrices(trades, interval, from, now);
 
         Estimation estimation = target.estimate(context, request);
         assertEquals(estimation.getPrice().toPlainString(), "19682.3911085423");
         assertEquals(estimation.getConfidence().toPlainString(), "0.0035580603");
+
+        // Not enough samples
+        configuration.put(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.UnivariateEstimator.samples",
+                prices.size() * 2
+        );
+        assertSame(target.estimate(context, request), AbstractEstimator.BAIL);
 
         // No trades
         doReturn(null).when(context).listTrades(any(), any());
@@ -129,7 +139,7 @@ public class UnivariateEstimatorTest {
         assertEquals(results[UnivariateEstimator.I_INTERCEPT], -425518.5240344088500000, delta);
         assertEquals(results[UnivariateEstimator.I_CORRELATION], 0.8406209335624100, delta);
         assertEquals(results[UnivariateEstimator.I_DETERMINATION], 0.7066435539433377, delta);
-        assertEquals(results[UnivariateEstimator.I_POINTS], 40, delta);
+        assertEquals(results[UnivariateEstimator.I_SAMPLES], 40, delta);
 
         double c = results[UnivariateEstimator.I_COEFFICIENT];
         double i = results[UnivariateEstimator.I_INTERCEPT];
@@ -140,6 +150,9 @@ public class UnivariateEstimatorTest {
 
         x = parseDate("2017-06-01").toEpochMilli();
         assertEquals(c * x + i, 20017.5431032831550000, delta);
+
+        assertNull(target.calculate(null));
+        assertNull(target.calculate(Collections.emptyNavigableMap()));
 
     }
 
@@ -153,7 +166,7 @@ public class UnivariateEstimatorTest {
         assertEquals(results[UnivariateEstimator.I_INTERCEPT], -0.4235512423247192, delta);
         assertEquals(results[UnivariateEstimator.I_CORRELATION], 0.05964947873647785, delta);
         assertEquals(results[UnivariateEstimator.I_DETERMINATION], 0.003558060313533523, delta);
-        assertEquals(results[UnivariateEstimator.I_POINTS], 39, delta);
+        assertEquals(results[UnivariateEstimator.I_SAMPLES], 39, delta);
 
         double c = results[UnivariateEstimator.I_COEFFICIENT];
         double i = results[UnivariateEstimator.I_INTERCEPT];
@@ -166,6 +179,9 @@ public class UnivariateEstimatorTest {
         x0 = prices.get(parseDate("2017-05-31")).doubleValue();
         x1 = parseDate("2017-06-01").toEpochMilli();
         assertEquals(Math.exp(c * x1 + i) * x0, 19682.39110854227, delta);
+
+        assertNull(target.calculate(null));
+        assertNull(target.calculate(Collections.emptyNavigableMap()));
 
     }
 

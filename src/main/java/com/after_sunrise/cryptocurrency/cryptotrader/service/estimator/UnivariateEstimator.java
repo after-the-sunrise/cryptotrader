@@ -22,11 +22,11 @@ import static java.time.temporal.ChronoUnit.MILLIS;
 @Slf4j
 public class UnivariateEstimator extends AbstractEstimator {
 
-    private static final int POINTS = 60;
+    private static final String SAMPLES_KEY = "samples";
 
-    private static final int THRESHOLD = 20;
+    private static final int SAMPLES_VAL = 60;
 
-    static final int I_POINTS = 0;
+    static final int I_SAMPLES = 0;
 
     static final int I_COEFFICIENT = 1;
 
@@ -43,9 +43,11 @@ public class UnivariateEstimator extends AbstractEstimator {
 
         Duration interval = Duration.between(now, request.getTargetTime());
 
-        Instant from = request.getCurrentTime().minus(interval.toMillis() * POINTS, MILLIS);
+        Instant from = request.getCurrentTime().minus(
+                interval.toMillis() * getIntConfiguration(SAMPLES_KEY, SAMPLES_VAL)
+                , MILLIS);
 
-        List<Trade> trades = context.listTrades(getKey(request), from);
+        List<Trade> trades = context.listTrades(getKey(request), from.minus(interval));
 
         NavigableMap<Instant, BigDecimal> prices = collapsePrices(trades, interval, from, now);
 
@@ -65,11 +67,9 @@ public class UnivariateEstimator extends AbstractEstimator {
 
         BigDecimal confidence = BigDecimal.valueOf(analysis[I_DETERMINATION]).setScale(SCALE, HALF_UP);
 
-        BigDecimal correlation = BigDecimal.valueOf(analysis[I_CORRELATION]).setScale(SCALE, HALF_UP);
-
-        BigDecimal points = BigDecimal.valueOf(analysis[I_POINTS]).setScale(SCALE, HALF_UP);
-
-        log.debug("Estimated : {} (Confidence={}, Correlation={}, Points={})", price, confidence, correlation, points);
+        log.debug("Estimated : {} (Confidence={}, Correlation={}, Samples={})",
+                price, confidence, analysis[I_CORRELATION], analysis[I_SAMPLES]
+        );
 
         return Estimation.builder().price(price).confidence(confidence).build();
 
@@ -94,7 +94,10 @@ public class UnivariateEstimator extends AbstractEstimator {
                     samples.put(x, y);
                 });
 
-        if (samples.size() < THRESHOLD) {
+
+        int minimum = getIntConfiguration(SAMPLES_KEY, SAMPLES_VAL) / 2;
+
+        if (samples.size() < Math.max(2, minimum)) {
             return null;
         }
 
@@ -124,7 +127,7 @@ public class UnivariateEstimator extends AbstractEstimator {
         double determination = correlation * correlation;
 
         double[] results = new double[5];
-        results[I_POINTS] = samples.size();
+        results[I_SAMPLES] = samples.size();
         results[I_COEFFICIENT] = coefficient;
         results[I_INTERCEPT] = intercept;
         results[I_CORRELATION] = correlation;
