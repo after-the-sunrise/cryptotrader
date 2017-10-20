@@ -167,7 +167,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal offset = adjustFundingOffset(context, request, request.getFundingOffset());
 
-        BigDecimal adjFunding = funding.multiply(ONE.add(ofNullable(offset).orElse(ZERO)));
+        BigDecimal adjFunding = funding.multiply(ONE.add(ofNullable(offset).orElse(ZERO))).max(ZERO);
 
         BigDecimal equivalent = structure.multiply(mid);
 
@@ -525,7 +525,7 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal offset = adjustFundingOffset(context, request, request.getFundingOffset());
 
-        BigDecimal adjFund = fund.multiply(ONE.add(ofNullable(offset).orElse(ZERO)));
+        BigDecimal adjFund = fund.multiply(ONE.add(ofNullable(offset).orElse(ZERO))).max(ZERO);
 
         BigDecimal product = adjFund.divide(price, SCALE, HALF_UP);
 

@@ -6,14 +6,21 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.configuration2.ImmutableConfiguration;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 
+import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,7 +30,7 @@ import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
 import static java.math.RoundingMode.UP;
-import static java.util.Optional.ofNullable;
+import static java.util.Collections.*;
 import static org.apache.commons.collections4.CollectionUtils.union;
 
 /**
@@ -35,10 +42,14 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     private static final double SWAP_RATE = 0.0004;
 
+    private static final String KEY_OFFSET_PRODUCTS = BitflyerAdviser.class.getName() + ".products.offset";
+
+    private static final String KEY_HEDGE_PRODUCTS = BitflyerAdviser.class.getName() + ".products.hedge";
+
     private static final Map<ProductType, ProductType> UNDERLIERS = Stream.of(
-            BTCJPY_MAT1WK,
-            BTCJPY_MAT2WK
-    ).collect(Collectors.toMap(k -> k, v -> BTC_JPY));
+            new SimpleEntry<>(BTCJPY_MAT1WK, BTC_JPY),
+            new SimpleEntry<>(BTCJPY_MAT2WK, BTC_JPY)
+    ).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
     private static final Set<ProductType> HEDGE_RAW = EnumSet.of(
             BTC_JPY, COLLATERAL_BTC, FX_BTC_JPY, BTCJPY_MAT1WK, BTCJPY_MAT2WK
@@ -50,10 +61,20 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     private static final Set<ProductType> HEDGE_ALL = EnumSet.copyOf(union(HEDGE_RAW, HEDGE_CCY));
 
-    private static final Set<ProductType> HEDGE_USE = EnumSet.of(FX_BTC_JPY);
+    private ImmutableConfiguration configuration;
+
+    private Map<String, Entry<String, String>> offsetProductsCache;
+
+    private Set<String> hedgeProductsCache;
 
     public BitflyerAdviser() {
         super(ID);
+    }
+
+    @Inject
+    @VisibleForTesting
+    void setConfiguration(ImmutableConfiguration configuration) {
+        this.configuration = configuration;
     }
 
     @VisibleForTesting
@@ -179,6 +200,73 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     }
 
+    private Entry<String, String> findOffsetProduct(Request request) {
+
+        Map<String, Entry<String, String>> offsetProducts = offsetProductsCache;
+
+        if (offsetProducts == null) {
+
+            String[] entries = StringUtils.split(configuration.getString(KEY_OFFSET_PRODUCTS), '|');
+
+            offsetProducts = entries == null ? emptyMap() : unmodifiableMap(Stream.of(entries).map(s -> {
+
+                String[] values = StringUtils.split(s, ":", 3);
+
+                if (ArrayUtils.isEmpty(values) || values.length != 3) {
+                    return null;
+                }
+
+                return new SimpleEntry<>(values[0], new SimpleEntry<>(values[1], values[2]));
+
+            }).filter(Objects::nonNull).collect(Collectors.toMap(Entry::getKey, Entry::getValue)));
+
+            offsetProductsCache = offsetProducts;
+
+        }
+
+        return offsetProducts.get(request.getInstrument());
+
+    }
+
+    @Override
+    protected BigDecimal adjustFundingOffset(Context context, Request request, BigDecimal offset) {
+
+        Entry<String, String> offsetProduct = findOffsetProduct(request);
+
+        if (offsetProduct == null) {
+            return offset;
+        }
+
+        Key key = Key.from(request);
+
+        BigDecimal price = context.getMidPrice(key);
+
+        if (price == null || price.signum() == 0) {
+            return offset;
+        }
+
+        Key offsetKey = Key.build(key).site(offsetProduct.getKey()).instrument(offsetProduct.getValue()).build();
+
+        BigDecimal offsetPrice = context.getMidPrice(offsetKey);
+
+        if (offsetPrice == null || offsetPrice.signum() == 0) {
+            return offset;
+        }
+
+        BigDecimal basis = offsetPrice.divide(price, SCALE, HALF_UP).subtract(ONE);
+
+        BigDecimal adjustment;
+
+        if (basis.signum() >= 0) {
+            adjustment = basis.add(basis).movePointRight(2);
+        } else {
+            adjustment = basis.movePointRight(1);
+        }
+
+        return offset.add(adjustment.setScale(SCALE, HALF_UP));
+
+    }
+
     @VisibleForTesting
     BigDecimal getEquivalentSize(Context context, Request request, ProductType type) {
 
@@ -227,7 +315,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
                 return null;
             }
 
-            outright = outright.add(ofNullable(position).orElse(ZERO));
+            outright = outright.add(position);
 
         }
 
@@ -235,14 +323,36 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     }
 
+    private Set<ProductType> findHedgeProducts(Request request) {
+
+        Set<String> products = hedgeProductsCache;
+
+        if (products == null) {
+
+            String[] entries = StringUtils.split(configuration.getString(KEY_HEDGE_PRODUCTS), '|');
+
+            products = entries == null ? emptySet() : unmodifiableSet(
+                    Stream.of(entries).filter(Objects::nonNull).collect(Collectors.toSet())
+            );
+
+            hedgeProductsCache = products;
+
+        }
+
+        return products.contains(request.getInstrument()) ? HEDGE_ALL : null;
+
+    }
+
     @Override
     protected BigDecimal adjustBuyLimitSize(Context context, Request request, BigDecimal size) {
 
-        if (!HEDGE_USE.contains(ProductType.find(request.getInstrument()))) {
+        Set<ProductType> hedgeProducts = findHedgeProducts(request);
+
+        if (hedgeProducts == null) {
             return size;
         }
 
-        BigDecimal hedgeSize = getHedgeSize(context, request, HEDGE_ALL);
+        BigDecimal hedgeSize = getHedgeSize(context, request, hedgeProducts);
 
         if (hedgeSize == null) {
             return ZERO;
@@ -258,11 +368,13 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
     @Override
     protected BigDecimal adjustSellLimitSize(Context context, Request request, BigDecimal size) {
 
-        if (!HEDGE_USE.contains(ProductType.find(request.getInstrument()))) {
+        Set<ProductType> hedgeProducts = findHedgeProducts(request);
+
+        if (hedgeProducts == null) {
             return size;
         }
 
-        BigDecimal hedgeSize = getHedgeSize(context, request, HEDGE_ALL);
+        BigDecimal hedgeSize = getHedgeSize(context, request, hedgeProducts);
 
         if (hedgeSize == null) {
             return ZERO;

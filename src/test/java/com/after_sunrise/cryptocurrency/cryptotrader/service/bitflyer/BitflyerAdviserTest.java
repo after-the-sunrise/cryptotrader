@@ -5,6 +5,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -14,8 +15,12 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.*;
 import static java.math.BigDecimal.*;
@@ -37,14 +42,20 @@ public class BitflyerAdviserTest {
 
     private Context context;
 
+    private Map<String, Object> configurations;
+
     @BeforeMethod
     public void setUp() throws Exception {
+
+        configurations = new HashMap<>();
 
         module = new TestModule();
 
         context = module.getMock(Context.class);
 
         target = spy(new BitflyerAdviser());
+
+        target.setConfiguration(new MapConfiguration(configurations));
 
         when(context.roundLotSize(any(), any(), any())).thenAnswer(i -> {
 
@@ -211,6 +222,59 @@ public class BitflyerAdviserTest {
     }
 
     @Test
+    public void testAdjustFundingOffset() {
+
+        configurations.put(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerAdviser.products.offset",
+                "BTC_JPY:bitflyer:BTCJPY_MAT1WK"
+        );
+
+        BigDecimal offset = new BigDecimal("0.0000");
+        Request r1 = Request.builder().instrument(BTC_JPY.name()).build();
+        Request r2 = Request.builder().site(BitflyerService.ID).instrument(BTCJPY_MAT1WK.name()).build();
+
+        Stream.of(
+                new SimpleEntry<>(new BigDecimal("780000"), new BigDecimal("40.0000000000")), // +20%
+                new SimpleEntry<>(new BigDecimal("663000"), new BigDecimal("4.0000000000")), // +2%
+                new SimpleEntry<>(new BigDecimal("656500"), new BigDecimal("2.0000000000")), // +1%
+                new SimpleEntry<>(new BigDecimal("650000"), new BigDecimal("0.0000000000")), // 0%
+                new SimpleEntry<>(new BigDecimal("643500"), new BigDecimal("-0.1000000000")), // -1%
+                new SimpleEntry<>(new BigDecimal("637000"), new BigDecimal("-0.2000000000")), // -2%
+                new SimpleEntry<>(new BigDecimal("530000"), new BigDecimal("-1.8461538460")) // -20%
+        ).forEach(e -> {
+            when(context.getMidPrice(Key.from(r1))).thenReturn(BigDecimal.valueOf(650000));
+            when(context.getMidPrice(Key.from(r2))).thenReturn(e.getKey());
+            assertEquals(target.adjustFundingOffset(context, r1, offset), e.getValue(), e.getKey().toPlainString());
+            assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
+        });
+
+        // Zero 1
+        when(context.getMidPrice(Key.from(r1))).thenReturn(new BigDecimal("0.0"));
+        when(context.getMidPrice(Key.from(r2))).thenReturn(BigDecimal.valueOf(650000));
+        assertEquals(target.adjustFundingOffset(context, r1, offset), offset);
+        assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
+
+        // Zero 2
+        when(context.getMidPrice(Key.from(r1))).thenReturn(BigDecimal.valueOf(650000));
+        when(context.getMidPrice(Key.from(r2))).thenReturn(new BigDecimal("0.0"));
+        assertEquals(target.adjustFundingOffset(context, r1, offset), offset);
+        assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
+
+        // Null 1
+        when(context.getMidPrice(Key.from(r1))).thenReturn(null);
+        when(context.getMidPrice(Key.from(r2))).thenReturn(BigDecimal.valueOf(650000));
+        assertEquals(target.adjustFundingOffset(context, r1, offset), offset);
+        assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
+
+        // Null 2
+        when(context.getMidPrice(Key.from(r1))).thenReturn(BigDecimal.valueOf(650000));
+        when(context.getMidPrice(Key.from(r2))).thenReturn(null);
+        assertEquals(target.adjustFundingOffset(context, r1, offset), offset);
+        assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
+
+    }
+
+    @Test
     public void testGetEquivalentSize() {
 
         Request request1 = Request.builder().instrument(FX_BTC_JPY.name()).build();
@@ -345,9 +409,14 @@ public class BitflyerAdviserTest {
     @Test
     public void testAdjustBuyLimitSize() {
 
+        configurations.put(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerAdviser.products.hedge",
+                "BTCJPY_MAT1WK"
+        );
+
         BigDecimal size = new BigDecimal("123.45");
         BigDecimal exposure = new BigDecimal("0.45");
-        Request request1 = Request.builder().instrument(FX_BTC_JPY.name()).tradingExposure(exposure).build();
+        Request request1 = Request.builder().instrument(BTCJPY_MAT1WK.name()).tradingExposure(exposure).build();
         Request request2 = Request.builder().instrument(BTC_JPY.name()).build();
 
         // 0
@@ -380,9 +449,14 @@ public class BitflyerAdviserTest {
     @Test
     public void testAdjustSellLimitSize() {
 
+        configurations.put(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerAdviser.products.hedge",
+                "BTCJPY_MAT1WK"
+        );
+
         BigDecimal size = new BigDecimal("123.45");
         BigDecimal exposure = new BigDecimal("0.45");
-        Request request1 = Request.builder().instrument(FX_BTC_JPY.name()).tradingExposure(exposure).build();
+        Request request1 = Request.builder().instrument(BTCJPY_MAT1WK.name()).tradingExposure(exposure).build();
         Request request2 = Request.builder().instrument(BTC_JPY.name()).build();
 
         // 0
