@@ -1,8 +1,12 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.core;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.ImmutableConfiguration;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -18,7 +22,18 @@ public class ServiceFactoryImpl implements ServiceFactory {
 
     @Inject
     public ServiceFactoryImpl(Injector injector) {
-        this.injector = injector;
+
+        this.injector = Guice.createInjector(new AbstractModule() {
+            @Override
+            protected void configure() {
+
+                Configuration c = injector.getInstance(Configuration.class);
+
+                bind(ImmutableConfiguration.class).toInstance(c);
+
+            }
+        });
+
     }
 
     @Override
