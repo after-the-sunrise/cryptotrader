@@ -225,19 +225,19 @@ public class BitflyerContextTest {
         // Randomize response
         List<Execution> shuffled = new ArrayList<>(execs);
         Collections.shuffle(shuffled);
-        when(marketService.getExecutions(any())).thenReturn(completedFuture(shuffled));
+        when(marketService.getExecutions(any())).thenReturn(completedFuture(shuffled)).thenReturn(null);
 
         // All
         Key key = Key.from(Request.builder().instrument("inst").build());
         List<Trade> results = target.listTrades(key, null);
         assertEquals(results.size(), 6);
-        verify(marketService).getExecutions(any());
+        verify(marketService, times(2)).getExecutions(any());
         verify(realtimeService).subscribeExecution(singletonList("inst"));
 
         // Filtered by time (cached)
         List<Trade> filtered = target.listTrades(key, time.toInstant().plusSeconds(2));
         assertEquals(filtered.size(), 5);
-        verify(marketService, times(1)).getExecutions(any());
+        verify(marketService, times(2)).getExecutions(any());
         verify(realtimeService, times(1)).subscribeExecution(any());
 
     }

@@ -38,6 +38,7 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.Bit
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.COLLATERAL_BTC;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.COLLATERAL_JPY;
 import static java.lang.Boolean.TRUE;
+import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.ZERO;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Collections.*;
@@ -300,9 +301,35 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             trades = new ConcurrentSkipListMap<>();
 
-            Execution.Request r = Execution.Request.builder().product(id).count((int) Short.MAX_VALUE).build();
+            Execution.Request.RequestBuilder b = Execution.Request.builder().product(id).count((int) Short.MAX_VALUE);
 
-            updateExecutions(trades, extractQuietly(marketService.getExecutions(r), TIMEOUT));
+            Instant cutoff = getNow().minus(REALTIME_TRADE);
+
+            Long minimumId = null;
+
+            for (int i = 0; i < TEN.intValue(); i++) {
+
+                Execution.Request r = b.before(minimumId).build();
+
+                List<Execution> execs = ofNullable(
+                        extractQuietly(marketService.getExecutions(r), TIMEOUT)
+                ).orElse(emptyList());
+
+                updateExecutions(trades, execs);
+
+                minimumId = execs.stream().filter(Objects::nonNull)
+                        .filter(e -> e.getId() != null)
+                        .filter(e -> e.getTimestamp() != null)
+                        .filter(e -> e.getTimestamp().toInstant().isAfter(cutoff))
+                        .min(Comparator.comparing(Execution::getId))
+                        .map(Execution::getId)
+                        .orElse(null);
+
+                if (minimumId == null) {
+                    break;
+                }
+
+            }
 
             realtimeTrades.put(id, trades);
 
@@ -310,8 +337,11 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         }
 
+        Instant cutoff = fromTime != null ? fromTime : getNow().minus(REALTIME_TRADE);
+
         return trades.values().stream()
-                .filter(trade -> fromTime == null || trade.getTimestamp().isAfter(fromTime))
+                .filter(trade -> trade.getTimestamp() != null)
+                .filter(trade -> trade.getTimestamp().isAfter(cutoff))
                 .map(BitflyerTrade::snapshot)
                 .collect(toList());
 
