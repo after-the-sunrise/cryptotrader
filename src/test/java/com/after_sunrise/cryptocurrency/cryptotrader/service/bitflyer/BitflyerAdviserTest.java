@@ -236,11 +236,13 @@ public class BitflyerAdviserTest {
         Stream.of(
                 new SimpleEntry<>(new BigDecimal("845000"), new BigDecimal("40.0000000000")), // +30%
                 new SimpleEntry<>(new BigDecimal("780000"), new BigDecimal("40.0000000000")), // +20%
+                new SimpleEntry<>(new BigDecimal("715000"), new BigDecimal("20.0000000000")), // +10%
                 new SimpleEntry<>(new BigDecimal("663000"), new BigDecimal("4.0000000000")), // +2%
                 new SimpleEntry<>(new BigDecimal("656500"), new BigDecimal("2.0000000000")), // +1%
                 new SimpleEntry<>(new BigDecimal("650000"), new BigDecimal("0.0000000000")), // 0%
                 new SimpleEntry<>(new BigDecimal("643500"), new BigDecimal("-0.1000000000")), // -1%
                 new SimpleEntry<>(new BigDecimal("637000"), new BigDecimal("-0.2000000000")), // -2%
+                new SimpleEntry<>(new BigDecimal("585000"), new BigDecimal("-1.0000000000")), // -10%
                 new SimpleEntry<>(new BigDecimal("520000"), new BigDecimal("-2.0000000000")), // -20%
                 new SimpleEntry<>(new BigDecimal("455000"), new BigDecimal("-2.0000000000")) // -30%
         ).forEach(e -> {

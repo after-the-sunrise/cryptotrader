@@ -43,9 +43,7 @@ public class UnivariateEstimator extends AbstractEstimator {
 
         Duration interval = Duration.between(now, request.getTargetTime());
 
-        Instant from = request.getCurrentTime().minus(
-                interval.toMillis() * getIntConfiguration(SAMPLES_KEY, SAMPLES_VAL)
-                , MILLIS);
+        Instant from = request.getCurrentTime().minus(interval.toMillis() * getSamples(), MILLIS);
 
         List<Trade> trades = context.listTrades(getKey(request), from.minus(interval));
 
@@ -95,9 +93,7 @@ public class UnivariateEstimator extends AbstractEstimator {
                 });
 
 
-        int minimum = getIntConfiguration(SAMPLES_KEY, SAMPLES_VAL) / 2;
-
-        if (samples.size() < Math.max(2, minimum)) {
+        if (samples.size() < Math.max(2, getSamples() / 2)) {
             return null;
         }
 
@@ -134,6 +130,87 @@ public class UnivariateEstimator extends AbstractEstimator {
         results[I_DETERMINATION] = determination;
         return results;
 
+    }
+
+    protected int getSamples() {
+        return getIntConfiguration(SAMPLES_KEY, SAMPLES_VAL);
+    }
+
+    public static class Univariate010Estimator extends UnivariateEstimator {
+        @Override
+        protected int getSamples() {
+            return 10;
+        }
+    }
+
+    public static class Univariate015Estimator extends UnivariateEstimator {
+        @Override
+        protected int getSamples() {
+            return 15;
+        }
+    }
+
+    public static class Univariate020Estimator extends UnivariateEstimator {
+        @Override
+        protected int getSamples() {
+            return 20;
+        }
+    }
+
+    public static class Univariate030Estimator extends UnivariateEstimator {
+        @Override
+        protected int getSamples() {
+            return 30;
+        }
+    }
+
+    public static class Univariate045Estimator extends UnivariateEstimator {
+        @Override
+        protected int getSamples() {
+            return 45;
+        }
+    }
+
+    public static class Univariate060Estimator extends UnivariateEstimator {
+        @Override
+        protected int getSamples() {
+            return 60;
+        }
+    }
+
+    public static class Univariate120Estimator extends UnivariateEstimator {
+        @Override
+        protected int getSamples() {
+            return 120;
+        }
+    }
+
+    public static class Univariate240Estimator extends UnivariateEstimator {
+        @Override
+        protected int getSamples() {
+            return 240;
+        }
+    }
+
+    public static class Univariate360Estimator extends UnivariateEstimator {
+        @Override
+        protected int getSamples() {
+            return 360;
+        }
+    }
+
+    public static class Univariate480Estimator extends UnivariateEstimator {
+        @Override
+        protected int getSamples() {
+            return 480;
+        }
+    }
+
+    public static class Univariate720Estimator extends UnivariateEstimator {
+        @Override
+        protected int getSamples() {
+            return 720;
+        }
     }
 
 }

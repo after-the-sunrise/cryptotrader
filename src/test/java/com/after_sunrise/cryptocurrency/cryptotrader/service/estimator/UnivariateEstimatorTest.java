@@ -185,4 +185,23 @@ public class UnivariateEstimatorTest {
 
     }
 
+    @Test
+    public void testGetSamples() {
+
+        assertEquals(target.getSamples(), 60);
+
+        assertEquals(new UnivariateEstimator.Univariate010Estimator().getSamples(), 10);
+        assertEquals(new UnivariateEstimator.Univariate015Estimator().getSamples(), 15);
+        assertEquals(new UnivariateEstimator.Univariate020Estimator().getSamples(), 20);
+        assertEquals(new UnivariateEstimator.Univariate030Estimator().getSamples(), 30);
+        assertEquals(new UnivariateEstimator.Univariate045Estimator().getSamples(), 45);
+        assertEquals(new UnivariateEstimator.Univariate060Estimator().getSamples(), 60);
+        assertEquals(new UnivariateEstimator.Univariate120Estimator().getSamples(), 120);
+        assertEquals(new UnivariateEstimator.Univariate240Estimator().getSamples(), 240);
+        assertEquals(new UnivariateEstimator.Univariate360Estimator().getSamples(), 360);
+        assertEquals(new UnivariateEstimator.Univariate480Estimator().getSamples(), 480);
+        assertEquals(new UnivariateEstimator.Univariate720Estimator().getSamples(), 720);
+
+    }
+
 }
