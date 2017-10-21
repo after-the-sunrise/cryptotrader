@@ -243,6 +243,26 @@ public class BitflyerContextTest {
     }
 
     @Test
+    public void testListTrades_Empty() {
+
+        when(marketService.getExecutions(any())).thenReturn(null);
+
+        // All
+        Key key = Key.from(Request.builder().instrument("inst").build());
+        List<Trade> results = target.listTrades(key, null);
+        assertEquals(results.size(), 0);
+        verify(marketService, times(1)).getExecutions(any());
+        verify(realtimeService).subscribeExecution(singletonList("inst"));
+
+        // Cached
+        List<Trade> filtered = target.listTrades(key, null);
+        assertEquals(filtered.size(), 0);
+        verify(marketService, times(1)).getExecutions(any());
+        verify(realtimeService, times(1)).subscribeExecution(any());
+
+    }
+
+    @Test
     public void testGetInstrumentPosition() throws Exception {
 
         Key key = Key.from(Request.builder().instrument("BTC_JPY").build());
