@@ -38,7 +38,6 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.Bit
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.COLLATERAL_BTC;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.COLLATERAL_JPY;
 import static java.lang.Boolean.TRUE;
-import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.ZERO;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Collections.*;
@@ -68,6 +67,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     private static final Duration REALTIME_EXPIRY = Duration.ofMinutes(1);
 
     private static final Duration REALTIME_TRADE = Duration.ofDays(1);
+
+    private static final int REALTIME_QUERIES = 128;
 
     private final Bitflyer4j bitflyer4j;
 
@@ -295,45 +296,51 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         String id = StringUtils.trimToEmpty(key.getInstrument());
 
-        NavigableMap<Instant, BitflyerTrade> trades = realtimeTrades.get(id);
+        NavigableMap<Instant, BitflyerTrade> trades;
 
-        if (trades == null) {
+        synchronized (realtimeTrades) {
 
-            trades = new ConcurrentSkipListMap<>();
+            trades = realtimeTrades.get(id);
 
-            Execution.Request.RequestBuilder b = Execution.Request.builder().product(id).count((int) Short.MAX_VALUE);
+            if (trades == null) {
 
-            Instant cutoff = getNow().minus(REALTIME_TRADE);
+                trades = new ConcurrentSkipListMap<>();
 
-            Long minimumId = null;
+                Execution.Request.RequestBuilder b = Execution.Request.builder().product(id).count((int) Short.MAX_VALUE);
 
-            for (int i = 0; i < TEN.intValue(); i++) {
+                Instant cutoff = getNow().minus(REALTIME_TRADE);
 
-                Execution.Request r = b.before(minimumId).build();
+                Long minimumId = null;
 
-                List<Execution> execs = ofNullable(
-                        extractQuietly(marketService.getExecutions(r), TIMEOUT)
-                ).orElse(emptyList());
+                for (int i = 0; i < REALTIME_QUERIES; i++) {
 
-                updateExecutions(trades, execs);
+                    Execution.Request r = b.before(minimumId).build();
 
-                minimumId = execs.stream().filter(Objects::nonNull)
-                        .filter(e -> e.getId() != null)
-                        .filter(e -> e.getTimestamp() != null)
-                        .filter(e -> e.getTimestamp().toInstant().isAfter(cutoff))
-                        .min(Comparator.comparing(Execution::getId))
-                        .map(Execution::getId)
-                        .orElse(null);
+                    List<Execution> execs = ofNullable(
+                            extractQuietly(marketService.getExecutions(r), TIMEOUT)
+                    ).orElse(emptyList());
 
-                if (minimumId == null) {
-                    break;
+                    updateExecutions(trades, execs);
+
+                    minimumId = execs.stream().filter(Objects::nonNull)
+                            .filter(e -> e.getId() != null)
+                            .filter(e -> e.getTimestamp() != null)
+                            .filter(e -> e.getTimestamp().toInstant().isAfter(cutoff))
+                            .min(Comparator.comparing(Execution::getId))
+                            .map(Execution::getId)
+                            .orElse(null);
+
+                    if (minimumId == null) {
+                        break;
+                    }
+
                 }
 
+                realtimeTrades.put(id, trades);
+
+                realtimeService.subscribeExecution(singletonList(id));
+
             }
-
-            realtimeTrades.put(id, trades);
-
-            realtimeService.subscribeExecution(singletonList(id));
 
         }
 
