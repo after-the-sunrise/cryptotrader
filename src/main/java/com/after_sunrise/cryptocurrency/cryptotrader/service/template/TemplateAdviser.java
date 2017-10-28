@@ -1,22 +1,24 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.List;
+import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.stream.DoubleStream;
 
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.*;
+import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
@@ -33,6 +35,10 @@ public class TemplateAdviser implements Adviser {
     static final int SIGNUM_BUY = 1;
 
     static final int SIGNUM_SELL = -1;
+
+    static final int SAMPLES_NUM = 60;
+
+    static final int SAMPLES_MIN = 20;
 
     private final String id;
 
@@ -132,7 +138,45 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        return adjustBasis(context, request, spread.add(comm));
+        BigDecimal staticBasis = spread.add(comm);
+
+        BigDecimal dynamicBasis = ofNullable(calculateDeviation(context, request)).orElse(staticBasis);
+
+        BigDecimal adjustedBasis = adjustBasis(context, request, staticBasis.max(dynamicBasis));
+
+        log.trace("Basis : {} (static=[{}] dynamic=[{}])", adjustedBasis, staticBasis, dynamicBasis);
+
+        return adjustedBasis;
+
+    }
+
+    @VisibleForTesting
+    BigDecimal calculateDeviation(Context context, Request request) {
+
+        Duration interval = Duration.between(request.getCurrentTime(), request.getTargetTime());
+
+        Instant to = request.getCurrentTime();
+
+        Instant from = to.minus(interval.toMillis() * SAMPLES_NUM, MILLIS);
+
+        List<Trade> trades = context.listTrades(Key.from(request), from.minus(interval));
+
+        NavigableMap<Instant, BigDecimal> prices = collapsePrices(trades, interval, from, to);
+
+        NavigableMap<Instant, BigDecimal> returns = calculateReturns(prices);
+
+        double[] doubles = returns.values().stream().filter(Objects::nonNull)
+                .mapToDouble(BigDecimal::doubleValue).toArray();
+
+        if (doubles.length < SAMPLES_MIN) {
+            return null;
+        }
+
+        double average = DoubleStream.of(doubles).average().orElse(Double.NaN);
+
+        double variance = DoubleStream.of(doubles).map(d -> Math.pow(d - average, 2)).sum() / (doubles.length - 1);
+
+        return BigDecimal.valueOf(Math.sqrt(variance)).setScale(SCALE, HALF_UP);
 
     }
 
@@ -285,7 +329,12 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal additional = ofNullable(request.getTradingSpreadBid()).orElse(ZERO);
 
-        return adjustBuyBasis(context, request, positionBase.add(lossBasis).add(additional));
+        BigDecimal adjusted = adjustBuyBasis(context, request, positionBase.add(lossBasis).add(additional));
+
+        log.trace("Buy Basis : {} (position=[{}] loss=[{}] additional=[{}])",
+                adjusted, positionBase, lossBasis, additional);
+
+        return adjusted;
 
     }
 
@@ -334,7 +383,12 @@ public class TemplateAdviser implements Adviser {
 
         BigDecimal additional = ofNullable(request.getTradingSpreadAsk()).orElse(ZERO);
 
-        return adjustSellBasis(context, request, positionBase.add(lossBasis).add(additional));
+        BigDecimal adjusted = adjustSellBasis(context, request, positionBase.add(lossBasis).add(additional));
+
+        log.trace("Sell Basis : {} (position=[{}] loss=[{}] additional=[{}])",
+                adjusted, positionBase, lossBasis, additional);
+
+        return adjusted;
 
     }
 
