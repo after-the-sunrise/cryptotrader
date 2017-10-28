@@ -61,6 +61,9 @@ public class EstimatorImpl implements Estimator {
 
         Estimation collapsed = collapse(estimations);
 
+        log.info("Estimate : [{} {}] price=[{}] confidence=[{}]",
+                request.getSite(), request.getInstrument(), collapsed.getPrice(), collapsed.getConfidence());
+
         return collapsed;
 
     }
@@ -137,11 +140,7 @@ public class EstimatorImpl implements Estimator {
 
         BigDecimal confidence = total.get() == 0 ? null : denominator.divide(valueOf(total.get()), SCALE, HALF_UP);
 
-        Estimation collapsed = Estimation.builder().price(price).confidence(confidence).build();
-
-        log.info("Collapsed {} estimations : {} (= {} / {})", total, collapsed, numerator, denominator);
-
-        return collapsed;
+        return Estimation.builder().price(price).confidence(confidence).build();
 
     }
 
