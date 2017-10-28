@@ -105,7 +105,7 @@ public class PoloniexContext extends TemplateContext implements PoloniexService 
     @Override
     public List<Trade> listTrades(Key key, Instant fromTime) {
 
-        List<Trade> values = listCached(Trade.class, key, () -> {
+        List<PoloniexTrade> values = listCached(PoloniexTrade.class, key, () -> {
 
             String product = URLEncoder.encode(key.getInstrument(), StandardCharsets.UTF_8.name());
 
@@ -122,7 +122,7 @@ public class PoloniexContext extends TemplateContext implements PoloniexService 
         });
 
         if (fromTime == null) {
-            return values;
+            return new ArrayList<>(values);
         }
 
         return unmodifiableList(values.stream()

@@ -13,10 +13,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toList;
@@ -108,7 +105,7 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
             return Collections.emptyList();
         }
 
-        List<Trade> values = listCached(Trade.class, key, () -> {
+        List<CoincheckTrade> values = listCached(CoincheckTrade.class, key, () -> {
 
             String data = query(URL_TRADE);
 
@@ -123,7 +120,7 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
         });
 
         if (fromTime == null) {
-            return values;
+            return new ArrayList<>(values);
         }
 
         return unmodifiableList(values.stream()

@@ -13,10 +13,7 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableList;
@@ -96,7 +93,7 @@ public class BitfinexContext extends TemplateContext implements BitfinexService 
     @Override
     public List<Trade> listTrades(Key key, Instant fromTime) {
 
-        List<Trade> values = listCached(Trade.class, key, () -> {
+        List<BitfinexTrade> values = listCached(BitfinexTrade.class, key, () -> {
 
             String product = URLEncoder.encode(key.getInstrument(), UTF_8.name());
 
@@ -113,7 +110,7 @@ public class BitfinexContext extends TemplateContext implements BitfinexService 
         });
 
         if (fromTime == null) {
-            return values;
+            return new ArrayList<>(values);
         }
 
         return unmodifiableList(values.stream()
