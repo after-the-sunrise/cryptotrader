@@ -134,29 +134,35 @@ public abstract class TemplateContext implements Context {
             return null;
         }
 
-        Cache<Key, Optional<?>> cache = singleCache.computeIfAbsent(type, t -> createCache());
+        Optional<?> cached;
 
-        try {
+        synchronized (type) {
 
-            Optional<?> cached = cache.get(key, () -> {
+            Cache<Key, Optional<?>> cache = singleCache.computeIfAbsent(type, t -> createCache());
 
-                T value = c.call();
+            try {
 
-                log.trace("Cached : {} - {}", key, value);
+                cached = cache.get(key, () -> {
 
-                return Optional.ofNullable(value);
+                    T value = c.call();
 
-            });
+                    log.trace("Cached : {} - {}", key, value);
 
-            return type.cast(cached.orElse(null));
+                    return Optional.ofNullable(value);
 
-        } catch (Exception e) {
+                });
 
-            log.warn("Failed to cache : {} - {}", type, e);
+            } catch (Exception e) {
 
-            return null;
+                log.warn("Failed to cache : {} - {}", type, e);
+
+                cached = Optional.empty();
+
+            }
 
         }
+
+        return type.cast(cached.orElse(null));
 
     }
 
@@ -166,29 +172,35 @@ public abstract class TemplateContext implements Context {
             return emptyList();
         }
 
-        Cache<Key, Optional<List<?>>> cache = listCache.computeIfAbsent(type, t -> createCache());
+        Optional<List<?>> cached;
 
-        try {
+        synchronized (type) {
 
-            Optional<List<?>> cached = cache.get(key, () -> {
+            Cache<Key, Optional<List<?>>> cache = listCache.computeIfAbsent(type, t -> createCache());
 
-                List<T> values = Optional.ofNullable(c.call()).orElse(emptyList());
+            try {
 
-                log.trace("Cached list : {} ({})", key, values.size());
+                cached = cache.get(key, () -> {
 
-                return Optional.of(values);
+                    List<T> values = Optional.ofNullable(c.call()).orElse(emptyList());
 
-            });
+                    log.trace("Cached list : {} ({})", key, values.size());
 
-            return cached.orElse(emptyList()).stream().map(type::cast).collect(Collectors.toList());
+                    return Optional.of(values);
 
-        } catch (Exception e) {
+                });
 
-            log.warn("Failed to cache list : {} - {}", type, e);
+            } catch (Exception e) {
 
-            return emptyList();
+                log.warn("Failed to cache list : {} - {}", type, e);
+
+                cached = Optional.empty();
+
+            }
 
         }
+
+        return cached.orElse(emptyList()).stream().map(type::cast).collect(Collectors.toList());
 
     }
 

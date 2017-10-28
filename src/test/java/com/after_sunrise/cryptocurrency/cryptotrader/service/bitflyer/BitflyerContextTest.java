@@ -727,7 +727,7 @@ public class BitflyerContextTest {
         }).thenReturn(null);
 
         // Queried
-        List<Order> orders = target.fetchOrder(key);
+        List<? extends Order> orders = target.fetchOrder(key);
         assertEquals(orders.size(), 2);
         assertEquals(orders.get(0).getOrderPrice(), ONE);
         assertEquals(orders.get(1).getOrderPrice(), TEN);

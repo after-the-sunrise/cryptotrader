@@ -607,9 +607,9 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     }
 
     @VisibleForTesting
-    List<Order> fetchOrder(Key key) {
+    List<? extends Order> fetchOrder(Key key) {
 
-        return listCached(Order.class, key, () -> {
+        return listCached(BitflyerOrder.class, key, () -> {
 
             OrderList.Request request = OrderList.Request.builder().product(key.getInstrument()).build();
 
@@ -639,7 +639,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     @Override
     public List<Order.Execution> listExecutions(Key key) {
 
-        return listCached(Order.Execution.class, key, () -> {
+        List<BitflyerExecution> execs = listCached(BitflyerExecution.class, key, () -> {
 
             TradeExecution.Request request = TradeExecution.Request.builder()
                     .product(key.getInstrument()).build();
@@ -649,6 +649,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
                     .map(BitflyerExecution::new).collect(toList()));
 
         });
+
+        return new ArrayList<>(execs);
 
     }
 
