@@ -6,6 +6,7 @@ import org.apache.commons.configuration2.MapConfiguration;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -73,6 +74,39 @@ public class AbstractEstimatorTest {
             }
         }); // Exception
         assertEquals(target.getStringConfiguration("string", "b"), "b");
+
+    }
+
+    @Test
+    public void testConvertKey() throws Exception {
+
+        Instant now = Instant.now();
+        Request.RequestBuilder b = Request.builder().currentTime(now);
+
+        Context.Key key = target.convertKey(b.build(), null);
+        assertEquals(key.getSite(), null);
+        assertEquals(key.getInstrument(), null);
+        assertEquals(key.getTimestamp(), now);
+
+        key = target.convertKey(b.build(), "test");
+        assertEquals(key.getSite(), "test");
+        assertEquals(key.getInstrument(), null);
+        assertEquals(key.getTimestamp(), now);
+
+        key = target.convertKey(b.site("bitflyer").build(), null);
+        assertEquals(key.getSite(), null);
+        assertEquals(key.getInstrument(), null);
+        assertEquals(key.getTimestamp(), now);
+
+        key = target.convertKey(b.site("bitflyer").instrument("BTC_JPY").build(), null);
+        assertEquals(key.getSite(), null);
+        assertEquals(key.getInstrument(), null);
+        assertEquals(key.getTimestamp(), now);
+
+        key = target.convertKey(b.site("bitflyer").instrument("BTC_JPY").build(), "coincheck");
+        assertEquals(key.getSite(), "coincheck");
+        assertEquals(key.getInstrument(), "btc_jpy");
+        assertEquals(key.getTimestamp(), now);
 
     }
 

@@ -3,7 +3,6 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.Estimators;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator;
@@ -35,21 +34,21 @@ public interface BitflyerService extends Service {
     class BitflyerLastEstimator extends LastEstimator {
         @Override
         public Context.Key getKey(Request request) {
-            return Estimators.getKey(request, ID);
+            return convertKey(request, ID);
         }
     }
 
     class BitflyerMidEstimator extends MidEstimator {
         @Override
         public Context.Key getKey(Request request) {
-            return Estimators.getKey(request, ID);
+            return convertKey(request, ID);
         }
     }
 
     class BitflyerVwapEstimator extends VwapEstimator {
         @Override
         public Context.Key getKey(Request request) {
-            return Estimators.getKey(request, ID);
+            return convertKey(request, ID);
         }
     }
 
