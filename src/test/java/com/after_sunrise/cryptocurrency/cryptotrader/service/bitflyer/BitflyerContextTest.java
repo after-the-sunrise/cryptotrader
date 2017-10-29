@@ -156,9 +156,8 @@ public class BitflyerContextTest {
     public void testGetTick() throws Exception {
 
         Tick tick = mock(Tick.class);
-        when(tick.getProduct()).thenReturn("i");
         ZonedDateTime now = ZonedDateTime.now();
-        Key key = Key.from(Request.builder().instrument(tick.getProduct()).currentTime(now.toInstant()).build());
+        Key key = Key.from(Request.builder().instrument("i").currentTime(now.toInstant()).build());
         doReturn("a").when(target).convertProductAlias(key);
         when(marketService.getTick(any())).thenReturn(completedFuture(tick)).thenReturn(completedFuture(null));
 
@@ -204,7 +203,7 @@ public class BitflyerContextTest {
     @Test
     public void testGetBesAskPrice() throws Exception {
 
-        Key key = Key.from(Request.builder().instrument("i").build());
+        Key key = Key.from(Request.builder().build());
         Tick tick = mock(Tick.class);
         when(tick.getBestAskPrice()).thenReturn(ONE);
 
@@ -219,7 +218,7 @@ public class BitflyerContextTest {
     @Test
     public void testGetBesBidPrice() throws Exception {
 
-        Key key = Key.from(Request.builder().instrument("i").build());
+        Key key = Key.from(Request.builder().build());
         Tick tick = mock(Tick.class);
         when(tick.getBestBidPrice()).thenReturn(ONE);
 
@@ -234,7 +233,7 @@ public class BitflyerContextTest {
     @Test
     public void testGetLastPrice() throws Exception {
 
-        Key key = Key.from(Request.builder().instrument("i").build());
+        Key key = Key.from(Request.builder().build());
         Tick tick = mock(Tick.class);
         when(tick.getTradePrice()).thenReturn(ONE);
 
@@ -712,6 +711,7 @@ public class BitflyerContextTest {
     public void testFetchOrder() {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
+        doReturn("prod").when(target).convertProductAlias(key);
 
         OrderList r1 = mock(OrderList.class);
         OrderList r2 = mock(OrderList.class);
@@ -719,7 +719,7 @@ public class BitflyerContextTest {
         when(r2.getPrice()).thenReturn(TEN);
         when(orderService.listOrders(any())).thenAnswer(i -> {
 
-            assertEquals(i.getArgumentAt(0, OrderList.Request.class).getProduct(), "inst");
+            assertEquals(i.getArgumentAt(0, OrderList.Request.class).getProduct(), "prod");
             assertNull(i.getArgumentAt(0, OrderList.Request.class).getState());
             assertNull(i.getArgumentAt(0, OrderList.Request.class).getAcceptanceId());
             assertNull(i.getArgumentAt(0, OrderList.Request.class).getOrderId());
@@ -800,6 +800,7 @@ public class BitflyerContextTest {
     public void testListExecutions() {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
+        doReturn("prod").when(target).convertProductAlias(key);
 
         TradeExecution r1 = mock(TradeExecution.class);
         TradeExecution r2 = mock(TradeExecution.class);
@@ -807,7 +808,7 @@ public class BitflyerContextTest {
         when(r2.getPrice()).thenReturn(TEN);
         when(orderService.listExecutions(any())).thenAnswer(i -> {
 
-            assertEquals(i.getArgumentAt(0, TradeExecution.Request.class).getProduct(), "inst");
+            assertEquals(i.getArgumentAt(0, TradeExecution.Request.class).getProduct(), "prod");
             assertNull(i.getArgumentAt(0, TradeExecution.Request.class).getChildOrderId());
             assertNull(i.getArgumentAt(0, TradeExecution.Request.class).getChildOrderAcceptanceId());
 
@@ -842,6 +843,7 @@ public class BitflyerContextTest {
     public void testCreateOrder() throws Exception {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
+        doReturn("prod").when(target).convertProductAlias(key);
         CreateInstruction.CreateInstructionBuilder builder = CreateInstruction.builder().price(TEN).size(ONE);
         CompletableFuture<OrderCreate> future = completedFuture(mock(OrderCreate.class));
         AtomicReference<OrderCreate.Request> reference = new AtomicReference<>();
@@ -860,7 +862,7 @@ public class BitflyerContextTest {
         Map<CreateInstruction, String> results = target.createOrders(key, singleton(instruction));
         assertEquals(results.get(instruction), future.get().getAcceptanceId());
         verify(orderService, times(1)).sendOrder(any());
-        assertEquals(reference.get().getProduct(), key.getInstrument());
+        assertEquals(reference.get().getProduct(), "prod");
         assertEquals(reference.get().getType(), LIMIT);
         assertEquals(reference.get().getSide(), BUY);
         assertEquals(reference.get().getPrice(), TEN);
@@ -871,7 +873,7 @@ public class BitflyerContextTest {
         results = target.createOrders(key, singleton(instruction));
         assertEquals(results.get(instruction), future.get().getAcceptanceId());
         verify(orderService, times(2)).sendOrder(any());
-        assertEquals(reference.get().getProduct(), key.getInstrument());
+        assertEquals(reference.get().getProduct(), "prod");
         assertEquals(reference.get().getType(), LIMIT);
         assertEquals(reference.get().getSide(), SELL);
         assertEquals(reference.get().getPrice(), TEN);
@@ -882,7 +884,7 @@ public class BitflyerContextTest {
         results = target.createOrders(key, singleton(instruction));
         assertEquals(results.get(instruction), future.get().getAcceptanceId());
         verify(orderService, times(3)).sendOrder(any());
-        assertEquals(reference.get().getProduct(), key.getInstrument());
+        assertEquals(reference.get().getProduct(), "prod");
         assertEquals(reference.get().getType(), MARKET);
         assertEquals(reference.get().getSide(), SELL);
         assertEquals(reference.get().getPrice(), ZERO);
@@ -912,6 +914,7 @@ public class BitflyerContextTest {
     public void testCancelOrder() throws Exception {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
+        doReturn("prod").when(target).convertProductAlias(key);
         CancelInstruction.CancelInstructionBuilder builder = CancelInstruction.builder().id("aid");
         CompletableFuture<OrderCancel> future = completedFuture(mock(OrderCancel.class));
         AtomicReference<OrderCancel.Request> reference = new AtomicReference<>();
@@ -928,7 +931,7 @@ public class BitflyerContextTest {
         Map<CancelInstruction, String> results = target.cancelOrders(key, singleton(instruction));
         assertEquals(results.get(instruction), instruction.getId());
         verify(orderService, times(1)).cancelOrder(any());
-        assertEquals(reference.get().getProduct(), key.getInstrument());
+        assertEquals(reference.get().getProduct(), "prod");
         assertEquals(reference.get().getAcceptanceId(), "aid");
 
         // Invalid Key (Null)

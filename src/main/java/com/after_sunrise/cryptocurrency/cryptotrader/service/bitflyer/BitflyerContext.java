@@ -615,7 +615,9 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         return listCached(BitflyerOrder.class, key, () -> {
 
-            OrderList.Request request = OrderList.Request.builder().product(key.getInstrument()).build();
+            String product = convertProductAlias(key);
+
+            OrderList.Request request = OrderList.Request.builder().product(product).build();
 
             return unmodifiableList(ofNullable(extract(orderService.listOrders(request), TIMEOUT))
                     .orElse(emptyList()).stream().filter(Objects::nonNull)
@@ -645,8 +647,9 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         List<BitflyerExecution> execs = listCached(BitflyerExecution.class, key, () -> {
 
-            TradeExecution.Request request = TradeExecution.Request.builder()
-                    .product(key.getInstrument()).build();
+            String product = convertProductAlias(key);
+
+            TradeExecution.Request request = TradeExecution.Request.builder().product(product).build();
 
             return unmodifiableList(ofNullable(extract(orderService.listExecutions(request), TIMEOUT))
                     .orElse(emptyList()).stream().filter(Objects::nonNull)
@@ -680,7 +683,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             }
 
             OrderCreate.Request.RequestBuilder builder = OrderCreate.Request.builder();
-            builder.product(key.getInstrument());
+            builder.product(convertProductAlias(key));
             builder.type(instruction.getPrice().signum() == 0 ? MARKET : LIMIT);
             builder.side(instruction.getSize().signum() > 0 ? BUY : SELL);
             builder.price(instruction.getPrice());
@@ -723,7 +726,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             }
 
             OrderCancel.Request.RequestBuilder builder = OrderCancel.Request.builder();
-            builder.product(key.getInstrument());
+            builder.product(convertProductAlias(key));
             builder.acceptanceId(instruction.getId());
             OrderCancel.Request request = builder.build();
 
