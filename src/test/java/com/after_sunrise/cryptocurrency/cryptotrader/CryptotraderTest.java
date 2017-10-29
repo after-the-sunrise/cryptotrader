@@ -2,7 +2,6 @@ package com.after_sunrise.cryptocurrency.cryptotrader;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.core.CryptotraderImpl;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.RandomEstimator;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import org.apache.commons.lang3.StringUtils;
@@ -17,8 +16,8 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.ESTIMATORS;
 import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.TRADING_ACTIVE;
+import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.TRADING_THREADS;
 import static org.testng.Assert.*;
 
 /**
@@ -134,7 +133,7 @@ public class CryptotraderTest {
 
         System.setProperty(TRADING_ACTIVE.getKey(), "false");
 
-        System.setProperty(ESTIMATORS.getKey(), RandomEstimator.class.getSimpleName());
+        System.setProperty(TRADING_THREADS.getKey(), "1");
 
         CryptotraderImpl.Module module = new CryptotraderImpl.Module();
 
