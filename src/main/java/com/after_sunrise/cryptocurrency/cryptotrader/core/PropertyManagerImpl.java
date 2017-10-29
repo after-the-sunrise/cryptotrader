@@ -17,8 +17,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.*;
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.lang.String.format;
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.DOWN;
@@ -30,7 +28,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
-import static org.apache.commons.lang3.math.NumberUtils.*;
+import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
 /**
  * @author takanori.takase
@@ -39,9 +37,9 @@ import static org.apache.commons.lang3.math.NumberUtils.*;
 @Slf4j
 public class PropertyManagerImpl implements PropertyController {
 
-    private static final long INTERVAL_MIN = SECONDS.toMillis(1);
+    private static final BigDecimal INTERVAL_MIN = BigDecimal.valueOf(SECONDS.toMillis(1));
 
-    private static final long INTERVAL_MAX = DAYS.toMillis(1);
+    private static final BigDecimal INTERVAL_MAX = BigDecimal.valueOf(DAYS.toMillis(1));
 
     private static final String SEPARATOR_ENTRY = "|";
 
@@ -116,6 +114,39 @@ public class PropertyManagerImpl implements PropertyController {
 
     }
 
+    @VisibleForTesting
+    BigDecimal getDecimal(String site, String instrument,
+                          PropertyType type, BigDecimal min, BigDecimal max, BigDecimal defaultValue) {
+
+        try {
+
+            BigDecimal value = get(type, site, instrument, Configuration::getBigDecimal);
+
+            BigDecimal adjusted = value;
+
+            if (min != null) {
+                adjusted = adjusted.max(min);
+            }
+
+            if (max != null) {
+                adjusted = adjusted.min(max);
+            }
+
+            log.trace("Fetched {} ({}.{}) : {} -> {}", type, site, instrument, value, adjusted);
+
+            return adjusted;
+
+        } catch (RuntimeException e) {
+
+            log.warn(format("Invalid %s (%s.%s)", type, site, instrument), e);
+
+            return defaultValue;
+
+        }
+
+    }
+
+
     @Override
     public Instant getNow() {
         return Instant.now();
@@ -141,23 +172,9 @@ public class PropertyManagerImpl implements PropertyController {
     @Override
     public Duration getTradingInterval() {
 
-        try {
+        BigDecimal value = getDecimal(null, null, TRADING_INTERVAL, INTERVAL_MIN, INTERVAL_MAX, INTERVAL_MAX);
 
-            long millis = get(TRADING_INTERVAL, null, null, Configuration::getLong);
-
-            long adjusted = min(max(millis, INTERVAL_MIN), INTERVAL_MAX);
-
-            log.trace("Fetched {} : {}ms -> {}ms", TRADING_INTERVAL, millis, adjusted);
-
-            return Duration.ofMillis(adjusted);
-
-        } catch (RuntimeException e) {
-
-            log.warn("Invalid " + TRADING_INTERVAL, e);
-
-            return Duration.ofMillis(INTERVAL_MAX);
-
-        }
+        return Duration.ofMillis(value.longValue());
 
     }
 
@@ -168,25 +185,8 @@ public class PropertyManagerImpl implements PropertyController {
 
     @Override
     public Integer getTradingThreads() {
-
-        try {
-
-            Integer threads = get(TRADING_THREADS, null, null, Configuration::getInt);
-
-            Integer adjusted = min(max(threads, INTEGER_ONE), Byte.MAX_VALUE);
-
-            log.trace("Fetched {} : {}ms -> {}ms", TRADING_THREADS, threads, adjusted);
-
-            return adjusted;
-
-        } catch (RuntimeException e) {
-
-            log.warn("Invalid " + TRADING_THREADS, e);
-
-            return INTEGER_ONE;
-
-        }
-
+        return getDecimal(null, null, TRADING_THREADS,
+                ONE, BigDecimal.valueOf(Byte.MAX_VALUE), ONE).intValue();
     }
 
     @Override
@@ -273,25 +273,7 @@ public class PropertyManagerImpl implements PropertyController {
 
     @Override
     public Integer getTradingFrequency(String site, String instrument) {
-
-        try {
-
-            Integer value = get(TRADING_FREQUENCY, site, instrument, Configuration::getInt);
-
-            Integer adjusted = Math.max(value, INTEGER_ONE);
-
-            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_FREQUENCY, site, instrument, value, adjusted);
-
-            return adjusted;
-
-        } catch (RuntimeException e) {
-
-            log.warn(format("Invalid %s (%s.%s)", TRADING_FREQUENCY, site, instrument), e);
-
-            return INTEGER_ONE;
-
-        }
-
+        return getDecimal(site, instrument, TRADING_FREQUENCY, ONE, null, ONE).intValue();
     }
 
     @Override
@@ -301,25 +283,7 @@ public class PropertyManagerImpl implements PropertyController {
 
     @Override
     public BigDecimal getTradingSpread(String site, String instrument) {
-
-        try {
-
-            BigDecimal value = get(TRADING_SPREAD, site, instrument, Configuration::getBigDecimal);
-
-            BigDecimal adjusted = value.max(ZERO).min(ONE);
-
-            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_SPREAD, site, instrument, value, adjusted);
-
-            return adjusted;
-
-        } catch (RuntimeException e) {
-
-            log.warn(format("Invalid %s (%s.%s)", TRADING_SPREAD, site, instrument), e);
-
-            return ZERO;
-
-        }
-
+        return getDecimal(site, instrument, TRADING_SPREAD, ZERO, ONE, ZERO);
     }
 
     @Override
@@ -329,25 +293,7 @@ public class PropertyManagerImpl implements PropertyController {
 
     @Override
     public BigDecimal getTradingSpreadAsk(String site, String instrument) {
-
-        try {
-
-            BigDecimal value = get(TRADING_SPREAD_ASK, site, instrument, Configuration::getBigDecimal);
-
-            BigDecimal adjusted = value.max(ONE.negate()).min(ONE);
-
-            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_SPREAD_ASK, site, instrument, value, adjusted);
-
-            return adjusted;
-
-        } catch (RuntimeException e) {
-
-            log.warn(format("Invalid %s (%s.%s)", TRADING_SPREAD_ASK, site, instrument), e);
-
-            return ZERO;
-
-        }
-
+        return getDecimal(site, instrument, TRADING_SPREAD_ASK, ONE.negate(), ONE, ZERO);
     }
 
     @Override
@@ -357,25 +303,7 @@ public class PropertyManagerImpl implements PropertyController {
 
     @Override
     public BigDecimal getTradingSpreadBid(String site, String instrument) {
-
-        try {
-
-            BigDecimal value = get(TRADING_SPREAD_BID, site, instrument, Configuration::getBigDecimal);
-
-            BigDecimal adjusted = value.max(ONE.negate()).min(ONE);
-
-            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_SPREAD_BID, site, instrument, value, adjusted);
-
-            return adjusted;
-
-        } catch (RuntimeException e) {
-
-            log.warn(format("Invalid %s (%s.%s)", TRADING_SPREAD_BID, site, instrument), e);
-
-            return ZERO;
-
-        }
-
+        return getDecimal(site, instrument, TRADING_SPREAD_BID, ONE.negate(), ONE, ZERO);
     }
 
     @Override
@@ -385,25 +313,7 @@ public class PropertyManagerImpl implements PropertyController {
 
     @Override
     public BigDecimal getTradingSigma(String site, String instrument) {
-
-        try {
-
-            BigDecimal value = get(TRADING_SIGMA, site, instrument, Configuration::getBigDecimal);
-
-            BigDecimal adjusted = value.max(ZERO);
-
-            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_SIGMA, site, instrument, value, adjusted);
-
-            return adjusted;
-
-        } catch (RuntimeException e) {
-
-            log.warn(format("Invalid %s (%s.%s)", TRADING_SIGMA, site, instrument), e);
-
-            return ZERO;
-
-        }
-
+        return getDecimal(site, instrument, TRADING_SIGMA, ZERO, null, ZERO);
     }
 
     @Override
@@ -413,25 +323,7 @@ public class PropertyManagerImpl implements PropertyController {
 
     @Override
     public BigDecimal getTradingExposure(String site, String instrument) {
-
-        try {
-
-            BigDecimal value = get(TRADING_EXPOSURE, site, instrument, Configuration::getBigDecimal);
-
-            BigDecimal adjusted = value.max(ZERO).min(ONE);
-
-            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_EXPOSURE, site, instrument, value, adjusted);
-
-            return adjusted;
-
-        } catch (RuntimeException e) {
-
-            log.warn(format("Invalid %s (%s.%s)", TRADING_EXPOSURE, site, instrument), e);
-
-            return ZERO;
-
-        }
-
+        return getDecimal(site, instrument, TRADING_EXPOSURE, ZERO, ONE, ZERO);
     }
 
     @Override
@@ -441,25 +333,7 @@ public class PropertyManagerImpl implements PropertyController {
 
     @Override
     public BigDecimal getTradingAversion(String site, String instrument) {
-
-        try {
-
-            BigDecimal value = get(TRADING_AVERSION, site, instrument, Configuration::getBigDecimal);
-
-            BigDecimal adjusted = value.max(ZERO);
-
-            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_AVERSION, site, instrument, value, adjusted);
-
-            return adjusted;
-
-        } catch (RuntimeException e) {
-
-            log.warn(format("Invalid %s (%s.%s)", TRADING_AVERSION, site, instrument), e);
-
-            return ONE;
-
-        }
-
+        return getDecimal(site, instrument, TRADING_AVERSION, ZERO, null, ONE);
     }
 
     @Override
@@ -469,25 +343,7 @@ public class PropertyManagerImpl implements PropertyController {
 
     @Override
     public BigDecimal getTradingSplit(String site, String instrument) {
-
-        try {
-
-            BigDecimal value = get(TRADING_SPLIT, site, instrument, Configuration::getBigDecimal);
-
-            BigDecimal adjusted = value.max(ONE).min(TEN).setScale(INTEGER_ZERO, DOWN);
-
-            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_SPLIT, site, instrument, value, adjusted);
-
-            return adjusted;
-
-        } catch (RuntimeException e) {
-
-            log.warn(format("Invalid %s (%s.%s)", TRADING_SPLIT, site, instrument), e);
-
-            return ONE;
-
-        }
-
+        return getDecimal(site, instrument, TRADING_SPLIT, ONE, TEN, ONE).setScale(INTEGER_ZERO, DOWN);
     }
 
     @Override
@@ -498,23 +354,9 @@ public class PropertyManagerImpl implements PropertyController {
     @Override
     public Duration getTradingDuration(String site, String instrument) {
 
-        try {
+        BigDecimal value = getDecimal(site, instrument, TRADING_DURATION, ZERO, null, ZERO);
 
-            Long value = get(TRADING_DURATION, site, instrument, Configuration::getLong);
-
-            Duration adjusted = Duration.ofMillis(Math.max(value, LONG_ZERO));
-
-            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_DURATION, site, instrument, value, adjusted);
-
-            return adjusted;
-
-        } catch (RuntimeException e) {
-
-            log.warn(format("Invalid %s (%s.%s)", TRADING_DURATION, site, instrument), e);
-
-            return Duration.ZERO;
-
-        }
+        return Duration.ofMillis(value.longValue());
 
     }
 
@@ -525,23 +367,7 @@ public class PropertyManagerImpl implements PropertyController {
 
     @Override
     public BigDecimal getFundingOffset(String site, String instrument) {
-
-        try {
-
-            BigDecimal value = get(FUNDING_OFFSET, site, instrument, Configuration::getBigDecimal);
-
-            log.trace("Fetched {} ({}.{}) : {}", FUNDING_OFFSET, site, instrument, value);
-
-            return value;
-
-        } catch (RuntimeException e) {
-
-            log.warn(format("Invalid %s (%s.%s)", FUNDING_OFFSET, site, instrument), e);
-
-            return ZERO;
-
-        }
-
+        return getDecimal(site, instrument, FUNDING_OFFSET, null, null, ZERO);
     }
 
     @Override
