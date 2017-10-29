@@ -14,6 +14,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -127,13 +128,13 @@ public class TemplateAgentTest {
     @Test
     public void testCheckCreated() throws Exception {
 
-        Key key = Key.from(null);
+        Key key = Key.builder().timestamp(Instant.ofEpochMilli(1000)).build();
         String id = "id";
         Duration interval = Duration.ofMillis(1L);
         long retry = 10;
 
         // Not found
-        when(context.findOrder(key, id)).thenReturn(null);
+        when(context.findOrder(any(), eq(id))).thenReturn(null);
         assertFalse(target.checkCreated(context, key, id, retry, interval));
 
         // Interrupted
@@ -141,7 +142,7 @@ public class TemplateAgentTest {
         assertFalse(target.checkCreated(context, key, id, retry, interval));
 
         // Found
-        when(context.findOrder(key, id)).thenReturn(null, null, mock(Order.class));
+        when(context.findOrder(any(), eq(id))).thenReturn(null, null, mock(Order.class));
         assertTrue(target.checkCreated(context, key, id, retry, interval));
 
     }
@@ -149,7 +150,7 @@ public class TemplateAgentTest {
     @Test
     public void testCheckCancelled() throws Exception {
 
-        Key key = Key.from(null);
+        Key key = Key.builder().timestamp(Instant.ofEpochMilli(1000)).build();
         String id = "id";
         Duration interval = Duration.ofMillis(1L);
         long retry = 10;
@@ -157,7 +158,7 @@ public class TemplateAgentTest {
         // Found but Active
         Order order = mock(Order.class);
         when(order.getActive()).thenReturn(TRUE);
-        when(context.findOrder(key, id)).thenReturn(order);
+        when(context.findOrder(any(), eq(id))).thenReturn(order);
         assertFalse(target.checkCancelled(context, key, id, retry, interval));
 
         // Interrupted
@@ -166,12 +167,12 @@ public class TemplateAgentTest {
 
         // Found and inactive
         when(order.getActive()).thenReturn(FALSE);
-        when(context.findOrder(key, id)).thenReturn(order);
+        when(context.findOrder(any(), eq(id))).thenReturn(order);
         assertTrue(target.checkCancelled(context, key, id, retry, interval));
 
 
         // Not found
-        when(context.findOrder(key, id)).thenReturn(null);
+        when(context.findOrder(any(), eq(id))).thenReturn(null);
         assertTrue(target.checkCancelled(context, key, id, retry, interval));
 
     }

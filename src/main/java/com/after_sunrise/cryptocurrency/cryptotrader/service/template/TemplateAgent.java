@@ -26,7 +26,7 @@ import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 @Slf4j
 public class TemplateAgent implements Agent {
 
-    private static final Duration INTERVAL = Duration.ofSeconds(LONG_ONE);
+    private static final Duration INTERVAL = Duration.ofSeconds(5);
 
     private static final long RETRY = MINUTES.toMillis(LONG_ONE) / INTERVAL.toMillis();
 
@@ -136,9 +136,13 @@ public class TemplateAgent implements Agent {
     @VisibleForTesting
     Boolean checkCreated(Context context, Key key, String id, long retry, Duration interval) {
 
+        Key.KeyBuilder builder = Key.build(key);
+
         for (long i = 0; i <= retry; i++) {
 
-            Order order = context.findOrder(key, id);
+            Key current = builder.build();
+
+            Order order = context.findOrder(current, id);
 
             if (order != null) {
 
@@ -151,6 +155,8 @@ public class TemplateAgent implements Agent {
             try {
 
                 Thread.sleep(interval.toMillis());
+
+                builder.timestamp(current.getTimestamp().plus(interval));
 
             } catch (InterruptedException e) {
 
@@ -171,9 +177,13 @@ public class TemplateAgent implements Agent {
     @VisibleForTesting
     Boolean checkCancelled(Context context, Key key, String id, long retry, Duration interval) {
 
+        Key.KeyBuilder builder = Key.build(key);
+
         for (long i = 0; i <= retry; i++) {
 
-            Order order = context.findOrder(key, id);
+            Key current = builder.build();
+
+            Order order = context.findOrder(current, id);
 
             if (order == null || !TRUE.equals(order.getActive())) {
 
@@ -186,6 +196,8 @@ public class TemplateAgent implements Agent {
             try {
 
                 Thread.sleep(interval.toMillis());
+
+                builder.timestamp(current.getTimestamp().plus(interval));
 
             } catch (InterruptedException e) {
 
