@@ -36,9 +36,7 @@ public class TemplateAdviser implements Adviser {
 
     static final int SIGNUM_SELL = -1;
 
-    static final int SAMPLES_NUM = 60;
-
-    static final int SAMPLES_MIN = 20;
+    static final int SAMPLES = 60;
 
     private final String id;
 
@@ -163,7 +161,7 @@ public class TemplateAdviser implements Adviser {
 
         Instant to = request.getCurrentTime();
 
-        Instant from = to.minus(interval.toMillis() * SAMPLES_NUM, MILLIS);
+        Instant from = to.minus(interval.toMillis() * SAMPLES, MILLIS);
 
         List<Trade> trades = context.listTrades(Key.from(request), from.minus(interval));
 
@@ -174,15 +172,13 @@ public class TemplateAdviser implements Adviser {
         double[] doubles = returns.values().stream().filter(Objects::nonNull)
                 .mapToDouble(BigDecimal::doubleValue).toArray();
 
-        if (doubles.length < SAMPLES_MIN) {
-            return null;
-        }
-
         double average = DoubleStream.of(doubles).average().orElse(Double.NaN);
 
         double variance = DoubleStream.of(doubles).map(d -> Math.pow(d - average, 2)).sum() / (doubles.length - 1);
 
-        return BigDecimal.valueOf(Math.sqrt(variance)).multiply(sigma).setScale(SCALE, HALF_UP);
+        double deviation = Math.sqrt(variance) * sigma.doubleValue();
+
+        return Double.isFinite(deviation) ? BigDecimal.valueOf(deviation).setScale(SCALE, HALF_UP) : null;
 
     }
 
@@ -372,7 +368,6 @@ public class TemplateAdviser implements Adviser {
         return lossBasis.multiply(aversion).max(ZERO);
 
     }
-
 
     @VisibleForTesting
     BigDecimal calculateSellBasis(Context context, Request request, BigDecimal base) {

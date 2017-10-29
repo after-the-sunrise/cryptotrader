@@ -206,12 +206,12 @@ public class TemplateAdviserTest {
         assertEquals(target.calculateDeviation(context, request), new BigDecimal("0.0766141907"));
 
         // Zero variance
-        new ArrayList<>(returns.keySet()).forEach(k -> returns.put(k, ZERO));
+        new ArrayList<>(returns.keySet()).forEach(k -> returns.put(k, new BigDecimal("0.01")));
         assertEquals(target.calculateDeviation(context, request), new BigDecimal("0.0000000000"));
 
         // Empty
         doReturn(new TreeMap<>()).when(target).calculateReturns(prices);
-        assertEquals(target.calculateDeviation(context, request), null);
+        assertEquals(target.calculateDeviation(context, request), new BigDecimal("0.0000000000"));
 
     }
 
