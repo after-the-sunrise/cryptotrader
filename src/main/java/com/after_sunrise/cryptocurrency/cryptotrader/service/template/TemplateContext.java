@@ -45,7 +45,7 @@ public abstract class TemplateContext implements Context {
 
     private static final long CACHE_SIZE = Byte.MAX_VALUE;
 
-    private static final Duration CACHE_DURATION = Duration.ofSeconds(5);
+    private static final Duration CACHE_DURATION = Duration.ofMinutes(1);
 
     private final Map<Class<?>, Cache<Key, Optional<?>>> singleCache = new ConcurrentHashMap<>();
 
