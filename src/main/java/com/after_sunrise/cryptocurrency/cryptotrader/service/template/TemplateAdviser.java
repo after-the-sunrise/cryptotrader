@@ -153,6 +153,12 @@ public class TemplateAdviser implements Adviser {
     @VisibleForTesting
     BigDecimal calculateDeviation(Context context, Request request) {
 
+        BigDecimal sigma = request.getTradingSigma();
+
+        if (sigma.signum() == 0) {
+            return ZERO;
+        }
+
         Duration interval = Duration.between(request.getCurrentTime(), request.getTargetTime());
 
         Instant to = request.getCurrentTime();
@@ -176,7 +182,7 @@ public class TemplateAdviser implements Adviser {
 
         double variance = DoubleStream.of(doubles).map(d -> Math.pow(d - average, 2)).sum() / (doubles.length - 1);
 
-        return BigDecimal.valueOf(Math.sqrt(variance)).setScale(SCALE, HALF_UP);
+        return BigDecimal.valueOf(Math.sqrt(variance)).multiply(sigma).setScale(SCALE, HALF_UP);
 
     }
 

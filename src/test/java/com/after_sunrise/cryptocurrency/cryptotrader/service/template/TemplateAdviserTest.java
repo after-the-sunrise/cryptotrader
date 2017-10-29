@@ -168,7 +168,7 @@ public class TemplateAdviserTest {
 
         Instant t0 = Instant.ofEpochMilli(10000);
         Instant t1 = Instant.ofEpochMilli(10100);
-        Request request = Request.builder().currentTime(t0).targetTime(t1).build();
+        Request request = Request.builder().currentTime(t0).targetTime(t1).tradingSigma(TEN).build();
 
         List<Trade> trades = singletonList(mock(Trade.class));
         when(context.listTrades(any(), eq(Instant.ofEpochMilli(3900)))).thenReturn(trades);
@@ -203,7 +203,7 @@ public class TemplateAdviserTest {
 
         // Valid
         doReturn(returns).when(target).calculateReturns(prices);
-        assertEquals(target.calculateDeviation(context, request), new BigDecimal("0.0076614191"));
+        assertEquals(target.calculateDeviation(context, request), new BigDecimal("0.0766141907"));
 
         // Zero variance
         new ArrayList<>(returns.keySet()).forEach(k -> returns.put(k, ZERO));

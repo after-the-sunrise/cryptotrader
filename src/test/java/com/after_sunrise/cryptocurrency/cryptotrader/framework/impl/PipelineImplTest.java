@@ -102,6 +102,7 @@ public class PipelineImplTest {
             when(module.getMock(PropertyManager.class).getTradingSpread(any(), any())).thenReturn(valueOf(2));
             when(module.getMock(PropertyManager.class).getTradingSpreadAsk(any(), any())).thenReturn(valueOf(7));
             when(module.getMock(PropertyManager.class).getTradingSpreadBid(any(), any())).thenReturn(valueOf(8));
+            when(module.getMock(PropertyManager.class).getTradingSigma(any(), any())).thenReturn(valueOf(9));
             when(module.getMock(PropertyManager.class).getTradingExposure(any(), any())).thenReturn(valueOf(3));
             when(module.getMock(PropertyManager.class).getTradingAversion(any(), any())).thenReturn(valueOf(6));
             when(module.getMock(PropertyManager.class).getTradingSplit(any(), any())).thenReturn(valueOf(4));
@@ -143,6 +144,10 @@ public class PipelineImplTest {
 
         initializer.run();
         doReturn(null).when(module.getMock(PropertyManager.class)).getTradingSpreadBid(any(), any());
+        assertNull(target.createRequest(targetTime, site, instrument));
+
+        initializer.run();
+        doReturn(null).when(module.getMock(PropertyManager.class)).getTradingSigma(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();

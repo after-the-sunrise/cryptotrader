@@ -384,6 +384,34 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
+    public BigDecimal getTradingSigma(String site, String instrument) {
+
+        try {
+
+            BigDecimal value = get(TRADING_SIGMA, site, instrument, Configuration::getBigDecimal);
+
+            BigDecimal adjusted = value.max(ZERO);
+
+            log.trace("Fetched {} ({}.{}) : {} -> {}", TRADING_SIGMA, site, instrument, value, adjusted);
+
+            return adjusted;
+
+        } catch (RuntimeException e) {
+
+            log.warn(format("Invalid %s (%s.%s)", TRADING_SIGMA, site, instrument), e);
+
+            return ZERO;
+
+        }
+
+    }
+
+    @Override
+    public void setTradingSigma(String site, String instrument, BigDecimal value) {
+        set(TRADING_SIGMA, site, instrument, value, BigDecimal::toPlainString);
+    }
+
+    @Override
     public BigDecimal getTradingExposure(String site, String instrument) {
 
         try {

@@ -303,7 +303,7 @@ public class PropertyManagerImplTest {
     @Test
     public void testGetTradingSpread() throws Exception {
 
-        assertEquals(target.getTradingSpread(site, inst), new BigDecimal("0.0500"));
+        assertEquals(target.getTradingSpread(site, inst), new BigDecimal("0.0100"));
 
         // Specific
         doReturn(new BigDecimal("0.1234")).when(conf).getBigDecimal(TRADING_SPREAD.getKey());
@@ -328,14 +328,14 @@ public class PropertyManagerImplTest {
 
         // Clear
         target.setTradingSpread(site, inst, null);
-        assertEquals(target.getTradingSpread(site, inst), new BigDecimal("0.0500"));
+        assertEquals(target.getTradingSpread(site, inst), new BigDecimal("0.0100"));
 
     }
 
     @Test
     public void testGetTradingSpreadAsk() throws Exception {
 
-        assertEquals(target.getTradingSpreadAsk(site, inst), new BigDecimal("0.0100"));
+        assertEquals(target.getTradingSpreadAsk(site, inst), new BigDecimal("0.0000"));
 
         // Specific
         doReturn(new BigDecimal("0.1234")).when(conf).getBigDecimal(TRADING_SPREAD_ASK.getKey());
@@ -360,14 +360,14 @@ public class PropertyManagerImplTest {
 
         // Clear
         target.setTradingSpreadAsk(site, inst, null);
-        assertEquals(target.getTradingSpreadAsk(site, inst), new BigDecimal("0.0100"));
+        assertEquals(target.getTradingSpreadAsk(site, inst), new BigDecimal("0.0000"));
 
     }
 
     @Test
     public void testGetTradingSpreadBid() throws Exception {
 
-        assertEquals(target.getTradingSpreadBid(site, inst), new BigDecimal("0.0100"));
+        assertEquals(target.getTradingSpreadBid(site, inst), new BigDecimal("0.0000"));
 
         // Specific
         doReturn(new BigDecimal("0.1234")).when(conf).getBigDecimal(TRADING_SPREAD_BID.getKey());
@@ -392,7 +392,36 @@ public class PropertyManagerImplTest {
 
         // Clear
         target.setTradingSpreadBid(site, inst, null);
-        assertEquals(target.getTradingSpreadBid(site, inst), new BigDecimal("0.0100"));
+        assertEquals(target.getTradingSpreadBid(site, inst), new BigDecimal("0.0000"));
+
+    }
+
+    @Test
+    public void testGetTradingSigma() throws Exception {
+
+        // Default
+        assertEquals(target.getTradingSigma(site, inst), new BigDecimal("0.00"));
+
+        // Mocked
+        doReturn(new BigDecimal("0.12")).when(conf).getBigDecimal(TRADING_SIGMA.getKey());
+        assertEquals(target.getTradingSigma(site, inst), new BigDecimal("0.12"));
+
+        // Floor
+        doReturn(BigDecimal.TEN.negate()).when(conf).getBigDecimal(TRADING_SIGMA.getKey());
+        assertEquals(target.getTradingSigma(site, inst), ZERO);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(TRADING_SIGMA.getKey());
+        assertEquals(target.getTradingSigma(site, inst), ZERO);
+        reset(conf);
+
+        // Override
+        target.setTradingSigma(site, inst, new BigDecimal("3.00"));
+        assertEquals(target.getTradingSigma(site, inst), new BigDecimal("3.00"));
+
+        // Clear
+        target.setTradingSigma(site, inst, null);
+        assertEquals(target.getTradingSigma(site, inst), new BigDecimal("0.00"));
 
     }
 
@@ -400,7 +429,7 @@ public class PropertyManagerImplTest {
     public void testGetTradingExposure() throws Exception {
 
         // Default
-        assertEquals(target.getTradingExposure(site, inst), new BigDecimal("0.0010"));
+        assertEquals(target.getTradingExposure(site, inst), new BigDecimal("0.00"));
 
         // Mocked
         doReturn(new BigDecimal("0.1234")).when(conf).getBigDecimal(TRADING_EXPOSURE.getKey());
@@ -425,7 +454,7 @@ public class PropertyManagerImplTest {
 
         // Clear
         target.setTradingExposure(site, inst, null);
-        assertEquals(target.getTradingExposure(site, inst), new BigDecimal("0.0010"));
+        assertEquals(target.getTradingExposure(site, inst), new BigDecimal("0.00"));
 
     }
 
@@ -433,7 +462,7 @@ public class PropertyManagerImplTest {
     public void testGetTradingAversion() throws Exception {
 
         // Default
-        assertEquals(target.getTradingAversion(site, inst), new BigDecimal("1.0"));
+        assertEquals(target.getTradingAversion(site, inst), new BigDecimal("0.0"));
 
         // Mocked
         doReturn(new BigDecimal("0.5")).when(conf).getBigDecimal(TRADING_AVERSION.getKey());
@@ -454,7 +483,7 @@ public class PropertyManagerImplTest {
 
         // Clear
         target.setTradingAversion(site, inst, null);
-        assertEquals(target.getTradingAversion(site, inst), new BigDecimal("1.0"));
+        assertEquals(target.getTradingAversion(site, inst), new BigDecimal("0.0"));
 
     }
 
@@ -493,7 +522,7 @@ public class PropertyManagerImplTest {
     @Test
     public void testGetTradingDuration() throws Exception {
 
-        assertEquals(target.getTradingDuration(site, inst), Duration.ofMillis(60 * 1000));
+        assertEquals(target.getTradingDuration(site, inst), Duration.ofMillis(0));
 
         // Specific
         doReturn(300000L).when(conf).getLong(TRADING_DURATION.getKey());
@@ -514,7 +543,7 @@ public class PropertyManagerImplTest {
 
         // Clear
         target.setTradingDuration(site, inst, null);
-        assertEquals(target.getTradingDuration(site, inst), Duration.ofMillis(60 * 1000));
+        assertEquals(target.getTradingDuration(site, inst), Duration.ofMillis(0));
 
     }
 

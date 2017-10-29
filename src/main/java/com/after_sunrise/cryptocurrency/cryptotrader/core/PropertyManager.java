@@ -32,6 +32,8 @@ public interface PropertyManager {
 
     BigDecimal getTradingSpreadBid(String site, String instrument);
 
+    BigDecimal getTradingSigma(String site, String instrument);
+
     BigDecimal getTradingExposure(String site, String instrument);
 
     BigDecimal getTradingAversion(String site, String instrument);
