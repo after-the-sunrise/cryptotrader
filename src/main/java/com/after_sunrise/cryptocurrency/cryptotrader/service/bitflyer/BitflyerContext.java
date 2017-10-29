@@ -68,6 +68,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
     private static final Duration REALTIME_TRADE = Duration.ofDays(1);
 
+    private static final int REALTIME_COUNT = 1000;
+
     private static final int REALTIME_QUERIES = 128;
 
     private final Bitflyer4j bitflyer4j;
@@ -220,11 +222,36 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     }
 
     @VisibleForTesting
+    String convertProductAlias(Key key) {
+
+        if (key == null || StringUtils.isEmpty(key.getInstrument())) {
+            return null;
+        }
+
+        Key all = Key.build(key).instrument("*").build();
+
+        List<Product> products = listCached(Product.class, all, () ->
+                extract(marketService.getProducts(), TIMEOUT)
+        );
+
+        return ofNullable(products).orElse(emptyList()).stream()
+                .filter(Objects::nonNull)
+                .filter(p -> StringUtils.isNotEmpty(p.getProduct()))
+                .filter(p ->
+                        StringUtils.equals(key.getInstrument(), p.getProduct())
+                                || StringUtils.equals(key.getInstrument(), p.getAlias())
+                )
+                .map(Product::getProduct)
+                .findFirst().orElse(null);
+
+    }
+
+    @VisibleForTesting
     Tick getTick(Key key) {
 
         return findCached(Tick.class, key, () -> {
 
-            String instrument = StringUtils.trimToEmpty(key.getInstrument());
+            String instrument = StringUtils.trimToEmpty(convertProductAlias(key));
 
             Optional<Tick> realtime = realtimeTicks.get(instrument);
 
@@ -294,7 +321,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     @Override
     public List<Trade> listTrades(Key key, Instant fromTime) {
 
-        String id = StringUtils.trimToEmpty(key.getInstrument());
+        String id = StringUtils.trimToEmpty(convertProductAlias(key));
 
         NavigableMap<Instant, BitflyerTrade> trades;
 
@@ -306,7 +333,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
                 trades = new ConcurrentSkipListMap<>();
 
-                Execution.Request.RequestBuilder b = Execution.Request.builder().product(id).count((int) Short.MAX_VALUE);
+                Execution.Request.RequestBuilder b = Execution.Request.builder().product(id).count(REALTIME_COUNT);
 
                 Instant cutoff = getNow().minus(REALTIME_TRADE);
 
@@ -484,31 +511,6 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
                 .reduce(BigDecimal::add);
 
         return sum.orElse(ZERO);
-
-    }
-
-    @VisibleForTesting
-    String convertProductAlias(Key key) {
-
-        if (key == null || StringUtils.isEmpty(key.getInstrument())) {
-            return null;
-        }
-
-        Key all = Key.build(key).instrument(null).build();
-
-        List<Product> products = listCached(Product.class, all, () ->
-                extract(marketService.getProducts(), TIMEOUT)
-        );
-
-        return ofNullable(products).orElse(emptyList()).stream()
-                .filter(Objects::nonNull)
-                .filter(p -> StringUtils.isNotEmpty(p.getProduct()))
-                .filter(p ->
-                        StringUtils.equals(key.getInstrument(), p.getProduct())
-                                || StringUtils.equals(key.getInstrument(), p.getAlias())
-                )
-                .map(Product::getProduct)
-                .findFirst().orElse(null);
 
     }
 

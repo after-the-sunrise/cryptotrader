@@ -108,50 +108,96 @@ public class BitflyerContextTest {
     }
 
     @Test
+    public void testConvertProductAlias() {
+
+        List<Product> products = new ArrayList<>();
+        products.add(mock(Product.class));
+        products.add(mock(Product.class));
+        products.add(null);
+        products.add(mock(Product.class));
+        products.add(mock(Product.class));
+        when(products.get(0).getProduct()).thenReturn("BTCJPY08JAN2017");
+        when(products.get(1).getProduct()).thenReturn("BTCJPY14APR2017");
+        when(products.get(3).getProduct()).thenReturn("BTCJPY08OCT2017");
+        when(products.get(4).getProduct()).thenReturn(null);
+        when(products.get(0).getAlias()).thenReturn(null);
+        when(products.get(1).getAlias()).thenReturn("BTCJPY_MAT1WK");
+        when(products.get(3).getAlias()).thenReturn("BTCJPY_MAT2WK");
+        when(products.get(4).getAlias()).thenReturn("BTCJPY_MAT3WK");
+        when(marketService.getProducts()).thenReturn(completedFuture(products)).thenReturn(completedFuture(null));
+
+        Key.KeyBuilder b = Key.builder();
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY08JAN2017").build()), "BTCJPY08JAN2017");
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY14APR2017").build()), "BTCJPY14APR2017");
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY08OCT2017").build()), "BTCJPY08OCT2017");
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT1WK").build()), "BTCJPY14APR2017");
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT2WK").build()), "BTCJPY08OCT2017");
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT3WK").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument("TEST").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument(null).build()), null);
+        assertEquals(target.convertProductAlias(null), null);
+        verify(marketService, times(1)).getProducts();
+
+        target.clear();
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY08JAN2017").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY14APR2017").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY08OCT2017").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT1WK").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT2WK").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT3WK").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument("TEST").build()), null);
+        assertEquals(target.convertProductAlias(b.instrument(null).build()), null);
+        assertEquals(target.convertProductAlias(null), null);
+        verify(marketService, times(2)).getProducts();
+
+    }
+
+    @Test
     public void testGetTick() throws Exception {
 
         Tick tick = mock(Tick.class);
         when(tick.getProduct()).thenReturn("i");
         ZonedDateTime now = ZonedDateTime.now();
         Key key = Key.from(Request.builder().instrument(tick.getProduct()).currentTime(now.toInstant()).build());
+        doReturn("a").when(target).convertProductAlias(key);
         when(marketService.getTick(any())).thenReturn(completedFuture(tick)).thenReturn(completedFuture(null));
 
         // Initial
         assertSame(target.getTick(key), tick);
         verify(marketService, times(1)).getTick(any());
-        verify(realtimeService, times(1)).subscribeTick(singletonList(key.getInstrument()));
+        verify(realtimeService, times(1)).subscribeTick(singletonList("a"));
 
         // Cached
         assertSame(target.getTick(key), tick);
         verify(marketService, times(1)).getTick(any());
-        verify(realtimeService, times(1)).subscribeTick(singletonList(key.getInstrument()));
+        verify(realtimeService, times(1)).subscribeTick(singletonList("a"));
 
         // Not found
         target.clear();
         assertSame(target.getTick(key), null);
         verify(marketService, times(2)).getTick(any());
-        verify(realtimeService, times(1)).subscribeTick(singletonList(key.getInstrument()));
+        verify(realtimeService, times(1)).subscribeTick(singletonList("a"));
 
         // Realtime found, but no time.
         target.clear();
-        target.onTicks(key.getInstrument(), singletonList(tick));
+        target.onTicks("a", singletonList(tick));
         assertSame(target.getTick(key), null);
         verify(marketService, times(3)).getTick(any());
-        verify(realtimeService, times(1)).subscribeTick(singletonList(key.getInstrument()));
+        verify(realtimeService, times(1)).subscribeTick(singletonList("a"));
 
         // Realtime found, but old.
         target.clear();
         when(tick.getTimestamp()).thenReturn(now.minusMinutes(10));
         assertSame(target.getTick(key), null);
         verify(marketService, times(4)).getTick(any());
-        verify(realtimeService, times(1)).subscribeTick(singletonList(key.getInstrument()));
+        verify(realtimeService, times(1)).subscribeTick(singletonList("a"));
 
         // Realtime found.
         target.clear();
         when(tick.getTimestamp()).thenReturn(now.plusMinutes(10));
         assertSame(target.getTick(key), tick);
         verify(marketService, times(4)).getTick(any());
-        verify(realtimeService, times(1)).subscribeTick(singletonList(key.getInstrument()));
+        verify(realtimeService, times(1)).subscribeTick(singletonList("a"));
 
     }
 
@@ -205,6 +251,7 @@ public class BitflyerContextTest {
 
         ZonedDateTime time = ZonedDateTime.now();
         doReturn(time.toInstant()).when(target).getNow();
+        doReturn("id").when(target).convertProductAlias(any());
 
         List<Execution> execs = new ArrayList<>();
 
@@ -232,7 +279,7 @@ public class BitflyerContextTest {
         List<Trade> results = target.listTrades(key, null);
         assertEquals(results.size(), 6);
         verify(marketService, times(2)).getExecutions(any());
-        verify(realtimeService).subscribeExecution(singletonList("inst"));
+        verify(realtimeService).subscribeExecution(singletonList("id"));
 
         // Filtered by time (cached)
         List<Trade> filtered = target.listTrades(key, time.toInstant().plusSeconds(2));
@@ -245,6 +292,7 @@ public class BitflyerContextTest {
     @Test
     public void testListTrades_Empty() {
 
+        doReturn("id").when(target).convertProductAlias(any());
         when(marketService.getExecutions(any())).thenReturn(null);
 
         // All
@@ -252,7 +300,7 @@ public class BitflyerContextTest {
         List<Trade> results = target.listTrades(key, null);
         assertEquals(results.size(), 0);
         verify(marketService, times(1)).getExecutions(any());
-        verify(realtimeService).subscribeExecution(singletonList("inst"));
+        verify(realtimeService).subscribeExecution(singletonList("id"));
 
         // Cached
         List<Trade> filtered = target.listTrades(key, null);
@@ -556,51 +604,6 @@ public class BitflyerContextTest {
         assertEquals(target.forMargin(key1, ProductType::getStructure), ZERO);
         assertEquals(target.forMargin(key2, ProductType::getStructure), ZERO);
         verify(orderService, times(4)).listPositions(any());
-
-    }
-
-    @Test
-    public void testConvertProductAlias() {
-
-        List<Product> products = new ArrayList<>();
-        products.add(mock(Product.class));
-        products.add(mock(Product.class));
-        products.add(null);
-        products.add(mock(Product.class));
-        products.add(mock(Product.class));
-        when(products.get(0).getProduct()).thenReturn("BTCJPY08JAN2017");
-        when(products.get(1).getProduct()).thenReturn("BTCJPY14APR2017");
-        when(products.get(3).getProduct()).thenReturn("BTCJPY08OCT2017");
-        when(products.get(4).getProduct()).thenReturn(null);
-        when(products.get(0).getAlias()).thenReturn(null);
-        when(products.get(1).getAlias()).thenReturn("BTCJPY_MAT1WK");
-        when(products.get(3).getAlias()).thenReturn("BTCJPY_MAT2WK");
-        when(products.get(4).getAlias()).thenReturn("BTCJPY_MAT3WK");
-        when(marketService.getProducts()).thenReturn(completedFuture(products)).thenReturn(completedFuture(null));
-
-        Key.KeyBuilder b = Key.builder();
-        assertEquals(target.convertProductAlias(b.instrument("BTCJPY08JAN2017").build()), "BTCJPY08JAN2017");
-        assertEquals(target.convertProductAlias(b.instrument("BTCJPY14APR2017").build()), "BTCJPY14APR2017");
-        assertEquals(target.convertProductAlias(b.instrument("BTCJPY08OCT2017").build()), "BTCJPY08OCT2017");
-        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT1WK").build()), "BTCJPY14APR2017");
-        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT2WK").build()), "BTCJPY08OCT2017");
-        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT3WK").build()), null);
-        assertEquals(target.convertProductAlias(b.instrument("TEST").build()), null);
-        assertEquals(target.convertProductAlias(b.instrument(null).build()), null);
-        assertEquals(target.convertProductAlias(null), null);
-        verify(marketService, times(1)).getProducts();
-
-        target.clear();
-        assertEquals(target.convertProductAlias(b.instrument("BTCJPY08JAN2017").build()), null);
-        assertEquals(target.convertProductAlias(b.instrument("BTCJPY14APR2017").build()), null);
-        assertEquals(target.convertProductAlias(b.instrument("BTCJPY08OCT2017").build()), null);
-        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT1WK").build()), null);
-        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT2WK").build()), null);
-        assertEquals(target.convertProductAlias(b.instrument("BTCJPY_MAT3WK").build()), null);
-        assertEquals(target.convertProductAlias(b.instrument("TEST").build()), null);
-        assertEquals(target.convertProductAlias(b.instrument(null).build()), null);
-        assertEquals(target.convertProductAlias(null), null);
-        verify(marketService, times(2)).getProducts();
 
     }
 
