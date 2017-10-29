@@ -327,18 +327,18 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal positionRatio = ofNullable(calculatePositionRatio(context, request)).orElse(ZERO);
+        BigDecimal additional = ofNullable(request.getTradingSpreadBid()).orElse(ZERO);
 
-        BigDecimal positionBase = base.multiply(ONE.add(positionRatio.max(ZERO)));
+        BigDecimal positionRatio = ofNullable(calculatePositionRatio(context, request)).orElse(ZERO).max(ZERO);
+
+        BigDecimal positionBase = base.add(additional).multiply(ONE.add(positionRatio));
 
         BigDecimal lossBasis = ofNullable(calculateBuyLossBasis(context, request)).orElse(ZERO);
 
-        BigDecimal additional = ofNullable(request.getTradingSpreadBid()).orElse(ZERO);
+        BigDecimal adjusted = adjustBuyBasis(context, request, positionBase.add(lossBasis));
 
-        BigDecimal adjusted = adjustBuyBasis(context, request, positionBase.add(lossBasis).add(additional));
-
-        log.trace("Buy Basis : {} (position=[{}] loss=[{}] additional=[{}])",
-                adjusted, positionBase, lossBasis, additional);
+        log.trace("Buy Basis : {} (additional=[{}] position=[{}] loss=[{}])",
+                adjusted, additional, positionRatio, lossBasis);
 
         return adjusted;
 
@@ -381,18 +381,18 @@ public class TemplateAdviser implements Adviser {
             return null;
         }
 
-        BigDecimal positionRatio = ofNullable(calculatePositionRatio(context, request)).orElse(ZERO);
+        BigDecimal additional = ofNullable(request.getTradingSpreadAsk()).orElse(ZERO);
 
-        BigDecimal positionBase = base.multiply(ONE.add(positionRatio.min(ZERO).abs()));
+        BigDecimal positionRatio = ofNullable(calculatePositionRatio(context, request)).orElse(ZERO).min(ZERO).abs();
+
+        BigDecimal positionBase = base.add(additional).multiply(ONE.add(positionRatio));
 
         BigDecimal lossBasis = ofNullable(calculateSellLossBasis(context, request)).orElse(ZERO);
 
-        BigDecimal additional = ofNullable(request.getTradingSpreadAsk()).orElse(ZERO);
+        BigDecimal adjusted = adjustSellBasis(context, request, positionBase.add(lossBasis));
 
-        BigDecimal adjusted = adjustSellBasis(context, request, positionBase.add(lossBasis).add(additional));
-
-        log.trace("Sell Basis : {} (position=[{}] loss=[{}] additional=[{}])",
-                adjusted, positionBase, lossBasis, additional);
+        log.trace("Sell Basis : {} (additional=[{}] position=[{}] loss=[{}])",
+                adjusted, additional, positionRatio, lossBasis);
 
         return adjusted;
 
