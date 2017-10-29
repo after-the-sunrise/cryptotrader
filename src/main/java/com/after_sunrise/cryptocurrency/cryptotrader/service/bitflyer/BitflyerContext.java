@@ -52,6 +52,8 @@ import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 @Slf4j
 public class BitflyerContext extends TemplateContext implements BitflyerService, RealtimeListener {
 
+    private static final String WILDCARD = "*";
+
     private static final Pattern EXPIRY_PATTERN = Pattern.compile("^[A-Z]{6}[0-9]{2}[A-Z]{3}[0-9]{4}$");
 
     private static final String EXPIRY_TIME = "1100";
@@ -228,7 +230,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             return null;
         }
 
-        Key all = Key.build(key).instrument("*").build();
+        Key all = Key.build(key).instrument(WILDCARD).build();
 
         List<Product> products = listCached(Product.class, all, () ->
                 extract(marketService.getProducts(), TIMEOUT)
@@ -412,7 +414,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             return forMargin(key, mapper);
         }
 
-        Key all = Key.build(key).instrument(null).build();
+        Key all = Key.build(key).instrument(WILDCARD).build();
 
         List<Balance> balances = listCached(Balance.class, all, () ->
                 extract(accountService.getBalances(), TIMEOUT)
@@ -445,7 +447,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         if (asset == COLLATERAL) {
 
-            Key all = Key.build(key).instrument(null).build();
+            Key all = Key.build(key).instrument(WILDCARD).build();
 
             Collateral collateral = findCached(Collateral.class, all, () ->
                     extract(accountService.getCollateral(), TIMEOUT)
@@ -473,7 +475,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         if (product == COLLATERAL_JPY || product == COLLATERAL_BTC) {
 
-            Key all = Key.build(key).instrument(null).build();
+            Key all = Key.build(key).instrument(WILDCARD).build();
 
             List<Margin> margins = listCached(Margin.class, all, () ->
                     extract(accountService.getMargins(), TIMEOUT)
