@@ -1,0 +1,26 @@
+[
+  {
+    "timestamp": "2017-11-01T22:15:47.303Z",
+    "symbol": "XBTUSD",
+    "side": "Buy",
+    "size": 686,
+    "price": 6601.7,
+    "tickDirection": "PlusTick",
+    "trdMatchID": "f391ff88-6731-f02d-46c2-b82471e762a9",
+    "grossValue": 10391528,
+    "homeNotional": 0.10391528,
+    "foreignNotional": 686
+  },
+  {
+    "timestamp": "2017-11-01T22:15:47.303Z",
+    "symbol": "XBTUSD",
+    "side": "Buy",
+    "size": 5,
+    "price": 6601.6,
+    "tickDirection": "ZeroPlusTick",
+    "trdMatchID": "bb1d629e-959c-298f-bab4-2921218193fa",
+    "grossValue": 75740,
+    "homeNotional": 0.0007574,
+    "foreignNotional": 5
+  }
+]
