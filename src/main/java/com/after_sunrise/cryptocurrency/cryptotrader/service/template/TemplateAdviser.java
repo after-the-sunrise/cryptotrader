@@ -176,7 +176,7 @@ public class TemplateAdviser implements Adviser {
 
         double variance = DoubleStream.of(doubles).map(d -> Math.pow(d - average, 2)).sum() / (doubles.length - 1);
 
-        double deviation = Math.sqrt(variance) * sigma.doubleValue();
+        double deviation = Math.sqrt(variance) * sigma.doubleValue() + Math.abs(average);
 
         return Double.isFinite(deviation) ? BigDecimal.valueOf(deviation).setScale(SCALE, HALF_UP) : null;
 
