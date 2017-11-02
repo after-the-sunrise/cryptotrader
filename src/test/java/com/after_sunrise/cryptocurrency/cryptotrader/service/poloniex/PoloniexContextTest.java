@@ -3,15 +3,19 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.io.Resources;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex.PoloniexContext.URL_TICKER;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex.PoloniexContext.URL_TRADE;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
 import static com.google.common.io.Resources.getResource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.Mockito.*;
@@ -25,16 +29,32 @@ public class PoloniexContextTest {
 
     private PoloniexContext target;
 
-    private CloseableHttpClient client;
-
     @BeforeMethod
     public void setUp() throws Exception {
 
-        client = mock(CloseableHttpClient.class);
-
         target = spy(new PoloniexContext());
 
-        doReturn(null).when(target).query(anyString());
+        doReturn(null).when(target).request(any(), any(), any(), any());
+
+    }
+
+    @AfterMethod
+    public void tearDown() throws Exception {
+        target.close();
+    }
+
+    @Test(enabled = false)
+    public void test() throws IOException {
+
+        doCallRealMethod().when(target).request(any(), any(), any(), any());
+
+        Key key = Key.builder().instrument("BTC_ETH").build();
+
+        System.out.println("ASK : " + target.getBestAskPrice(key));
+        System.out.println("BID : " + target.getBestBidPrice(key));
+        System.out.println("MID : " + target.getMidPrice(key));
+        System.out.println("LTP : " + target.getLastPrice(key));
+        System.out.println("TRD : " + target.listTrades(key, null));
 
     }
 
@@ -47,7 +67,7 @@ public class PoloniexContextTest {
     public void testQueryTick() throws Exception {
 
         String data = Resources.toString(getResource("json/poloniex_ticker.json"), UTF_8);
-        doReturn(data).when(target).query(PoloniexContext.URL_TICKER);
+        doReturn(data).when(target).request(GET, URL_TICKER, null, null);
 
         // Found
         PoloniexTick tick = target.queryTick(Key.builder().instrument("BTC_ETH").build()).get();
@@ -59,7 +79,7 @@ public class PoloniexContextTest {
         assertFalse(target.queryTick(Key.builder().instrument("FOO_BAR").build()).isPresent());
 
         // Cached
-        doReturn(null).when(target).query(PoloniexContext.URL_TICKER);
+        doReturn(null).when(target).request(any(), any(), any(), any());
         PoloniexTick cached = target.queryTick(Key.builder().instrument("BTC_ETH").build()).get();
         assertSame(cached, tick);
 
@@ -118,7 +138,7 @@ public class PoloniexContextTest {
 
         Key key = Key.builder().instrument("TEST").build();
         String data = Resources.toString(getResource("json/poloniex_trade.json"), UTF_8);
-        doReturn(data).when(target).query(PoloniexContext.URL_TRADE + key.getInstrument());
+        doReturn(data).when(target).request(GET, URL_TRADE + key.getInstrument(), null, null);
 
         // Found
         List<Trade> values = target.listTrades(key, null);
@@ -135,7 +155,7 @@ public class PoloniexContextTest {
         assertEquals(values.get(1).getSellOrderId(), null);
 
         // Cached
-        doReturn(null).when(target).query(PoloniexContext.URL_TRADE);
+        doReturn(null).when(target).request(any(), any(), any(), any());
         List<Trade> cached = target.listTrades(key, null);
         assertEquals(cached, values);
 

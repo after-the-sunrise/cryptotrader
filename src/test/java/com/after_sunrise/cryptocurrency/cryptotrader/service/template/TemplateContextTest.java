@@ -4,6 +4,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import org.jboss.resteasy.plugins.server.undertow.UndertowJaxrsServer;
 import org.jboss.resteasy.test.TestPortProvider;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -71,6 +72,11 @@ public class TemplateContextTest {
         target = spy(new TestContext());
     }
 
+    @AfterMethod
+    public void tearDown() throws Exception {
+        target.close();
+    }
+
     @Test
     public void testGet() throws Exception {
         assertEquals(target.get(), "test");
@@ -98,7 +104,7 @@ public class TemplateContextTest {
     }
 
     @Test
-    public void testQuery() throws IOException {
+    public void testRequest() throws IOException {
 
         UndertowJaxrsServer server = new UndertowJaxrsServer().start();
 
@@ -108,9 +114,14 @@ public class TemplateContextTest {
 
             server.deploy(TestApplication.class);
 
-            assertEquals(target.query(url + "/foo"), "{foo:bar}");
+            assertEquals(target.request(url + "/foo"), "{foo:bar}");
 
-            assertEquals(target.query(url + "/bar"), null);
+            try {
+                target.request(url + "/bar");
+                fail();
+            } catch (IOException e) {
+                // Success
+            }
 
         } finally {
             server.stop();

@@ -8,10 +8,16 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.beanutils.ConversionException;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.*;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
@@ -19,21 +25,20 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -42,6 +47,40 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 @Slf4j
 public abstract class TemplateContext implements Context {
+
+    public enum RequestType {
+
+        GET(HttpGet::new),
+
+        PUT(HttpPut::new),
+
+        POST(HttpPost::new),
+
+        DELETE(HttpDelete::new);
+
+        private final Function<String, HttpRequestBase> delegate;
+
+        RequestType(Function<String, HttpRequestBase> function) {
+            this.delegate = function;
+        }
+
+        public HttpUriRequest create(String url, Map<String, String> headers, String data) {
+
+            HttpRequestBase request = delegate.apply(url);
+
+            Optional.ofNullable(headers).orElse(emptyMap()).forEach(request::setHeader);
+
+            Optional.ofNullable(data)
+                    .filter(StringUtils::isNotEmpty)
+                    .filter(d -> HttpEntityEnclosingRequest.class.isInstance(request))
+                    .map(d -> new StringEntity(data, UTF_8))
+                    .ifPresent(d -> HttpEntityEnclosingRequest.class.cast(request).setEntity(d));
+
+            return request;
+
+        }
+
+    }
 
     private static final long CACHE_SIZE = Byte.MAX_VALUE;
 
@@ -54,6 +93,8 @@ public abstract class TemplateContext implements Context {
     private final String id;
 
     private final CloseableHttpClient client;
+
+    private Configuration configuration;
 
     protected TemplateContext(String id) {
 
@@ -73,18 +114,47 @@ public abstract class TemplateContext implements Context {
         client.close();
     }
 
+    @Inject
+    @VisibleForTesting
+    public void setConfiguration(Configuration configuration) {
+        this.configuration = configuration;
+    }
+
+    @VisibleForTesting
+    public String getStringProperty(String key, String defaultValue) {
+        try {
+            return configuration.getString(key, defaultValue);
+        } catch (ConversionException e) {
+            return defaultValue;
+        }
+    }
+
+    @VisibleForTesting
+    public BigDecimal getDecimalProperty(String key, BigDecimal defaultValue) {
+        try {
+            return configuration.getBigDecimal(key, defaultValue);
+        } catch (ConversionException e) {
+            return defaultValue;
+        }
+    }
+
     @VisibleForTesting
     public Instant getNow() {
         return Instant.now();
     }
 
     @VisibleForTesting
-    public String query(String path) throws IOException {
-        return query(path, null);
+    public String getUniqueId() {
+        return UUID.randomUUID().toString();
     }
 
     @VisibleForTesting
-    public String query(String path, Map<String, String> headers) throws IOException {
+    public String request(String path) throws IOException {
+        return request(RequestType.GET, path, null, null);
+    }
+
+    @VisibleForTesting
+    public String request(RequestType type, String path, Map<String, String> headers, String data) throws IOException {
 
         ResponseHandler<String> handler = response -> {
 
@@ -94,7 +164,7 @@ public abstract class TemplateContext implements Context {
 
                 log.trace("Query failure [{}] : status={}", path, status);
 
-                return null;
+                throw new IOException(response.getStatusLine().getReasonPhrase());
 
             }
 
@@ -102,19 +172,17 @@ public abstract class TemplateContext implements Context {
 
             response.getEntity().writeTo(out);
 
-            String data = new String(out.toByteArray(), StandardCharsets.UTF_8);
+            String body = new String(out.toByteArray(), UTF_8);
 
-            log.trace("Queried [{}] : {}", path, data);
+            log.trace("Queried [{}] : {}", path, body);
 
-            return data;
+            return body;
 
         };
 
-        HttpGet get = new HttpGet(path);
+        HttpUriRequest request = type.create(path, headers, data);
 
-        Optional.ofNullable(headers).ifPresent(h -> h.forEach(get::setHeader));
-
-        return client.execute(get, handler);
+        return client.execute(request, handler);
 
     }
 

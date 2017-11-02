@@ -71,7 +71,7 @@ public class PoloniexContext extends TemplateContext implements PoloniexService 
 
         PoloniexTick tick = findCached(PoloniexTick.class, key, () -> {
 
-            String data = query(URL_TICKER);
+            String data = request(URL_TICKER);
 
             if (StringUtils.isEmpty(data)) {
                 return null;
@@ -109,7 +109,7 @@ public class PoloniexContext extends TemplateContext implements PoloniexService 
 
             String product = URLEncoder.encode(key.getInstrument(), StandardCharsets.UTF_8.name());
 
-            String data = query(URL_TRADE + product);
+            String data = request(URL_TRADE + product);
 
             if (StringUtils.isEmpty(data)) {
                 return null;

@@ -3,15 +3,19 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitfinex;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.io.Resources;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitfinex.BitfinexContext.URL_TICKER;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitfinex.BitfinexContext.URL_TRADE;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
 import static com.google.common.io.Resources.getResource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.Mockito.*;
@@ -25,16 +29,32 @@ public class BitfinexContextTest {
 
     private BitfinexContext target;
 
-    private CloseableHttpClient client;
-
     @BeforeMethod
     public void setUp() throws Exception {
 
-        client = mock(CloseableHttpClient.class);
-
         target = spy(new BitfinexContext());
 
-        doReturn(null).when(target).query(anyString());
+        doReturn(null).when(target).request(any(), any(), any(), any());
+
+    }
+
+    @AfterMethod
+    public void tearDown() throws Exception {
+        target.close();
+    }
+
+    @Test(enabled = false)
+    public void test() throws IOException {
+
+        doCallRealMethod().when(target).request(any(), any(), any(), any());
+
+        Key key = Key.builder().instrument("ethbtc").build();
+
+        System.out.println("ASK : " + target.getBestAskPrice(key));
+        System.out.println("BID : " + target.getBestBidPrice(key));
+        System.out.println("MID : " + target.getMidPrice(key));
+        System.out.println("LTP : " + target.getLastPrice(key));
+        System.out.println("TRD : " + target.listTrades(key, null));
 
     }
 
@@ -47,7 +67,7 @@ public class BitfinexContextTest {
     public void testQueryTick() throws Exception {
 
         String data = Resources.toString(getResource("json/bitfinex_ticker.json"), UTF_8);
-        doReturn(data).when(target).query(BitfinexContext.URL_TICKER + "ethbtc");
+        doReturn(data).when(target).request(GET, URL_TICKER + "ethbtc", null, null);
 
         // Found
         BitfinexTick tick = target.queryTick(Key.builder().instrument("ethbtc").build()).get();
@@ -59,7 +79,7 @@ public class BitfinexContextTest {
         assertFalse(target.queryTick(Key.builder().instrument("FOO_BAR").build()).isPresent());
 
         // Cached
-        doReturn(null).when(target).query(anyString());
+        doReturn(null).when(target).request(any(), any(), any(), any());
         BitfinexTick cached = target.queryTick(Key.builder().instrument("ethbtc").build()).get();
         assertSame(cached, tick);
 
@@ -118,7 +138,7 @@ public class BitfinexContextTest {
 
         Key key = Key.builder().instrument("TEST").build();
         String data = Resources.toString(getResource("json/bitfinex_trade.json"), UTF_8);
-        doReturn(data).when(target).query(BitfinexContext.URL_TRADE + key.getInstrument());
+        doReturn(data).when(target).request(GET, URL_TRADE + key.getInstrument(), null, null);
 
         // Found
         List<Trade> values = target.listTrades(key, null);
@@ -135,7 +155,7 @@ public class BitfinexContextTest {
         assertEquals(values.get(1).getSellOrderId(), null);
 
         // Cached
-        doReturn(null).when(target).query(anyString());
+        doReturn(null).when(target).request(any(), any(), any(), any());
         List<Trade> cached = target.listTrades(key, null);
         assertEquals(cached, values);
 

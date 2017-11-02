@@ -2,14 +2,13 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.oanda;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.google.common.io.Resources;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -17,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
 import static com.google.common.io.Resources.getResource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.temporal.ChronoUnit.HOURS;
@@ -32,27 +32,31 @@ public class OandaContextTest {
 
     private OandaContext target;
 
-    private CloseableHttpClient client;
-
     @BeforeMethod
     public void setUp() throws Exception {
 
-        client = mock(CloseableHttpClient.class);
-
         target = spy(new OandaContext());
 
-        doReturn(null).when(target).query(anyString(), any());
+        target.setConfiguration(new Configurations().properties(getResource("cryptotrader-test.properties")));
 
+        doReturn(null).when(target).request(any(), any(), any(), any());
+
+    }
+
+    @AfterMethod
+    public void tearDown() throws Exception {
+        target.close();
     }
 
     @Test(enabled = false)
     public void test() throws IOException {
 
-        doCallRealMethod().when(target).query(any(), any());
+        doCallRealMethod().when(target).request(any(), any(), any(), any());
 
-        Key key = Key.builder().instrument("USD_JPY").timestamp(Instant.now()).build();
+        Key key = Key.builder().instrument("USD_JPY").build();
 
-        System.out.println(target.queryTick(key));
+        System.out.println("ASK : " + target.getBestAskPrice(key));
+        System.out.println("BID : " + target.getBestBidPrice(key));
 
     }
 
@@ -62,53 +66,45 @@ public class OandaContextTest {
     }
 
     @Test
-    public void testGetToken() {
-
-        Path path1 = Paths.get("src", "test", "resources", ".oandajp");
-        String token = target.getToken(path1.toAbsolutePath().toString(), "OJP_TOKEN");
-        assertEquals(token, "MY_REST_TOKEN_HERE");
-
-        Path path2 = Paths.get("src", "test", "resources", ".unknown");
-        assertNull(target.getToken(path2.toAbsolutePath().toString(), "OJP_TOKEN"));
-
-    }
-
-    @Test
     public void testQueryTick() throws Exception {
 
         DateTimeFormatter dtf = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.of("GMT"));
         Instant now = ZonedDateTime.parse("2017-09-15T21:00:00Z", dtf).toInstant();
         Key.KeyBuilder builder = Key.builder().instrument("USD_JPY").timestamp(now);
 
+        String url = OandaContext.URL_TICKER + "USD_JPY";
         String data = Resources.toString(getResource("json/oanda_ticker.json"), UTF_8);
-        Map<String, String> params = singletonMap("Authorization", "Bearer my-token");
-        doReturn(data).when(target).query(OandaContext.URL_TICKER + "USD_JPY", params);
-        doReturn("my-token").when(target).getToken(anyString(), anyString());
+        String token = "my-token";
+        Map<String, String> params = singletonMap("Authorization", "Bearer " + token);
+        doReturn(data).when(target).request(GET, url, params, null);
+        doReturn(token).when(target).getStringProperty(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.oanda.OandaContext.api.secret"
+                , null);
 
         // Found
         OandaTick tick = target.queryTick(builder.build()).get();
         assertEquals(tick.getAsk(), new BigDecimal("110.859"));
         assertEquals(tick.getBid(), new BigDecimal("110.819"));
-        verify(target, times(1)).query(any(), any());
+        verify(target, times(1)).request(GET, url, params, null);
 
         // Cached
         tick = target.queryTick(builder.build()).get();
         assertEquals(tick.getAsk(), new BigDecimal("110.859"));
         assertEquals(tick.getBid(), new BigDecimal("110.819"));
-        verify(target, times(1)).query(any(), any());
+        verify(target, times(1)).request(any(), any(), any(), any());
 
         // Stale
         assertFalse(target.queryTick(builder.timestamp(now.plus(1, HOURS)).build()).isPresent());
-        verify(target, times(2)).query(any(), any());
+        verify(target, times(2)).request(any(), any(), any(), any());
 
         // Not found
         assertFalse(target.queryTick(builder.timestamp(now).instrument("FOO").build()).isPresent());
-        verify(target, times(3)).query(any(), any());
+        verify(target, times(3)).request(any(), any(), any(), any());
 
         // No token
-        doReturn(null).when(target).getToken(any(), any());
+        doReturn(null).when(target).getStringProperty(any(), any());
         assertFalse(target.queryTick(builder.timestamp(now).instrument("BAR").build()).isPresent());
-        verify(target, times(3)).query(any(), any());
+        verify(target, times(3)).request(any(), any(), any(), any());
 
     }
 

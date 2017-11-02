@@ -15,14 +15,13 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -82,6 +81,42 @@ public class BitflyerContextTest {
         when(module.getMock(Bitflyer4j.class).getRealtimeService()).thenReturn(realtimeService);
 
         target = spy(new BitflyerContext(module.getMock(Bitflyer4j.class)));
+
+    }
+
+    @AfterMethod
+    public void tearDown() throws Exception {
+        target.close();
+    }
+
+    @Test(enabled = false)
+    public void test() throws IOException {
+
+        doCallRealMethod().when(target).request(any(), any(), any(), any());
+
+        Key key = Key.builder().instrument("BTC_JPY").timestamp(Instant.now()).build();
+
+        // Tick
+        System.out.println("Ask : " + target.getBestAskPrice(key));
+        System.out.println("Bid : " + target.getBestBidPrice(key));
+        System.out.println("Mid : " + target.getMidPrice(key));
+        System.out.println("Ltp : " + target.getLastPrice(key));
+
+        // Trade
+        System.out.println("TRD : " + target.listTrades(key, null));
+
+        // Account
+        System.out.println("IPS : " + target.getInstrumentPosition(key));
+        System.out.println("FPS : " + target.getFundingPosition(key));
+
+        // Reference
+        System.out.println("COM : " + target.getCommissionRate(key));
+        System.out.println("MGN : " + target.isMarginable(key));
+        System.out.println("EXP : " + target.getExpiry(key));
+
+        // Order Query
+        System.out.println("ORD : " + target.fetchOrder(key));
+        System.out.println("EXC : " + target.listExecutions(key));
 
     }
 

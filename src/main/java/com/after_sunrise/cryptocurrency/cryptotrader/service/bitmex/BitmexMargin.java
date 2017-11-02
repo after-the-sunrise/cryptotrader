@@ -15,13 +15,16 @@ import java.math.BigDecimal;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class BitmexMargin {
 
+    /**
+     * "XBt"
+     */
     @SerializedName("currency")
     private String currency;
 
-    @SerializedName("walletBalance")
-    private BigDecimal walletBalance;
-
+    /**
+     * Margin = Wallet + Unrealized
+     */
     @SerializedName("marginBalance")
-    private BigDecimal marginBalance;
+    private BigDecimal balance;
 
 }

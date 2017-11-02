@@ -13,21 +13,43 @@ import java.time.Instant;
  */
 @Getter
 @Builder
-@ToString(exclude = {"buyOrderId", "sellOrderId"})
+@ToString
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class BitmexTrade implements Trade {
 
+    /**
+     * Id of this trade.
+     */
+    @SerializedName("trdMatchID")
+    private String id;
+
+    /**
+     * Time of the trade.
+     */
     @SerializedName("timestamp")
     private Instant timestamp;
 
+    /**
+     * Price of the trade.
+     */
     @SerializedName("price")
     private BigDecimal price;
 
+    /**
+     * Number of contracts traded.
+     */
     @SerializedName("size")
     private BigDecimal size;
 
-    private String buyOrderId;
 
-    private String sellOrderId;
+    @Override
+    public String getBuyOrderId() {
+        return id;
+    }
+
+    @Override
+    public String getSellOrderId() {
+        return id;
+    }
 
 }

@@ -61,7 +61,7 @@ public class BitfinexContext extends TemplateContext implements BitfinexService 
 
             String product = URLEncoder.encode(key.getInstrument(), UTF_8.name());
 
-            String data = query(URL_TICKER + product);
+            String data = request(URL_TICKER + product);
 
             if (StringUtils.isEmpty(data)) {
                 return null;
@@ -97,7 +97,7 @@ public class BitfinexContext extends TemplateContext implements BitfinexService 
 
             String product = URLEncoder.encode(key.getInstrument(), UTF_8.name());
 
-            String data = query(URL_TRADE + product);
+            String data = request(URL_TRADE + product);
 
             if (StringUtils.isEmpty(data)) {
                 return null;

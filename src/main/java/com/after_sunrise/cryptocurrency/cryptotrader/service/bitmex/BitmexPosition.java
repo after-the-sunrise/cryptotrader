@@ -15,9 +15,15 @@ import java.math.BigDecimal;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class BitmexPosition {
 
+    /**
+     * "XTBUSD", "XBTZ17", "XBJZ17", ".BXBT"
+     */
     @SerializedName("symbol")
     private String symbol;
 
+    /**
+     * Number of contracts.
+     */
     @SerializedName("currentQty")
     private BigDecimal quantity;
 

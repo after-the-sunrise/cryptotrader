@@ -4,14 +4,11 @@ import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateCo
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.*;
-import org.apache.commons.configuration2.Configuration;
-import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -22,7 +19,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.lang.System.getProperty;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonMap;
@@ -37,13 +33,11 @@ public class OandaContext extends TemplateContext implements OandaService {
 
     private static final String KEY_TICKER = "prices";
 
+    private static final String AUTH_PROP = OandaContext.class.getName() + ".api.secret";
+
     private static final String AUTH_KEY = "Authorization";
 
     private static final String AUTH_VAL = "Bearer ";
-
-    private static final String AUTH_PATH = Paths.get(getProperty("user.home"), ".oandajp").toAbsolutePath().toString();
-
-    private static final String AUTH_PROP = "OJP_TOKEN";
 
     private static final Type TYPE_TICKER = new TypeToken<Map<String, List<OandaTick>>>() {
     }.getType();
@@ -78,28 +72,11 @@ public class OandaContext extends TemplateContext implements OandaService {
     }
 
     @VisibleForTesting
-    String getToken(String path, String key) {
-
-        try {
-
-            Configuration conf = new Configurations().properties(path);
-
-            return conf.getString(key);
-
-        } catch (Exception e) {
-
-            return null;
-
-        }
-
-    }
-
-    @VisibleForTesting
     Optional<OandaTick> queryTick(Key key) {
 
         OandaTick tick = findCached(OandaTick.class, key, () -> {
 
-            String token = getToken(AUTH_PATH, AUTH_PROP);
+            String token = getStringProperty(AUTH_PROP, null);
 
             if (StringUtils.isEmpty(token)) {
                 return null;
@@ -107,7 +84,9 @@ public class OandaContext extends TemplateContext implements OandaService {
 
             String product = URLEncoder.encode(key.getInstrument(), UTF_8.name());
 
-            String data = query(URL_TICKER + product, singletonMap(AUTH_KEY, AUTH_VAL + token));
+            Map<String, String> parameters = singletonMap(AUTH_KEY, AUTH_VAL + token);
+
+            String data = request(RequestType.GET, URL_TICKER + product, parameters, null);
 
             if (StringUtils.isEmpty(data)) {
                 return null;

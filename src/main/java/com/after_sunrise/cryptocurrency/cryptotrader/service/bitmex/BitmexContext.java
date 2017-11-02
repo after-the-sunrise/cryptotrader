@@ -1,6 +1,7 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
@@ -9,8 +10,6 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.configuration2.Configuration;
-import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
 
@@ -21,21 +20,20 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLEncoder;
-import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
 
-import static java.lang.System.getProperty;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
 import static java.math.BigDecimal.ZERO;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonMap;
-import static javax.ws.rs.HttpMethod.GET;
+import static java.util.Collections.*;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
 /**
@@ -44,7 +42,9 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
  */
 public class BitmexContext extends TemplateContext implements BitmexService {
 
-    static final String CONF = Paths.get(getProperty("user.home"), ".bitmex").toAbsolutePath().toString();
+    static final String API_ID = BitmexContext.class.getName() + ".api.id";
+
+    static final String API_SECRET = BitmexContext.class.getName() + ".api.secret";
 
     static final String URL = "https://www.bitmex.com";
 
@@ -55,6 +55,10 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     static final String URL_POSITION = "/api/v1/position";
 
     static final String URL_MARGIN = "/api/v1/user/margin";
+
+    static final String URL_ORDER = "/api/v1/order";
+
+    static final String URL_EXECUTION = "/api/v1/execution/tradeHistory";
 
     private static final Type TYPE_TICKER = new TypeToken<List<BitmexTick>>() {
     }.getType();
@@ -67,6 +71,14 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
     private static final Type TYPE_MARGIN = new TypeToken<List<BitmexMargin>>() {
     }.getType();
+
+    private static final Type TYPE_ORDER = new TypeToken<List<BitmexOrder>>() {
+    }.getType();
+
+    private static final Type TYPE_EXECUTION = new TypeToken<List<BitmexExecution>>() {
+    }.getType();
+
+    private static final Duration TIMEOUT = Duration.ofMinutes(3);
 
     private final Gson gson;
 
@@ -82,11 +94,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
             @Override
             public Instant deserialize(JsonElement j, Type t, JsonDeserializationContext c) throws JsonParseException {
-
-                ZonedDateTime timestamp = ZonedDateTime.parse(j.getAsString(), FMT);
-
-                return timestamp.toInstant();
-
+                return ZonedDateTime.parse(j.getAsString(), FMT).toInstant();
             }
 
         });
@@ -104,7 +112,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         List<BitmexTick> ticks = listCached(BitmexTick.class, key, () -> {
 
-            String data = query(URL + URL_TICKER);
+            String data = request(GET, URL + URL_TICKER, null, null);
 
             if (StringUtils.isEmpty(data)) {
                 return null;
@@ -157,7 +165,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
             String instrument = URLEncoder.encode(key.getInstrument(), UTF_8.name());
 
-            String data = query(URL + URL_TRADE + instrument);
+            String data = request(URL + URL_TRADE + instrument);
 
             if (StringUtils.isEmpty(data)) {
                 return null;
@@ -174,37 +182,8 @@ public class BitmexContext extends TemplateContext implements BitmexService {
         return trades.stream()
                 .filter(Objects::nonNull)
                 .filter(t -> t.getTimestamp() != null)
-                .filter(t -> fromTime == null || t.getTimestamp().isAfter(fromTime))
-                .collect(Collectors.toList());
-
-    }
-
-    @VisibleForTesting
-    String prepareParameters(Map<String, String> parameters) throws IOException {
-
-        if (MapUtils.isEmpty(parameters)) {
-            return StringUtils.EMPTY;
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        for (Map.Entry<String, String> entry : parameters.entrySet()) {
-
-            if (StringUtils.isEmpty(entry.getKey())) {
-                continue;
-            }
-
-            if (StringUtils.isEmpty(entry.getValue())) {
-                continue;
-            }
-
-            sb.append(URLEncoder.encode(entry.getKey(), UTF_8.name()));
-            sb.append('=');
-            sb.append(URLEncoder.encode(entry.getValue(), UTF_8.name()));
-
-        }
-
-        return sb.length() == 0 ? StringUtils.EMPTY : "?" + sb.toString();
+                .filter(t -> fromTime == null || !fromTime.isAfter(t.getTimestamp()))
+                .collect(toList());
 
     }
 
@@ -238,27 +217,48 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     }
 
     @VisibleForTesting
-    String executePrivate(String url, Map<String, String> parameters, Object data) throws Exception {
+    String executePrivate(RequestType type, String url, Map<String, String> parameters, String data) throws Exception {
 
-        Configuration configuration = new Configurations().properties(CONF);
-        String apiKey = configuration.getString("BITMEX_ID");
-        String secret = configuration.getString("BITMEX_SECRET");
+        String apiKey = getStringProperty(API_ID, null);
+        String secret = getStringProperty(API_SECRET, null);
 
         if (StringUtils.isEmpty(apiKey) || StringUtils.isEmpty(secret)) {
             return null;
         }
 
-        String suffix = prepareParameters(parameters);
+        StringBuilder sb = new StringBuilder();
+
+        if (MapUtils.isNotEmpty(parameters)) {
+
+            for (Map.Entry<String, String> entry : parameters.entrySet()) {
+
+                if (StringUtils.isEmpty(entry.getKey())) {
+                    continue;
+                }
+
+                if (StringUtils.isEmpty(entry.getValue())) {
+                    continue;
+                }
+
+                sb.append(sb.length() == 0 ? "?" : "&");
+                sb.append(URLEncoder.encode(entry.getKey(), UTF_8.name()));
+                sb.append('=');
+                sb.append(URLEncoder.encode(entry.getValue(), UTF_8.name()));
+
+            }
+
+        }
+
+        String suffix = sb.toString();
         String nonce = String.valueOf(getNow().toEpochMilli());
-        String body = data == null ? null : gson.toJson(data);
-        String hash = computeHash(secret, GET, url + suffix, nonce, body);
+        String hash = computeHash(secret, type.name(), url + suffix, nonce, data);
 
         Map<String, String> headers = new HashMap<>();
         headers.put("api-key", apiKey);
         headers.put("api-nonce", nonce);
         headers.put("api-signature", hash);
 
-        return query(URL + url + suffix, headers);
+        return request(type, URL + url + suffix, headers, data);
 
     }
 
@@ -271,7 +271,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         List<BitmexPosition> margins = listCached(BitmexPosition.class, key, () -> {
 
-            String data = executePrivate(URL_POSITION, null, null);
+            String data = executePrivate(GET, URL_POSITION, null, null);
 
             if (StringUtils.isEmpty(data)) {
                 return Collections.emptyList();
@@ -280,8 +280,6 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return Collections.unmodifiableList(gson.fromJson(data, TYPE_POSITION));
 
         });
-
-        // TODO : Convert from contract unit to funding unit
 
         return Optional.ofNullable(margins).orElse(emptyList()).stream()
                 .filter(Objects::nonNull)
@@ -295,13 +293,13 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     @Override
     public BigDecimal getFundingPosition(Key key) {
 
-        if (key == null) {
-            return null;
-        }
+        String currency = queryTick(key).map(BitmexTick::getSettleCurrency).orElse(null);
 
         List<BitmexMargin> margins = listCached(BitmexMargin.class, key, () -> {
 
-            String data = executePrivate(URL_MARGIN, singletonMap("currency", "all"), null);
+            Map<String, String> parameters = singletonMap("currency", "all");
+
+            String data = executePrivate(GET, URL_MARGIN, parameters, null);
 
             if (StringUtils.isEmpty(data)) {
                 return Collections.emptyList();
@@ -311,13 +309,11 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         });
 
-        // TODO : Validate instrument code
-
         return Optional.ofNullable(margins).orElse(emptyList()).stream()
                 .filter(Objects::nonNull)
-                .filter(m -> "XBt".equals(m.getCurrency()))
+                .filter(m -> StringUtils.equals(currency, m.getCurrency()))
                 .findAny()
-                .map(BitmexMargin::getMarginBalance)
+                .map(BitmexMargin::getBalance)
                 .map(v -> v.multiply(SATOSHI))
                 .orElse(null);
 
@@ -383,42 +379,177 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
     @Override
     public ZonedDateTime getExpiry(Key key) {
+        return queryTick(key)
+                .map(BitmexTick::getExpiry)
+                .map(i -> ZonedDateTime.ofInstant(i, ZoneId.of("GMT")))
+                .orElse(null);
+    }
 
-        Instant instant = queryTick(key).map(BitmexTick::getExpiry).orElse(null);
+    @VisibleForTesting
+    List<BitmexOrder> findOrders(Key key) {
 
-        if (instant == null) {
-            return null;
-        }
+        List<BitmexOrder> values = listCached(BitmexOrder.class, key, () -> {
 
-        // TODO : Externalize
+            Map<String, String> parameters = new LinkedHashMap<>();
+            parameters.put("reverse", "true");
+            parameters.put("count", "500");
+            parameters.put("symbol", key.getInstrument());
 
-        return ZonedDateTime.ofInstant(instant, ZoneId.of("GMT"));
+            String data = executePrivate(GET, URL_ORDER, parameters, null);
+
+            if (StringUtils.isEmpty(data)) {
+                return null;
+            }
+
+            return Collections.unmodifiableList(gson.fromJson(data, TYPE_ORDER));
+
+        });
+
+        return Optional.ofNullable(values).orElse(emptyList());
 
     }
 
     @Override
     public Order findOrder(Key key, String id) {
-        return null; // TODO
+        return findOrders(key).stream()
+                .filter(Objects::nonNull)
+                .filter(o -> StringUtils.equals(id, o.getOrderId())
+                        || StringUtils.equals(id, o.getClientId()))
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
     public List<Order> listActiveOrders(Key key) {
-        return null; // TODO
+        return findOrders(key).stream()
+                .filter(Objects::nonNull)
+                .filter(o -> o.getActive() != null)
+                .filter(BitmexOrder::getActive)
+                .collect(toList());
     }
 
     @Override
     public List<Order.Execution> listExecutions(Key key) {
-        return null; // TODO
+
+        List<BitmexExecution> values = listCached(BitmexExecution.class, key, () -> {
+
+            Map<String, String> parameters = new LinkedHashMap<>();
+            parameters.put("count", "500");
+            parameters.put("reverse", "true");
+            parameters.put("symbol", key.getInstrument());
+
+            String data = executePrivate(GET, URL_EXECUTION, parameters, null);
+
+            if (StringUtils.isEmpty(data)) {
+                return null;
+            }
+
+            return Collections.unmodifiableList(gson.fromJson(data, TYPE_EXECUTION));
+
+        });
+
+        return Optional.ofNullable(values).orElse(emptyList()).stream()
+                .filter(Objects::nonNull).collect(toList());
+
     }
 
     @Override
-    public Map<Instruction.CreateInstruction, String> createOrders(Key key, Set<Instruction.CreateInstruction> instructions) {
-        return null; // TODO
+    public Map<CreateInstruction, String> createOrders(Key key, Set<CreateInstruction> instructions) {
+
+        if (CollectionUtils.isEmpty(instructions)) {
+            return Collections.emptyMap();
+        }
+
+        Map<CreateInstruction, CompletableFuture<String>> futures = new IdentityHashMap<>();
+
+        instructions.stream().filter(Objects::nonNull).forEach(i -> {
+
+            futures.put(i, CompletableFuture.supplyAsync(() -> {
+
+                if (i.getPrice() == null || i.getPrice().signum() == 0) {
+                    return null;
+                }
+
+                if (i.getSize() == null || i.getSize().signum() == 0) {
+                    return null;
+                }
+
+                try {
+
+                    List<String> parameters = new ArrayList<>();
+                    parameters.add("symbol=" + URLEncoder.encode(key.getInstrument(), UTF_8.name()));
+                    parameters.add("side=" + (i.getSize().signum() >= 0 ? "Buy" : "Sell"));
+                    parameters.add("orderQty=" + i.getSize().abs().toPlainString());
+                    parameters.add("price=" + i.getPrice().toPlainString());
+                    parameters.add("clOrdID=" + getUniqueId());
+                    parameters.add("ordType=Limit");
+                    parameters.add("execInst=ParticipateDoNotInitiate");
+
+                    String body = StringUtils.join(parameters, "&");
+
+                    String data = executePrivate(RequestType.POST, URL_ORDER, emptyMap(), body);
+
+                    List<BitmexOrder> results = gson.fromJson(data, TYPE_ORDER);
+
+                    return results.stream().findAny().map(BitmexOrder::getClientId).orElse(null);
+
+                } catch (Exception e) {
+
+                    throw new IllegalArgumentException("Create failure : " + i, e);
+
+                }
+
+            }));
+
+        });
+
+        Map<CreateInstruction, String> results = new IdentityHashMap<>();
+
+        futures.forEach((k, v) -> results.put(k, extractQuietly(v, TIMEOUT)));
+
+        return results;
+
     }
 
     @Override
-    public Map<Instruction.CancelInstruction, String> cancelOrders(Key key, Set<Instruction.CancelInstruction> instructions) {
-        return null; // TODO
+    public Map<CancelInstruction, String> cancelOrders(Key key, Set<CancelInstruction> instructions) {
+
+        if (CollectionUtils.isEmpty(instructions)) {
+            return Collections.emptyMap();
+        }
+
+        Map<CancelInstruction, CompletableFuture<String>> futures = new IdentityHashMap<>();
+
+        instructions.stream().filter(Objects::nonNull).forEach(i -> {
+
+            futures.put(i, CompletableFuture.supplyAsync(() -> {
+
+                try {
+
+                    String body = "clOrdID=" + URLEncoder.encode(i.getId(), UTF_8.name());
+
+                    String data = executePrivate(RequestType.DELETE, URL_ORDER, emptyMap(), body);
+
+                    List<BitmexOrder> results = gson.fromJson(data, TYPE_ORDER);
+
+                    return results.stream().findAny().map(BitmexOrder::getClientId).orElse(null);
+
+                } catch (Exception e) {
+
+                    throw new IllegalArgumentException("Cancel failure : " + i, e);
+
+                }
+
+            }));
+
+        });
+
+        Map<CancelInstruction, String> results = new IdentityHashMap<>();
+
+        futures.forEach((k, v) -> results.put(k, extractQuietly(v, TIMEOUT)));
+
+        return results;
+
     }
 
 }

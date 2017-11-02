@@ -69,7 +69,7 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
         CoincheckTick tick = findCached(CoincheckTick.class, key, () -> {
 
-            String data = query(URL_TICKER);
+            String data = request(URL_TICKER);
 
             if (StringUtils.isEmpty(data)) {
                 return null;
@@ -107,7 +107,7 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
         List<CoincheckTrade> values = listCached(CoincheckTrade.class, key, () -> {
 
-            String data = query(URL_TRADE);
+            String data = request(URL_TRADE);
 
             if (StringUtils.isEmpty(data)) {
                 return null;
