@@ -597,6 +597,53 @@ public class PropertyManagerImplTest {
     }
 
     @Test
+    public void testGetHedgeProducts() throws Exception {
+
+        // Default
+        Map<String, Set<String>> targets = target.getHedgeProducts(site, inst);
+        assertEquals(targets.size(), 0);
+
+        // Mocked
+        String value = "exch1:ccy1|exch1:ccy2|exch2:ccy1||exch2:|:ccy2|exch3:ccy2:test|";
+        doReturn(value).when(conf).getString(HEDGE_PRODUCTS.getKey());
+        targets = target.getHedgeProducts(site, inst);
+        assertEquals(targets.size(), 3);
+        assertEquals(targets.get("exch1").size(), 2);
+        assertTrue(targets.get("exch1").contains("ccy1"));
+        assertTrue(targets.get("exch1").contains("ccy2"));
+        assertEquals(targets.get("exch2").size(), 1);
+        assertTrue(targets.get("exch2").contains("ccy1"));
+        assertEquals(targets.get("exch3").size(), 1);
+        assertTrue(targets.get("exch3").contains("ccy2:test"));
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getString(HEDGE_PRODUCTS.getKey());
+        targets = target.getHedgeProducts(site, inst);
+        assertTrue(targets.isEmpty());
+        reset(conf);
+
+        // Overwrite
+        Map<String, Set<String>> newTargets = new TreeMap<>();
+        newTargets.put("s1", Sets.newTreeSet(Arrays.asList("i1", "i2")));
+        newTargets.put("s2", Sets.newTreeSet(Arrays.asList("i2", "i3")));
+        target.setHedgeProducts(site, inst, newTargets);
+        targets = target.getHedgeProducts(site, inst);
+        assertEquals(targets.size(), 2);
+        assertEquals(targets.get("s1").size(), 2, target.toString());
+        assertTrue(targets.get("s1").contains("i2"));
+        assertTrue(targets.get("s1").contains("i2"));
+        assertEquals(targets.get("s2").size(), 2);
+        assertTrue(targets.get("s2").contains("i2"));
+        assertTrue(targets.get("s2").contains("i3"));
+
+        // Clear
+        target.setHedgeProducts(site, inst, null);
+        targets = target.getHedgeProducts(site, inst);
+        assertEquals(targets.size(), 0);
+
+    }
+
+    @Test
     public void testGetEstimators() throws Exception {
 
         assertEquals(target.getEstimators(site, inst), singleton("NullEstimator"));

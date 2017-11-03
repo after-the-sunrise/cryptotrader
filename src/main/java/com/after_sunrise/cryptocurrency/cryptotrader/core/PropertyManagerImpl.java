@@ -376,6 +376,57 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
+    public Map<String, Set<String>> getHedgeProducts(String site, String instrument) {
+
+        String raw = null;
+
+        try {
+
+            raw = get(HEDGE_PRODUCTS, site, instrument, Configuration::getString);
+
+            Map<String, Set<String>> targets = new LinkedHashMap<>();
+
+            for (String entry : split(trimToEmpty(raw), SEPARATOR_ENTRY)) {
+
+                String[] kv = split(entry, SEPARATOR_KEYVAL, 2);
+
+                if (kv.length != 2) {
+                    continue;
+                }
+
+                targets.computeIfAbsent(kv[0], key -> new LinkedHashSet<>()).add(kv[1]);
+
+            }
+
+            log.trace("Fetched {} : {}", HEDGE_PRODUCTS, targets);
+
+            return Collections.unmodifiableMap(targets);
+
+        } catch (RuntimeException e) {
+
+            log.warn(format("Invalid %s : %s", HEDGE_PRODUCTS, raw), e);
+
+            return Collections.emptyMap();
+
+        }
+
+    }
+
+    @Override
+    public void setHedgeProducts(String site, String instrument, Map<String, Set<String>> values) {
+        set(HEDGE_PRODUCTS, site, instrument, values, input -> StringUtils.join(
+                input.entrySet().stream()
+                        .filter(e -> StringUtils.isNotEmpty(e.getKey()))
+                        .filter(e -> CollectionUtils.isNotEmpty(e.getValue()))
+                        .map(entry -> StringUtils.join(entry.getValue().stream()
+                                .filter(StringUtils::isNotEmpty)
+                                .map(v -> entry.getKey() + SEPARATOR_KEYVAL + v)
+                                .toArray(), SEPARATOR_ENTRY))
+                        .toArray()
+                , SEPARATOR_ENTRY));
+    }
+
+    @Override
     public Set<String> getEstimators(String site, String instrument) {
 
         try {
