@@ -19,6 +19,17 @@
         </rollingPolicy>
     </appender>
 
+    <appender name="RQST" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] %msg%n</pattern>
+        </encoder>
+        <file>logs/cryptotrader-request.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/cryptotrader-request_%d{yyyy-MM-dd}.tar.gz</fileNamePattern>
+            <maxHistory>8</maxHistory>
+        </rollingPolicy>
+    </appender>
+
     <appender name="HTTP" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <encoder>
             <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] %msg%n</pattern>
@@ -47,6 +58,11 @@
     </root>
 
     <logger level="DEBUG" name="com.after_sunrise.cryptocurrency"/>
+
+    <logger level="TRACE" additivity="false"
+            name="com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext$RequestType">
+        <appender-ref ref="RQST"/>
+    </logger>
 
     <logger level="TRACE" additivity="false" name="com.after_sunrise.cryptocurrency.bitflyer4j.core.Loggers$HttpLogger">
         <appender-ref ref="HTTP"/>

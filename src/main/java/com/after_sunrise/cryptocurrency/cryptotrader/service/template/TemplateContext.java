@@ -15,11 +15,13 @@ import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpStatus;
-import org.apache.http.client.ResponseHandler;
+import org.apache.http.StatusLine;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -56,7 +58,12 @@ public abstract class TemplateContext implements Context {
 
         POST(HttpPost::new),
 
-        DELETE(HttpDelete::new);
+        DELETE(url -> new HttpPost(url) { // Payload Support
+            @Override
+            public String getMethod() {
+                return DELETE.name();
+            }
+        });
 
         private final Function<String, HttpRequestBase> delegate;
 
@@ -81,6 +88,8 @@ public abstract class TemplateContext implements Context {
         }
 
     }
+
+    private static final Logger LOG = LoggerFactory.getLogger(RequestType.class);
 
     private static final long CACHE_SIZE = Byte.MAX_VALUE;
 
@@ -156,17 +165,11 @@ public abstract class TemplateContext implements Context {
     @VisibleForTesting
     public String request(RequestType type, String path, Map<String, String> headers, String data) throws IOException {
 
-        ResponseHandler<String> handler = response -> {
+        LOG.trace("[SEND][{}][{}][{}] {}", type, path, headers, data);
 
-            int status = response.getStatusLine().getStatusCode();
+        HttpUriRequest request = type.create(path, headers, data);
 
-            if (HttpStatus.SC_OK != status) {
-
-                log.trace("Query failure [{}] : status={}", path, status);
-
-                throw new IOException(response.getStatusLine().getReasonPhrase());
-
-            }
+        return client.execute(request, response -> {
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
 
@@ -174,15 +177,17 @@ public abstract class TemplateContext implements Context {
 
             String body = new String(out.toByteArray(), UTF_8);
 
-            log.trace("Queried [{}] : {}", path, body);
+            StatusLine statusLine = response.getStatusLine();
 
-            return body;
+            LOG.trace("[RECV][{}][{}] {}", statusLine, response.getAllHeaders(), body);
 
-        };
+            if (HttpStatus.SC_OK == statusLine.getStatusCode()) {
+                return body;
+            }
 
-        HttpUriRequest request = type.create(path, headers, data);
+            throw new IOException(statusLine + " : " + body);
 
-        return client.execute(request, handler);
+        });
 
     }
 

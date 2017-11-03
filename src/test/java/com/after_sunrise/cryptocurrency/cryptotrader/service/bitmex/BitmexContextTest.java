@@ -8,6 +8,8 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType;
 import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -28,8 +30,7 @@ import static java.math.BigDecimal.valueOf;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
+import static java.util.Collections.*;
 import static java.util.Optional.of;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -112,11 +113,9 @@ public class BitmexContextTest {
         Thread.sleep(TimeUnit.SECONDS.toMillis(3));
 
         ids.forEach((k, v) -> {
-
             System.out.println("CND : " + target.cancelOrders(key, Collections.singleton(
                     CancelInstruction.builder().id(v).build()
             )));
-
         });
 
     }
@@ -335,6 +334,7 @@ public class BitmexContextTest {
             assertEquals(i.getArgumentAt(3, String.class), "test data");
 
             Map<?, ?> headers = i.getArgumentAt(2, Map.class);
+            assertEquals(headers.remove("Content-Type"), "application/json");
             assertEquals(headers.remove("api-nonce"), "12345");
             assertEquals(headers.remove("api-key"), "my_id");
             assertEquals(headers.remove("api-signature"),
@@ -673,11 +673,20 @@ public class BitmexContextTest {
             assertEquals(i.getArgumentAt(0, RequestType.class), POST);
             assertEquals(i.getArgumentAt(1, String.class), "/api/v1/order");
             assertEquals(i.getArgumentAt(2, Map.class), emptyMap());
-            assertEquals(i.getArgumentAt(3, String.class),
-                    "symbol=XBTZ17&side=Buy&orderQty=10&price=1&clOrdID=uid1&ordType=Limit&execInst=ParticipateDoNotInitiate"
-            );
+            String data = i.getArgumentAt(3, String.class);
 
-            return "[{'clOrdID':'cid1'}]";
+            Map<String, String> map = new Gson().fromJson(data, new TypeToken<Map<String, String>>() {
+            }.getType());
+            assertEquals(map.remove("clOrdID"), "uid1");
+            assertEquals(map.remove("execInst"), "ParticipateDoNotInitiate");
+            assertEquals(map.remove("ordType"), "Limit");
+            assertEquals(map.remove("orderQty"), "10");
+            assertEquals(map.remove("price"), "1");
+            assertEquals(map.remove("side"), "Buy");
+            assertEquals(map.remove("symbol"), "XBTZ17");
+            assertEquals(map.size(), 0, map.toString());
+
+            return new Gson().toJson(singletonMap("clOrdID", "cid1"));
 
         }).when(target).executePrivate(any(), any(), any(), any());
 
@@ -709,11 +718,20 @@ public class BitmexContextTest {
             assertEquals(i.getArgumentAt(0, RequestType.class), POST);
             assertEquals(i.getArgumentAt(1, String.class), "/api/v1/order");
             assertEquals(i.getArgumentAt(2, Map.class), emptyMap());
-            assertEquals(i.getArgumentAt(3, String.class),
-                    "symbol=XBTZ17&side=Sell&orderQty=10&price=1&clOrdID=uid1&ordType=Limit&execInst=ParticipateDoNotInitiate"
-            );
+            String data = i.getArgumentAt(3, String.class);
 
-            return "[{'clOrdID':'cid1'}]";
+            Map<String, String> map = new Gson().fromJson(data, new TypeToken<Map<String, String>>() {
+            }.getType());
+            assertEquals(map.remove("clOrdID"), "uid1");
+            assertEquals(map.remove("execInst"), "ParticipateDoNotInitiate");
+            assertEquals(map.remove("ordType"), "Limit");
+            assertEquals(map.remove("orderQty"), "10");
+            assertEquals(map.remove("price"), "1");
+            assertEquals(map.remove("side"), "Sell");
+            assertEquals(map.remove("symbol"), "XBTZ17");
+            assertEquals(map.size(), 0, map.toString());
+
+            return new Gson().toJson(singletonMap("clOrdID", "cid1"));
 
         }).when(target).executePrivate(any(), any(), any(), any());
 
@@ -743,14 +761,18 @@ public class BitmexContextTest {
             assertEquals(i.getArgumentAt(0, RequestType.class), DELETE);
             assertEquals(i.getArgumentAt(1, String.class), "/api/v1/order");
             assertEquals(i.getArgumentAt(2, Map.class), emptyMap());
-            assertEquals(i.getArgumentAt(3, String.class), "clOrdID=foo");
+            String data = i.getArgumentAt(3, String.class);
 
-            return "[{'clOrdID':'cid1'}]";
+            Map<String, String> map = new Gson().fromJson(data, new TypeToken<Map<String, String>>() {
+            }.getType());
+            assertEquals(map.remove("clOrdID"), "uid1");
+
+            return new Gson().toJson(singleton(singletonMap("clOrdID", "cid1")));
 
         }).when(target).executePrivate(any(), any(), any(), any());
 
         CancelInstruction i1 = CancelInstruction.builder().id(null).build();
-        CancelInstruction i2 = CancelInstruction.builder().id("foo").build();
+        CancelInstruction i2 = CancelInstruction.builder().id("uid1").build();
 
         Key key = Key.builder().instrument("XBTZ17").build();
         Map<CancelInstruction, String> result = target.cancelOrders(key, Sets.newHashSet(i1, null, i2));

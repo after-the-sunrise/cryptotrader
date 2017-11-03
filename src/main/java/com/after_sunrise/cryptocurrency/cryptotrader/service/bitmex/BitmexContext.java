@@ -249,6 +249,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
         String hash = computeHash(secret, type.name(), url + suffix, nonce, data);
 
         Map<String, String> headers = new HashMap<>();
+        headers.put("Content-Type", "application/json");
         headers.put("api-key", apiKey);
         headers.put("api-nonce", nonce);
         headers.put("api-signature", hash);
@@ -432,7 +433,8 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     public Order findOrder(Key key, String id) {
         return findOrders(key).stream()
                 .filter(Objects::nonNull)
-                .filter(o -> StringUtils.isNotEmpty(id) && StringUtils.equalsAny(id, o.getOrderId(), o.getClientId()))
+                .filter(o -> StringUtils.isNotEmpty(id))
+                .filter(o -> StringUtils.equalsAny(id, o.getOrderId(), o.getClientId()))
                 .findFirst()
                 .orElse(null);
     }
@@ -494,22 +496,20 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
                 try {
 
-                    List<String> parameters = new ArrayList<>();
-                    parameters.add("symbol=" + URLEncoder.encode(key.getInstrument(), UTF_8.name()));
-                    parameters.add("side=" + (i.getSize().signum() >= 0 ? BUY : SELL).getId());
-                    parameters.add("orderQty=" + i.getSize().abs().toPlainString());
-                    parameters.add("price=" + i.getPrice().toPlainString());
-                    parameters.add("clOrdID=" + getUniqueId());
-                    parameters.add("ordType=Limit");
-                    parameters.add("execInst=ParticipateDoNotInitiate");
+                    Map<String, Object> data = new TreeMap<>();
+                    data.put("symbol", key.getInstrument());
+                    data.put("side", (i.getSize().signum() >= 0 ? BUY : SELL).getId());
+                    data.put("orderQty", i.getSize().abs().toPlainString());
+                    data.put("price", i.getPrice().toPlainString());
+                    data.put("clOrdID", getUniqueId());
+                    data.put("ordType", "Limit");
+                    data.put("execInst", "ParticipateDoNotInitiate");
 
-                    String body = StringUtils.join(parameters, "&");
+                    String result = executePrivate(RequestType.POST, URL_ORDER, emptyMap(), gson.toJson(data));
 
-                    String data = executePrivate(RequestType.POST, URL_ORDER, emptyMap(), body);
+                    BitmexOrder results = gson.fromJson(result, BitmexOrder.class);
 
-                    List<BitmexOrder> results = gson.fromJson(data, TYPE_ORDER);
-
-                    return results.stream().findAny().map(BitmexOrder::getClientId).orElse(null);
+                    return results.getClientId();
 
                 } catch (Exception e) {
 
@@ -544,11 +544,11 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
                 try {
 
-                    String body = "clOrdID=" + URLEncoder.encode(i.getId(), UTF_8.name());
+                    String data = gson.toJson(singletonMap("clOrdID", i.getId()));
 
-                    String data = executePrivate(RequestType.DELETE, URL_ORDER, emptyMap(), body);
+                    String result = executePrivate(RequestType.DELETE, URL_ORDER, emptyMap(), data);
 
-                    List<BitmexOrder> results = gson.fromJson(data, TYPE_ORDER);
+                    List<BitmexOrder> results = gson.fromJson(result, TYPE_ORDER);
 
                     return results.stream().findAny().map(BitmexOrder::getClientId).orElse(null);
 
