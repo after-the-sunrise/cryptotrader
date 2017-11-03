@@ -127,11 +127,6 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     }
 
     @Override
-    protected void clear() {
-        super.clear();
-    }
-
-    @Override
     public void onBoards(String product, Board value) {
         // Do nothing
     }

@@ -186,7 +186,8 @@ public abstract class TemplateContext implements Context {
 
     }
 
-    protected void clear() {
+    @VisibleForTesting
+    public void clear() {
 
         log.trace("Clearing cache.");
 
