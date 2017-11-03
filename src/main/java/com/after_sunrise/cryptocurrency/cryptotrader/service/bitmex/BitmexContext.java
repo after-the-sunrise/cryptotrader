@@ -7,7 +7,9 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -25,14 +27,16 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType.BUY;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType.SELL;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
 import static java.math.BigDecimal.ZERO;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.*;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
@@ -88,16 +92,9 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         GsonBuilder builder = new GsonBuilder();
 
-        builder.registerTypeAdapter(Instant.class, new JsonDeserializer<Instant>() {
-
-            private final DateTimeFormatter FMT = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.of("GMT"));
-
-            @Override
-            public Instant deserialize(JsonElement j, Type t, JsonDeserializationContext c) throws JsonParseException {
-                return ZonedDateTime.parse(j.getAsString(), FMT).toInstant();
-            }
-
-        });
+        builder.registerTypeAdapter(Instant.class,
+                (JsonDeserializer<Instant>) (j, t, c) -> Instant.parse(j.getAsString())
+        );
 
         gson = builder.create();
 
@@ -110,7 +107,9 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return Optional.empty();
         }
 
-        List<BitmexTick> ticks = listCached(BitmexTick.class, key, () -> {
+        Key newKey = Key.build(key).instrument(WILDCARD).build();
+
+        List<BitmexTick> ticks = listCached(BitmexTick.class, newKey, () -> {
 
             String data = request(GET, URL + URL_TICKER, null, null);
 
@@ -175,11 +174,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         });
 
-        if (CollectionUtils.isEmpty(trades)) {
-            return Collections.emptyList();
-        }
-
-        return trades.stream()
+        return ofNullable(trades).orElse(emptyList()).stream()
                 .filter(Objects::nonNull)
                 .filter(t -> t.getTimestamp() != null)
                 .filter(t -> fromTime == null || !fromTime.isAfter(t.getTimestamp()))
@@ -269,7 +264,9 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return null;
         }
 
-        List<BitmexPosition> margins = listCached(BitmexPosition.class, key, () -> {
+        Key newKey = Key.build(key).instrument(WILDCARD).build();
+
+        List<BitmexPosition> positions = listCached(BitmexPosition.class, newKey, () -> {
 
             String data = executePrivate(GET, URL_POSITION, null, null);
 
@@ -281,12 +278,16 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         });
 
-        return Optional.ofNullable(margins).orElse(emptyList()).stream()
+        if (CollectionUtils.isEmpty(positions)) {
+            return null;
+        }
+
+        return positions.stream()
                 .filter(Objects::nonNull)
                 .filter(p -> StringUtils.equals(p.getSymbol(), key.getInstrument()))
                 .findAny()
                 .map(BitmexPosition::getQuantity)
-                .orElse(null);
+                .orElse(ZERO);
 
     }
 
@@ -294,6 +295,10 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     public BigDecimal getFundingPosition(Key key) {
 
         String currency = queryTick(key).map(BitmexTick::getSettleCurrency).orElse(null);
+
+        if (StringUtils.isEmpty(currency)) {
+            return null;
+        }
 
         List<BitmexMargin> margins = listCached(BitmexMargin.class, key, () -> {
 
@@ -309,13 +314,17 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         });
 
-        return Optional.ofNullable(margins).orElse(emptyList()).stream()
+        if (CollectionUtils.isEmpty(margins)) {
+            return null;
+        }
+
+        return margins.stream()
                 .filter(Objects::nonNull)
                 .filter(m -> StringUtils.equals(currency, m.getCurrency()))
                 .findAny()
                 .map(BitmexMargin::getBalance)
                 .map(v -> v.multiply(SATOSHI))
-                .orElse(null);
+                .orElse(ZERO);
 
     }
 
@@ -364,17 +373,27 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     @Override
     public BigDecimal getCommissionRate(Key key) {
 
-        BigDecimal maker = queryTick(key).map(BitmexTick::getMakerFee).orElse(ZERO);
+        Optional<BitmexTick> tick = queryTick(key);
 
-        BigDecimal clear = queryTick(key).map(BitmexTick::getClearFee).orElse(ZERO);
+        BigDecimal rate = null;
 
-        return maker.add(clear);
+        if (tick.isPresent()) {
+
+            BigDecimal maker = tick.map(BitmexTick::getMakerFee).orElse(ZERO);
+
+            BigDecimal clear = tick.map(BitmexTick::getSettleFee).orElse(ZERO);
+
+            rate = maker.add(clear);
+
+        }
+
+        return rate;
 
     }
 
     @Override
     public Boolean isMarginable(Key key) {
-        return queryTick(key).map(BitmexTick::getExpiry).isPresent();
+        return Boolean.TRUE;
     }
 
     @Override
@@ -405,7 +424,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         });
 
-        return Optional.ofNullable(values).orElse(emptyList());
+        return ofNullable(values).orElse(emptyList());
 
     }
 
@@ -413,8 +432,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     public Order findOrder(Key key, String id) {
         return findOrders(key).stream()
                 .filter(Objects::nonNull)
-                .filter(o -> StringUtils.equals(id, o.getOrderId())
-                        || StringUtils.equals(id, o.getClientId()))
+                .filter(o -> StringUtils.isNotEmpty(id) && StringUtils.equalsAny(id, o.getOrderId(), o.getClientId()))
                 .findFirst()
                 .orElse(null);
     }
@@ -448,7 +466,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         });
 
-        return Optional.ofNullable(values).orElse(emptyList()).stream()
+        return ofNullable(values).orElse(emptyList()).stream()
                 .filter(Objects::nonNull).collect(toList());
 
     }
@@ -478,7 +496,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
                     List<String> parameters = new ArrayList<>();
                     parameters.add("symbol=" + URLEncoder.encode(key.getInstrument(), UTF_8.name()));
-                    parameters.add("side=" + (i.getSize().signum() >= 0 ? "Buy" : "Sell"));
+                    parameters.add("side=" + (i.getSize().signum() >= 0 ? BUY : SELL).getId());
                     parameters.add("orderQty=" + i.getSize().abs().toPlainString());
                     parameters.add("price=" + i.getPrice().toPlainString());
                     parameters.add("clOrdID=" + getUniqueId());

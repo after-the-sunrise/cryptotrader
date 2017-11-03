@@ -41,7 +41,6 @@ public class BitmexTrade implements Trade {
     @SerializedName("size")
     private BigDecimal size;
 
-
     @Override
     public String getBuyOrderId() {
         return id;

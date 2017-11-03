@@ -98,6 +98,6 @@ public class BitmexTick {
      * Expiry fee in real number. (1 bps = "0.0001")
      */
     @SerializedName("settlementFee")
-    private BigDecimal clearFee;
+    private BigDecimal settleFee;
 
 }

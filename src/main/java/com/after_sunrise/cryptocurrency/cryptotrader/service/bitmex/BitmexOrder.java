@@ -1,10 +1,14 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
+import com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType;
 import com.google.gson.annotations.SerializedName;
 import lombok.*;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
+
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType.BUY;
 
 /**
  * @author takanori.takase
@@ -59,23 +63,38 @@ public class BitmexOrder implements Order {
      * Order quantity.
      */
     @SerializedName("orderQty")
-    private BigDecimal orderQuantity;
+    private BigDecimal quantity;
 
     /**
      * Filled quantity.
      */
     @SerializedName("cumQty")
-    private BigDecimal filledQuantity;
+    private BigDecimal filled;
 
     /**
      * Remaining quantity.
      */
     @SerializedName("leavesQty")
-    private BigDecimal remainingQuantity;
+    private BigDecimal remaining;
 
     @Override
     public String getId() {
-        return clientId != null ? clientId : orderId;
+        return StringUtils.isNotEmpty(clientId) ? clientId : orderId;
+    }
+
+    @Override
+    public BigDecimal getOrderQuantity() {
+        return quantity == null || BUY == SideType.find(side) ? quantity : quantity.negate();
+    }
+
+    @Override
+    public BigDecimal getFilledQuantity() {
+        return filled == null || BUY == SideType.find(side) ? filled : filled.negate();
+    }
+
+    @Override
+    public BigDecimal getRemainingQuantity() {
+        return remaining == null || BUY == SideType.find(side) ? remaining : remaining.negate();
     }
 
 }

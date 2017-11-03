@@ -1,11 +1,15 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
+import com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType;
 import com.google.gson.annotations.SerializedName;
 import lombok.*;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType.BUY;
 
 /**
  * @author takanori.takase
@@ -27,13 +31,13 @@ public class BitmexExecution implements Order.Execution {
      * Id assigned by the exchange.
      */
     @SerializedName("orderID")
-    private String orderId;
+    private String oid;
 
     /**
      * Id optionally assigned by the user.
      */
     @SerializedName("clOrdID")
-    private String clientId;
+    private String cid;
 
     /**
      * Execution price.
@@ -57,6 +61,16 @@ public class BitmexExecution implements Order.Execution {
      * Execution quantity.
      */
     @SerializedName("lastQty")
-    private BigDecimal size;
+    private BigDecimal quantity;
+
+    @Override
+    public String getOrderId() {
+        return StringUtils.isNotEmpty(cid) ? cid : oid;
+    }
+
+    @Override
+    public BigDecimal getSize() {
+        return quantity == null || BUY == SideType.find(side) ? quantity : quantity.negate();
+    }
 
 }
