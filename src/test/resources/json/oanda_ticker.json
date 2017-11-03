@@ -1,11 +1,17 @@
 {
   "prices": [
     {
+      "instrument": "FOO_BAR",
+      "time": "2017-09-15T20:59:58.000000Z",
+      "bid": 110.000,
+      "ask": 120.000,
+      "status": "halted"
+    },
+    {
       "instrument": "USD_JPY",
       "time": "2017-09-15T20:59:58.654262Z",
       "bid": 110.819,
-      "ask": 110.859,
-      "status": "halted"
+      "ask": 110.859
     }
   ]
 }

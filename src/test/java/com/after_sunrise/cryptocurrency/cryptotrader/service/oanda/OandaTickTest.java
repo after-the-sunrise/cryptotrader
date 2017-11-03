@@ -21,13 +21,14 @@ public class OandaTickTest {
                 .bid(BigDecimal.valueOf(2))
                 .instrument("USD_JPY")
                 .timestamp(Instant.ofEpochMilli(1234567890L))
+                .status(null)
                 .build();
 
         assertEquals(target.getAsk(), BigDecimal.valueOf(1));
         assertEquals(target.getBid(), BigDecimal.valueOf(2));
 
         assertEquals(target.toString(),
-                "OandaTick(instrument=USD_JPY, timestamp=1970-01-15T06:56:07.890Z, ask=1, bid=2)");
+                "OandaTick(instrument=USD_JPY, timestamp=1970-01-15T06:56:07.890Z, status=null, ask=1, bid=2)");
 
     }
 

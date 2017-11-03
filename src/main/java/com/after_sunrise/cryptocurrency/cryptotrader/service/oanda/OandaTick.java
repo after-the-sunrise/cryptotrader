@@ -22,6 +22,9 @@ public class OandaTick {
     @SerializedName("time")
     private Instant timestamp;
 
+    @SerializedName("status")
+    private String status;
+
     @SerializedName("ask")
     private BigDecimal ask;
 

@@ -7,19 +7,15 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
 import static com.google.common.io.Resources.getResource;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.time.temporal.ChronoUnit.HOURS;
 import static java.util.Collections.singletonMap;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
@@ -49,7 +45,10 @@ public class OandaContextTest {
     }
 
     @Test(enabled = false)
-    public void test() throws IOException {
+    public void test() throws Exception {
+
+        Path path = Paths.get(System.getProperty("user.home"), ".cryptotrader");
+        target.setConfiguration(new Configurations().properties(path.toAbsolutePath().toFile()));
 
         doCallRealMethod().when(target).request(any(), any(), any(), any());
 
@@ -68,9 +67,7 @@ public class OandaContextTest {
     @Test
     public void testQueryTick() throws Exception {
 
-        DateTimeFormatter dtf = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.of("GMT"));
-        Instant now = ZonedDateTime.parse("2017-09-15T21:00:00Z", dtf).toInstant();
-        Key.KeyBuilder builder = Key.builder().instrument("USD_JPY").timestamp(now);
+        Key.KeyBuilder builder = Key.builder().instrument("USD_JPY");
 
         String url = OandaContext.URL_TICKER + "USD_JPY";
         String data = Resources.toString(getResource("json/oanda_ticker.json"), UTF_8);
@@ -93,17 +90,16 @@ public class OandaContextTest {
         assertEquals(tick.getBid(), new BigDecimal("110.819"));
         verify(target, times(1)).request(any(), any(), any(), any());
 
-        // Stale
-        assertFalse(target.queryTick(builder.timestamp(now.plus(1, HOURS)).build()).isPresent());
+        // Halted
+        assertFalse(target.queryTick(builder.instrument("FOO_BAR").build()).isPresent());
         verify(target, times(2)).request(any(), any(), any(), any());
 
         // Not found
-        assertFalse(target.queryTick(builder.timestamp(now).instrument("FOO").build()).isPresent());
+        assertFalse(target.queryTick(builder.instrument("FOO").build()).isPresent());
         verify(target, times(3)).request(any(), any(), any(), any());
 
         // No token
         doReturn(null).when(target).getStringProperty(any(), any());
-        assertFalse(target.queryTick(builder.timestamp(now).instrument("BAR").build()).isPresent());
         verify(target, times(3)).request(any(), any(), any(), any());
 
     }

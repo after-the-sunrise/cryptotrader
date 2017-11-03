@@ -9,7 +9,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -39,10 +38,10 @@ public class OandaContext extends TemplateContext implements OandaService {
 
     private static final String AUTH_VAL = "Bearer ";
 
+    private static final String HALTED = "halted";
+
     private static final Type TYPE_TICKER = new TypeToken<Map<String, List<OandaTick>>>() {
     }.getType();
-
-    private static final Duration EXPIRY = Duration.ofMinutes(1);
 
     private final Gson gson;
 
@@ -98,8 +97,7 @@ public class OandaContext extends TemplateContext implements OandaService {
                     .filter(Objects::nonNull)
                     .filter(t -> t.getInstrument() != null)
                     .filter(t -> t.getInstrument().equals(key.getInstrument()))
-                    .filter(t -> t.getTimestamp() != null)
-                    .filter(t -> t.getTimestamp().isAfter(key.getTimestamp().minus(EXPIRY)))
+                    .filter(t -> !HALTED.equals(t.getStatus()))
                     .findFirst().orElse(null);
 
         });
