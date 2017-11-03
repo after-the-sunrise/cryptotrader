@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import static java.math.BigDecimal.valueOf;
+import static java.util.Collections.emptyMap;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -52,8 +53,8 @@ public class PipelineImplTest {
         Estimation estimation = Estimation.builder().build();
         Advice advice = Advice.builder().build();
         List<Instruction> instructions = Collections.emptyList();
-        Map<Instruction, String> results = Collections.emptyMap();
-        Map<Instruction, Boolean> reconcile = Collections.emptyMap();
+        Map<Instruction, String> results = emptyMap();
+        Map<Instruction, Boolean> reconcile = emptyMap();
 
         doReturn(request).when(target).createRequest(now, site, instrument);
         when(module.getMock(Estimator.class).estimate(context, request)).thenReturn(estimation);
@@ -108,6 +109,7 @@ public class PipelineImplTest {
             when(module.getMock(PropertyManager.class).getTradingSplit(any(), any())).thenReturn(valueOf(4));
             when(module.getMock(PropertyManager.class).getTradingDuration(any(), any())).thenReturn(Duration.ZERO);
             when(module.getMock(PropertyManager.class).getFundingOffset(any(), any())).thenReturn(valueOf(5));
+            when(module.getMock(PropertyManager.class).getHedgeProducts(any(), any())).thenReturn(emptyMap());
         };
 
         initializer.run();
@@ -124,6 +126,7 @@ public class PipelineImplTest {
         assertEquals(request.getTradingSplit(), valueOf(4));
         assertEquals(request.getTradingDuration(), Duration.ZERO);
         assertEquals(request.getFundingOffset(), valueOf(5));
+        assertEquals(request.getHedgeProducts(), emptyMap());
 
         // Null Argument
         assertNull(target.createRequest(null, site, instrument));
@@ -168,6 +171,10 @@ public class PipelineImplTest {
 
         initializer.run();
         doReturn(null).when(module.getMock(PropertyManager.class)).getFundingOffset(any(), any());
+        assertNull(target.createRequest(targetTime, site, instrument));
+
+        initializer.run();
+        doReturn(null).when(module.getMock(PropertyManager.class)).getHedgeProducts(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
     }

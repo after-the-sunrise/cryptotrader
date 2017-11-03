@@ -8,6 +8,8 @@ import lombok.ToString;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
+import java.util.Set;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -46,5 +48,7 @@ public class Request {
     private Duration tradingDuration;
 
     private BigDecimal fundingOffset;
+
+    private Map<String, Set<String>> hedgeProducts;
 
 }

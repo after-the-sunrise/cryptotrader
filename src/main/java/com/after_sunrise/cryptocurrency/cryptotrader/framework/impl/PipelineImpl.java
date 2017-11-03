@@ -94,6 +94,7 @@ public class PipelineImpl implements Pipeline {
                 .tradingSplit(propertyManager.getTradingSplit(site, instrument))
                 .tradingDuration(propertyManager.getTradingDuration(site, instrument))
                 .fundingOffset(propertyManager.getFundingOffset(site, instrument))
+                .hedgeProducts(propertyManager.getHedgeProducts(site, instrument))
                 .build();
 
         if (StringUtils.isEmpty(site)) {
@@ -158,6 +159,11 @@ public class PipelineImpl implements Pipeline {
 
         if (request.getFundingOffset() == null) {
             log.warn("Invalid request : funding offset");
+            return null;
+        }
+
+        if (request.getHedgeProducts() == null) {
+            log.warn("Invalid request : hedge products");
             return null;
         }
 
