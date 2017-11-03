@@ -2,6 +2,8 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
+import org.apache.commons.configuration2.ImmutableConfiguration;
+import org.apache.commons.configuration2.ex.ConversionException;
 import org.jboss.resteasy.plugins.server.undertow.UndertowJaxrsServer;
 import org.jboss.resteasy.test.TestPortProvider;
 import org.testng.annotations.AfterMethod;
@@ -20,6 +22,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
@@ -67,9 +70,17 @@ public class TemplateContextTest {
 
     private TemplateContext target;
 
+    private ImmutableConfiguration configuration;
+
     @BeforeMethod
     public void setUp() {
+
+        configuration = mock(ImmutableConfiguration.class);
+
         target = spy(new TestContext());
+
+        target.setConfiguration(configuration);
+
     }
 
     @AfterMethod
@@ -88,6 +99,28 @@ public class TemplateContextTest {
     }
 
     @Test
+    public void testGetStringProperty() {
+
+        when(configuration.getString("foo", "bar")).thenReturn("hoge");
+        assertEquals(target.getStringProperty("foo", "bar"), "hoge");
+
+        when(configuration.getString("foo", "bar")).thenThrow(new ConversionException("test"));
+        assertEquals(target.getStringProperty("foo", "bar"), "bar");
+
+    }
+
+    @Test
+    public void testGetDecimalProperty() {
+
+        when(configuration.getBigDecimal("foo", ONE)).thenReturn(TEN);
+        assertEquals(target.getDecimalProperty("foo", ONE), TEN);
+
+        when(configuration.getBigDecimal("foo", ONE)).thenThrow(new ConversionException("test"));
+        assertEquals(target.getDecimalProperty("foo", ONE), ONE);
+
+    }
+
+    @Test
     public void testGetNow() throws InterruptedException {
 
         Instant t0 = Instant.now();
@@ -100,6 +133,16 @@ public class TemplateContextTest {
 
         assertTrue(t0.isBefore(t1));
         assertTrue(t1.isBefore(t2));
+
+    }
+
+    @Test
+    public void testGetUniqueId() {
+
+        Set<String> ids = new TreeSet<>();
+        assertTrue(ids.add(target.getUniqueId()));
+        assertTrue(ids.add(target.getUniqueId()));
+        assertTrue(ids.add(target.getUniqueId()));
 
     }
 

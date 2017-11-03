@@ -10,8 +10,8 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.beanutils.ConversionException;
-import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.ImmutableConfiguration;
+import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpStatus;
@@ -103,7 +103,7 @@ public abstract class TemplateContext implements Context {
 
     private final CloseableHttpClient client;
 
-    private Configuration configuration;
+    private ImmutableConfiguration configuration;
 
     protected TemplateContext(String id) {
 
@@ -125,7 +125,7 @@ public abstract class TemplateContext implements Context {
 
     @Inject
     @VisibleForTesting
-    public void setConfiguration(Configuration configuration) {
+    public void setConfiguration(ImmutableConfiguration configuration) {
         this.configuration = configuration;
     }
 
