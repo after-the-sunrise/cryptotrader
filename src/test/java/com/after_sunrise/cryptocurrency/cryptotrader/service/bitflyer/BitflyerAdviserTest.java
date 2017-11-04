@@ -4,6 +4,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType;
 import org.apache.commons.configuration2.MapConfiguration;
 import org.testng.annotations.BeforeMethod;
@@ -16,12 +17,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ID;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.*;
 import static java.math.BigDecimal.*;
 import static java.math.BigDecimal.valueOf;
@@ -79,7 +79,7 @@ public class BitflyerAdviserTest {
 
     @Test
     public void testGet() {
-        assertEquals(target.get(), BitflyerService.ID);
+        assertEquals(target.get(), ID);
     }
 
     @Test
@@ -231,7 +231,7 @@ public class BitflyerAdviserTest {
 
         BigDecimal offset = new BigDecimal("0.0000");
         Request r1 = Request.builder().instrument(BTC_JPY.name()).build();
-        Request r2 = Request.builder().site(BitflyerService.ID).instrument(BTCJPY_MAT1WK.name()).build();
+        Request r2 = Request.builder().site(ID).instrument(BTCJPY_MAT1WK.name()).build();
 
         Stream.of(
                 new SimpleEntry<>(new BigDecimal("845000"), new BigDecimal("20.0000000000")), // +30%
@@ -246,7 +246,7 @@ public class BitflyerAdviserTest {
                 new SimpleEntry<>(new BigDecimal("520000"), new BigDecimal("-20.0000000000")), // -20%
                 new SimpleEntry<>(new BigDecimal("455000"), new BigDecimal("-20.0000000000")) // -30%
         ).forEach(e -> {
-            when(context.getMidPrice(Key.from(r1))).thenReturn(BigDecimal.valueOf(650000));
+            when(context.getMidPrice(Key.from(r1))).thenReturn(valueOf(650000));
             when(context.getMidPrice(Key.from(r2))).thenReturn(e.getKey());
             assertEquals(target.adjustFundingOffset(context, r1, offset), e.getValue(), e.getKey().toPlainString());
             assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
@@ -254,24 +254,24 @@ public class BitflyerAdviserTest {
 
         // Zero 1
         when(context.getMidPrice(Key.from(r1))).thenReturn(new BigDecimal("0.0"));
-        when(context.getMidPrice(Key.from(r2))).thenReturn(BigDecimal.valueOf(650000));
+        when(context.getMidPrice(Key.from(r2))).thenReturn(valueOf(650000));
         assertEquals(target.adjustFundingOffset(context, r1, offset), offset);
         assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
 
         // Zero 2
-        when(context.getMidPrice(Key.from(r1))).thenReturn(BigDecimal.valueOf(650000));
+        when(context.getMidPrice(Key.from(r1))).thenReturn(valueOf(650000));
         when(context.getMidPrice(Key.from(r2))).thenReturn(new BigDecimal("0.0"));
         assertEquals(target.adjustFundingOffset(context, r1, offset), offset);
         assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
 
         // Null 1
         when(context.getMidPrice(Key.from(r1))).thenReturn(null);
-        when(context.getMidPrice(Key.from(r2))).thenReturn(BigDecimal.valueOf(650000));
+        when(context.getMidPrice(Key.from(r2))).thenReturn(valueOf(650000));
         assertEquals(target.adjustFundingOffset(context, r1, offset), offset);
         assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
 
         // Null 2
-        when(context.getMidPrice(Key.from(r1))).thenReturn(BigDecimal.valueOf(650000));
+        when(context.getMidPrice(Key.from(r1))).thenReturn(valueOf(650000));
         when(context.getMidPrice(Key.from(r2))).thenReturn(null);
         assertEquals(target.adjustFundingOffset(context, r1, offset), offset);
         assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
@@ -279,214 +279,156 @@ public class BitflyerAdviserTest {
     }
 
     @Test
-    public void testGetEquivalentSize() {
+    public void testFindConversionPrice() {
 
-        Request request1 = Request.builder().instrument(FX_BTC_JPY.name()).build();
-        Request request2 = Request.builder().instrument(ETH_BTC.name()).build();
-        when(context.getInstrumentPosition(Key.from(request1))).thenReturn(TEN);
+        when(context.getMidPrice(any())).thenReturn(null);
+        when(context.getMidPrice(Key.builder().instrument(BTC_JPY.name()).build())).thenReturn(valueOf(840000));
+        when(context.getMidPrice(Key.builder().instrument(FX_BTC_JPY.name()).build())).thenReturn(valueOf(830000));
+        when(context.getMidPrice(Key.builder().instrument(BTCJPY_MAT1WK.name()).build())).thenReturn(valueOf(820000));
+        when(context.getMidPrice(Key.builder().instrument(BTCJPY_MAT2WK.name()).build())).thenReturn(valueOf(810000));
+        when(context.getMidPrice(Key.builder().instrument(ETH_BTC.name()).build())).thenReturn(valueOf(4, 1));
+        when(context.getMidPrice(Key.builder().instrument(BCH_BTC.name()).build())).thenReturn(valueOf(6, 1));
 
-        // Mid * Size
-        when(context.getMidPrice(Key.from(request2))).thenReturn(new BigDecimal("0.0765"));
-        when(context.getLastPrice(Key.from(request2))).thenReturn(new BigDecimal("0.0789"));
-        when(context.getInstrumentPosition(Key.from(request2))).thenReturn(new BigDecimal("5.5"));
-        assertEquals(target.getEquivalentSize(context, request1, ETH_BTC), new BigDecimal("0.42075"));
+        for (CurrencyType currency : CurrencyType.values()) {
 
-        // Last * Size
-        when(context.getMidPrice(Key.from(request2))).thenReturn(null);
-        when(context.getLastPrice(Key.from(request2))).thenReturn(new BigDecimal("0.0789"));
-        when(context.getInstrumentPosition(Key.from(request2))).thenReturn(new BigDecimal("5.5"));
-        assertEquals(target.getEquivalentSize(context, request1, ETH_BTC), new BigDecimal("0.43395"));
+            for (ProductType product : ProductType.values()) {
 
-        // Null price
-        when(context.getMidPrice(Key.from(request2))).thenReturn(null);
-        when(context.getLastPrice(Key.from(request2))).thenReturn(null);
-        when(context.getInstrumentPosition(Key.from(request2))).thenReturn(new BigDecimal("5.5"));
-        assertEquals(target.getEquivalentSize(context, request1, ETH_BTC), null);
+                Request request = Request.builder().instrument(product.name()).build();
 
-        // Null price + Flat position
-        when(context.getMidPrice(Key.from(request2))).thenReturn(null);
-        when(context.getLastPrice(Key.from(request2))).thenReturn(null);
-        when(context.getInstrumentPosition(Key.from(request2))).thenReturn(new BigDecimal("0.00"));
-        assertEquals(target.getEquivalentSize(context, request1, ETH_BTC), ZERO);
+                BigDecimal expect = null;
 
-        // Null price + Null Position
-        when(context.getMidPrice(Key.from(request2))).thenReturn(null);
-        when(context.getLastPrice(Key.from(request2))).thenReturn(null);
-        when(context.getInstrumentPosition(Key.from(request2))).thenReturn(null);
-        assertEquals(target.getEquivalentSize(context, request1, ETH_BTC), null);
+                switch (currency) {
+                    case JPY:
+                        switch (product) {
+                            case COLLATERAL_JPY:
+                                expect = ONE;
+                                break;
+                            case BTC_JPY:
+                            case FX_BTC_JPY:
+                            case BTCJPY_MAT1WK:
+                            case BTCJPY_MAT2WK:
+                            case COLLATERAL_BTC:
+                                // First one found = 1 / 840000
+                                expect = new BigDecimal("0.0000011905");
+                                break;
+                        }
+                        break;
+                    case BTC:
+                        switch (product) {
+                            case BTC_JPY:
+                            case FX_BTC_JPY:
+                            case BTCJPY_MAT1WK:
+                            case BTCJPY_MAT2WK:
+                            case COLLATERAL_BTC:
+                                expect = ONE;
+                                break;
+                            case COLLATERAL_JPY:
+                                expect = valueOf(840000);
+                                break;
+                            case ETH_BTC:
+                                expect = new BigDecimal("2.5000000000");
+                                break;
+                            case BCH_BTC:
+                                expect = new BigDecimal("1.6666666667");
+                                break;
+                        }
+                        break;
+                    case ETH:
+                        switch (product) {
+                            case ETH_BTC:
+                                expect = ONE;
+                                break;
+                            case BTC_JPY:
+                            case FX_BTC_JPY:
+                            case BTCJPY_MAT1WK:
+                            case BTCJPY_MAT2WK:
+                            case COLLATERAL_BTC:
+                                expect = new BigDecimal("0.4");
+                                break;
+                        }
+                        break;
+                    case BCH:
+                        switch (product) {
+                            case BCH_BTC:
+                                expect = ONE;
+                                break;
+                            case BTC_JPY:
+                            case FX_BTC_JPY:
+                            case BTCJPY_MAT1WK:
+                            case BTCJPY_MAT2WK:
+                            case COLLATERAL_BTC:
+                                expect = new BigDecimal("0.6");
+                                break;
+                        }
+                        break;
+                }
 
-        // No conversion
-        assertEquals(target.getEquivalentSize(context, request1, FX_BTC_JPY), TEN);
+                String message = String.format("%s -> %s", currency, product);
+                assertEquals(target.findConversionPrice(context, request, currency), expect, message);
 
-    }
+                // Null Currency
+                assertNull(target.findConversionPrice(context, request, null));
 
-    @Test
-    public void testGetHedgeSize() {
+            }
 
-        Request request = Request.builder().instrument(FX_BTC_JPY.name()).build();
-        Key key = Key.from(request);
-        Set<ProductType> products = EnumSet.of(FX_BTC_JPY, BTCJPY_MAT1WK, BTCJPY_MAT2WK);
+            // Unknown Product
+            Request request = Request.builder().site(ID).instrument("foo").build();
+            assertNull(target.findConversionPrice(context, request, currency));
 
-        //
-        // Zero hedged
-        //
-        when(context.getInstrumentPosition(key)).thenReturn(valueOf(0));
+        }
 
-        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), valueOf(0));
+        // Zero Price
+        when(context.getMidPrice(any())).thenReturn(new BigDecimal("0.0"));
 
-        doReturn(valueOf(-1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(valueOf(+1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), valueOf(0));
+        for (CurrencyType currency : CurrencyType.values()) {
 
-        doReturn(valueOf(-2)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(valueOf(+1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), valueOf(+1));
+            for (ProductType product : ProductType.values()) {
 
-        doReturn(valueOf(-1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(valueOf(+2)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), valueOf(-1));
+                Request request = Request.builder().instrument(product.name()).build();
 
-        //
-        // Long hedged
-        //
-        when(context.getInstrumentPosition(key)).thenReturn(valueOf(+1));
+                BigDecimal expect = null;
 
-        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), valueOf(-1));
+                switch (currency) {
+                    case JPY:
+                        switch (product) {
+                            case COLLATERAL_JPY:
+                                expect = ONE;
+                                break;
+                        }
+                        break;
+                    case BTC:
+                        switch (product) {
+                            case BTC_JPY:
+                            case FX_BTC_JPY:
+                            case BTCJPY_MAT1WK:
+                            case BTCJPY_MAT2WK:
+                            case COLLATERAL_BTC:
+                                expect = ONE;
+                                break;
+                        }
+                        break;
+                    case ETH:
+                        switch (product) {
+                            case ETH_BTC:
+                                expect = ONE;
+                                break;
+                        }
+                        break;
+                    case BCH:
+                        switch (product) {
+                            case BCH_BTC:
+                                expect = ONE;
+                                break;
+                        }
+                        break;
+                }
 
-        doReturn(valueOf(-1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(valueOf(+1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), valueOf(-1));
+                String message = String.format("%s -> %s", currency, product);
+                assertEquals(target.findConversionPrice(context, request, currency), expect, message);
 
-        doReturn(valueOf(-2)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(valueOf(+1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), valueOf(0));
+            }
 
-        doReturn(valueOf(-1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(valueOf(+2)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), valueOf(-2));
-
-        //
-        // Short hedged
-        //
-        when(context.getInstrumentPosition(key)).thenReturn(valueOf(-1));
-
-        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), valueOf(+1));
-
-        doReturn(valueOf(-1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(valueOf(+1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), valueOf(+1));
-
-        doReturn(valueOf(-2)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(valueOf(+1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), valueOf(2));
-
-        doReturn(valueOf(-1)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(valueOf(+2)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), valueOf(0));
-
-        //
-        // Null hedged
-        //
-        when(context.getInstrumentPosition(key)).thenReturn(null);
-        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), null);
-
-        when(context.getInstrumentPosition(key)).thenReturn(valueOf(0));
-        doReturn(null).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), null);
-
-        when(context.getInstrumentPosition(key)).thenReturn(valueOf(0));
-        doReturn(valueOf(0)).when(target).getEquivalentSize(context, request, BTCJPY_MAT1WK);
-        doReturn(null).when(target).getEquivalentSize(context, request, BTCJPY_MAT2WK);
-        assertEquals(target.getHedgeSize(context, request, products), null);
-
-    }
-
-    @Test
-    public void testAdjustBuyLimitSize() {
-
-        configurations.put(
-                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerAdviser.products.hedge",
-                "BTCJPY_MAT1WK"
-        );
-
-        BigDecimal size = new BigDecimal("123.45");
-        BigDecimal exposure = new BigDecimal("0.45");
-        Request request1 = Request.builder().instrument(BTCJPY_MAT1WK.name()).tradingExposure(exposure).build();
-        Request request2 = Request.builder().instrument(BTC_JPY.name()).build();
-
-        // 0
-        doReturn(valueOf(0)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.0"));
-        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
-
-        // 1 * 0.45 = 0.45 -> 0.5
-        doReturn(valueOf(+1)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.5"));
-        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
-
-        // 6 * 0.45 = 2.70 -> 2.5
-        doReturn(valueOf(+6)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("2.5"));
-        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
-
-        // No hedge
-        doReturn(valueOf(-1)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustBuyLimitSize(context, request1, size), new BigDecimal("0.0"));
-        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
-
-        // Null Hedge
-        doReturn(null).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustBuyLimitSize(context, request1, size), ZERO);
-        assertEquals(target.adjustBuyLimitSize(context, request2, size), size);
-
-    }
-
-    @Test
-    public void testAdjustSellLimitSize() {
-
-        configurations.put(
-                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerAdviser.products.hedge",
-                "BTCJPY_MAT1WK"
-        );
-
-        BigDecimal size = new BigDecimal("123.45");
-        BigDecimal exposure = new BigDecimal("0.45");
-        Request request1 = Request.builder().instrument(BTCJPY_MAT1WK.name()).tradingExposure(exposure).build();
-        Request request2 = Request.builder().instrument(BTC_JPY.name()).build();
-
-        // 0
-        doReturn(valueOf(0)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.0"));
-        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
-
-        // -1 * 0.45 = 0.45 -> 0.5
-        doReturn(valueOf(-1)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.5"));
-        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
-
-        // -6 * 0.45 = 2.70 -> 2.5
-        doReturn(valueOf(-6)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("2.5"));
-        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
-
-        // No hedge
-        doReturn(valueOf(+1)).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustSellLimitSize(context, request1, size), new BigDecimal("0.0"));
-        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
-
-        // Null Hedge
-        doReturn(null).when(target).getHedgeSize(any(), any(), any());
-        assertEquals(target.adjustSellLimitSize(context, request1, size), ZERO);
-        assertEquals(target.adjustSellLimitSize(context, request2, size), size);
+        }
 
     }
 

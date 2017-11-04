@@ -54,25 +54,27 @@ public interface BitflyerService extends Service {
 
     enum AssetType {
 
-        JPY(ONE),
+        JPY(CurrencyType.JPY),
 
-        BTC(SATOSHI),
+        BTC(CurrencyType.BTC),
 
-        BCH(SATOSHI),
+        BCH(CurrencyType.BCH),
 
-        ETH(SATOSHI),
+        ETH(CurrencyType.ETH),
 
-        ETC(SATOSHI),
+        ETC(CurrencyType.ETC),
 
-        LTC(SATOSHI),
+        LTC(CurrencyType.LTC),
 
-        COLLATERAL(ONE),
+        MONA(CurrencyType.MONA),
 
-        FX_BTC(new BigDecimal("0.001")),
+        COLLATERAL(CurrencyType.JPY),
 
-        FUTURE_BTC1W(new BigDecimal("0.001")),
+        FX_BTC(CurrencyType.BTC),
 
-        FUTURE_BTC2W(new BigDecimal("0.001"));
+        FUTURE_BTC1W(CurrencyType.BTC),
+
+        FUTURE_BTC2W(CurrencyType.BTC);
 
         private static final Map<String, AssetType> NAMES = stream(values()).collect(toMap(AssetType::name, t -> t));
 
@@ -81,26 +83,10 @@ public interface BitflyerService extends Service {
         }
 
         @Getter
-        private final BigDecimal unit;
+        private final CurrencyType currency;
 
-        @Getter
-        private final String code;
-
-        AssetType(BigDecimal unit) {
-            this.unit = unit;
-            this.code = name();
-        }
-
-        public BigDecimal roundToUnit(BigDecimal value, RoundingMode mode) {
-
-            if (value == null || mode == null) {
-                return null;
-            }
-
-            BigDecimal units = value.divide(unit, INTEGER_ZERO, mode);
-
-            return units.multiply(unit);
-
+        AssetType(CurrencyType currency) {
+            this.currency = currency;
         }
 
     }
@@ -148,6 +134,23 @@ public interface BitflyerService extends Service {
             this.tickSize = tickSize;
         }
 
+        public ProductType getUnderlying() {
+
+            ProductType underlying;
+
+            switch (this) {
+                case BTCJPY_MAT1WK:
+                case BTCJPY_MAT2WK:
+                    underlying = BTC_JPY;
+                    break;
+                default:
+                    underlying = null;
+            }
+
+            return underlying;
+
+        }
+
         public BigDecimal roundToLotSize(BigDecimal value, RoundingMode mode) {
 
             if (value == null || mode == null) {
@@ -171,7 +174,6 @@ public interface BitflyerService extends Service {
             return units.multiply(tickSize);
 
         }
-
 
     }
 

@@ -15,13 +15,17 @@ import static java.math.RoundingMode.HALF_UP;
  */
 public interface Service extends Supplier<String> {
 
-    String WILDCARD = "*";
-
     int SCALE = 10;
+
+    String WILDCARD = "*";
 
     BigDecimal HALF = new BigDecimal("0.5");
 
     BigDecimal SATOSHI = new BigDecimal("0.00000001");
+
+    enum CurrencyType {
+        JPY, USD, BTC, BCH, BCG, ETH, ETC, LTC, MONA
+    }
 
     default NavigableMap<Instant, BigDecimal> collapsePrices(List<Trade> values,
                                                              Duration interval, Instant from, Instant to) {

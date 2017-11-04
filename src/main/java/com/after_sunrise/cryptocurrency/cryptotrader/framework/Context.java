@@ -81,6 +81,10 @@ public interface Context extends Service, AutoCloseable {
 
     List<Trade> listTrades(Key key, Instant fromTime);
 
+    CurrencyType getInstrumentCurrency(Key key);
+
+    CurrencyType getFundingCurrency(Key key);
+
     BigDecimal getInstrumentPosition(Key key);
 
     BigDecimal getFundingPosition(Key key);

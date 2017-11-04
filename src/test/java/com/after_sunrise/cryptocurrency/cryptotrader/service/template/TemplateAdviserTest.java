@@ -8,6 +8,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order.Execution;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
+import com.google.common.collect.Sets;
 import org.mockito.invocation.InvocationOnMock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -16,18 +17,16 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.function.BiFunction;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.*;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.SIGNUM_BUY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.SIGNUM_SELL;
 import static java.math.BigDecimal.*;
+import static java.math.BigDecimal.valueOf;
 import static java.time.Instant.now;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
+import static java.util.Collections.*;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
@@ -750,6 +749,11 @@ public class TemplateAdviserTest {
     }
 
     @Test
+    public void testFindConversionPrice() {
+        assertEquals(target.findConversionPrice(null, null, null), ONE);
+    }
+
+    @Test
     public void testCalculateFundingExposureSize() {
 
         Request.RequestBuilder builder = rBuilder.tradingExposure(new BigDecimal("0.10"));
@@ -783,6 +787,11 @@ public class TemplateAdviserTest {
         // Invalid Fund
         when(context.getFundingPosition(any())).thenReturn(null);
         assertEquals(target.calculateFundingExposureSize(context, builder.build(), price), ZERO);
+        when(context.getFundingPosition(any())).thenReturn(new BigDecimal("18000"));
+
+        // Hedge
+        builder = builder.hedgeProducts(singletonMap("foo", singleton("bar")));
+        assertEquals(target.calculateFundingExposureSize(context, builder.build(), price), ZERO);
 
     }
 
@@ -800,6 +809,48 @@ public class TemplateAdviserTest {
         // Invalid Fund
         when(context.getInstrumentPosition(key)).thenReturn(null);
         assertEquals(target.calculateInstrumentExposureSize(context, request), ZERO);
+
+    }
+
+    @Test
+    public void testCalculateInstrumentExposureSize_Hedge() {
+
+        Map<String, Set<String>> hedgeProducts = new HashMap<>();
+        hedgeProducts.put("a", Sets.newHashSet("XBTC", "XETH"));
+        hedgeProducts.put("b", Sets.newHashSet("XBCH"));
+        Request request = rBuilder.hedgeProducts(hedgeProducts).build();
+
+        Runnable initializer = () -> {
+
+            when(context.getInstrumentCurrency(any())).thenReturn(null);
+            when(context.getInstrumentCurrency(Key.builder().site("a").instrument("XBTC").build())).thenReturn(BTC);
+            when(context.getInstrumentCurrency(Key.builder().site("a").instrument("XETH").build())).thenReturn(ETH);
+            when(context.getInstrumentCurrency(Key.builder().site("b").instrument("XBCH").build())).thenReturn(BCH);
+
+            when(context.getInstrumentPosition(any())).thenReturn(null);
+            when(context.getInstrumentPosition(Key.builder().site("a").instrument("XBTC").build())).thenReturn(valueOf(15));
+            when(context.getInstrumentPosition(Key.builder().site("a").instrument("XETH").build())).thenReturn(valueOf(25));
+            when(context.getInstrumentPosition(Key.builder().site("b").instrument("XBCH").build())).thenReturn(valueOf(35));
+
+            doReturn(new BigDecimal("1.0")).when(target).findConversionPrice(context, request, BTC);
+            doReturn(new BigDecimal("0.4")).when(target).findConversionPrice(context, request, ETH);
+            doReturn(new BigDecimal("0.6")).when(target).findConversionPrice(context, request, BCH);
+
+        };
+
+        // [(15 * 1.0) + (25 * 0.4) + (35 * 0.6)] * 0.1 = (15 + 10 + 21) * 0.1 = 4.600
+        initializer.run();
+        assertEquals(target.calculateInstrumentExposureSize(context, request), new BigDecimal("4.600"));
+
+        // No price
+        initializer.run();
+        doReturn(null).when(target).findConversionPrice(any(), any(), any());
+        assertEquals(target.calculateInstrumentExposureSize(context, request), new BigDecimal("0"));
+
+        // No position
+        initializer.run();
+        when(context.getInstrumentCurrency(any())).thenReturn(null);
+        assertEquals(target.calculateInstrumentExposureSize(context, request), new BigDecimal("0"));
 
     }
 

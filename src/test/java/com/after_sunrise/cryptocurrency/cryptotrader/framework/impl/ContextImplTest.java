@@ -8,6 +8,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Cance
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -166,6 +167,28 @@ public class ContextImplTest {
         when(contexts.get("c1").listTrades(key, from)).thenReturn(value);
 
         assertEquals(target.listTrades(key, from), value);
+
+    }
+
+    @Test
+    public void testGetInstrumentCurrency() {
+
+        CurrencyType value = CurrencyType.JPY;
+
+        when(contexts.get("c1").getInstrumentCurrency(key)).thenReturn(value);
+
+        assertEquals(target.getInstrumentCurrency(key), value);
+
+    }
+
+    @Test
+    public void testGetFundingCurrency() {
+
+        CurrencyType value = CurrencyType.JPY;
+
+        when(contexts.get("c1").getFundingCurrency(key)).thenReturn(value);
+
+        assertEquals(target.getFundingCurrency(key), value);
 
     }
 

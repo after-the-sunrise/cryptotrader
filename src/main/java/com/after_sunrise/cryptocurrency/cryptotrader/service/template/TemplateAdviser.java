@@ -5,21 +5,19 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.MapUtils;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.List;
-import java.util.NavigableMap;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.DoubleStream;
 
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.*;
 import static java.time.temporal.ChronoUnit.MILLIS;
-import static java.util.Collections.emptyList;
+import static java.util.Collections.*;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
@@ -558,6 +556,12 @@ public class TemplateAdviser implements Adviser {
     @VisibleForTesting
     BigDecimal calculateFundingExposureSize(Context context, Request request, BigDecimal price) {
 
+        Map<String, Set<String>> hedgeProducts = request.getHedgeProducts();
+
+        if (MapUtils.isNotEmpty(hedgeProducts)) {
+            return ZERO;
+        }
+
         if (price == null || price.signum() == 0) {
 
             log.trace("No funding exposure size. Price : {}", price);
@@ -599,13 +603,49 @@ public class TemplateAdviser implements Adviser {
 
         Key key = Key.from(request);
 
-        BigDecimal position = context.getInstrumentPosition(key);
+        Map<String, Set<String>> hedgeProducts = request.getHedgeProducts();
 
-        if (position == null) {
+        if (MapUtils.isEmpty(hedgeProducts)) {
 
-            log.trace("No instrument exposure size. Null instrument position.");
+            hedgeProducts = singletonMap(request.getSite(), singleton(request.getInstrument()));
 
-            return ZERO;
+        }
+
+        BigDecimal position = ZERO;
+
+        for (Map.Entry<String, Set<String>> entry : hedgeProducts.entrySet()) {
+
+            String site = entry.getKey();
+
+            for (String instrument : entry.getValue()) {
+
+                Key hedgeKey = Key.build(key).site(site).instrument(instrument).build();
+
+                CurrencyType currency = context.getInstrumentCurrency(hedgeKey);
+
+                BigDecimal conversionPrice = findConversionPrice(context, request, currency);
+
+                if (conversionPrice == null) {
+
+                    log.trace("No conversion price for {}:{}:{}", site, instrument, currency);
+
+                    return ZERO;
+
+                }
+
+                BigDecimal hedgePosition = context.getInstrumentPosition(hedgeKey);
+
+                if (hedgePosition == null) {
+
+                    log.trace("No instrument position for {}:{}", site, instrument);
+
+                    return ZERO;
+
+                }
+
+                position = position.add(hedgePosition.multiply(conversionPrice));
+
+            }
 
         }
 
@@ -617,6 +657,10 @@ public class TemplateAdviser implements Adviser {
 
         return exposed;
 
+    }
+
+    protected BigDecimal findConversionPrice(Context context, Request request, CurrencyType currency) {
+        return ONE;
     }
 
     @VisibleForTesting
@@ -644,12 +688,8 @@ public class TemplateAdviser implements Adviser {
 
         log.trace("Buy size : {} (funding=[{}] instrument[{}])", rounded, fundingSize, instrumentSize);
 
-        return adjustBuyLimitSize(context, request, ofNullable(rounded).orElse(ZERO));
+        return ofNullable(rounded).orElse(ZERO);
 
-    }
-
-    protected BigDecimal adjustBuyLimitSize(Context context, Request request, BigDecimal size) {
-        return size;
     }
 
     @VisibleForTesting
@@ -677,12 +717,8 @@ public class TemplateAdviser implements Adviser {
 
         log.trace("Sell size : {} (funding=[{}] instrument[{}])", rounded, fundingSize, instrumentSize);
 
-        return adjustSellLimitSize(context, request, ofNullable(rounded).orElse(ZERO));
+        return ofNullable(rounded).orElse(ZERO);
 
-    }
-
-    protected BigDecimal adjustSellLimitSize(Context context, Request request, BigDecimal size) {
-        return size;
     }
 
 }

@@ -345,6 +345,40 @@ public class BitflyerContextTest {
     }
 
     @Test
+    public void testGetInstrumentCurrency() {
+
+        for (ProductType type : ProductType.values()) {
+
+            Key key = Key.builder().instrument(type.name()).build();
+
+            assertEquals(target.getInstrumentCurrency(key), type.getStructure().getCurrency());
+
+        }
+
+        assertNull(target.getInstrumentCurrency(Key.builder().build()));
+
+        assertNull(target.getInstrumentCurrency(null));
+
+    }
+
+    @Test
+    public void testGetFundingCurrency() {
+
+        for (ProductType type : ProductType.values()) {
+
+            Key key = Key.builder().instrument(type.name()).build();
+
+            assertEquals(target.getFundingCurrency(key), type.getFunding().getCurrency());
+
+        }
+
+        assertNull(target.getFundingCurrency(Key.builder().build()));
+
+        assertNull(target.getFundingCurrency(null));
+
+    }
+
+    @Test
     public void testGetInstrumentPosition() throws Exception {
 
         Key key = Key.from(Request.builder().instrument("BTC_JPY").build());

@@ -114,6 +114,16 @@ public class ContextImpl implements Context {
     }
 
     @Override
+    public CurrencyType getInstrumentCurrency(Key key) {
+        return forContext(key, c -> c.getInstrumentCurrency(key));
+    }
+
+    @Override
+    public CurrencyType getFundingCurrency(Key key) {
+        return forContext(key, c -> c.getFundingCurrency(key));
+    }
+
+    @Override
     public BigDecimal getInstrumentPosition(Key key) {
         return forContext(key, c -> c.getInstrumentPosition(key));
     }

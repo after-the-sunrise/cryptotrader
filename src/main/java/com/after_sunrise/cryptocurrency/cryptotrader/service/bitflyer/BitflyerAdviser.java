@@ -17,21 +17,18 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.EnumSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.*;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
 import static java.math.RoundingMode.UP;
-import static java.util.Collections.*;
-import static org.apache.commons.collections4.CollectionUtils.union;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.unmodifiableMap;
 
 /**
  * @author takanori.takase
@@ -50,28 +47,9 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     private static final String KEY_OFFSET_PRODUCTS = BitflyerAdviser.class.getName() + ".products.offset";
 
-    private static final String KEY_HEDGE_PRODUCTS = BitflyerAdviser.class.getName() + ".products.hedge";
-
-    private static final Map<ProductType, ProductType> UNDERLIERS = Stream.of(
-            new SimpleEntry<>(BTCJPY_MAT1WK, BTC_JPY),
-            new SimpleEntry<>(BTCJPY_MAT2WK, BTC_JPY)
-    ).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-
-    private static final Set<ProductType> HEDGE_RAW = EnumSet.of(
-            BTC_JPY, COLLATERAL_BTC, FX_BTC_JPY, BTCJPY_MAT1WK, BTCJPY_MAT2WK
-    );
-
-    private static final Set<ProductType> HEDGE_CCY = EnumSet.of(
-            ETH_BTC, BCH_BTC
-    );
-
-    private static final Set<ProductType> HEDGE_ALL = EnumSet.copyOf(union(HEDGE_RAW, HEDGE_CCY));
-
     private ImmutableConfiguration configuration;
 
     private Map<String, Entry<String, String>> offsetProductsCache;
-
-    private Set<String> hedgeProductsCache;
 
     public BitflyerAdviser() {
         super(ID);
@@ -134,13 +112,17 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         ProductType product = ProductType.find(request.getInstrument());
 
-        ProductType underlier = UNDERLIERS.get(product);
-
-        if (underlier == null) {
+        if (product == null) {
             return null;
         }
 
-        return Key.build(Key.from(request)).instrument(underlier.name()).build();
+        ProductType underlying = product.getUnderlying();
+
+        if (underlying == null) {
+            return null;
+        }
+
+        return Key.build(Key.from(request)).instrument(underlying.name()).build();
 
     }
 
@@ -268,122 +250,58 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     }
 
-    @VisibleForTesting
-    BigDecimal getEquivalentSize(Context context, Request request, ProductType type) {
+    @Override
+    protected BigDecimal findConversionPrice(Context context, Request request, CurrencyType currency) {
 
-        Key key = Key.build(Key.from(request)).instrument(type.name()).build();
+        ProductType product = ProductType.find(request.getInstrument());
 
-        BigDecimal position = context.getInstrumentPosition(key);
-
-        if (position == null) {
+        if (product == null) {
             return null;
         }
 
-        if (position.signum() == 0) {
-            return ZERO;
+        CurrencyType structureCurrency = product.getStructure().getCurrency();
+
+        if (structureCurrency == currency) {
+            return ONE;
         }
 
-        if (HEDGE_CCY.contains(type)) {
+        for (ProductType p : ProductType.values()) {
+
+            if (p.getFunding().getCurrency() != structureCurrency) {
+                continue;
+            }
+
+            if (p.getStructure().getCurrency() != currency) {
+                continue;
+            }
+
+            Key key = Key.build(Key.from(request)).instrument(p.name()).build();
 
             BigDecimal price = context.getMidPrice(key);
 
-            if (price == null) {
-                price = context.getLastPrice(key);
+            return price == null || price.signum() == 0 ? null : price;
+
+        }
+
+        for (ProductType p : ProductType.values()) {
+
+            if (p.getStructure().getCurrency() != structureCurrency) {
+                continue;
             }
 
-            if (price == null) {
-                return null;
+            if (p.getFunding().getCurrency() != currency) {
+                continue;
             }
 
-            position = position.multiply(price);
+            Key key = Key.build(Key.from(request)).instrument(p.name()).build();
+
+            BigDecimal price = context.getMidPrice(key);
+
+            return price == null || price.signum() == 0 ? null : ONE.divide(price, SCALE, HALF_UP);
 
         }
 
-        return position;
-
-    }
-
-    @VisibleForTesting
-    BigDecimal getHedgeSize(Context context, Request request, Set<ProductType> products) {
-
-        BigDecimal outright = ZERO;
-
-        for (ProductType type : products) {
-
-            BigDecimal position = getEquivalentSize(context, request, type);
-
-            if (position == null) {
-                return null;
-            }
-
-            outright = outright.add(position);
-
-        }
-
-        return outright.negate();
-
-    }
-
-    private Set<ProductType> findHedgeProducts(Request request) {
-
-        Set<String> products = hedgeProductsCache;
-
-        if (products == null) {
-
-            String[] entries = StringUtils.split(configuration.getString(KEY_HEDGE_PRODUCTS), '|');
-
-            products = entries == null ? emptySet() : unmodifiableSet(
-                    Stream.of(entries).filter(Objects::nonNull).collect(Collectors.toSet())
-            );
-
-            hedgeProductsCache = products;
-
-        }
-
-        return products.contains(request.getInstrument()) ? HEDGE_ALL : null;
-
-    }
-
-    @Override
-    protected BigDecimal adjustBuyLimitSize(Context context, Request request, BigDecimal size) {
-
-        Set<ProductType> hedgeProducts = findHedgeProducts(request);
-
-        if (hedgeProducts == null) {
-            return size;
-        }
-
-        BigDecimal hedgeSize = getHedgeSize(context, request, hedgeProducts);
-
-        if (hedgeSize == null) {
-            return ZERO;
-        }
-
-        BigDecimal exposed = hedgeSize.max(ZERO).multiply(request.getTradingExposure());
-
-        return context.roundLotSize(Key.from(request), exposed, HALF_UP);
-
-    }
-
-
-    @Override
-    protected BigDecimal adjustSellLimitSize(Context context, Request request, BigDecimal size) {
-
-        Set<ProductType> hedgeProducts = findHedgeProducts(request);
-
-        if (hedgeProducts == null) {
-            return size;
-        }
-
-        BigDecimal hedgeSize = getHedgeSize(context, request, hedgeProducts);
-
-        if (hedgeSize == null) {
-            return ZERO;
-        }
-
-        BigDecimal exposed = hedgeSize.min(ZERO).abs().multiply(request.getTradingExposure());
-
-        return context.roundLotSize(Key.from(request), exposed, HALF_UP);
+        return null;
 
     }
 

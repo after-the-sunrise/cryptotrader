@@ -13,10 +13,8 @@ import org.testng.annotations.Test;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.BTC;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.BTC_JPY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.ETH_BTC;
-import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.*;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.*;
@@ -94,21 +92,8 @@ public class BitflyerServiceTest {
             assertNull(AssetType.find(""));
             assertNull(AssetType.find(null));
 
-            assertNotNull(target.getCode());
-            assertNotNull(target.getUnit());
+            assertNotNull(target.getCurrency());
         }
-
-    }
-
-    @Test
-    public void testAssetType_RoundToUnit() {
-
-        BigDecimal value = new BigDecimal("0.0123456789");
-        assertEquals(BTC.roundToUnit(value, DOWN), new BigDecimal("0.01234567"));
-
-        assertNotNull(BTC.roundToUnit(ZERO, DOWN));
-        assertNull(BTC.roundToUnit(ZERO, null));
-        assertNull(BTC.roundToUnit(null, DOWN));
 
     }
 
@@ -125,6 +110,28 @@ public class BitflyerServiceTest {
             assertNotNull(target.getStructure());
             assertNotNull(target.getLotSize());
             assertNotNull(target.getTickSize());
+        }
+
+    }
+
+    @Test
+    public void testProductType_Underlying() throws Exception {
+
+        for (ProductType type : ProductType.values()) {
+
+            ProductType expect = null;
+
+            switch (type) {
+                case BTCJPY_MAT1WK:
+                case BTCJPY_MAT2WK:
+                    expect = BTC_JPY;
+                    break;
+            }
+
+            String message = String.format("%s -> %s", type, expect);
+
+            assertEquals(type.getUnderlying(), expect, message);
+
         }
 
     }

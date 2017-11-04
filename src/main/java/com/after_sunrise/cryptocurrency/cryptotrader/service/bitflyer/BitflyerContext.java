@@ -378,6 +378,33 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
     }
 
+    @VisibleForTesting
+    CurrencyType getCurrency(Key key, Function<ProductType, CurrencyType> f) {
+
+        if (key == null || f == null) {
+            return null;
+        }
+
+        ProductType product = ProductType.find(key.getInstrument());
+
+        return product == null ? null : f.apply(product);
+
+    }
+
+    @Override
+    public CurrencyType getInstrumentCurrency(Key key) {
+
+        return getCurrency(key, p -> p.getStructure().getCurrency());
+
+    }
+
+    @Override
+    public CurrencyType getFundingCurrency(Key key) {
+
+        return getCurrency(key, p -> p.getFunding().getCurrency());
+
+    }
+
     @Override
     public BigDecimal getInstrumentPosition(Key key) {
 

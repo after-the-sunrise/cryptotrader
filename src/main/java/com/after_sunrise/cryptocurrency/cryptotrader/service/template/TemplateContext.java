@@ -349,6 +349,16 @@ public abstract class TemplateContext implements Context {
     }
 
     @Override
+    public CurrencyType getInstrumentCurrency(Key key) {
+        return null;
+    }
+
+    @Override
+    public CurrencyType getFundingCurrency(Key key) {
+        return null;
+    }
+
+    @Override
     public BigDecimal getInstrumentPosition(Key key) {
         return null;
     }
