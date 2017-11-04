@@ -52,6 +52,8 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
     static final String URL = "https://www.bitmex.com";
 
+    static final String URL_ALIAS = "/api/v1/instrument/activeIntervals";
+
     static final String URL_TICKER = "/api/v1/instrument/activeAndIndices";
 
     static final String URL_TRADE = "/api/v1/trade?count=500&reverse=true&symbol=";
@@ -101,6 +103,41 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     }
 
     @VisibleForTesting
+    String convertAlias(Key key) {
+
+        if (key == null) {
+            return null;
+        }
+
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null) {
+            return null;
+        }
+
+        if (product.getId() != null) {
+            return product.getId();
+        }
+
+        Key newKey = Key.build(key).instrument(WILDCARD).build();
+
+        BitmexAlias alias = findCached(BitmexAlias.class, newKey, () -> {
+
+            String data = request(GET, URL + URL_ALIAS, null, null);
+
+            if (StringUtils.isEmpty(data)) {
+                return null;
+            }
+
+            return gson.fromJson(data, BitmexAlias.class);
+
+        });
+
+        return alias == null ? null : alias.find(product.getAlias());
+
+    }
+
+    @VisibleForTesting
     Optional<BitmexTick> queryTick(Key key) {
 
         if (key == null) {
@@ -125,10 +162,12 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return Optional.empty();
         }
 
+        String instrument = convertAlias(key);
+
         return ticks.stream()
                 .filter(Objects::nonNull)
                 .filter(t -> StringUtils.isNotBlank(t.getSymbol()))
-                .filter(t -> StringUtils.equals(t.getSymbol(), key.getInstrument()))
+                .filter(t -> StringUtils.equals(t.getSymbol(), instrument))
                 .findAny();
 
     }
@@ -162,7 +201,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         List<BitmexTrade> trades = listCached(BitmexTrade.class, key, () -> {
 
-            String instrument = URLEncoder.encode(key.getInstrument(), UTF_8.name());
+            String instrument = convertAlias(key);
 
             String data = request(URL + URL_TRADE + instrument);
 
@@ -283,9 +322,11 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return null;
         }
 
+        String instrument = convertAlias(key);
+
         return positions.stream()
                 .filter(Objects::nonNull)
-                .filter(p -> StringUtils.equals(p.getSymbol(), key.getInstrument()))
+                .filter(p -> StringUtils.equals(p.getSymbol(), instrument))
                 .findAny()
                 .map(BitmexPosition::getQuantity)
                 .orElse(ZERO);
@@ -413,7 +454,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             Map<String, String> parameters = new LinkedHashMap<>();
             parameters.put("reverse", "true");
             parameters.put("count", "500");
-            parameters.put("symbol", key.getInstrument());
+            parameters.put("symbol", convertAlias(key));
 
             String data = executePrivate(GET, URL_ORDER, parameters, null);
 
@@ -456,7 +497,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             Map<String, String> parameters = new LinkedHashMap<>();
             parameters.put("count", "500");
             parameters.put("reverse", "true");
-            parameters.put("symbol", key.getInstrument());
+            parameters.put("symbol", convertAlias(key));
 
             String data = executePrivate(GET, URL_EXECUTION, parameters, null);
 
@@ -497,7 +538,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
                 try {
 
                     Map<String, Object> data = new TreeMap<>();
-                    data.put("symbol", key.getInstrument());
+                    data.put("symbol", convertAlias(key));
                     data.put("side", (i.getSize().signum() >= 0 ? BUY : SELL).getId());
                     data.put("orderQty", i.getSize().abs().toPlainString());
                     data.put("price", i.getPrice().toPlainString());

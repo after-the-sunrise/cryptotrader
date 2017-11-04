@@ -5,6 +5,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Cance
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
+import com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.ProductType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType;
 import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
@@ -121,12 +122,59 @@ public class BitmexContextTest {
     }
 
     @Test
+    public void testConvertAlias() throws Exception {
+
+        doReturn(Resources.toString(getResource("json/bitmex_alias.json"), UTF_8)).when(target)
+                .request(GET, "https://www.bitmex.com/api/v1/instrument/activeIntervals", null, null);
+
+
+        for (ProductType product : ProductType.values()) {
+
+            String expect = null;
+
+            switch (product) {
+                case BXBT:
+                case BXBT30M:
+                case BXBTJPY:
+                case BXBTJPY30M:
+                    expect = "." + product.name();
+                    break;
+                case XBTUSD:
+                    expect = "XBTUSD";
+                    break;
+                case XBT_QT:
+                    expect = "XBTZ17";
+                    break;
+                case XBJ_QT:
+                    expect = "XBJZ17";
+                    break;
+            }
+
+            assertEquals(target.convertAlias(Key.builder().instrument(product.name()).build()), expect);
+
+        }
+
+        assertNull(target.convertAlias(Key.builder().instrument("foo").build()));
+        assertNull(target.convertAlias(Key.builder().instrument(null).build()));
+        assertNull(target.convertAlias(null));
+
+
+    }
+
+    @Test
     public void testQueryTick() throws Exception {
 
         doReturn(Resources.toString(getResource("json/bitmex_ticker.json"), UTF_8)).when(target)
                 .request(GET, "https://www.bitmex.com/api/v1/instrument/activeAndIndices", null, null);
 
-        Optional<BitmexTick> result = target.queryTick(Key.builder().instrument("XBTUSD").build());
+        Key key1 = Key.builder().instrument("XBTUSD").build();
+        Key key2 = Key.builder().instrument("BXBT").build();
+        Key key3 = Key.builder().instrument("XBT_QT").build();
+        doReturn("XBTUSD").when(target).convertAlias(key1);
+        doReturn(".BXBT").when(target).convertAlias(key2);
+        doReturn("XBTZ17").when(target).convertAlias(key3);
+
+        Optional<BitmexTick> result = target.queryTick(key1);
         assertTrue(result.isPresent());
         assertEquals(result.get().getSymbol(), "XBTUSD");
         assertEquals(result.get().getSettleCurrency(), "XBt");
@@ -143,7 +191,7 @@ public class BitmexContextTest {
         assertEquals(result.get().getTakerFee(), new BigDecimal("0.00075"));
         assertEquals(result.get().getSettleFee(), new BigDecimal("0"));
 
-        result = target.queryTick(Key.builder().instrument(".BXBT").build());
+        result = target.queryTick(key2);
         assertTrue(result.isPresent());
         assertEquals(result.get().getSymbol(), ".BXBT");
         assertEquals(result.get().getSettleCurrency(), "");
@@ -160,7 +208,7 @@ public class BitmexContextTest {
         assertEquals(result.get().getTakerFee(), null);
         assertEquals(result.get().getSettleFee(), null);
 
-        result = target.queryTick(Key.builder().instrument("XBTZ17").build());
+        result = target.queryTick(key3);
         assertTrue(result.isPresent());
         assertEquals(result.get().getSymbol(), "XBTZ17");
         assertEquals(result.get().getSettleCurrency(), "XBt");
@@ -180,12 +228,12 @@ public class BitmexContextTest {
         // Empty
         target.clear();
         doReturn(null).when(target).request(any(), any(), any(), any());
-        assertFalse(target.queryTick(Key.builder().instrument(".BXBT").build()).isPresent());
+        assertFalse(target.queryTick(key1).isPresent());
 
         // Exception
         target.clear();
         doThrow(new IOException("test")).when(target).request(any(), any(), any(), any());
-        assertFalse(target.queryTick(Key.builder().instrument(".BXBT").build()).isPresent());
+        assertFalse(target.queryTick(key1).isPresent());
 
     }
 
@@ -248,7 +296,10 @@ public class BitmexContextTest {
                 .when(target).request(GET,
                 "https://www.bitmex.com/api/v1/trade?count=500&reverse=true&symbol=XBTZ17", null, null);
 
-        List<Trade> trades = target.listTrades(Key.builder().instrument("XBTZ17").build(), null);
+        Key key = Key.builder().instrument("XBT_QT").build();
+        doReturn("XBTZ17").when(target).convertAlias(key);
+
+        List<Trade> trades = target.listTrades(key, null);
         assertEquals(trades.size(), 2);
 
         assertEquals(trades.get(0).getPrice(), new BigDecimal("6601.7"));
@@ -264,15 +315,15 @@ public class BitmexContextTest {
         assertEquals(trades.get(1).getSellOrderId(), "bb1d629e-959c-298f-bab4-2921218193fa");
 
         // Filtered in
-        trades = target.listTrades(Key.builder().instrument("XBTZ17").build(), Instant.ofEpochMilli(0));
+        trades = target.listTrades(key, Instant.ofEpochMilli(0));
         assertEquals(trades.size(), 2);
 
         // Filtered out
-        trades = target.listTrades(Key.builder().instrument("XBTZ17").build(), Instant.now());
+        trades = target.listTrades(key, Instant.now());
         assertEquals(trades.size(), 0);
 
         // No data
-        trades = target.listTrades(Key.builder().instrument("XBJZ17").build(), null);
+        trades = target.listTrades(Key.builder().instrument("XBJ_QT").build(), null);
         assertEquals(trades.size(), 0);
 
         // Null key
@@ -360,33 +411,33 @@ public class BitmexContextTest {
         doReturn(Resources.toString(getResource("json/bitmex_position.json"), UTF_8))
                 .when(target).executePrivate(GET, "/api/v1/position", null, null);
 
+        Key key1 = Key.builder().instrument("XBT_QT").build();
+        Key key2 = Key.builder().instrument("XBJ_QT").build();
+        doReturn("XBTZ17").when(target).convertAlias(key1);
+        doReturn("XBJZ17").when(target).convertAlias(key2);
+
         // Long
-        Key key = Key.builder().instrument("XBTZ17").build();
-        assertEquals(target.getInstrumentPosition(key), new BigDecimal("100"));
+        assertEquals(target.getInstrumentPosition(key1), new BigDecimal("100"));
         verify(target, times(1)).executePrivate(any(), any(), any(), any());
 
         // Short
-        key = Key.builder().instrument("XBJZ17").build();
-        assertEquals(target.getInstrumentPosition(key), new BigDecimal("-100"));
+        assertEquals(target.getInstrumentPosition(key2), new BigDecimal("-100"));
         verify(target, times(1)).executePrivate(any(), any(), any(), any());
 
         // No match
-        key = Key.builder().build();
-        assertEquals(target.getInstrumentPosition(key), ZERO);
+        assertEquals(target.getInstrumentPosition(Key.builder().build()), ZERO);
         verify(target, times(1)).executePrivate(any(), any(), any(), any());
 
         // No data
         doReturn(null).when(target).executePrivate(any(), any(), any(), any());
         target.clear();
-        key = Key.builder().instrument("XBJZ17").build();
-        assertEquals(target.getInstrumentPosition(key), null);
+        assertEquals(target.getInstrumentPosition(key2), null);
         verify(target, times(2)).executePrivate(any(), any(), any(), any());
 
         // Error
         doThrow(new IOException("test")).when(target).executePrivate(any(), any(), any(), any());
         target.clear();
-        key = Key.builder().instrument("XBJZ17").build();
-        assertEquals(target.getInstrumentPosition(key), null);
+        assertEquals(target.getInstrumentPosition(key2), null);
         verify(target, times(3)).executePrivate(any(), any(), any(), any());
 
     }
@@ -558,7 +609,10 @@ public class BitmexContextTest {
         doReturn(Resources.toString(getResource("json/bitmex_order.json"), UTF_8))
                 .when(target).executePrivate(GET, "/api/v1/order", parameters, null);
 
-        List<BitmexOrder> orders = target.findOrders(Key.builder().instrument("XBTZ17").build());
+        Key key = Key.builder().instrument("XBT_QT").build();
+        doReturn("XBTZ17").when(target).convertAlias(key);
+
+        List<BitmexOrder> orders = target.findOrders(key);
         assertEquals(orders.size(), 2);
 
         assertEquals(orders.get(0).getOrderId(), "94ed7a64-58de-172e-c0cc-1d1011b9e505");
@@ -642,7 +696,10 @@ public class BitmexContextTest {
         doReturn(Resources.toString(getResource("json/bitmex_execution.json"), UTF_8))
                 .when(target).executePrivate(GET, "/api/v1/execution/tradeHistory", parameters, null);
 
-        List<Order.Execution> executions = target.listExecutions(Key.builder().instrument("XBTZ17").build());
+        Key key = Key.builder().instrument("XBT_QT").build();
+        doReturn("XBTZ17").when(target).convertAlias(key);
+
+        List<Order.Execution> executions = target.listExecutions(key);
         assertEquals(executions.size(), 2);
 
         assertEquals(executions.get(0).getId(), "ca5a97aa-a1bc-0629-3f11-b1937fd1bd3a");
@@ -666,6 +723,8 @@ public class BitmexContextTest {
     @Test
     public void testCreateOrders_Buy() throws Exception {
 
+        Key key = Key.builder().instrument("XBT_QT").build();
+        doReturn("XBTZ17").when(target).convertAlias(key);
         doReturn("uid1").when(target).getUniqueId();
 
         doAnswer(i -> {
@@ -697,7 +756,6 @@ public class BitmexContextTest {
         CreateInstruction i5 = CreateInstruction.builder().price(ONE).size(null).build();
         Set<CreateInstruction> instructions = Sets.newHashSet(i1, i2, null, i3, i4, i5);
 
-        Key key = Key.builder().instrument("XBTZ17").build();
         Map<CreateInstruction, String> result = target.createOrders(key, instructions);
         assertEquals(result.size(), 5);
         assertEquals(result.get(i1), null);
@@ -711,6 +769,8 @@ public class BitmexContextTest {
     @Test
     public void testCreateOrders_Sell() throws Exception {
 
+        Key key = Key.builder().instrument("XBT_QT").build();
+        doReturn("XBTZ17").when(target).convertAlias(key);
         doReturn("uid1").when(target).getUniqueId();
 
         doAnswer(i -> {
@@ -742,7 +802,6 @@ public class BitmexContextTest {
         CreateInstruction i5 = CreateInstruction.builder().price(ONE).size(null).build();
         Set<CreateInstruction> instructions = Sets.newHashSet(i1, i2, null, i3, i4, i5);
 
-        Key key = Key.builder().instrument("XBTZ17").build();
         Map<CreateInstruction, String> result = target.createOrders(key, instructions);
         assertEquals(result.size(), 5);
         assertEquals(result.get(i1), null);

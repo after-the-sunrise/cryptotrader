@@ -1,0 +1,32 @@
+{
+  "intervals": [
+    "XMR:quarterly",
+    "DASH:quarterly",
+    "XRP:quarterly",
+    "ZEC:quarterly",
+    "XTZ:quarterly",
+    "XTZ:biquarterly",
+    "BLOCKS:quarterly",
+    "XBT:quarterly",
+    "XBT:perpetual",
+    "XBJ:quarterly",
+    "ETH:quarterly",
+    "ETC:weekly",
+    "LTC:quarterly"
+  ],
+  "symbols": [
+    "XMRZ17",
+    "DASHZ17",
+    "XRPZ17",
+    "ZECZ17",
+    "XTZZ17",
+    "XTZZ17",
+    "B_BLOCKSZ17",
+    "XBTZ17",
+    "XBTUSD",
+    "XBJZ17",
+    "ETHZ17",
+    "ETC7D",
+    "LTCZ17"
+  ]
+}
