@@ -72,7 +72,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
     private static final int REALTIME_COUNT = 1000;
 
-    private static final int REALTIME_QUERIES = 64;
+    private static final int REALTIME_QUERIES = 128;
 
     private final Bitflyer4j bitflyer4j;
 
