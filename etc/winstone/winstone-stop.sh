@@ -1,10 +1,12 @@
 #!/bin/bash
 
 function printProcess() {
-  ps -ef | grep "java" | grep "winstone" | grep "cryptotrader"
+  ps -ef | grep "java" | grep "winstone" | grep "cryptotrader" | awk '{print $2}'
 }
 
-if [ "`printProcess`" == "" ]; then
+PROCESS_ID="`printProcess`"
+
+if [ "$PROCESS_ID" == "" ]; then
 
   echo "No process running."
 
@@ -18,23 +20,29 @@ java -cp winstone-*.jar winstone.tools.WinstoneControl shutdown --host=127.0.01 
 
 popd > /dev/null 2>&1
 
-for i in `seq 1 60`
+LIMIT=60
+
+for i in `seq 1 $LIMIT`
 do
 
-  if [ "`printProcess`" == "" ]; then
+  echo "Waiting for the process to terminate ($i / $LIMIT) : $PROCESS_ID"
 
-    echo "Process terminated."
+  sleep 5
+
+  PROCESS_ID="`printProcess`"
+
+  if [ "$PROCESS_ID" == "" ]; then
+
+    echo "Process terminated : $PROCESS_ID"
 
     exit 0
 
   fi
 
-  echo "Waiting for the process to terminate... ($i)"
-
-  sleep 5
-
 done
 
-echo "Could not confirm process termination."
+echo "Force terminating : $PROCESS_ID"
 
-exit 1
+kill "$PROCESS_ID"
+
+exit $?
