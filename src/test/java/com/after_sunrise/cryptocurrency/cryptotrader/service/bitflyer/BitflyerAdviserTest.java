@@ -228,6 +228,10 @@ public class BitflyerAdviserTest {
                 "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerAdviser.products.offset",
                 "BTC_JPY:bitflyer:BTCJPY_MAT1WK"
         );
+        configurations.put(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerAdviser.funding.multiplier",
+                "100.0"
+        );
 
         BigDecimal offset = new BigDecimal("0.0000");
         Request r1 = Request.builder().instrument(BTC_JPY.name()).build();
