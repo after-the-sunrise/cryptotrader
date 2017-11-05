@@ -3,6 +3,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitfinex;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.service.composite.CompositeService;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator;
@@ -86,7 +87,20 @@ public class BitfinexServiceTest {
 
         assertEquals(target.get(), "BitfinexCompositeMidEstimator");
 
-        assertTrue(MidEstimator.class.isInstance(target));
+        assertTrue(CompositeService.CompositeMidEstimator.class.isInstance(target));
+
+        assertEquals(target.getKey(request), key);
+
+    }
+
+    @Test
+    public void testBitfinexCompositeLastEstimator() {
+
+        BitfinexService.BitfinexCompositeLastEstimator target = new BitfinexService.BitfinexCompositeLastEstimator();
+
+        assertEquals(target.get(), "BitfinexCompositeLastEstimator");
+
+        assertTrue(CompositeService.CompositeLastEstimator.class.isInstance(target));
 
         assertEquals(target.getKey(request), key);
 

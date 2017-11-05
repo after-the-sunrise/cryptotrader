@@ -1,1 +1,2 @@
 com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerInstructor
+com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexInstructor

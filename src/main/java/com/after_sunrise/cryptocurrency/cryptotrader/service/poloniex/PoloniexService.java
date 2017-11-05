@@ -3,7 +3,8 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.composite.CompositeService;
+import com.after_sunrise.cryptocurrency.cryptotrader.service.composite.CompositeService.CompositeLastEstimator;
+import com.after_sunrise.cryptocurrency.cryptotrader.service.composite.CompositeService.CompositeMidEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator;
@@ -42,7 +43,14 @@ public interface PoloniexService extends Service {
         }
     }
 
-    class PoloniexCompositeMidEstimator extends CompositeService.CompositeMidEstimator {
+    class PoloniexCompositeMidEstimator extends CompositeMidEstimator {
+        @Override
+        public Context.Key getKey(Request request) {
+            return convertKey(request, ID);
+        }
+    }
+
+    class PoloniexCompositeLastEstimator extends CompositeLastEstimator {
         @Override
         public Context.Key getKey(Request request) {
             return convertKey(request, ID);

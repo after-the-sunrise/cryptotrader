@@ -3,6 +3,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitfinex;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
+import com.after_sunrise.cryptocurrency.cryptotrader.service.composite.CompositeService.CompositeLastEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.composite.CompositeService.CompositeMidEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
@@ -43,6 +44,13 @@ public interface BitfinexService extends Service {
     }
 
     class BitfinexCompositeMidEstimator extends CompositeMidEstimator {
+        @Override
+        public Context.Key getKey(Request request) {
+            return convertKey(request, ID);
+        }
+    }
+
+    class BitfinexCompositeLastEstimator extends CompositeLastEstimator {
         @Override
         public Context.Key getKey(Request request) {
             return convertKey(request, ID);

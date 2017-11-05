@@ -57,14 +57,19 @@ public abstract class AbstractEstimator extends AbstractService implements Estim
         // bitflyer -> bitfinex
         addMapping("bitflyer", "ETH_BTC", "bitfinex", "ethbtc");
         addMapping("bitflyer", "BCH_BTC", "bitfinex", "bchbtc");
-        addMapping("bitflyer", "BTC_JPY", "bitfinex", "oanda:USD_JPY|bitfinex:btcusd");
-        addMapping("bitflyer", "FX_BTC_JPY", "bitfinex", "oanda:USD_JPY|bitfinex:btcusd");
+        addMapping("bitflyer", "BTC_JPY", "bitfinex", "*bitfinex:btcusd|*oanda:USD_JPY");
+        addMapping("bitflyer", "FX_BTC_JPY", "bitfinex", "*bitfinex:btcusd|*oanda:USD_JPY");
 
         // bitflyer -> poloniex
         addMapping("bitflyer", "ETH_BTC", "poloniex", "BTC_ETH");
         addMapping("bitflyer", "BCH_BTC", "poloniex", "BTC_BCH");
-        addMapping("bitflyer", "BTC_JPY", "poloniex", "oanda:USD_JPY|poloniex:USDT_BTC");
-        addMapping("bitflyer", "FX_BTC_JPY", "poloniex", "oanda:USD_JPY|poloniex:USDT_BTC");
+        addMapping("bitflyer", "BTC_JPY", "poloniex", "*poloniex:USDT_BTC|*oanda:USD_JPY");
+        addMapping("bitflyer", "FX_BTC_JPY", "poloniex", "*poloniex:USDT_BTC|*oanda:USD_JPY");
+
+        // BitMEX -> BitMEX
+        addMapping("bitmex", "ETH_QT", "bitmex", "ETHXBT");
+        addMapping("bitmex", "XBT_QT", "bitmex", "*XBJ_QT|/BXBTJPY|*BXBT");
+        addMapping("bitmex", "XBJ_QT", "bitmex", "*XBT_QT|*BXBTJPY|/BXBT");
 
     }
 

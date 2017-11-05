@@ -3,6 +3,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.service.composite.CompositeService;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator;
@@ -86,7 +87,20 @@ public class PoloniexServiceTest {
 
         assertEquals(target.get(), "PoloniexCompositeMidEstimator");
 
-        assertTrue(MidEstimator.class.isInstance(target));
+        assertTrue(CompositeService.CompositeMidEstimator.class.isInstance(target));
+
+        assertEquals(target.getKey(request), key);
+
+    }
+
+    @Test
+    public void testPoloniexCompositeLastEstimator() {
+
+        PoloniexService.PoloniexCompositeLastEstimator target = new PoloniexService.PoloniexCompositeLastEstimator();
+
+        assertEquals(target.get(), "PoloniexCompositeLastEstimator");
+
+        assertTrue(CompositeService.CompositeLastEstimator.class.isInstance(target));
 
         assertEquals(target.getKey(request), key);
 
