@@ -33,7 +33,7 @@ do
 
   if [ "$PROCESS_ID" == "" ]; then
 
-    echo "Process terminated : $PROCESS_ID"
+    echo "Process terminated."
 
     exit 0
 
