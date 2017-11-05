@@ -33,7 +33,9 @@ import java.util.concurrent.CompletableFuture;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType.SELL;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
+import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.HALF_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.*;
 import static java.util.Optional.ofNullable;
@@ -109,7 +111,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return null;
         }
 
-        ProductType product = ProductType.find(key.getInstrument());
+        ProductType product = ProductType.findByName(key.getInstrument());
 
         if (product == null) {
             return null;
@@ -298,6 +300,24 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     }
 
     @Override
+    public CurrencyType getInstrumentCurrency(Key key) {
+
+        ProductType product = key == null ? null : ProductType.findByName(key.getInstrument());
+
+        return product == null ? null : product.getStructure();
+
+    }
+
+    @Override
+    public CurrencyType getFundingCurrency(Key key) {
+
+        ProductType product = key == null ? null : ProductType.findByName(key.getInstrument());
+
+        return product == null ? null : product.getFunding();
+
+    }
+
+    @Override
     public BigDecimal getInstrumentPosition(Key key) {
 
         if (key == null) {
@@ -338,11 +358,15 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         String currency = queryTick(key).map(BitmexTick::getSettleCurrency).orElse(null);
 
-        if (StringUtils.isEmpty(currency)) {
+        BigDecimal conversionRate = getFundingConversionRate(key, FundingType.findById(currency));
+
+        if (conversionRate == null) {
             return null;
         }
 
-        List<BitmexMargin> margins = listCached(BitmexMargin.class, key, () -> {
+        Key newKey = Key.build(key).instrument(WILDCARD).build();
+
+        List<BitmexMargin> margins = listCached(BitmexMargin.class, newKey, () -> {
 
             Map<String, String> parameters = singletonMap("currency", "all");
 
@@ -365,8 +389,41 @@ public class BitmexContext extends TemplateContext implements BitmexService {
                 .filter(m -> StringUtils.equals(currency, m.getCurrency()))
                 .findAny()
                 .map(BitmexMargin::getBalance)
-                .map(v -> v.multiply(SATOSHI))
+                .map(v -> v.multiply(SATOSHI).multiply(conversionRate))
                 .orElse(ZERO);
+
+    }
+
+    @VisibleForTesting
+    BigDecimal getFundingConversionRate(Key key, FundingType funding) {
+
+        if (key == null || funding == null) {
+            return null;
+        }
+
+        ProductType product = ProductType.findByName(key.getInstrument());
+
+        if (product == null) {
+            return null;
+        }
+
+        if (product.getStructure() == funding.getCurrency()) {
+
+            BigDecimal price = getMidPrice(key);
+
+            return price;
+
+        }
+
+        if (product.getFunding() == funding.getCurrency()) {
+
+            BigDecimal price = getMidPrice(key);
+
+            return price == null || price.signum() == 0 ? null : ONE.divide(price, SCALE, HALF_UP);
+
+        }
+
+        return null;
 
     }
 

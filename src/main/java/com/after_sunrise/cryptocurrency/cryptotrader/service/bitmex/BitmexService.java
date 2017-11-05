@@ -41,6 +41,30 @@ public interface BitmexService extends Service {
 
     }
 
+    enum FundingType {
+
+        XBT("XBt", BTC);
+
+        @Getter
+        private final String id;
+
+        @Getter
+        private final CurrencyType currency;
+
+        private static final Map<String, FundingType> ID = Stream.of(values())
+                .collect(toMap(FundingType::getId, e -> e));
+
+        public static FundingType findById(String id) {
+            return ID.get(id);
+        }
+
+        FundingType(String id, CurrencyType currency) {
+            this.id = id;
+            this.currency = currency;
+        }
+
+    }
+
     enum ProductType {
 
         BXBT(".BXBT", null, BTC, USD, null),
@@ -57,10 +81,11 @@ public interface BitmexService extends Service {
 
         BXBTJPY30M(".BXBTJPY30M", null, BTC, JPY, null);
 
-        private static final Map<String, ProductType> MAP = Stream.of(values()).collect(toMap(Enum::name, e -> e));
+        private static final Map<String, ProductType> NAME = Stream.of(values())
+                .collect(toMap(Enum::name, e -> e));
 
-        public static ProductType find(String name) {
-            return MAP.get(name);
+        public static ProductType findByName(String name) {
+            return NAME.get(name);
         }
 
         @Getter

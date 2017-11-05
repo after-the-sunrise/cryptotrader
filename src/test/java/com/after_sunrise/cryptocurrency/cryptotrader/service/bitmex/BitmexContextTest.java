@@ -5,6 +5,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Cance
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
+import com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.FundingType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.ProductType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType;
 import com.google.common.collect.Sets;
@@ -448,36 +449,42 @@ public class BitmexContextTest {
         doReturn(Resources.toString(getResource("json/bitmex_margin.json"), UTF_8))
                 .when(target).executePrivate(GET, "/api/v1/user/margin", singletonMap("currency", "all"), null);
 
-        Key key = Key.builder().instrument("XBTZ17").build();
+        Key key1 = Key.builder().instrument("XBT_QT").build();
+        Key key2 = Key.builder().instrument("XBJ_QT").build();
 
-        // Found
-        doReturn(of(BitmexTick.builder().symbol("XBTZ17").settleCurrency("XBt").build())).when(target).queryTick(key);
-        assertEquals(target.getFundingPosition(key), new BigDecimal("0.49990819"));
-        verify(target, times(1)).executePrivate(any(), any(), any(), any());
+        doReturn(Optional.empty()).when(target).queryTick(any());
+        doReturn(of(BitmexTick.builder().settleCurrency("XBt").build())).when(target).queryTick(key1);
+        doReturn(of(BitmexTick.builder().settleCurrency("XBt").build())).when(target).queryTick(key2);
 
-        // No match
-        doReturn(of(BitmexTick.builder().symbol("XBTZ17").settleCurrency("JPY").build())).when(target).queryTick(key);
-        assertEquals(target.getFundingPosition(key), ZERO);
-        verify(target, times(1)).executePrivate(any(), any(), any(), any());
+        doReturn(null).when(target).getFundingConversionRate(any(), any());
+        doReturn(new BigDecimal("6500.12")).when(target).getFundingConversionRate(key1, FundingType.XBT);
+        doReturn(new BigDecimal("750000")).when(target).getFundingConversionRate(key2, FundingType.XBT);
 
-        // No tick
-        doReturn(Optional.empty()).when(target).queryTick(key);
-        assertEquals(target.getFundingPosition(key), null);
+        // Found (margin = 49990819 SATOSHI)
+        assertEquals(target.getFundingPosition(key1), new BigDecimal("3249.4632239828"));
+        assertEquals(target.getFundingPosition(key2), new BigDecimal("374931.14250000"));
         verify(target, times(1)).executePrivate(any(), any(), any(), any());
 
         // No data
         doReturn(null).when(target).executePrivate(any(), any(), any(), any());
         target.clear();
-        doReturn(of(BitmexTick.builder().symbol("XBTZ17").settleCurrency("XBt").build())).when(target).queryTick(key);
-        assertEquals(target.getFundingPosition(key), null);
+        assertEquals(target.getFundingPosition(key1), null);
+        assertEquals(target.getFundingPosition(key2), null);
         verify(target, times(2)).executePrivate(any(), any(), any(), any());
 
         // Error
         doThrow(new IOException("test")).when(target).executePrivate(any(), any(), any(), any());
         target.clear();
-        doReturn(of(BitmexTick.builder().symbol("XBTZ17").settleCurrency("XBt").build())).when(target).queryTick(key);
-        assertEquals(target.getFundingPosition(key), null);
-        verify(target, times(3)).executePrivate(any(), any(), any(), any());
+        assertEquals(target.getFundingPosition(key1), null);
+        assertEquals(target.getFundingPosition(key2), null);
+        verify(target, times(4)).executePrivate(any(), any(), any(), any());
+
+        // No rate
+        doReturn(null).when(target).getFundingConversionRate(any(), any());
+        target.clear();
+        assertEquals(target.getFundingPosition(key1), null);
+        assertEquals(target.getFundingPosition(key2), null);
+        verify(target, times(4)).executePrivate(any(), any(), any(), any());
 
     }
 
