@@ -1,0 +1,47 @@
+[
+  {
+    "timestamp": "2017-11-05T06:50:00.000Z",
+    "symbol": "XBJZ17",
+    "open": 793380,
+    "high": 793380,
+    "low": 793380,
+    "close": 793380,
+    "trades": 3,
+    "volume": 15000,
+    "vwap": 793399,
+    "lastSize": 5000,
+    "turnover": 189060000,
+    "homeNotional": 1.8906,
+    "foreignNotional": 1500000
+  },
+  {
+    "timestamp": "2017-11-05T06:49:00.000Z",
+    "symbol": "XBJZ17",
+    "open": 793380,
+    "high": 793380,
+    "low": 793380,
+    "close": 793380,
+    "trades": 0,
+    "volume": 0,
+    "vwap": null,
+    "lastSize": null,
+    "turnover": 0,
+    "homeNotional": 0,
+    "foreignNotional": 0
+  },
+  {
+    "timestamp": "2017-11-05T06:48:00.000Z",
+    "symbol": "XBJZ17",
+    "open": 793360,
+    "high": 793380,
+    "low": 793380,
+    "close": 793380,
+    "trades": 1,
+    "volume": 5000,
+    "vwap": 793399,
+    "lastSize": 5000,
+    "turnover": 63020000,
+    "homeNotional": 0.6302,
+    "foreignNotional": 500000
+  }
+]

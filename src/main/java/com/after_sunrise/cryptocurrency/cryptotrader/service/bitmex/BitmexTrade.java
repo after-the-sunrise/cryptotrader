@@ -51,4 +51,40 @@ public class BitmexTrade implements Trade {
         return id;
     }
 
+    @Getter
+    @Builder
+    @ToString
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class Bucketed implements Trade {
+
+        /**
+         * Time of the trade.
+         */
+        @SerializedName("timestamp")
+        private Instant timestamp;
+
+        /**
+         * Price of the trade.
+         */
+        @SerializedName("vwap")
+        private BigDecimal price;
+
+        /**
+         * Number of contracts traded.
+         */
+        @SerializedName("volume")
+        private BigDecimal size;
+
+        @Override
+        public String getBuyOrderId() {
+            return null;
+        }
+
+        @Override
+        public String getSellOrderId() {
+            return null;
+        }
+
+    }
+
 }

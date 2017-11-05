@@ -9,6 +9,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.AbstractServ
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpStatus;
@@ -24,6 +25,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -125,6 +127,36 @@ public abstract class TemplateContext extends AbstractService implements Context
     @VisibleForTesting
     public String getUniqueId() {
         return UUID.randomUUID().toString();
+    }
+
+    @VisibleForTesting
+    public String buildQueryParameter(Map<String, String> parameters) throws IOException {
+
+        StringBuilder sb = new StringBuilder();
+
+        if (MapUtils.isNotEmpty(parameters)) {
+
+            for (Map.Entry<String, String> entry : parameters.entrySet()) {
+
+                if (StringUtils.isEmpty(entry.getKey())) {
+                    continue;
+                }
+
+                if (StringUtils.isEmpty(entry.getValue())) {
+                    continue;
+                }
+
+                sb.append(sb.length() == 0 ? "?" : "&");
+                sb.append(URLEncoder.encode(entry.getKey(), UTF_8.name()));
+                sb.append('=');
+                sb.append(URLEncoder.encode(entry.getValue(), UTF_8.name()));
+
+            }
+
+        }
+
+        return sb.toString();
+
     }
 
     @VisibleForTesting

@@ -322,9 +322,14 @@ public class BitmexContextTest {
 
         doReturn(Resources.toString(getResource("json/bitmex_trade.json"), UTF_8))
                 .when(target).request(GET,
-                "https://www.bitmex.com/api/v1/trade?count=500&reverse=true&symbol=XBTZ17", null, null);
+                "https://www.bitmex.com/api/v1/trade?count=500&reverse=true&symbol=XBTZ17",
+                null, null);
+        doReturn(Resources.toString(getResource("json/bitmex_bucket.json"), UTF_8))
+                .when(target).request(GET,
+                "https://www.bitmex.com/api/v1/trade/bucketed?binSize=1m&partial=true&count=500&reverse=true&symbol=XBJZ17",
+                null, null);
 
-        Key key = Key.builder().instrument("XBT_QT").build();
+        Key key = Key.builder().instrument("XBT_QT").timestamp(Instant.parse("2017-11-01T23:15:48.000Z")).build();
         doReturn("XBTZ17").when(target).convertAlias(key);
 
         List<Trade> trades = target.listTrades(key, null);
@@ -338,20 +343,57 @@ public class BitmexContextTest {
 
         assertEquals(trades.get(1).getPrice(), new BigDecimal("6601.6"));
         assertEquals(trades.get(1).getSize(), new BigDecimal("5"));
-        assertEquals(trades.get(1).getTimestamp(), Instant.parse("2017-11-01T22:15:47.303Z"));
+        assertEquals(trades.get(1).getTimestamp(), Instant.parse("2017-11-01T22:15:47.000Z"));
         assertEquals(trades.get(1).getBuyOrderId(), "bb1d629e-959c-298f-bab4-2921218193fa");
         assertEquals(trades.get(1).getSellOrderId(), "bb1d629e-959c-298f-bab4-2921218193fa");
 
-        // Filtered in
-        trades = target.listTrades(key, Instant.ofEpochMilli(0));
+        // Filtered in (all)
+        trades = target.listTrades(key, Instant.parse("2017-11-01T22:15:47.000Z"));
         assertEquals(trades.size(), 2);
 
+        // Filtered in
+        trades = target.listTrades(key, Instant.parse("2017-11-01T22:15:47.303Z"));
+        assertEquals(trades.size(), 1);
+        assertEquals(trades.get(0).getTimestamp(), Instant.parse("2017-11-01T22:15:47.303Z"));
+
         // Filtered out
-        trades = target.listTrades(key, Instant.now());
+        trades = target.listTrades(key, Instant.parse("2017-11-01T22:15:47.304Z"));
+        assertEquals(trades.size(), 0);
+
+        // Bucketed
+        key = Key.builder().instrument("XBJ_QT").timestamp(key.getTimestamp()).build();
+        doReturn("XBJZ17").when(target).convertAlias(key);
+        trades = target.listTrades(key, null);
+        assertEquals(trades.size(), 2);
+
+        assertEquals(trades.get(0).getPrice(), new BigDecimal("793399"));
+        assertEquals(trades.get(0).getSize(), new BigDecimal("15000"));
+        assertEquals(trades.get(0).getTimestamp(), Instant.parse("2017-11-05T06:50:00.000Z"));
+        assertEquals(trades.get(0).getBuyOrderId(), null);
+        assertEquals(trades.get(0).getSellOrderId(), null);
+
+        assertEquals(trades.get(1).getPrice(), new BigDecimal("793399"));
+        assertEquals(trades.get(1).getSize(), new BigDecimal("5000"));
+        assertEquals(trades.get(1).getTimestamp(), Instant.parse("2017-11-05T06:48:00.000Z"));
+        assertEquals(trades.get(1).getBuyOrderId(), null);
+        assertEquals(trades.get(1).getSellOrderId(), null);
+
+        // Filtered in (all)
+        trades = target.listTrades(key, Instant.parse("2017-11-05T06:48:00.000Z"));
+        assertEquals(trades.size(), 2);
+
+        // Filtered in
+        trades = target.listTrades(key, Instant.parse("2017-11-05T06:50:00.000Z"));
+        assertEquals(trades.size(), 1);
+        assertEquals(trades.get(0).getTimestamp(), Instant.parse("2017-11-05T06:50:00.000Z"));
+
+        // Filtered out
+        trades = target.listTrades(key, Instant.parse("2017-11-05T06:50:00.001Z"));
         assertEquals(trades.size(), 0);
 
         // No data
-        trades = target.listTrades(Key.builder().instrument("XBJ_QT").build(), null);
+        key = Key.builder().instrument("ETH_QT").timestamp(key.getTimestamp()).build();
+        trades = target.listTrades(key, null);
         assertEquals(trades.size(), 0);
 
         // Null key

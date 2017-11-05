@@ -11,7 +11,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
 
@@ -21,7 +20,6 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.URLEncoder;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
@@ -36,7 +34,6 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.Tem
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.*;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
@@ -48,26 +45,31 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
  */
 public class BitmexContext extends TemplateContext implements BitmexService {
 
-    static final String URL = "https://www.bitmex.com";
+    private static final String URL = "https://www.bitmex.com";
 
-    static final String URL_ALIAS = "/api/v1/instrument/activeIntervals";
+    private static final String URL_ALIAS = "/api/v1/instrument/activeIntervals";
 
-    static final String URL_TICKER = "/api/v1/instrument/activeAndIndices";
+    private static final String URL_TICKER = "/api/v1/instrument/activeAndIndices";
 
-    static final String URL_TRADE = "/api/v1/trade?count=500&reverse=true&symbol=";
+    private static final String URL_TRADE = "/api/v1/trade";
 
-    static final String URL_POSITION = "/api/v1/position";
+    private static final String URL_BUCKETED = "/api/v1/trade/bucketed";
 
-    static final String URL_MARGIN = "/api/v1/user/margin";
+    private static final String URL_POSITION = "/api/v1/position";
 
-    static final String URL_ORDER = "/api/v1/order";
+    private static final String URL_MARGIN = "/api/v1/user/margin";
 
-    static final String URL_EXECUTION = "/api/v1/execution/tradeHistory";
+    private static final String URL_ORDER = "/api/v1/order";
+
+    private static final String URL_EXECUTION = "/api/v1/execution/tradeHistory";
 
     private static final Type TYPE_TICKER = new TypeToken<List<BitmexTick>>() {
     }.getType();
 
     private static final Type TYPE_TRADE = new TypeToken<List<BitmexTrade>>() {
+    }.getType();
+
+    private static final Type TYPE_BUCKETED = new TypeToken<List<BitmexTrade.Bucketed>>() {
     }.getType();
 
     private static final Type TYPE_POSITION = new TypeToken<List<BitmexPosition>>() {
@@ -83,6 +85,8 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     }.getType();
 
     private static final Duration TIMEOUT = Duration.ofMinutes(3);
+
+    private static final Duration BUCKETED = Duration.ofHours(1);
 
     private static final String UNLISTED = "Unlisted";
 
@@ -199,11 +203,16 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return Collections.emptyList();
         }
 
-        List<BitmexTrade> trades = listCached(BitmexTrade.class, key, () -> {
+        List<? extends Trade> trades = listCached(BitmexTrade.class, key, () -> {
 
-            String instrument = convertAlias(key);
+            Map<String, String> parameters = new LinkedHashMap<>();
+            parameters.put("count", "500");
+            parameters.put("reverse", "true");
+            parameters.put("symbol", convertAlias(key));
 
-            String data = request(URL + URL_TRADE + instrument);
+            String path = URL + URL_TRADE + buildQueryParameter(parameters);
+
+            String data = request(path);
 
             if (StringUtils.isEmpty(data)) {
                 return null;
@@ -213,8 +222,42 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         });
 
+        Instant cutoff = key.getTimestamp().minus(BUCKETED);
+
+        if (ofNullable(trades).orElse(emptyList()).stream()
+                .filter(Objects::nonNull)
+                .filter(t -> t.getTimestamp() != null)
+                .noneMatch(t -> t.getTimestamp().isBefore(cutoff))) {
+
+            trades = listCached(BitmexTrade.Bucketed.class, key, () -> {
+
+                Map<String, String> parameters = new LinkedHashMap<>();
+                parameters.put("binSize", "1m");
+                parameters.put("partial", "true");
+                parameters.put("count", "500");
+                parameters.put("reverse", "true");
+                parameters.put("symbol", convertAlias(key));
+
+                String path = URL + URL_BUCKETED + buildQueryParameter(parameters);
+
+                String data = request(path);
+
+                if (StringUtils.isEmpty(data)) {
+                    return null;
+                }
+
+                return Collections.unmodifiableList(gson.fromJson(data, TYPE_BUCKETED));
+
+            });
+
+        }
+
         return ofNullable(trades).orElse(emptyList()).stream()
                 .filter(Objects::nonNull)
+                .filter(t -> t.getPrice() != null)
+                .filter(t -> t.getPrice().signum() != 0)
+                .filter(t -> t.getSize() != null)
+                .filter(t -> t.getSize().signum() != 0)
                 .filter(t -> t.getTimestamp() != null)
                 .filter(t -> fromTime == null || !fromTime.isAfter(t.getTimestamp()))
                 .collect(toList());
@@ -260,30 +303,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return null;
         }
 
-        StringBuilder sb = new StringBuilder();
-
-        if (MapUtils.isNotEmpty(parameters)) {
-
-            for (Map.Entry<String, String> entry : parameters.entrySet()) {
-
-                if (StringUtils.isEmpty(entry.getKey())) {
-                    continue;
-                }
-
-                if (StringUtils.isEmpty(entry.getValue())) {
-                    continue;
-                }
-
-                sb.append(sb.length() == 0 ? "?" : "&");
-                sb.append(URLEncoder.encode(entry.getKey(), UTF_8.name()));
-                sb.append('=');
-                sb.append(URLEncoder.encode(entry.getValue(), UTF_8.name()));
-
-            }
-
-        }
-
-        String suffix = sb.toString();
+        String suffix = buildQueryParameter(parameters);
         String nonce = String.valueOf(getNow().toEpochMilli());
         String hash = computeHash(secret, type.name(), url + suffix, nonce, data);
 

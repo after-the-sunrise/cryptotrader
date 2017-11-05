@@ -68,6 +68,7 @@ public abstract class AbstractEstimator extends AbstractService implements Estim
 
         // BitMEX -> BitMEX
         addMapping("bitmex", "ETH_QT", "bitmex", "ETHXBT");
+        addMapping("bitmex", "XBTUSD", "bitmex", "BXBT");
         addMapping("bitmex", "XBT_QT", "bitmex", "*XBJ_QT|/BXBTJPY|*BXBT");
         addMapping("bitmex", "XBJ_QT", "bitmex", "*XBT_QT|*BXBTJPY|/BXBT");
 
