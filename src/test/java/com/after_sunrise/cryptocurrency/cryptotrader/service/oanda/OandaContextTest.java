@@ -1,6 +1,7 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.oanda;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.io.Resources;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
@@ -11,11 +12,14 @@ import org.testng.annotations.Test;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
 import static com.google.common.io.Resources.getResource;
+import static java.math.BigDecimal.ZERO;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonMap;
 import static org.mockito.Mockito.*;
@@ -138,6 +142,57 @@ public class OandaContextTest {
 
         doReturn(Optional.empty()).when(target).queryTick(key);
         assertNull(target.getBestBidPrice(key));
+
+    }
+
+    @Test
+    public void testGetLastPrice() throws Exception {
+
+        Key key = Key.builder().instrument("foo").build();
+
+        OandaTick tick = mock(OandaTick.class);
+        when(tick.getAsk()).thenReturn(BigDecimal.ONE);
+        when(tick.getBid()).thenReturn(BigDecimal.TEN);
+
+        doReturn(Optional.of(tick)).when(target).queryTick(key);
+        assertEquals(target.getLastPrice(key), new BigDecimal("5.5"));
+
+        doReturn(Optional.empty()).when(target).queryTick(key);
+        assertNull(target.getLastPrice(key));
+
+    }
+
+    @Test
+    public void testListTrades() {
+
+        Key key = Key.builder().instrument("foo").build();
+
+        OandaTick tick = mock(OandaTick.class);
+        when(tick.getTimestamp()).thenReturn(Instant.ofEpochMilli(12345));
+        when(tick.getAsk()).thenReturn(BigDecimal.ONE);
+        when(tick.getBid()).thenReturn(BigDecimal.TEN);
+
+        doReturn(Optional.of(tick)).when(target).queryTick(key);
+        List<Trade> results = target.listTrades(key, null);
+        assertEquals(results.size(), 1);
+        assertEquals(results.get(0).getTimestamp(), tick.getTimestamp());
+        assertEquals(results.get(0).getPrice(), new BigDecimal("5.5"));
+        assertEquals(results.get(0).getSize(), ZERO);
+        assertEquals(results.get(0).getBuyOrderId(), null);
+        assertEquals(results.get(0).getSellOrderId(), null);
+
+        // Filtered
+        assertEquals(target.listTrades(key, Instant.ofEpochMilli(12344)).size(), 1);
+        assertEquals(target.listTrades(key, Instant.ofEpochMilli(12345)).size(), 1);
+        assertEquals(target.listTrades(key, Instant.ofEpochMilli(12346)).size(), 0);
+
+        // No timestamp
+        when(tick.getTimestamp()).thenReturn(null);
+        assertEquals(target.listTrades(key, null).size(), 0);
+
+        // No tick
+        doReturn(Optional.empty()).when(target).queryTick(key);
+        assertEquals(target.listTrades(key, null).size(), 0);
 
     }
 

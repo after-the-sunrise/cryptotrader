@@ -84,6 +84,8 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
     private static final Duration TIMEOUT = Duration.ofMinutes(3);
 
+    private static final String UNLISTED = "Unlisted";
+
     private final Gson gson;
 
     public BitmexContext() throws ConfigurationException {
@@ -172,17 +174,17 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
     @Override
     public BigDecimal getBestAskPrice(Key key) {
-        return queryTick(key).map(BitmexTick::getAsk).orElse(null);
+        return queryTick(key).map(t -> UNLISTED.equals(t.getState()) ? t.getLast() : t.getAsk()).orElse(null);
     }
 
     @Override
     public BigDecimal getBestBidPrice(Key key) {
-        return queryTick(key).map(BitmexTick::getBid).orElse(null);
+        return queryTick(key).map(t -> UNLISTED.equals(t.getState()) ? t.getLast() : t.getBid()).orElse(null);
     }
 
     @Override
     public BigDecimal getMidPrice(Key key) {
-        return queryTick(key).map(BitmexTick::getMid).orElse(null);
+        return queryTick(key).map(t -> UNLISTED.equals(t.getState()) ? t.getLast() : t.getMid()).orElse(null);
     }
 
     @Override

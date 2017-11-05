@@ -1,5 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.oanda;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
@@ -13,10 +14,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyList;
@@ -112,6 +110,21 @@ public class OandaContext extends TemplateContext implements OandaService {
     @Override
     public BigDecimal getBestBidPrice(Key key) {
         return queryTick(key).map(OandaTick::getBid).orElse(null);
+    }
+
+    @Override
+    public BigDecimal getLastPrice(Key key) {
+        return getMidPrice(key);
+    }
+
+    @Override
+    public List<Trade> listTrades(Key key, Instant fromTime) {
+        return queryTick(key)
+                .filter(t -> t.getTimestamp() != null)
+                .filter(t -> fromTime == null || !fromTime.isAfter(t.getTimestamp()))
+                .map(t -> OandaTick.OandaTrade.builder().delegate(t).build())
+                .map(Collections::<Trade>singletonList)
+                .orElse(emptyList());
     }
 
 }

@@ -255,8 +255,13 @@ public class BitmexContextTest {
 
         Key key = Key.builder().build();
 
-        doReturn(of(BitmexTick.builder().ask(TEN).build())).when(target).queryTick(key);
+        // Listed
+        doReturn(of(BitmexTick.builder().ask(TEN).last(ONE).build())).when(target).queryTick(key);
         assertEquals(target.getBestAskPrice(key), TEN);
+
+        // Unlisted
+        doReturn(of(BitmexTick.builder().ask(TEN).last(ONE).state("Unlisted").build())).when(target).queryTick(key);
+        assertEquals(target.getBestAskPrice(key), ONE);
 
         doReturn(Optional.empty()).when(target).queryTick(key);
         assertEquals(target.getBestAskPrice(key), null);
@@ -268,8 +273,13 @@ public class BitmexContextTest {
 
         Key key = Key.builder().build();
 
-        doReturn(of(BitmexTick.builder().bid(TEN).build())).when(target).queryTick(key);
+        // Listed
+        doReturn(of(BitmexTick.builder().bid(TEN).last(ONE).build())).when(target).queryTick(key);
         assertEquals(target.getBestBidPrice(key), TEN);
+
+        // Unlisted
+        doReturn(of(BitmexTick.builder().bid(TEN).last(ONE).state("Unlisted").build())).when(target).queryTick(key);
+        assertEquals(target.getBestBidPrice(key), ONE);
 
         doReturn(Optional.empty()).when(target).queryTick(key);
         assertEquals(target.getBestBidPrice(key), null);
@@ -281,8 +291,13 @@ public class BitmexContextTest {
 
         Key key = Key.builder().build();
 
-        doReturn(of(BitmexTick.builder().mid(TEN).build())).when(target).queryTick(key);
+        // Listed
+        doReturn(of(BitmexTick.builder().mid(TEN).last(ONE).build())).when(target).queryTick(key);
         assertEquals(target.getMidPrice(key), TEN);
+
+        // Unlisted
+        doReturn(of(BitmexTick.builder().mid(TEN).last(ONE).state("Unlisted").build())).when(target).queryTick(key);
+        assertEquals(target.getMidPrice(key), ONE);
 
         doReturn(Optional.empty()).when(target).queryTick(key);
         assertEquals(target.getMidPrice(key), null);
