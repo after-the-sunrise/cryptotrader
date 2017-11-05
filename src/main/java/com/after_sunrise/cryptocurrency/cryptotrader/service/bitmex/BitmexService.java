@@ -79,7 +79,13 @@ public interface BitmexService extends Service {
 
         BXBTJPY(".BXBTJPY", null, BTC, JPY, null),
 
-        BXBTJPY30M(".BXBTJPY30M", null, BTC, JPY, null);
+        BXBTJPY30M(".BXBTJPY30M", null, BTC, JPY, null),
+
+        ETHXBT(".ETHXBT", null, ETH, BTC, null),
+
+        ETHXBT30M(".ETHXBT30M", null, ETH, BTC, null),
+
+        ETH_QT(null, "ETH:quarterly", ETH, BTC, 1);
 
         private static final Map<String, ProductType> NAME = Stream.of(values())
                 .collect(toMap(Enum::name, e -> e));

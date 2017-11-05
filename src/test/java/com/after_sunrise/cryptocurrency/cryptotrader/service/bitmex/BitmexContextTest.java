@@ -5,7 +5,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Cance
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.FundingType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.ProductType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType;
 import com.google.common.collect.Sets;
@@ -26,6 +25,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.FundingType.XBT;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.*;
 import static com.google.common.io.Resources.getResource;
 import static java.math.BigDecimal.*;
@@ -145,6 +145,8 @@ public class BitmexContextTest {
                 case BXBT30M:
                 case BXBTJPY:
                 case BXBTJPY30M:
+                case ETHXBT:
+                case ETHXBT30M:
                     expect = "." + product.name();
                     break;
                 case XBTUSD:
@@ -155,6 +157,9 @@ public class BitmexContextTest {
                     break;
                 case XBJ_QT:
                     expect = "XBJZ17";
+                    break;
+                case ETH_QT:
+                    expect = "ETHZ17";
                     break;
             }
 
@@ -467,8 +472,8 @@ public class BitmexContextTest {
         doReturn(of(BitmexTick.builder().settleCurrency("XBt").build())).when(target).queryTick(key2);
 
         doReturn(null).when(target).getFundingConversionRate(any(), any());
-        doReturn(new BigDecimal("6500.12")).when(target).getFundingConversionRate(key1, FundingType.XBT);
-        doReturn(new BigDecimal("750000")).when(target).getFundingConversionRate(key2, FundingType.XBT);
+        doReturn(new BigDecimal("6500.12")).when(target).getFundingConversionRate(key1, XBT);
+        doReturn(new BigDecimal("750000")).when(target).getFundingConversionRate(key2, XBT);
 
         // Found (margin = 49990819 SATOSHI)
         assertEquals(target.getFundingPosition(key1), new BigDecimal("3249.4632239828"));
@@ -495,6 +500,41 @@ public class BitmexContextTest {
         assertEquals(target.getFundingPosition(key1), null);
         assertEquals(target.getFundingPosition(key2), null);
         verify(target, times(4)).executePrivate(any(), any(), any(), any());
+
+    }
+
+    @Test
+    public void testGetFundingConversionRate() {
+
+        Key key = Key.builder().instrument(ProductType.XBJ_QT.name()).build();
+
+        // Null Price
+        doReturn(null).when(target).getMidPrice(key);
+        assertNull(target.getFundingConversionRate(key, XBT));
+
+        // Zero Price
+        doReturn(new BigDecimal("0.0")).when(target).getMidPrice(key);
+        assertNull(target.getFundingConversionRate(key, XBT));
+
+        // Valid
+        doReturn(new BigDecimal("795000")).when(target).getMidPrice(key);
+        assertEquals(target.getFundingConversionRate(key, XBT), new BigDecimal("6320250000.0000000000"));
+
+        // Null Arguments
+        assertNull(target.getFundingConversionRate(key, null));
+        assertNull(target.getFundingConversionRate(null, XBT));
+
+        // Unknown Product
+        key = Key.builder().instrument("foo").build();
+        assertNull(target.getFundingConversionRate(key, XBT));
+
+        // Not traded
+        key = Key.builder().instrument(ProductType.BXBTJPY.name()).build();
+        assertNull(target.getFundingConversionRate(key, XBT));
+
+        // Funding Instrument
+        key = Key.builder().instrument(ProductType.ETH_QT.name()).build();
+        assertEquals(target.getFundingConversionRate(key, XBT), new BigDecimal("1.0000000000"));
 
     }
 

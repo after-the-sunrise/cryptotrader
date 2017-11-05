@@ -403,19 +403,45 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return null;
         }
 
-        if (product.getStructure() == funding.getCurrency()) {
-
-            BigDecimal price = getMidPrice(key);
-
-            return price;
-
+        if (product.getMultiplier() == null) {
+            return null;
         }
 
         if (product.getFunding() == funding.getCurrency()) {
 
+            // Contract value = multiplier * price
+
+            // Eligible contracts = fund / value
+
+            // Eligible notional = price * contracts
+
+            // = price * [fund / (multiplier * price)] = fund / multiplier
+
+            BigDecimal multiplier = BigDecimal.valueOf(product.getMultiplier());
+
+            return ONE.divide(multiplier, SCALE, HALF_UP);
+
+        }
+
+        if (product.getStructure() == funding.getCurrency()) {
+
             BigDecimal price = getMidPrice(key);
 
-            return price == null || price.signum() == 0 ? null : ONE.divide(price, SCALE, HALF_UP);
+            if (price == null || price.signum() == 0) {
+                return null;
+            }
+
+            // Contract value = multiplier / price
+
+            // Eligible contracts = fund / value
+
+            // Eligible notional = price * contracts
+
+            // = price * [fund / (multiplier / price)] = price * fund / multiplier * price
+
+            BigDecimal multiplier = BigDecimal.valueOf(product.getMultiplier());
+
+            return price.multiply(price).divide(multiplier, SCALE, HALF_UP);
 
         }
 
