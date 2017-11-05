@@ -7,7 +7,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -41,7 +40,7 @@ public class EstimatorImplTest {
     private Request request;
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
 
         services = new TreeMap<>();
         services.put("0", mock(Estimator.class));
@@ -66,7 +65,7 @@ public class EstimatorImplTest {
 
     @Test
     public void testGet() {
-        assertEquals(target.get(), Service.WILDCARD);
+        assertEquals(target.get(), "*");
     }
 
     @Test

@@ -5,8 +5,8 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.AbstractService;
 import com.google.common.annotations.VisibleForTesting;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
@@ -27,12 +27,9 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
  * @author takanori.takase
  * @version 0.0.1
  */
-@Slf4j
-public class TemplateInstructor implements Instructor {
+public class TemplateInstructor extends AbstractService implements Instructor {
 
     private static final List<Order> EMPTY = emptyList();
-
-    private static final BigDecimal EPSILON = ONE.movePointLeft(SCALE);
 
     private final String id;
 

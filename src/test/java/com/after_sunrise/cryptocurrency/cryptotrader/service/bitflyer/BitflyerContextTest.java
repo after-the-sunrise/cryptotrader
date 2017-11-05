@@ -67,7 +67,7 @@ public class BitflyerContextTest {
     private RealtimeService realtimeService;
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
 
         module = new TestModule();
         accountService = module.getMock(AccountService.class);

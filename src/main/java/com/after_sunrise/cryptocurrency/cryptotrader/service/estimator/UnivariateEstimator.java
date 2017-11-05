@@ -4,7 +4,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.annotations.VisibleForTesting;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.math.BigDecimal;
@@ -19,7 +18,6 @@ import static java.time.temporal.ChronoUnit.MILLIS;
  * @author takanori.takase
  * @version 0.0.1
  */
-@Slf4j
 public class UnivariateEstimator extends AbstractEstimator {
 
     private static final String SAMPLES_KEY = "samples";
@@ -133,7 +131,7 @@ public class UnivariateEstimator extends AbstractEstimator {
     }
 
     protected int getSamples() {
-        return getIntConfiguration(SAMPLES_KEY, SAMPLES_VAL);
+        return getIntProperty(SAMPLES_KEY, SAMPLES_VAL);
     }
 
     public static class Univariate010Estimator extends UnivariateEstimator {

@@ -5,11 +5,9 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -23,8 +21,7 @@ import static java.math.RoundingMode.HALF_UP;
  * @author takanori.takase
  * @version 0.0.1
  */
-@Slf4j
-public class AdviserImpl implements Adviser {
+public class AdviserImpl extends AbstractService implements Adviser {
 
     private final Advice BAIL = Advice.builder().build();
 
@@ -39,7 +36,7 @@ public class AdviserImpl implements Adviser {
 
     @Override
     public String get() {
-        return Service.WILDCARD;
+        return WILDCARD;
     }
 
     @Override

@@ -4,6 +4,10 @@ import com.after_sunrise.cryptocurrency.cryptotrader.core.ExecutorFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.ImmutableConfiguration;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.mockito.Mockito;
 
 import java.math.BigDecimal;
@@ -13,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
+import static com.google.common.io.Resources.getResource;
 import static com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -24,17 +29,25 @@ import static org.mockito.Mockito.*;
  */
 public class TestModule {
 
+    private static final String CONFIGURATION = "cryptotrader-test.properties";
+
     private final Map<Class<?>, Object> mocks = new HashMap<>();
 
     private final Injector injector;
 
-    public TestModule() {
+    public TestModule() throws ConfigurationException {
 
         this.injector = Guice.createInjector();
 
         ExecutorService service = setMock(ExecutorService.class, newDirectExecutorService());
 
         when(getMock(ExecutorFactory.class).get(any(Class.class), anyInt())).thenReturn(service);
+
+        Configuration configuration = spy(new Configurations().properties(getResource(CONFIGURATION)));
+
+        setMock(Configuration.class, configuration);
+
+        setMock(ImmutableConfiguration.class, configuration);
 
     }
 

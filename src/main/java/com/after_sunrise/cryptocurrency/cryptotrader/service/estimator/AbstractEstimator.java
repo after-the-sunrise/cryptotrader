@@ -3,11 +3,8 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
-import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.configuration2.ImmutableConfiguration;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.AbstractService;
 
-import javax.inject.Inject;
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,7 +15,7 @@ import static java.util.Collections.emptyMap;
  * @author takanori.takase
  * @version 0.0.1
  */
-public abstract class AbstractEstimator implements Estimator {
+public abstract class AbstractEstimator extends AbstractService implements Estimator {
 
     protected static final Estimation BAIL = Estimation.builder().confidence(ZERO).build();
 
@@ -68,58 +65,6 @@ public abstract class AbstractEstimator implements Estimator {
         addMapping("bitflyer", "BCH_BTC", "poloniex", "BTC_BCH");
         addMapping("bitflyer", "BTC_JPY", "poloniex", "oanda:USD_JPY|poloniex:USDT_BTC");
         addMapping("bitflyer", "FX_BTC_JPY", "poloniex", "oanda:USD_JPY|poloniex:USDT_BTC");
-
-    }
-
-    private final String prefix = getClass().getName() + ".";
-
-    private ImmutableConfiguration configuration;
-
-    @Inject
-    @VisibleForTesting
-    public void setConfiguration(ImmutableConfiguration configuration) {
-        this.configuration = configuration;
-    }
-
-    protected int getIntConfiguration(String key, int defaultValue) {
-
-        int value;
-
-        try {
-            value = configuration.getInt(prefix + key, defaultValue);
-        } catch (RuntimeException e) {
-            value = defaultValue;
-        }
-
-        return value;
-
-    }
-
-    protected BigDecimal getDecimalConfiguration(String key, BigDecimal defaultValue) {
-
-        BigDecimal value;
-
-        try {
-            value = configuration.getBigDecimal(prefix + key, defaultValue);
-        } catch (RuntimeException e) {
-            value = defaultValue;
-        }
-
-        return value;
-
-    }
-
-    protected String getStringConfiguration(String key, String defaultValue) {
-
-        String value;
-
-        try {
-            value = configuration.getString(prefix + key, defaultValue);
-        } catch (RuntimeException e) {
-            value = defaultValue;
-        }
-
-        return value;
 
     }
 

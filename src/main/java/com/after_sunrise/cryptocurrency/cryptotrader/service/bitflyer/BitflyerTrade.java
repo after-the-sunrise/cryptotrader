@@ -4,11 +4,13 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import lombok.ToString;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.SATOSHI;
+import static java.math.RoundingMode.HALF_UP;
 
 /**
  * @author takanori.takase
@@ -58,7 +60,7 @@ public class BitflyerTrade implements Trade {
             lock.readLock().unlock();
         }
 
-        return s.signum() == 0 ? null : n.divide(s, BitflyerService.SCALE, RoundingMode.HALF_UP);
+        return s.signum() == 0 ? null : n.divide(s, SATOSHI.scale(), HALF_UP);
 
     }
 

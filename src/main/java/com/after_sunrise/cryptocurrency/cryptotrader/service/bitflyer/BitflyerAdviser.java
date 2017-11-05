@@ -5,12 +5,9 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser;
 import com.google.common.annotations.VisibleForTesting;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
@@ -34,29 +31,16 @@ import static java.util.Collections.unmodifiableMap;
  * @author takanori.takase
  * @version 0.0.1
  */
-@Slf4j
 public class BitflyerAdviser extends TemplateAdviser implements BitflyerService {
 
     private static final double SWAP_RATE = 0.0004;
 
     private static final BigDecimal PHYSICAL_RATE = new BigDecimal("0.20");
 
-    private static final String KEY_MULTIPLIER = BitflyerAdviser.class.getName() + ".funding.multiplier";
-
-    private static final String KEY_OFFSET_PRODUCTS = BitflyerAdviser.class.getName() + ".products.offset";
-
-    private ImmutableConfiguration configuration;
-
     private Map<String, Entry<String, String>> offsetProductsCache;
 
     public BitflyerAdviser() {
         super(ID);
-    }
-
-    @Inject
-    @VisibleForTesting
-    void setConfiguration(ImmutableConfiguration configuration) {
-        this.configuration = configuration;
     }
 
     @VisibleForTesting
@@ -192,7 +176,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         if (offsetProducts == null) {
 
-            String[] entries = StringUtils.split(configuration.getString(KEY_OFFSET_PRODUCTS), '|');
+            String[] entries = StringUtils.split(getStringProperty("products.offset", ""), '|');
 
             offsetProducts = entries == null ? emptyMap() : unmodifiableMap(Stream.of(entries).map(s -> {
 
@@ -239,7 +223,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
             return offset;
         }
 
-        BigDecimal multiplier = configuration.getBigDecimal(KEY_MULTIPLIER, ZERO);
+        BigDecimal multiplier = getDecimalProperty("funding.multiplier", ZERO);
 
         BigDecimal basis = offsetPrice.divide(price, SCALE, HALF_UP).subtract(ONE)
                 .min(PHYSICAL_RATE).max(PHYSICAL_RATE.negate()).multiply(multiplier);

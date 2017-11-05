@@ -3,8 +3,8 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.AbstractService;
 import com.google.common.annotations.VisibleForTesting;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
 
 import java.math.BigDecimal;
@@ -25,10 +25,7 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
  * @author takanori.takase
  * @version 0.0.1
  */
-@Slf4j
-public class TemplateAdviser implements Adviser {
-
-    static final BigDecimal EPSILON = ONE.movePointLeft(SCALE);
+public class TemplateAdviser extends AbstractService implements Adviser {
 
     static final int SIGNUM_BUY = 1;
 

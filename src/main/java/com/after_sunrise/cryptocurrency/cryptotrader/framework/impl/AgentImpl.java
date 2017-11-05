@@ -2,10 +2,12 @@ package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Agent;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
@@ -18,8 +20,7 @@ import static java.util.Optional.ofNullable;
  * @author takanori.takase
  * @version 0.0.1
  */
-@Slf4j
-public class AgentImpl implements Agent {
+public class AgentImpl extends AbstractService implements Agent {
 
     private final PropertyManager propertyManager;
 
@@ -36,7 +37,7 @@ public class AgentImpl implements Agent {
 
     @Override
     public String get() {
-        return Service.WILDCARD;
+        return WILDCARD;
     }
 
     @Override

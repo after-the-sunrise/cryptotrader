@@ -5,13 +5,10 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Cance
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.AbstractService;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.inject.Inject;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.configuration2.ImmutableConfiguration;
-import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpStatus;
@@ -47,8 +44,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * @author takanori.takase
  * @version 0.0.1
  */
-@Slf4j
-public abstract class TemplateContext implements Context {
+public abstract class TemplateContext extends AbstractService implements Context {
 
     public enum RequestType {
 
@@ -103,8 +99,6 @@ public abstract class TemplateContext implements Context {
 
     private final CloseableHttpClient client;
 
-    private ImmutableConfiguration configuration;
-
     protected TemplateContext(String id) {
 
         this.id = id;
@@ -121,30 +115,6 @@ public abstract class TemplateContext implements Context {
     @Override
     public void close() throws Exception {
         client.close();
-    }
-
-    @Inject
-    @VisibleForTesting
-    public void setConfiguration(ImmutableConfiguration configuration) {
-        this.configuration = configuration;
-    }
-
-    @VisibleForTesting
-    public String getStringProperty(String key, String defaultValue) {
-        try {
-            return configuration.getString(key, defaultValue);
-        } catch (ConversionException e) {
-            return defaultValue;
-        }
-    }
-
-    @VisibleForTesting
-    public BigDecimal getDecimalProperty(String key, BigDecimal defaultValue) {
-        try {
-            return configuration.getBigDecimal(key, defaultValue);
-        } catch (ConversionException e) {
-            return defaultValue;
-        }
     }
 
     @VisibleForTesting

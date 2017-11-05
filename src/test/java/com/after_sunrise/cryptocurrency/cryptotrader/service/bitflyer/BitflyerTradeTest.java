@@ -43,22 +43,22 @@ public class BitflyerTradeTest {
         assertNull(target.getSellOrderId());
 
         // Notional = 617, Volume = 0.5
-        assertEquals(target.getPrice(), new BigDecimal("1234.0000000000"));
+        assertEquals(target.getPrice(), new BigDecimal("1234.00000000"));
         assertEquals(target.getSize(), new BigDecimal("0.5"));
 
         // Notional = 617 + 1000 * 0.1 = 717, Volume = 0.5 * 0.1 = 0.6
         target.accumulate(new BigDecimal("1000"), new BigDecimal("0.1"));
-        assertEquals(target.getPrice(), new BigDecimal("1195.0000000000"));
+        assertEquals(target.getPrice(), new BigDecimal("1195.00000000"));
         assertEquals(target.getSize(), new BigDecimal("0.6"));
 
         // Snapshot
         Trade snapshot = target.snapshot();
-        assertEquals(snapshot.getPrice(), new BigDecimal("1195.0000000000"));
+        assertEquals(snapshot.getPrice(), new BigDecimal("1195.00000000"));
         assertEquals(snapshot.getSize(), new BigDecimal("0.6"));
 
         // Notional = 717 + 1234 * 0.3 = 1087.2, Volume = 0.6 * 0.3 = 0.9
         target.accumulate(new BigDecimal("1234"), new BigDecimal("0.3"));
-        assertEquals(target.getPrice(), new BigDecimal("1208.0000000000"));
+        assertEquals(target.getPrice(), new BigDecimal("1208.00000000"));
         assertEquals(target.getSize(), new BigDecimal("0.9"));
 
         // Notional = 1087.2, Volume = 0.9 - 0.9 = 0
@@ -67,7 +67,7 @@ public class BitflyerTradeTest {
         assertEquals(target.getSize(), new BigDecimal("0.0"));
 
         // Snapshot remains the same.
-        assertEquals(snapshot.getPrice(), new BigDecimal("1195.0000000000"));
+        assertEquals(snapshot.getPrice(), new BigDecimal("1195.00000000"));
         assertEquals(snapshot.getSize(), new BigDecimal("0.6"));
 
     }

@@ -5,12 +5,10 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -25,8 +23,7 @@ import java.util.function.Function;
  * @author takanori.takase
  * @version 0.0.1
  */
-@Slf4j
-public class ContextImpl implements Context {
+public class ContextImpl extends AbstractService implements Context {
 
     private final Map<String, Context> contexts;
 
@@ -68,7 +65,7 @@ public class ContextImpl implements Context {
 
     @Override
     public String get() {
-        return Service.WILDCARD;
+        return WILDCARD;
     }
 
     @VisibleForTesting

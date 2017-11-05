@@ -10,7 +10,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
 import com.google.common.annotations.VisibleForTesting;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -49,10 +48,7 @@ import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
  * @author takanori.takase
  * @version 0.0.1
  */
-@Slf4j
 public class BitflyerContext extends TemplateContext implements BitflyerService, RealtimeListener {
-
-    private static final String WILDCARD = "*";
 
     private static final Pattern EXPIRY_PATTERN = Pattern.compile("^[A-Z]{6}[0-9]{2}[A-Z]{3}[0-9]{4}$");
 

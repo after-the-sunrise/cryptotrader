@@ -37,8 +37,6 @@ public class PoloniexContext extends TemplateContext implements PoloniexService 
     private static final Type TYPE_TRADE = new TypeToken<List<PoloniexTrade>>() {
     }.getType();
 
-    private static final BigDecimal HALF = new BigDecimal("0.5");
-
     private final Gson gson;
 
     public PoloniexContext() {

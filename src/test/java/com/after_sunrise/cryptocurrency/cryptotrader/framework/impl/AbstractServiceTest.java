@@ -1,5 +1,7 @@
-package com.after_sunrise.cryptocurrency.cryptotrader.framework;
+package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -8,6 +10,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
+import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.TEN;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -16,13 +20,60 @@ import static org.testng.Assert.assertEquals;
  * @author takanori.takase
  * @version 0.0.1
  */
-public class ServiceTest {
+public class AbstractServiceTest {
 
-    private Service target;
+    private AbstractService target;
 
     @BeforeMethod
-    public void setUp() {
-        target = () -> "test";
+    public void setUp() throws Exception {
+        target = new AbstractService() {
+            @Override
+            public String get() {
+                return "test";
+            }
+        };
+    }
+
+    @Test
+    public void testConfiguration() {
+
+        Map<String, Object> map = new HashMap<>();
+        target.setConfiguration(new MapConfiguration(map));
+
+        // String
+        assertEquals(target.getStringProperty("string", "b"), "b");
+        map.put(target.getClass().getName() + ".string", "a");
+        assertEquals(target.getStringProperty("string", "b"), "a");
+        map.put(target.getClass().getName() + ".string", new Object() {
+            @Override
+            public String toString() {
+                throw new RuntimeException("test");
+            }
+        }); // Exception
+        assertEquals(target.getStringProperty("string", "b"), "b");
+
+        // Int
+        assertEquals(target.getIntProperty("int", -123), -123);
+        map.put(target.getClass().getName() + ".int", -999);
+        assertEquals(target.getIntProperty("int", -123), -999);
+        map.put(target.getClass().getName() + ".int", "a"); // Exception
+        assertEquals(target.getIntProperty("int", -123), -123);
+
+        // Long
+        assertEquals(target.getLongProperty("int", -123), -123);
+        map.put(target.getClass().getName() + ".int", -999);
+        assertEquals(target.getLongProperty("int", -123), -999);
+        map.put(target.getClass().getName() + ".int", "a"); // Exception
+        assertEquals(target.getLongProperty("int", -123), -123);
+
+        // Decimal
+        assertEquals(target.getDecimalProperty("decimal", TEN), TEN);
+        map.put(target.getClass().getName() + ".decimal", "1");
+        assertEquals(target.getDecimalProperty("decimal", TEN), ONE);
+        map.put(target.getClass().getName() + ".decimal", "a"); // Exception
+        assertEquals(target.getDecimalProperty("decimal", TEN), TEN);
+
+
     }
 
     @Test

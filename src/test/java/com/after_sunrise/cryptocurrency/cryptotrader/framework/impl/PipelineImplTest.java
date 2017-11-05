@@ -33,7 +33,7 @@ public class PipelineImplTest {
     private Context context;
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
 
         module = new TestModule();
 

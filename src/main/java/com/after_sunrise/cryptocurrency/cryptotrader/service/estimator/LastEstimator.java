@@ -5,7 +5,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.annotations.VisibleForTesting;
-import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -26,7 +25,6 @@ import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
  * @author takanori.takase
  * @version 0.0.1
  */
-@Slf4j
 public class LastEstimator extends AbstractEstimator {
 
     private static final Comparator<Trade> COMPARATOR = Comparator.comparing(Trade::getTimestamp).reversed();

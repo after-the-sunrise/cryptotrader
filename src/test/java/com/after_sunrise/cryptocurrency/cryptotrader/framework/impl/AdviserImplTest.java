@@ -7,7 +7,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -36,7 +35,7 @@ public class AdviserImplTest {
     private Estimation estimation;
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
 
         service = mock(Adviser.class);
         module = new TestModule();
@@ -53,7 +52,7 @@ public class AdviserImplTest {
     @Test
     public void testGet() throws Exception {
 
-        assertEquals(target.get(), Service.WILDCARD);
+        assertEquals(target.get(), "*");
 
     }
 

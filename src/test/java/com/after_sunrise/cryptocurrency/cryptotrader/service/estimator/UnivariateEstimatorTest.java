@@ -190,6 +190,12 @@ public class UnivariateEstimatorTest {
 
         assertEquals(target.getSamples(), 60);
 
+        configuration.put(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.UnivariateEstimator.samples",
+                64
+        );
+        assertEquals(target.getSamples(), 64);
+
         assertEquals(new UnivariateEstimator.Univariate010Estimator().getSamples(), 10);
         assertEquals(new UnivariateEstimator.Univariate015Estimator().getSamples(), 15);
         assertEquals(new UnivariateEstimator.Univariate020Estimator().getSamples(), 20);

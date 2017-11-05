@@ -3,7 +3,10 @@ package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Agent;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -32,7 +35,7 @@ public class AgentImplTest {
     private Agent service;
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
 
         module = new TestModule();
         context = null;
@@ -49,7 +52,7 @@ public class AgentImplTest {
     @Test
     public void testGet() throws Exception {
 
-        assertEquals(target.get(), Service.WILDCARD);
+        assertEquals(target.get(), "*");
 
     }
 

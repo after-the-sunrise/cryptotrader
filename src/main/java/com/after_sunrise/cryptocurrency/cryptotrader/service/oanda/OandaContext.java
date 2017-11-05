@@ -32,8 +32,6 @@ public class OandaContext extends TemplateContext implements OandaService {
 
     private static final String KEY_TICKER = "prices";
 
-    private static final String AUTH_PROP = OandaContext.class.getName() + ".api.secret";
-
     private static final String AUTH_KEY = "Authorization";
 
     private static final String AUTH_VAL = "Bearer ";
@@ -75,7 +73,7 @@ public class OandaContext extends TemplateContext implements OandaService {
 
         OandaTick tick = findCached(OandaTick.class, key, () -> {
 
-            String token = getStringProperty(AUTH_PROP, null);
+            String token = getStringProperty("api.secret", null);
 
             if (StringUtils.isEmpty(token)) {
                 return null;

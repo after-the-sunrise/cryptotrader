@@ -2,6 +2,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.oanda;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.google.common.io.Resources;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -28,12 +29,16 @@ public class OandaContextTest {
 
     private OandaContext target;
 
+    private Configuration configuration;
+
     @BeforeMethod
     public void setUp() throws Exception {
 
+        configuration = new Configurations().properties(getResource("cryptotrader-test.properties"));
+
         target = spy(new OandaContext());
 
-        target.setConfiguration(new Configurations().properties(getResource("cryptotrader-test.properties")));
+        target.setConfiguration(configuration);
 
         doReturn(null).when(target).request(any(), any(), any(), any());
 
@@ -74,9 +79,9 @@ public class OandaContextTest {
         String token = "my-token";
         Map<String, String> params = singletonMap("Authorization", "Bearer " + token);
         doReturn(data).when(target).request(GET, url, params, null);
-        doReturn(token).when(target).getStringProperty(
+        configuration.setProperty(
                 "com.after_sunrise.cryptocurrency.cryptotrader.service.oanda.OandaContext.api.secret"
-                , null);
+                , token);
 
         // Found
         OandaTick tick = target.queryTick(builder.build()).get();
@@ -99,7 +104,7 @@ public class OandaContextTest {
         verify(target, times(3)).request(any(), any(), any(), any());
 
         // No token
-        doReturn(null).when(target).getStringProperty(any(), any());
+        configuration.clear();
         verify(target, times(3)).request(any(), any(), any(), any());
 
     }

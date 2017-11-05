@@ -48,10 +48,6 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
  */
 public class BitmexContext extends TemplateContext implements BitmexService {
 
-    static final String API_ID = BitmexContext.class.getName() + ".api.id";
-
-    static final String API_SECRET = BitmexContext.class.getName() + ".api.secret";
-
     static final String URL = "https://www.bitmex.com";
 
     static final String URL_ALIAS = "/api/v1/instrument/activeIntervals";
@@ -255,8 +251,8 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     @VisibleForTesting
     String executePrivate(RequestType type, String url, Map<String, String> parameters, String data) throws Exception {
 
-        String apiKey = getStringProperty(API_ID, null);
-        String secret = getStringProperty(API_SECRET, null);
+        String apiKey = getStringProperty("api.id", null);
+        String secret = getStringProperty("api.secret", null);
 
         if (StringUtils.isEmpty(apiKey) || StringUtils.isEmpty(secret)) {
             return null;

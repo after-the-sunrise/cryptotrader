@@ -5,8 +5,8 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Visitor;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.AbstractService;
 import com.google.common.annotations.VisibleForTesting;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -23,8 +23,7 @@ import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
  * @author takanori.takase
  * @version 0.0.1
  */
-@Slf4j
-public class TemplateAgent implements Agent {
+public class TemplateAgent extends AbstractService implements Agent {
 
     private static final Duration INTERVAL = Duration.ofSeconds(5);
 

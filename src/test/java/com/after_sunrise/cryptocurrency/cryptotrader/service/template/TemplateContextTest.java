@@ -3,7 +3,6 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import org.apache.commons.configuration2.ImmutableConfiguration;
-import org.apache.commons.configuration2.ex.ConversionException;
 import org.jboss.resteasy.plugins.server.undertow.UndertowJaxrsServer;
 import org.jboss.resteasy.test.TestPortProvider;
 import org.testng.annotations.AfterMethod;
@@ -96,28 +95,6 @@ public class TemplateContextTest {
     @Test
     public void testClose() throws Exception {
         target.close();
-    }
-
-    @Test
-    public void testGetStringProperty() {
-
-        when(configuration.getString("foo", "bar")).thenReturn("hoge");
-        assertEquals(target.getStringProperty("foo", "bar"), "hoge");
-
-        when(configuration.getString("foo", "bar")).thenThrow(new ConversionException("test"));
-        assertEquals(target.getStringProperty("foo", "bar"), "bar");
-
-    }
-
-    @Test
-    public void testGetDecimalProperty() {
-
-        when(configuration.getBigDecimal("foo", ONE)).thenReturn(TEN);
-        assertEquals(target.getDecimalProperty("foo", ONE), TEN);
-
-        when(configuration.getBigDecimal("foo", ONE)).thenThrow(new ConversionException("test"));
-        assertEquals(target.getDecimalProperty("foo", ONE), ONE);
-
     }
 
     @Test

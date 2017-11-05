@@ -12,6 +12,7 @@ import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -46,10 +47,16 @@ public class BitmexContextTest {
 
     private BitmexContext target;
 
+    private Configuration configuration;
+
     @BeforeMethod
     public void setUp() throws Exception {
 
+        configuration = new Configurations().properties(getResource("cryptotrader-test.properties"));
+
         target = spy(new BitmexContext());
+
+        target.setConfiguration(configuration);
 
         doReturn(null).when(target).request(any(), any(), any(), any());
 
@@ -371,12 +378,15 @@ public class BitmexContextTest {
         parameters.put("k/", null);
         parameters.put("k:", "v;");
 
-        doReturn("my_id").when(target).getStringProperty(
-                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexContext.api.id", null
+        configuration.setProperty(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexContext.api.id",
+                "my_id"
         );
-        doReturn("my_secret").when(target).getStringProperty(
-                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexContext.api.secret", null
+        configuration.setProperty(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexContext.api.secret",
+                "my_secret"
         );
+
         doReturn(Instant.ofEpochMilli(12345)).when(target).getNow();
 
         doAnswer(i -> {
@@ -401,7 +411,7 @@ public class BitmexContextTest {
         assertEquals(target.executePrivate(PUT, path, parameters, data), body);
 
         // Tokens not configured
-        doReturn(null).when(target).getStringProperty(any(), any());
+        configuration.clear();
         assertNull(target.executePrivate(PUT, path, parameters, data));
 
     }

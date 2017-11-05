@@ -2,7 +2,6 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.estimator;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
-import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.concurrent.ThreadLocalRandom;
@@ -13,7 +12,6 @@ import static java.math.BigDecimal.ONE;
  * @author takanori.takase
  * @version 0.0.1
  */
-@Slf4j
 public class RandomEstimator extends AbstractEstimator {
 
     private static final ThreadLocalRandom RANDOM = ThreadLocalRandom.current();

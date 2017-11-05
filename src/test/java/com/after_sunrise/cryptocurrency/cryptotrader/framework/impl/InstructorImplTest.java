@@ -3,8 +3,11 @@ package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ServiceFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instructor;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -33,7 +36,7 @@ public class InstructorImplTest {
     private Advice advice;
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
 
         service = mock(Instructor.class);
         module = new TestModule();
@@ -50,7 +53,7 @@ public class InstructorImplTest {
     @Test
     public void testGet() throws Exception {
 
-        assertEquals(target.get(), Service.WILDCARD);
+        assertEquals(target.get(), "*");
 
     }
 

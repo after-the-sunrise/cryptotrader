@@ -8,6 +8,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.ImmutableConfiguration;
 
 
 /**
@@ -34,6 +35,7 @@ public class CryptotraderImpl implements Cryptotrader {
         protected void configure() {
 
             bind(Configuration.class).toInstance(new ConfigurationSupplier().get());
+            bind(ImmutableConfiguration.class).to(Configuration.class).asEagerSingleton();
             bind(PropertyController.class).to(PropertyManagerImpl.class).asEagerSingleton();
             bind(PropertyManager.class).to(PropertyController.class).asEagerSingleton();
             bind(ServiceFactory.class).to(ServiceFactoryImpl.class).asEagerSingleton();
