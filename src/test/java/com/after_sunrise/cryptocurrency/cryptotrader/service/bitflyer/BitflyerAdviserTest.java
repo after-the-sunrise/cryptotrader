@@ -364,16 +364,16 @@ public class BitflyerAdviserTest {
                 }
 
                 String message = String.format("%s -> %s", currency, product);
-                assertEquals(target.findConversionPrice(context, request, currency), expect, message);
+                assertEquals(target.calculateConversionPrice(context, request, currency), expect, message);
 
                 // Null Currency
-                assertNull(target.findConversionPrice(context, request, null));
+                assertNull(target.calculateConversionPrice(context, request, null));
 
             }
 
             // Unknown Product
             Request request = Request.builder().site(ID).instrument("foo").build();
-            assertNull(target.findConversionPrice(context, request, currency));
+            assertNull(target.calculateConversionPrice(context, request, currency));
 
         }
 
@@ -424,7 +424,7 @@ public class BitflyerAdviserTest {
                 }
 
                 String message = String.format("%s -> %s", currency, product);
-                assertEquals(target.findConversionPrice(context, request, currency), expect, message);
+                assertEquals(target.calculateConversionPrice(context, request, currency), expect, message);
 
             }
 

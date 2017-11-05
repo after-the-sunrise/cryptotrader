@@ -623,7 +623,7 @@ public class TemplateAdviser implements Adviser {
 
                 CurrencyType currency = context.getInstrumentCurrency(hedgeKey);
 
-                BigDecimal conversionPrice = findConversionPrice(context, request, currency);
+                BigDecimal conversionPrice = calculateConversionPrice(context, request, currency);
 
                 if (conversionPrice == null) {
 
@@ -659,8 +659,12 @@ public class TemplateAdviser implements Adviser {
 
     }
 
-    protected BigDecimal findConversionPrice(Context context, Request request, CurrencyType currency) {
-        return ONE;
+    protected BigDecimal calculateConversionPrice(Context context, Request request, CurrencyType currency) {
+
+        CurrencyType instrument = context.getInstrumentCurrency(Key.from(request));
+
+        return instrument == null || instrument != currency ? null : ONE;
+
     }
 
     @VisibleForTesting

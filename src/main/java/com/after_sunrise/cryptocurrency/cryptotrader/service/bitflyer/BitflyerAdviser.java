@@ -251,7 +251,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
     }
 
     @Override
-    protected BigDecimal findConversionPrice(Context context, Request request, CurrencyType currency) {
+    protected BigDecimal calculateConversionPrice(Context context, Request request, CurrencyType currency) {
 
         ProductType product = ProductType.find(request.getInstrument());
 
