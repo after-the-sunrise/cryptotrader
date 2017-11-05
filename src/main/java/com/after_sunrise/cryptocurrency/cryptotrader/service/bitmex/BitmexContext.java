@@ -27,6 +27,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType.SELL;
@@ -89,6 +90,8 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     private static final Duration BUCKETED = Duration.ofHours(1);
 
     private static final String UNLISTED = "Unlisted";
+
+    private final AtomicLong lastNonce = new AtomicLong();
 
     private final Gson gson;
 
@@ -304,16 +307,43 @@ public class BitmexContext extends TemplateContext implements BitmexService {
         }
 
         String suffix = buildQueryParameter(parameters);
-        String nonce = String.valueOf(getNow().toEpochMilli());
-        String hash = computeHash(secret, type.name(), url + suffix, nonce, data);
 
-        Map<String, String> headers = new HashMap<>();
-        headers.put("Content-Type", "application/json");
-        headers.put("api-key", apiKey);
-        headers.put("api-nonce", nonce);
-        headers.put("api-signature", hash);
+        String result;
 
-        return request(type, URL + url + suffix, headers, data);
+        synchronized (lastNonce) {
+
+            long millis = 0;
+
+            for (int i = 0; i < Short.MAX_VALUE; i++) {
+
+                millis = getNow().toEpochMilli();
+
+                if (lastNonce.get() < millis) {
+
+                    lastNonce.set(millis);
+
+                    break;
+
+                }
+
+                Thread.yield();
+
+            }
+
+            String nonce = String.valueOf(millis);
+            String hash = computeHash(secret, type.name(), url + suffix, nonce, data);
+
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Content-Type", "application/json");
+            headers.put("api-key", apiKey);
+            headers.put("api-nonce", nonce);
+            headers.put("api-signature", hash);
+
+            result = request(type, URL + url + suffix, headers, data);
+
+        }
+
+        return result;
 
     }
 
