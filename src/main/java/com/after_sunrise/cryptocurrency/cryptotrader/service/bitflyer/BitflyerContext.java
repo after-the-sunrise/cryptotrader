@@ -26,6 +26,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -80,6 +82,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
     private final RealtimeService realtimeService;
 
+    private final Map<String, Lock> realtimeLocks;
+
     private final Map<String, Optional<Tick>> realtimeTicks;
 
     private final Map<String, NavigableMap<Instant, BitflyerTrade>> realtimeTrades;
@@ -94,6 +98,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     BitflyerContext(Bitflyer4j api) {
 
         super(ID);
+
+        realtimeLocks = synchronizedMap(new HashMap<>());
 
         realtimeTicks = new ConcurrentHashMap<>();
 
@@ -316,9 +322,13 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         String id = StringUtils.trimToEmpty(convertProductAlias(key));
 
+        Lock lock = realtimeLocks.computeIfAbsent(id, k -> new ReentrantLock());
+
         NavigableMap<Instant, BitflyerTrade> trades;
 
-        synchronized (realtimeTrades) {
+        try {
+
+            lock.lock();
 
             trades = realtimeTrades.get(id);
 
@@ -362,6 +372,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             }
 
+        } finally {
+            lock.unlock();
         }
 
         Instant cutoff = fromTime != null ? fromTime : getNow().minus(REALTIME_TRADE);
