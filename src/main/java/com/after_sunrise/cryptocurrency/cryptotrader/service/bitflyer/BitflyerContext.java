@@ -324,6 +324,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             if (trades == null) {
 
+                realtimeService.subscribeExecution(singletonList(id));
+
                 trades = new ConcurrentSkipListMap<>();
 
                 Execution.Request.RequestBuilder b = Execution.Request.builder().product(id).count(REALTIME_COUNT);
@@ -357,8 +359,6 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
                 }
 
                 realtimeTrades.put(id, trades);
-
-                realtimeService.subscribeExecution(singletonList(id));
 
             }
 
