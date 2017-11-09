@@ -551,6 +551,11 @@ public class TemplateAdviser extends AbstractService implements Adviser {
     }
 
     @VisibleForTesting
+    BigDecimal calculateTradingExposure(Context context, Request request) {
+        return request.getTradingExposure(); // TODO Adjust with offset
+    }
+
+    @VisibleForTesting
     BigDecimal calculateFundingExposureSize(Context context, Request request, BigDecimal price) {
 
         Map<String, Set<String>> hedgeProducts = request.getHedgeProducts();
@@ -585,7 +590,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal product = adjFund.divide(price, SCALE, HALF_UP);
 
-        BigDecimal exposure = ofNullable(request.getTradingExposure()).orElse(ZERO);
+        BigDecimal exposure = ofNullable(calculateTradingExposure(context, request)).orElse(ZERO);
 
         BigDecimal exposed = product.multiply(exposure).min(fund.divide(price, SCALE, DOWN));
 
@@ -646,7 +651,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         }
 
-        BigDecimal exposure = ofNullable(request.getTradingExposure()).orElse(ZERO);
+        BigDecimal exposure = ofNullable(calculateTradingExposure(context, request)).orElse(ZERO);
 
         BigDecimal exposed = position.multiply(exposure);
 
