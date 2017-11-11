@@ -330,17 +330,29 @@ public class BitmexContextTest {
                 null, null);
 
         Key key = Key.builder().instrument("XBT_QT").timestamp(Instant.parse("2017-11-01T23:15:48.000Z")).build();
+        BitmexTick tick = spy(BitmexTick.builder().timestamp(Instant.now()).last(TEN).build());
+        doReturn(Optional.of(tick)).when(target).queryTick(key);
         doReturn("XBTZ17").when(target).convertAlias(key);
 
+        // Unlisted (Index)
+        when(tick.getState()).thenReturn("Unlisted");
         List<Trade> trades = target.listTrades(key, null);
-        assertEquals(trades.size(), 2);
+        assertEquals(trades.size(), 1);
+        assertEquals(trades.get(0).getPrice(), tick.getLast());
+        assertEquals(trades.get(0).getSize(), ZERO);
+        assertEquals(trades.get(0).getTimestamp(), tick.getTimestamp());
+        assertEquals(trades.get(0).getBuyOrderId(), null);
+        assertEquals(trades.get(0).getSellOrderId(), null);
 
+        // Listed
+        when(tick.getState()).thenReturn(null);
+        trades = target.listTrades(key, null);
+        assertEquals(trades.size(), 2);
         assertEquals(trades.get(0).getPrice(), new BigDecimal("6601.7"));
         assertEquals(trades.get(0).getSize(), new BigDecimal("686"));
         assertEquals(trades.get(0).getTimestamp(), Instant.parse("2017-11-01T22:15:47.303Z"));
         assertEquals(trades.get(0).getBuyOrderId(), "f391ff88-6731-f02d-46c2-b82471e762a9");
         assertEquals(trades.get(0).getSellOrderId(), "f391ff88-6731-f02d-46c2-b82471e762a9");
-
         assertEquals(trades.get(1).getPrice(), new BigDecimal("6601.6"));
         assertEquals(trades.get(1).getSize(), new BigDecimal("5"));
         assertEquals(trades.get(1).getTimestamp(), Instant.parse("2017-11-01T22:15:47.000Z"));
@@ -365,13 +377,11 @@ public class BitmexContextTest {
         doReturn("XBJZ17").when(target).convertAlias(key);
         trades = target.listTrades(key, null);
         assertEquals(trades.size(), 2);
-
         assertEquals(trades.get(0).getPrice(), new BigDecimal("793399"));
         assertEquals(trades.get(0).getSize(), new BigDecimal("15000"));
         assertEquals(trades.get(0).getTimestamp(), Instant.parse("2017-11-05T06:50:00.000Z"));
         assertEquals(trades.get(0).getBuyOrderId(), null);
         assertEquals(trades.get(0).getSellOrderId(), null);
-
         assertEquals(trades.get(1).getPrice(), new BigDecimal("793399"));
         assertEquals(trades.get(1).getSize(), new BigDecimal("5000"));
         assertEquals(trades.get(1).getTimestamp(), Instant.parse("2017-11-05T06:48:00.000Z"));

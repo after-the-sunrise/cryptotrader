@@ -206,6 +206,24 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return Collections.emptyList();
         }
 
+        Optional<BitmexTick> tick = queryTick(key);
+
+        if (tick
+                .filter(t -> t.getLast() != null)
+                .filter(t -> t.getTimestamp() != null)
+                .filter(t -> UNLISTED.equals(t.getState()))
+                .filter(t -> fromTime == null || !fromTime.isAfter(t.getTimestamp()))
+                .isPresent()) {
+
+            return tick.map(t -> BitmexTrade.builder()
+                    .timestamp(t.getTimestamp())
+                    .price(t.getLast())
+                    .size(ZERO)
+                    .build()
+            ).map(Collections::<Trade>singletonList).orElseGet(Collections::emptyList);
+
+        }
+
         List<? extends Trade> trades = listCached(BitmexTrade.class, key, () -> {
 
             Map<String, String> parameters = new LinkedHashMap<>();

@@ -35,6 +35,12 @@ public class BitmexTick {
     private String state;
 
     /**
+     * "yyyy-MM-ddTHH:mm:ss.SSSZ"
+     */
+    @SerializedName("timestamp")
+    private Instant timestamp;
+
+    /**
      * Last traded price.
      */
     @SerializedName("lastPrice")
