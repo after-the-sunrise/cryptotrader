@@ -188,6 +188,57 @@ public class BitflyerContextTest {
     }
 
     @Test
+    public void testGetBoard() throws Exception {
+
+        Board board = mock(Board.class);
+        ZonedDateTime now = ZonedDateTime.now();
+        Key key = Key.from(Request.builder().instrument("i").currentTime(now.toInstant()).build());
+        doReturn("a").when(target).convertProductAlias(key);
+        when(marketService.getBoard(any())).thenReturn(completedFuture(board)).thenReturn(completedFuture(null));
+
+        // Initial
+        assertSame(target.getBoard(key).getDelegate(), board);
+        verify(marketService, times(1)).getBoard(any());
+        verify(realtimeService, times(1)).subscribeBoard(singletonList("a"));
+
+        // Cached
+        assertSame(target.getBoard(key).getDelegate(), board);
+        verify(marketService, times(1)).getBoard(any());
+        verify(realtimeService, times(1)).subscribeBoard(singletonList("a"));
+
+        // Not found
+        target.clear();
+        assertSame(target.getBoard(key), null);
+        verify(marketService, times(2)).getBoard(any());
+        verify(realtimeService, times(1)).subscribeBoard(singletonList("a"));
+
+        // Realtime found, but no time.
+        doReturn(null).when(target).getNow();
+        target.clear();
+        target.onBoards("a", board);
+        assertSame(target.getBoard(key), null);
+        verify(marketService, times(3)).getBoard(any());
+        verify(realtimeService, times(1)).subscribeBoard(singletonList("a"));
+
+        // Realtime found, but old.
+        doReturn(now.minusMinutes(10).toInstant()).when(target).getNow();
+        target.clear();
+        target.onBoards("a", board);
+        assertSame(target.getBoard(key), null);
+        verify(marketService, times(4)).getBoard(any());
+        verify(realtimeService, times(1)).subscribeBoard(singletonList("a"));
+
+        // Realtime found.
+        doReturn(now.plusMinutes(10).toInstant()).when(target).getNow();
+        target.clear();
+        target.onBoards("a", board);
+        assertSame(target.getBoard(key).getDelegate(), board);
+        verify(marketService, times(4)).getBoard(any());
+        verify(realtimeService, times(1)).subscribeBoard(singletonList("a"));
+
+    }
+
+    @Test
     public void testGetTick() throws Exception {
 
         Tick tick = mock(Tick.class);

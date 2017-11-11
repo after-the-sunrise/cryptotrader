@@ -84,6 +84,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
     private final Map<String, Lock> realtimeLocks;
 
+    private final Map<String, Optional<BitflyerBoard>> realtimeBoards;
+
     private final Map<String, Optional<Tick>> realtimeTicks;
 
     private final Map<String, NavigableMap<Instant, BitflyerTrade>> realtimeTrades;
@@ -100,6 +102,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
         super(ID);
 
         realtimeLocks = synchronizedMap(new HashMap<>());
+
+        realtimeBoards = new ConcurrentHashMap<>();
 
         realtimeTicks = new ConcurrentHashMap<>();
 
@@ -130,7 +134,17 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
     @Override
     public void onBoards(String product, Board value) {
-        // Do nothing
+
+        if (value == null) {
+            return;
+        }
+
+        String key = StringUtils.trimToEmpty(product);
+
+        Instant timestamp = getNow();
+
+        realtimeBoards.put(key, Optional.of(new BitflyerBoard(timestamp, value)));
+
     }
 
     @Override
@@ -246,6 +260,51 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     }
 
     @VisibleForTesting
+    BitflyerBoard getBoard(Key key) {
+
+        return findCached(BitflyerBoard.class, key, () -> {
+
+            String instrument = StringUtils.trimToEmpty(convertProductAlias(key));
+
+            Optional<BitflyerBoard> realtime = realtimeBoards.get(instrument);
+
+            if (realtime == null) {
+
+                // Initiate subscription if nothing is cached.
+
+                realtime = Optional.empty();
+
+                realtimeBoards.put(instrument, realtime);
+
+                realtimeService.subscribeBoard(singletonList(instrument));
+
+            }
+
+            if (realtime
+                    .filter(board -> board.getTimestamp() != null)
+                    .map(board -> Duration.between(board.getTimestamp(), key.getTimestamp()))
+                    .filter(duration -> duration.compareTo(REALTIME_EXPIRY) <= 0)
+                    .isPresent()) {
+
+                // Use cached if the timestamp is not old.
+
+                return realtime.orElse(null);
+
+            }
+
+            // Fall back to request/response.
+
+            Board.Request request = Board.Request.builder().product(instrument).build();
+
+            Board board = extract(marketService.getBoard(request), TIMEOUT);
+
+            return board == null ? null : new BitflyerBoard(getNow(), board);
+
+        });
+
+    }
+
+    @VisibleForTesting
     Tick getTick(Key key) {
 
         return findCached(Tick.class, key, () -> {
@@ -266,17 +325,15 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             }
 
-            if (realtime.isPresent() && realtime.get().getTimestamp() != null) {
+            if (realtime
+                    .filter(tick -> tick.getTimestamp() != null)
+                    .map(tick -> Duration.between(tick.getTimestamp().toInstant(), key.getTimestamp()))
+                    .filter(duration -> duration.compareTo(REALTIME_EXPIRY) <= 0)
+                    .isPresent()) {
 
                 // Use cached if the timestamp is not old.
 
-                Instant cachedTime = realtime.get().getTimestamp().toInstant();
-
-                Instant currentTime = key.getTimestamp();
-
-                if (Duration.between(cachedTime, currentTime).compareTo(REALTIME_EXPIRY) <= 0) {
-                    return realtime.get();
-                }
+                return realtime.orElse(null);
 
             }
 
