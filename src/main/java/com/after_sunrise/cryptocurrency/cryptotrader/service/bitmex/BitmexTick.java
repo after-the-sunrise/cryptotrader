@@ -16,6 +16,8 @@ import java.time.Instant;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class BitmexTick {
 
+    public static final String UNLISTED = "Unlisted";
+
     /**
      * "XTBUSD", "XBTZ17", "XBJZ17", ".BXBT"
      */

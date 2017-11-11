@@ -251,6 +251,42 @@ public class BitmexContextTest {
     }
 
     @Test
+    public void testQueryBooks() throws Exception {
+
+        doReturn(Resources.toString(getResource("json/bitmex_book.json"), UTF_8)).when(target)
+                .request(GET, "https://www.bitmex.com/api/v1/orderBook/L2?symbol=XBTUSD&depth=1", null, null);
+
+        Key key = Key.builder().instrument("XBT???").build();
+        doReturn("XBTUSD").when(target).convertAlias(key);
+
+        List<BitmexBook> result = target.queryBooks(key);
+        assertEquals(result.size(), 4);
+        assertEquals(result.get(0).getSide(), "Sell");
+        assertEquals(result.get(0).getPrice(), new BigDecimal("6573.5"));
+        assertEquals(result.get(0).getSize(), new BigDecimal("137"));
+        assertEquals(result.get(1).getSide(), "Sell");
+        assertEquals(result.get(1).getPrice(), new BigDecimal("6573"));
+        assertEquals(result.get(1).getSize(), new BigDecimal("65348"));
+        assertEquals(result.get(2).getSide(), "Buy");
+        assertEquals(result.get(2).getPrice(), new BigDecimal("6572.5"));
+        assertEquals(result.get(2).getSize(), new BigDecimal("22050"));
+        assertEquals(result.get(3).getSide(), "Buy");
+        assertEquals(result.get(3).getPrice(), new BigDecimal("6571.5"));
+        assertEquals(result.get(3).getSize(), new BigDecimal("797"));
+
+        // Empty
+        target.clear();
+        doReturn(null).when(target).request(any(), any(), any(), any());
+        assertEquals(target.queryBooks(key).size(), 0);
+
+        // Exception
+        target.clear();
+        doThrow(new IOException("test")).when(target).request(any(), any(), any(), any());
+        assertEquals(target.queryBooks(key).size(), 0);
+
+    }
+
+    @Test
     public void testGetBestAskPrice() throws Exception {
 
         Key key = Key.builder().build();
@@ -283,6 +319,44 @@ public class BitmexContextTest {
 
         doReturn(Optional.empty()).when(target).queryTick(key);
         assertEquals(target.getBestBidPrice(key), null);
+
+    }
+
+    @Test
+    public void testGetBestBboSize() throws Exception {
+
+        Key key = Key.builder().build();
+
+        List<BitmexBook> books = new ArrayList<>();
+        books.add(BitmexBook.builder().side("Sell").price(valueOf(9)).size(valueOf(19)).build());
+        books.add(BitmexBook.builder().side("Sell").price(null).size(valueOf(18)).build());
+        books.add(BitmexBook.builder().side("Sell").price(valueOf(7)).size(valueOf(17)).build());
+        books.add(BitmexBook.builder().side("Sell").price(valueOf(6)).size(null).build());
+        books.add(BitmexBook.builder().side(null).price(valueOf(5)).size(valueOf(15)).build());
+        books.add(BitmexBook.builder().side("Buy").price(null).size(valueOf(26)).build());
+        books.add(BitmexBook.builder().side("Buy").price(valueOf(3)).size(valueOf(27)).build());
+        books.add(BitmexBook.builder().side("Buy").price(valueOf(2)).size(null).build());
+        books.add(BitmexBook.builder().side("Buy").price(valueOf(1)).size(valueOf(29)).build());
+        books.add(null);
+        doReturn(books).when(target).queryBooks(key);
+
+        // Plain
+        doReturn(Optional.empty()).when(target).queryTick(key);
+        assertEquals(target.getBestAskSize(key), valueOf(17));
+        assertEquals(target.getBestBidSize(key), valueOf(27));
+
+        // Unlisted
+        BitmexTick tick = mock(BitmexTick.class);
+        when(tick.getState()).thenReturn("Unlisted");
+        doReturn(Optional.of(tick)).when(target).queryTick(key);
+        assertEquals(target.getBestAskSize(key), ZERO);
+        assertEquals(target.getBestBidSize(key), ZERO);
+
+        // No data
+        doReturn(Optional.empty()).when(target).queryTick(key);
+        doReturn(Collections.emptyList()).when(target).queryBooks(key);
+        assertEquals(target.getBestAskSize(key), null);
+        assertEquals(target.getBestBidSize(key), null);
 
     }
 

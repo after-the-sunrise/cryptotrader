@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType.SELL;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexTick.UNLISTED;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
@@ -52,6 +53,8 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
     private static final String URL_TICKER = "/api/v1/instrument/activeAndIndices";
 
+    private static final String URL_BOOK = "/api/v1/orderBook/L2";
+
     private static final String URL_TRADE = "/api/v1/trade";
 
     private static final String URL_BUCKETED = "/api/v1/trade/bucketed";
@@ -65,6 +68,9 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     private static final String URL_EXECUTION = "/api/v1/execution/tradeHistory";
 
     private static final Type TYPE_TICKER = new TypeToken<List<BitmexTick>>() {
+    }.getType();
+
+    private static final Type TYPE_BOOK = new TypeToken<List<BitmexBook>>() {
     }.getType();
 
     private static final Type TYPE_TRADE = new TypeToken<List<BitmexTrade>>() {
@@ -88,8 +94,6 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     private static final Duration TIMEOUT = Duration.ofMinutes(3);
 
     private static final Duration BUCKETED = Duration.ofHours(1);
-
-    private static final String UNLISTED = "Unlisted";
 
     private final AtomicLong lastNonce = new AtomicLong();
 
@@ -179,6 +183,34 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
     }
 
+    @VisibleForTesting
+    List<BitmexBook> queryBooks(Key key) {
+
+        if (key == null) {
+            return Collections.emptyList();
+        }
+
+        List<BitmexBook> books = listCached(BitmexBook.class, key, () -> {
+
+            Map<String, String> parameters = new LinkedHashMap<>();
+            parameters.put("symbol", convertAlias(key));
+            parameters.put("depth", ONE.toPlainString());
+            String path = URL + URL_BOOK + buildQueryParameter(parameters);
+
+            String data = request(GET, path, null, null);
+
+            if (StringUtils.isEmpty(data)) {
+                return null;
+            }
+
+            return Collections.unmodifiableList(gson.fromJson(data, TYPE_BOOK));
+
+        });
+
+        return books != null ? books : Collections.emptyList();
+
+    }
+
     @Override
     public BigDecimal getBestAskPrice(Key key) {
         return queryTick(key).map(t -> UNLISTED.equals(t.getState()) ? t.getLast() : t.getAsk()).orElse(null);
@@ -187,6 +219,44 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     @Override
     public BigDecimal getBestBidPrice(Key key) {
         return queryTick(key).map(t -> UNLISTED.equals(t.getState()) ? t.getLast() : t.getBid()).orElse(null);
+    }
+
+    @Override
+    public BigDecimal getBestAskSize(Key key) {
+
+        if (queryTick(key).filter(t -> UNLISTED.equals(t.getState())).isPresent()) {
+            return ZERO;
+        }
+
+        return queryBooks(key).stream()
+                .filter(Objects::nonNull)
+                .filter(b -> b.getSide() != null)
+                .filter(b -> b.getPrice() != null)
+                .filter(b -> b.getSize() != null)
+                .filter(b -> !BitmexBook.SIDE_BUY.equals(b.getSide()))
+                .min(Comparator.comparing(BitmexBook::getPrice))
+                .map(BitmexBook::getSize)
+                .orElse(null);
+
+    }
+
+    @Override
+    public BigDecimal getBestBidSize(Key key) {
+
+        if (queryTick(key).filter(t -> UNLISTED.equals(t.getState())).isPresent()) {
+            return ZERO;
+        }
+
+        return queryBooks(key).stream()
+                .filter(Objects::nonNull)
+                .filter(b -> b.getSide() != null)
+                .filter(b -> b.getPrice() != null)
+                .filter(b -> b.getSize() != null)
+                .filter(b -> BitmexBook.SIDE_BUY.equals(b.getSide()))
+                .max(Comparator.comparing(BitmexBook::getPrice))
+                .map(BitmexBook::getSize)
+                .orElse(null);
+
     }
 
     @Override
