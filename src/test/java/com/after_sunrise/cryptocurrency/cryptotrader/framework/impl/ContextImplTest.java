@@ -135,6 +135,28 @@ public class ContextImplTest {
     }
 
     @Test
+    public void testGetBestAskSize() {
+
+        BigDecimal value = new BigDecimal(Math.random());
+
+        when(contexts.get("c1").getBestAskSize(key)).thenReturn(value);
+
+        assertEquals(target.getBestAskSize(key), value);
+
+    }
+
+    @Test
+    public void testGetBestBidSize() {
+
+        BigDecimal value = new BigDecimal(Math.random());
+
+        when(contexts.get("c1").getBestBidSize(key)).thenReturn(value);
+
+        assertEquals(target.getBestBidSize(key), value);
+
+    }
+
+    @Test
     public void testGetMidPrice() {
 
         BigDecimal value = new BigDecimal(Math.random());

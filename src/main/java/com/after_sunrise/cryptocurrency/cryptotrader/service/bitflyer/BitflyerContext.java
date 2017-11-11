@@ -309,6 +309,24 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     }
 
     @Override
+    public BigDecimal getBestAskSize(Key key) {
+
+        Tick tick = getTick(key);
+
+        return tick == null ? null : tick.getBestAskSize();
+
+    }
+
+    @Override
+    public BigDecimal getBestBidSize(Key key) {
+
+        Tick tick = getTick(key);
+
+        return tick == null ? null : tick.getBestBidSize();
+
+    }
+
+    @Override
     public BigDecimal getLastPrice(Key key) {
 
         Tick tick = getTick(key);

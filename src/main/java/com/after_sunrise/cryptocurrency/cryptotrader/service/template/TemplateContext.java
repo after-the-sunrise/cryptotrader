@@ -326,6 +326,16 @@ public abstract class TemplateContext extends AbstractService implements Context
     }
 
     @Override
+    public BigDecimal getBestAskSize(Key key) {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getBestBidSize(Key key) {
+        return null;
+    }
+
+    @Override
     public BigDecimal getMidPrice(Key key) {
 
         BigDecimal ask = getBestAskPrice(key);

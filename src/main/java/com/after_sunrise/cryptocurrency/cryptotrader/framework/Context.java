@@ -75,6 +75,10 @@ public interface Context extends Service, AutoCloseable {
 
     BigDecimal getBestBidPrice(Key key);
 
+    BigDecimal getBestAskSize(Key key);
+
+    BigDecimal getBestBidSize(Key key);
+
     BigDecimal getMidPrice(Key key);
 
     BigDecimal getLastPrice(Key key);

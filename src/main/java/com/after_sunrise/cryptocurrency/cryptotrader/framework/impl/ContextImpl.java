@@ -96,6 +96,16 @@ public class ContextImpl extends AbstractService implements Context {
     }
 
     @Override
+    public BigDecimal getBestAskSize(Key key) {
+        return forContext(key, c -> c.getBestAskSize(key));
+    }
+
+    @Override
+    public BigDecimal getBestBidSize(Key key) {
+        return forContext(key, c -> c.getBestBidSize(key));
+    }
+
+    @Override
     public BigDecimal getMidPrice(Key key) {
         return forContext(key, c -> c.getMidPrice(key));
     }

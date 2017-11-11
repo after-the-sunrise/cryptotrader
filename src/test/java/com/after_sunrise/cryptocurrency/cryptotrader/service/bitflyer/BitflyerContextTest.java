@@ -266,6 +266,36 @@ public class BitflyerContextTest {
     }
 
     @Test
+    public void testGetBesAskSize() throws Exception {
+
+        Key key = Key.from(Request.builder().build());
+        Tick tick = mock(Tick.class);
+        when(tick.getBestAskSize()).thenReturn(ONE);
+
+        doReturn(tick).when(target).getTick(key);
+        assertEquals(target.getBestAskSize(key), ONE);
+
+        doReturn(null).when(target).getTick(key);
+        assertEquals(target.getBestAskSize(key), null);
+
+    }
+
+    @Test
+    public void testGetBesBidSize() throws Exception {
+
+        Key key = Key.from(Request.builder().build());
+        Tick tick = mock(Tick.class);
+        when(tick.getBestBidSize()).thenReturn(ONE);
+
+        doReturn(tick).when(target).getTick(key);
+        assertEquals(target.getBestBidSize(key), ONE);
+
+        doReturn(null).when(target).getTick(key);
+        assertEquals(target.getBestBidSize(key), null);
+
+    }
+
+    @Test
     public void testGetLastPrice() throws Exception {
 
         Key key = Key.from(Request.builder().build());
