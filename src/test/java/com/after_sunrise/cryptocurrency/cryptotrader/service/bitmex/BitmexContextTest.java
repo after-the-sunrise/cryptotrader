@@ -75,13 +75,17 @@ public class BitmexContextTest {
 
         doCallRealMethod().when(target).request(any(), any(), any(), any());
 
-        Key key = Key.builder().instrument("XBJZ17").timestamp(Instant.now()).build();
+        Key key = Key.builder().instrument("XBT_QT").timestamp(Instant.now()).build();
 
         // Tick
         System.out.println("Ask : " + target.getBestAskPrice(key));
         System.out.println("Bid : " + target.getBestBidPrice(key));
         System.out.println("Mid : " + target.getMidPrice(key));
         System.out.println("Ltp : " + target.getLastPrice(key));
+
+        // Book
+        System.out.println("ASZ : " + target.getBestAskSize(key));
+        System.out.println("BSZ : " + target.getBestBidSize(key));
 
         // Trade
         System.out.println("TRD : " + target.listTrades(key, null));
