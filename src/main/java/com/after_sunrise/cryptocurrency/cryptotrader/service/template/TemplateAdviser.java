@@ -552,7 +552,25 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
     @VisibleForTesting
     BigDecimal calculateTradingExposure(Context context, Request request) {
-        return request.getTradingExposure(); // TODO Adjust with offset
+
+        BigDecimal exposure = ofNullable(request.getTradingExposure()).orElse(ZERO);
+
+        BigDecimal offset = adjustFundingOffset(context, request, request.getFundingOffset());
+
+        if (offset == null) {
+            return null;
+        }
+
+        BigDecimal adjustment = ONE.add(offset);
+
+        if (adjustment.signum() <= 0) {
+            return ONE;
+        }
+
+        BigDecimal root = BigDecimal.valueOf(Math.sqrt(adjustment.doubleValue()));
+
+        return exposure.divide(root, SCALE, HALF_UP).min(ONE);
+
     }
 
     @VisibleForTesting

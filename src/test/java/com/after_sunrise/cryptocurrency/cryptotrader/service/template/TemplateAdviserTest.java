@@ -17,8 +17,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.*;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.SIGNUM_BUY;
@@ -69,11 +71,7 @@ public class TemplateAdviserTest {
         when(context.roundTickSize(any(), any(), any())).thenAnswer(i -> f.apply(i, new BigDecimal("0.0025")));
         when(context.roundLotSize(any(), any(), any())).thenAnswer(i -> f.apply(i, new BigDecimal("0.25")));
 
-        rBuilder = Request.builder().site("s").instrument("i").targetTime(now())
-                .tradingExposure(new BigDecimal("0.10"))
-                .tradingSplit(new BigDecimal("2"))
-                .tradingSpread(new BigDecimal("0.0060"))
-                .fundingOffset(new BigDecimal("-0.50"));
+        rBuilder = Request.builder().site("s").instrument("i").targetTime(now());
 
         eBuilder = Estimation.builder().price(new BigDecimal("12345.6789")).confidence(new BigDecimal("0.5"));
 
@@ -217,7 +215,7 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculatePositionRatio_Cash() {
 
-        Request request = rBuilder.build();
+        Request request = rBuilder.fundingOffset(new BigDecimal("-0.50")).build();
         Request aversion = rBuilder.tradingAversion(new BigDecimal("1.5")).build();
         Request ignore = rBuilder.tradingAversion(new BigDecimal("0.0")).build();
         Key key = Key.from(request);
@@ -304,7 +302,7 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculatePositionRatio_Margin() {
 
-        Request request = rBuilder.build();
+        Request request = rBuilder.fundingOffset(new BigDecimal("-0.50")).build();
         Request aversion = rBuilder.tradingAversion(new BigDecimal("1.5")).build();
         Request ignore = rBuilder.tradingAversion(new BigDecimal("0.0")).build();
         Key key = Key.from(request);
@@ -749,10 +747,43 @@ public class TemplateAdviserTest {
     }
 
     @Test
+    public void testCalculateTradingExposure() {
+
+        BigDecimal offset = new BigDecimal("0.00");
+        Request request = rBuilder.tradingExposure(new BigDecimal("0.10")).fundingOffset(offset).build();
+
+        Stream.of(
+                new SimpleEntry<>(new BigDecimal("+0.00"), new BigDecimal("0.1000000000")),
+                new SimpleEntry<>(new BigDecimal("+0.50"), new BigDecimal("0.0816496581")),
+                new SimpleEntry<>(new BigDecimal("+1.00"), new BigDecimal("0.0707106781")),
+                new SimpleEntry<>(new BigDecimal("+2.00"), new BigDecimal("0.0577350269")),
+                new SimpleEntry<>(new BigDecimal("+4.00"), new BigDecimal("0.0447213595")),
+                new SimpleEntry<>(new BigDecimal("+8.00"), new BigDecimal("0.0333333333")),
+                new SimpleEntry<>(new BigDecimal("16.00"), new BigDecimal("0.0242535625")),
+                new SimpleEntry<>(new BigDecimal("-0.10"), new BigDecimal("0.1054092553")),
+                new SimpleEntry<>(new BigDecimal("-0.20"), new BigDecimal("0.1118033989")),
+                new SimpleEntry<>(new BigDecimal("-0.40"), new BigDecimal("0.1290994449")),
+                new SimpleEntry<>(new BigDecimal("-0.80"), new BigDecimal("0.2236067977")),
+                new SimpleEntry<>(new BigDecimal("-0.95"), new BigDecimal("0.4472135955")),
+                new SimpleEntry<>(new BigDecimal("-0.98"), new BigDecimal("0.7071067812")),
+                new SimpleEntry<>(new BigDecimal("-0.99"), new BigDecimal("1.0000000000")),
+                new SimpleEntry<>(new BigDecimal("-1.00"), new BigDecimal("1")),
+                new SimpleEntry<>(new BigDecimal("-2.00"), new BigDecimal("1")),
+                new SimpleEntry<>(null, null)
+        ).forEach(entry -> {
+            doReturn(entry.getKey()).when(target).adjustFundingOffset(context, request, offset);
+            BigDecimal result = target.calculateTradingExposure(context, request);
+            assertEquals(result, entry.getValue(), "Key : " + entry.getKey());
+        });
+
+    }
+
+    @Test
     public void testCalculateFundingExposureSize() {
 
-        Request.RequestBuilder builder = rBuilder.tradingExposure(new BigDecimal("0.10"));
+        Request.RequestBuilder builder = rBuilder.fundingOffset(new BigDecimal("-0.50"));
         when(context.getFundingPosition(any())).thenReturn(new BigDecimal("18000"));
+        doReturn(new BigDecimal("0.10")).when(target).calculateTradingExposure(eq(context), any());
         BigDecimal price = new BigDecimal("123.4567");
 
         // Exposed = Fund * Exposure = 900
@@ -793,8 +824,9 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateInstrumentExposureSize() {
 
-        Request request = rBuilder.tradingExposure(new BigDecimal("0.10")).build();
+        Request request = rBuilder.build();
         Key key = Key.from(request);
+        doReturn(new BigDecimal("0.10")).when(target).calculateTradingExposure(context, request);
 
         // Exposed = Instrument * Exposure = 900
         BigDecimal expect = new BigDecimal("900.00");
@@ -832,6 +864,8 @@ public class TemplateAdviserTest {
             doReturn(new BigDecimal("1.0")).when(target).calculateConversionPrice(context, request, BTC);
             doReturn(new BigDecimal("0.4")).when(target).calculateConversionPrice(context, request, ETH);
             doReturn(new BigDecimal("0.6")).when(target).calculateConversionPrice(context, request, BCH);
+
+            doReturn(new BigDecimal("0.10")).when(target).calculateTradingExposure(context, request);
 
         };
 
