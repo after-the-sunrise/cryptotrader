@@ -89,6 +89,7 @@ public class PipelineImpl implements Pipeline {
                 .tradingSpreadAsk(propertyManager.getTradingSpreadAsk(site, instrument))
                 .tradingSpreadBid(propertyManager.getTradingSpreadBid(site, instrument))
                 .tradingSigma(propertyManager.getTradingSigma(site, instrument))
+                .tradingSamples(propertyManager.getTradingSamples(site, instrument))
                 .tradingExposure(propertyManager.getTradingExposure(site, instrument))
                 .tradingAversion(propertyManager.getTradingAversion(site, instrument))
                 .tradingSplit(propertyManager.getTradingSplit(site, instrument))
@@ -134,6 +135,11 @@ public class PipelineImpl implements Pipeline {
 
         if (request.getTradingSigma() == null) {
             log.warn("Invalid request : trading sigma");
+            return null;
+        }
+
+        if (request.getTradingSamples() == null) {
+            log.warn("Invalid request : trading samples");
             return null;
         }
 

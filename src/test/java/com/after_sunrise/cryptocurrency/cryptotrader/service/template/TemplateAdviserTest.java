@@ -165,7 +165,8 @@ public class TemplateAdviserTest {
 
         Instant t0 = Instant.ofEpochMilli(10000);
         Instant t1 = Instant.ofEpochMilli(10100);
-        Request request = Request.builder().currentTime(t0).targetTime(t1).tradingSigma(TEN).build();
+        Request request = Request.builder().currentTime(t0).targetTime(t1)
+                .tradingSigma(TEN).tradingSamples(60).build();
 
         List<Trade> trades = singletonList(mock(Trade.class));
         when(context.listTrades(any(), eq(Instant.ofEpochMilli(3900)))).thenReturn(trades);

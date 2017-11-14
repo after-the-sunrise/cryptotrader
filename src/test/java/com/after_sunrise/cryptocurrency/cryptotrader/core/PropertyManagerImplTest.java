@@ -435,6 +435,38 @@ public class PropertyManagerImplTest {
     }
 
     @Test
+    public void testGetTradingSamples() throws Exception {
+
+        assertEquals(target.getTradingSamples(site, inst), (Integer) 0);
+
+        // Specific
+        doReturn(valueOf(8)).when(conf).getBigDecimal(TRADING_SAMPLES.getKey());
+        assertEquals(target.getTradingSamples(site, inst), (Integer) 8);
+
+        // Ceiling
+        doReturn(valueOf(Integer.MAX_VALUE)).when(conf).getBigDecimal(TRADING_SAMPLES.getKey());
+        assertEquals(target.getTradingSamples(site, inst), (Integer) Integer.MAX_VALUE);
+
+        // Floor
+        doReturn(valueOf(Integer.MIN_VALUE)).when(conf).getBigDecimal(TRADING_SAMPLES.getKey());
+        assertEquals(target.getTradingSamples(site, inst), (Integer) 0);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(TRADING_SAMPLES.getKey());
+        assertEquals(target.getTradingSamples(site, inst), (Integer) 0);
+        reset(conf);
+
+        // Override
+        target.setTradingSamples(site, inst, 3);
+        assertEquals(target.getTradingSamples(site, inst), (Integer) 3);
+
+        // Clear
+        target.setTradingSamples(site, inst, null);
+        assertEquals(target.getTradingSamples(site, inst), (Integer) 0);
+
+    }
+
+    @Test
     public void testGetTradingExposure() throws Exception {
 
         // Default

@@ -320,6 +320,16 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
+    public Integer getTradingSamples(String site, String instrument) {
+        return getDecimal(site, instrument, TRADING_SAMPLES, ZERO, null, ZERO).intValue();
+    }
+
+    @Override
+    public void setTradingSamples(String site, String instrument, Integer value) {
+        set(TRADING_SAMPLES, site, instrument, value, input -> input);
+    }
+
+    @Override
     public BigDecimal getTradingExposure(String site, String instrument) {
         return getDecimal(site, instrument, TRADING_EXPOSURE, ZERO, ONE, ZERO);
     }

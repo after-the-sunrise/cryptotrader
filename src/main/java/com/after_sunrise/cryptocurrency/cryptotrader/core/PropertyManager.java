@@ -34,6 +34,8 @@ public interface PropertyManager {
 
     BigDecimal getTradingSigma(String site, String instrument);
 
+    Integer getTradingSamples(String site, String instrument);
+
     BigDecimal getTradingExposure(String site, String instrument);
 
     BigDecimal getTradingAversion(String site, String instrument);

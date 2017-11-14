@@ -31,8 +31,6 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
     static final int SIGNUM_SELL = -1;
 
-    static final int SAMPLES = 60;
-
     private final String id;
 
     public TemplateAdviser(String id) {
@@ -152,11 +150,17 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             return ZERO;
         }
 
+        Integer samples = request.getTradingSamples();
+
+        if (samples == null || samples <= TEN.intValue()) {
+            return ZERO;
+        }
+
         Duration interval = Duration.between(request.getCurrentTime(), request.getTargetTime());
 
         Instant to = request.getCurrentTime();
 
-        Instant from = to.minus(interval.toMillis() * SAMPLES, MILLIS);
+        Instant from = to.minus(interval.toMillis() * samples, MILLIS);
 
         List<Trade> trades = context.listTrades(Key.from(request), from.minus(interval));
 

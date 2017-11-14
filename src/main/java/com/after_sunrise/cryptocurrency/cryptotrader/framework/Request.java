@@ -39,6 +39,8 @@ public class Request {
 
     private BigDecimal tradingSigma;
 
+    private Integer tradingSamples;
+
     private BigDecimal tradingExposure;
 
     private BigDecimal tradingAversion;
