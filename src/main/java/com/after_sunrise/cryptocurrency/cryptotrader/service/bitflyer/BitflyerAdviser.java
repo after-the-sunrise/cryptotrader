@@ -5,27 +5,21 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser;
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.collections.MapUtils;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
 import static java.math.RoundingMode.UP;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.unmodifiableMap;
 
 /**
  * @author takanori.takase
@@ -36,8 +30,6 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
     private static final double SWAP_RATE = 0.0004;
 
     private static final BigDecimal PHYSICAL_RATE = new BigDecimal("0.20");
-
-    private Map<String, Entry<String, String>> offsetProductsCache;
 
     public BitflyerAdviser() {
         super(ID);
@@ -170,40 +162,12 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     }
 
-    private Entry<String, String> findOffsetProduct(Request request) {
-
-        Map<String, Entry<String, String>> offsetProducts = offsetProductsCache;
-
-        if (offsetProducts == null) {
-
-            String[] entries = StringUtils.split(getStringProperty("products.offset", ""), '|');
-
-            offsetProducts = entries == null ? emptyMap() : unmodifiableMap(Stream.of(entries).map(s -> {
-
-                String[] values = StringUtils.split(s, ":", 3);
-
-                if (ArrayUtils.isEmpty(values) || values.length != 3) {
-                    return null;
-                }
-
-                return new SimpleEntry<>(values[0], new SimpleEntry<>(values[1], values[2]));
-
-            }).filter(Objects::nonNull).collect(Collectors.toMap(Entry::getKey, Entry::getValue)));
-
-            offsetProductsCache = offsetProducts;
-
-        }
-
-        return offsetProducts.get(request.getInstrument());
-
-    }
-
     @Override
     protected BigDecimal adjustFundingOffset(Context context, Request request, BigDecimal offset) {
 
-        Entry<String, String> offsetProduct = findOffsetProduct(request);
+        Map<String, Set<String>> offsetProducts = request.getFundingMultiplierProducts();
 
-        if (offsetProduct == null) {
+        if (MapUtils.isEmpty(offsetProducts)) {
             return offset;
         }
 
@@ -215,18 +179,37 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
             return offset;
         }
 
-        Key offsetKey = Key.build(key).site(offsetProduct.getKey()).instrument(offsetProduct.getValue()).build();
+        BigDecimal tilt = ONE;
 
-        BigDecimal offsetPrice = context.getMidPrice(offsetKey);
+        for (Entry<String, Set<String>> entry : offsetProducts.entrySet()) {
 
-        if (offsetPrice == null || offsetPrice.signum() == 0) {
-            return offset;
+            for (String product : entry.getValue()) {
+
+                Key offsetKey = Key.build(key).site(entry.getKey()).instrument(product).build();
+
+                BigDecimal offsetPrice = context.getMidPrice(offsetKey);
+
+                if (offsetPrice == null || offsetPrice.signum() == 0) {
+                    return offset;
+                }
+
+                tilt = tilt.multiply(offsetPrice.divide(price, SCALE, HALF_UP));
+
+            }
+
         }
 
-        BigDecimal multiplier = getDecimalProperty("funding.multiplier", ZERO);
+        BigDecimal adjustment = tilt.subtract(ONE);
 
-        BigDecimal basis = offsetPrice.divide(price, SCALE, HALF_UP).subtract(ONE)
-                .min(PHYSICAL_RATE).max(PHYSICAL_RATE.negate()).multiply(multiplier);
+        BigDecimal multiplier;
+
+        if (adjustment.signum() > 0) {
+            multiplier = request.getFundingPositiveMultiplier();
+        } else {
+            multiplier = request.getFundingNegativeMultiplier();
+        }
+
+        BigDecimal basis = adjustment.min(PHYSICAL_RATE).max(PHYSICAL_RATE.negate()).multiply(multiplier);
 
         return offset.add(basis.setScale(SCALE, HALF_UP));
 
