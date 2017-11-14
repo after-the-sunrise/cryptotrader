@@ -23,6 +23,9 @@ import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.*;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ID;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.BTCJPY_MAT1WK;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.BTC_JPY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.SIGNUM_BUY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.SIGNUM_SELL;
 import static java.math.BigDecimal.*;
@@ -377,6 +380,60 @@ public class TemplateAdviserTest {
         when(context.getInstrumentPosition(key)).thenReturn(ZERO);
         when(context.getFundingPosition(key)).thenReturn(new BigDecimal("19600"));
         assertNull(target.calculatePositionRatio(context, request));
+
+    }
+
+    @Test
+    public void testCalculateFundingOffset() {
+
+        BigDecimal offset = new BigDecimal("0.0000");
+        Request r1 = Request.builder().instrument(BTC_JPY.name()).fundingOffset(offset)
+                .fundingMultiplierProducts(singletonMap(ID, singleton(BTCJPY_MAT1WK.name())))
+                .fundingPositiveMultiplier(valueOf(100)).fundingNegativeMultiplier(valueOf(95)).build();
+        Request r2 = Request.builder().site(ID).instrument(BTCJPY_MAT1WK.name()).build();
+
+        Stream.of(
+                new SimpleEntry<>(new BigDecimal("845000"), new BigDecimal("30.0000000000")), // +30%
+                new SimpleEntry<>(new BigDecimal("780000"), new BigDecimal("20.0000000000")), // +20%
+                new SimpleEntry<>(new BigDecimal("715000"), new BigDecimal("10.0000000000")), // +10%
+                new SimpleEntry<>(new BigDecimal("663000"), new BigDecimal("2.0000000000")), // +2%
+                new SimpleEntry<>(new BigDecimal("656500"), new BigDecimal("1.0000000000")), // +1%
+                new SimpleEntry<>(new BigDecimal("650000"), new BigDecimal("0.0000000000")), // 0%
+                new SimpleEntry<>(new BigDecimal("643500"), new BigDecimal("-0.9500000000")), // -1%
+                new SimpleEntry<>(new BigDecimal("637000"), new BigDecimal("-1.9000000000")), // -2%
+                new SimpleEntry<>(new BigDecimal("585000"), new BigDecimal("-9.5000000000")), // -10%
+                new SimpleEntry<>(new BigDecimal("520000"), new BigDecimal("-19.0000000000")), // -20%
+                new SimpleEntry<>(new BigDecimal("455000"), new BigDecimal("-28.5000000000")) // -30%
+        ).forEach(e -> {
+            when(context.getMidPrice(Key.from(r1))).thenReturn(valueOf(650000));
+            when(context.getMidPrice(Key.from(r2))).thenReturn(e.getKey());
+            assertEquals(target.calculateFundingOffset(context, r1), e.getValue(), e.getKey().toPlainString());
+            assertEquals(target.calculateFundingOffset(context, r2), null);
+        });
+
+        // Zero 1
+        when(context.getMidPrice(Key.from(r1))).thenReturn(new BigDecimal("0.0"));
+        when(context.getMidPrice(Key.from(r2))).thenReturn(valueOf(650000));
+        assertEquals(target.calculateFundingOffset(context, r1), offset);
+        assertEquals(target.calculateFundingOffset(context, r2), null);
+
+        // Zero 2
+        when(context.getMidPrice(Key.from(r1))).thenReturn(valueOf(650000));
+        when(context.getMidPrice(Key.from(r2))).thenReturn(new BigDecimal("0.0"));
+        assertEquals(target.calculateFundingOffset(context, r1), offset);
+        assertEquals(target.calculateFundingOffset(context, r2), null);
+
+        // Null 1
+        when(context.getMidPrice(Key.from(r1))).thenReturn(null);
+        when(context.getMidPrice(Key.from(r2))).thenReturn(valueOf(650000));
+        assertEquals(target.calculateFundingOffset(context, r1), offset);
+        assertEquals(target.calculateFundingOffset(context, r2), null);
+
+        // Null 2
+        when(context.getMidPrice(Key.from(r1))).thenReturn(valueOf(650000));
+        when(context.getMidPrice(Key.from(r2))).thenReturn(null);
+        assertEquals(target.calculateFundingOffset(context, r1), offset);
+        assertEquals(target.calculateFundingOffset(context, r2), null);
 
     }
 
@@ -750,8 +807,8 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateTradingExposure() {
 
-        BigDecimal offset = new BigDecimal("0.00");
-        Request request = rBuilder.tradingExposure(new BigDecimal("0.10")).fundingOffset(offset).build();
+        Request request = rBuilder.tradingExposure(new BigDecimal("0.10"))
+                .fundingOffset(new BigDecimal("0.00")).build();
 
         Stream.of(
                 new SimpleEntry<>(new BigDecimal("+0.00"), new BigDecimal("0.1000000000")),
@@ -772,7 +829,7 @@ public class TemplateAdviserTest {
                 new SimpleEntry<>(new BigDecimal("-2.00"), new BigDecimal("1")),
                 new SimpleEntry<>(null, null)
         ).forEach(entry -> {
-            doReturn(entry.getKey()).when(target).adjustFundingOffset(context, request, offset);
+            doReturn(entry.getKey()).when(target).calculateFundingOffset(context, request);
             BigDecimal result = target.calculateTradingExposure(context, request);
             assertEquals(result, entry.getValue(), "Key : " + entry.getKey());
         });

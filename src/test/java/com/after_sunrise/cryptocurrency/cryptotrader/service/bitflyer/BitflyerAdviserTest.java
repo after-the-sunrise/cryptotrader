@@ -16,17 +16,13 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ID;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.*;
 import static java.math.BigDecimal.*;
 import static java.math.BigDecimal.valueOf;
-import static java.util.Collections.singleton;
-import static java.util.Collections.singletonMap;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
@@ -220,60 +216,6 @@ public class BitflyerAdviserTest {
         // Null Market
         result = target.adjustSellBoundaryPrice(context, request, null);
         assertEquals(result, null);
-
-    }
-
-    @Test
-    public void testAdjustFundingOffset() {
-
-        BigDecimal offset = new BigDecimal("0.0000");
-        Request r1 = Request.builder().instrument(BTC_JPY.name())
-                .fundingMultiplierProducts(singletonMap(ID, singleton(BTCJPY_MAT1WK.name())))
-                .fundingPositiveMultiplier(valueOf(100)).fundingNegativeMultiplier(valueOf(95)).build();
-        Request r2 = Request.builder().site(ID).instrument(BTCJPY_MAT1WK.name()).build();
-
-        Stream.of(
-                new SimpleEntry<>(new BigDecimal("845000"), new BigDecimal("20.0000000000")), // +30%
-                new SimpleEntry<>(new BigDecimal("780000"), new BigDecimal("20.0000000000")), // +20%
-                new SimpleEntry<>(new BigDecimal("715000"), new BigDecimal("10.0000000000")), // +10%
-                new SimpleEntry<>(new BigDecimal("663000"), new BigDecimal("2.0000000000")), // +2%
-                new SimpleEntry<>(new BigDecimal("656500"), new BigDecimal("1.0000000000")), // +1%
-                new SimpleEntry<>(new BigDecimal("650000"), new BigDecimal("0.0000000000")), // 0%
-                new SimpleEntry<>(new BigDecimal("643500"), new BigDecimal("-0.9500000000")), // -1%
-                new SimpleEntry<>(new BigDecimal("637000"), new BigDecimal("-1.9000000000")), // -2%
-                new SimpleEntry<>(new BigDecimal("585000"), new BigDecimal("-9.5000000000")), // -10%
-                new SimpleEntry<>(new BigDecimal("520000"), new BigDecimal("-19.0000000000")), // -20%
-                new SimpleEntry<>(new BigDecimal("455000"), new BigDecimal("-19.0000000000")) // -30%
-        ).forEach(e -> {
-            when(context.getMidPrice(Key.from(r1))).thenReturn(valueOf(650000));
-            when(context.getMidPrice(Key.from(r2))).thenReturn(e.getKey());
-            assertEquals(target.adjustFundingOffset(context, r1, offset), e.getValue(), e.getKey().toPlainString());
-            assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
-        });
-
-        // Zero 1
-        when(context.getMidPrice(Key.from(r1))).thenReturn(new BigDecimal("0.0"));
-        when(context.getMidPrice(Key.from(r2))).thenReturn(valueOf(650000));
-        assertEquals(target.adjustFundingOffset(context, r1, offset), offset);
-        assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
-
-        // Zero 2
-        when(context.getMidPrice(Key.from(r1))).thenReturn(valueOf(650000));
-        when(context.getMidPrice(Key.from(r2))).thenReturn(new BigDecimal("0.0"));
-        assertEquals(target.adjustFundingOffset(context, r1, offset), offset);
-        assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
-
-        // Null 1
-        when(context.getMidPrice(Key.from(r1))).thenReturn(null);
-        when(context.getMidPrice(Key.from(r2))).thenReturn(valueOf(650000));
-        assertEquals(target.adjustFundingOffset(context, r1, offset), offset);
-        assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
-
-        // Null 2
-        when(context.getMidPrice(Key.from(r1))).thenReturn(valueOf(650000));
-        when(context.getMidPrice(Key.from(r2))).thenReturn(null);
-        assertEquals(target.adjustFundingOffset(context, r1, offset), offset);
-        assertEquals(target.adjustFundingOffset(context, r2, offset), offset);
 
     }
 

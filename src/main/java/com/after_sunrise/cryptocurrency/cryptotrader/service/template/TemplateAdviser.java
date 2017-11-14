@@ -210,7 +210,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         }
 
-        BigDecimal offset = adjustFundingOffset(context, request, request.getFundingOffset());
+        BigDecimal offset = calculateFundingOffset(context, request);
 
         BigDecimal adjFunding = funding.multiply(ONE.add(ofNullable(offset).orElse(ZERO))).max(ZERO);
 
@@ -258,8 +258,59 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
     }
 
-    protected BigDecimal adjustFundingOffset(Context context, Request request, BigDecimal offset) {
-        return offset;
+    @VisibleForTesting
+    BigDecimal calculateFundingOffset(Context context, Request request) {
+
+        BigDecimal offset = request.getFundingOffset();
+
+        Map<String, Set<String>> offsetProducts = request.getFundingMultiplierProducts();
+
+        if (MapUtils.isEmpty(offsetProducts)) {
+            return offset;
+        }
+
+        Key key = Key.from(request);
+
+        BigDecimal price = context.getMidPrice(key);
+
+        if (price == null || price.signum() == 0) {
+            return offset;
+        }
+
+        BigDecimal tilt = ONE;
+
+        for (Map.Entry<String, Set<String>> entry : offsetProducts.entrySet()) {
+
+            for (String product : entry.getValue()) {
+
+                Key offsetKey = Key.build(key).site(entry.getKey()).instrument(product).build();
+
+                BigDecimal offsetPrice = context.getMidPrice(offsetKey);
+
+                if (offsetPrice == null || offsetPrice.signum() == 0) {
+                    return offset;
+                }
+
+                tilt = tilt.multiply(offsetPrice.divide(price, SCALE, HALF_UP));
+
+            }
+
+        }
+
+        BigDecimal adjustment = tilt.subtract(ONE);
+
+        BigDecimal multiplier;
+
+        if (adjustment.signum() > 0) {
+            multiplier = request.getFundingPositiveMultiplier();
+        } else {
+            multiplier = request.getFundingNegativeMultiplier();
+        }
+
+        BigDecimal basis = adjustment.multiply(multiplier);
+
+        return offset.add(basis.setScale(SCALE, HALF_UP));
+
     }
 
     @VisibleForTesting
@@ -559,7 +610,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal exposure = ofNullable(request.getTradingExposure()).orElse(ZERO);
 
-        BigDecimal offset = adjustFundingOffset(context, request, request.getFundingOffset());
+        BigDecimal offset = calculateFundingOffset(context, request);
 
         if (offset == null) {
             return null;
@@ -606,7 +657,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         }
 
-        BigDecimal offset = adjustFundingOffset(context, request, request.getFundingOffset());
+        BigDecimal offset = calculateFundingOffset(context, request);
 
         BigDecimal adjFund = fund.multiply(ONE.add(ofNullable(offset).orElse(ZERO))).max(ZERO);
 

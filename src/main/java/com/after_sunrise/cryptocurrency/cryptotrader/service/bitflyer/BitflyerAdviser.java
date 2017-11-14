@@ -5,16 +5,12 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser;
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.collections.MapUtils;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
@@ -28,8 +24,6 @@ import static java.math.RoundingMode.UP;
 public class BitflyerAdviser extends TemplateAdviser implements BitflyerService {
 
     private static final double SWAP_RATE = 0.0004;
-
-    private static final BigDecimal PHYSICAL_RATE = new BigDecimal("0.20");
 
     public BitflyerAdviser() {
         super(ID);
@@ -159,59 +153,6 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
         BigDecimal theoretical = ask.multiply(ONE.add(comm).add(spread).add(swap));
 
         return price.max(theoretical);
-
-    }
-
-    @Override
-    protected BigDecimal adjustFundingOffset(Context context, Request request, BigDecimal offset) {
-
-        Map<String, Set<String>> offsetProducts = request.getFundingMultiplierProducts();
-
-        if (MapUtils.isEmpty(offsetProducts)) {
-            return offset;
-        }
-
-        Key key = Key.from(request);
-
-        BigDecimal price = context.getMidPrice(key);
-
-        if (price == null || price.signum() == 0) {
-            return offset;
-        }
-
-        BigDecimal tilt = ONE;
-
-        for (Entry<String, Set<String>> entry : offsetProducts.entrySet()) {
-
-            for (String product : entry.getValue()) {
-
-                Key offsetKey = Key.build(key).site(entry.getKey()).instrument(product).build();
-
-                BigDecimal offsetPrice = context.getMidPrice(offsetKey);
-
-                if (offsetPrice == null || offsetPrice.signum() == 0) {
-                    return offset;
-                }
-
-                tilt = tilt.multiply(offsetPrice.divide(price, SCALE, HALF_UP));
-
-            }
-
-        }
-
-        BigDecimal adjustment = tilt.subtract(ONE);
-
-        BigDecimal multiplier;
-
-        if (adjustment.signum() > 0) {
-            multiplier = request.getFundingPositiveMultiplier();
-        } else {
-            multiplier = request.getFundingNegativeMultiplier();
-        }
-
-        BigDecimal basis = adjustment.min(PHYSICAL_RATE).max(PHYSICAL_RATE.negate()).multiply(multiplier);
-
-        return offset.add(basis.setScale(SCALE, HALF_UP));
 
     }
 
