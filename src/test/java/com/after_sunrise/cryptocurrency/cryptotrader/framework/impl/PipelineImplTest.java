@@ -97,20 +97,24 @@ public class PipelineImplTest {
         String instrument = "i";
         Instant currentTime = Instant.now();
         Instant targetTime = currentTime.plus(Duration.ofMillis(5L));
+        PropertyManager manager = module.getMock(PropertyManager.class);
 
         Runnable initializer = () -> {
-            when(module.getMock(PropertyManager.class).getNow()).thenReturn(currentTime);
-            when(module.getMock(PropertyManager.class).getTradingSpread(any(), any())).thenReturn(valueOf(2));
-            when(module.getMock(PropertyManager.class).getTradingSpreadAsk(any(), any())).thenReturn(valueOf(7));
-            when(module.getMock(PropertyManager.class).getTradingSpreadBid(any(), any())).thenReturn(valueOf(8));
-            when(module.getMock(PropertyManager.class).getTradingSigma(any(), any())).thenReturn(valueOf(9));
-            when(module.getMock(PropertyManager.class).getTradingSamples(any(), any())).thenReturn(10);
-            when(module.getMock(PropertyManager.class).getTradingExposure(any(), any())).thenReturn(valueOf(3));
-            when(module.getMock(PropertyManager.class).getTradingAversion(any(), any())).thenReturn(valueOf(6));
-            when(module.getMock(PropertyManager.class).getTradingSplit(any(), any())).thenReturn(4);
-            when(module.getMock(PropertyManager.class).getTradingDuration(any(), any())).thenReturn(Duration.ZERO);
-            when(module.getMock(PropertyManager.class).getFundingOffset(any(), any())).thenReturn(valueOf(5));
-            when(module.getMock(PropertyManager.class).getHedgeProducts(any(), any())).thenReturn(emptyMap());
+            when(manager.getNow()).thenReturn(currentTime);
+            when(manager.getTradingSpread(any(), any())).thenReturn(valueOf(2));
+            when(manager.getTradingSpreadAsk(any(), any())).thenReturn(valueOf(7));
+            when(manager.getTradingSpreadBid(any(), any())).thenReturn(valueOf(8));
+            when(manager.getTradingSigma(any(), any())).thenReturn(valueOf(9));
+            when(manager.getTradingSamples(any(), any())).thenReturn(10);
+            when(manager.getTradingExposure(any(), any())).thenReturn(valueOf(3));
+            when(manager.getTradingAversion(any(), any())).thenReturn(valueOf(6));
+            when(manager.getTradingSplit(any(), any())).thenReturn(4);
+            when(manager.getTradingDuration(any(), any())).thenReturn(Duration.ZERO);
+            when(manager.getFundingOffset(any(), any())).thenReturn(valueOf(5));
+            when(manager.getFundingMultiplierProducts(any(), any())).thenReturn(emptyMap());
+            when(manager.getFundingPositiveMultiplier(any(), any())).thenReturn(valueOf(11));
+            when(manager.getFundingNegativeMultiplier(any(), any())).thenReturn(valueOf(12));
+            when(manager.getHedgeProducts(any(), any())).thenReturn(emptyMap());
         };
 
         initializer.run();
@@ -129,6 +133,9 @@ public class PipelineImplTest {
         assertEquals(request.getTradingSplit(), (Integer) 4);
         assertEquals(request.getTradingDuration(), Duration.ZERO);
         assertEquals(request.getFundingOffset(), valueOf(5));
+        assertEquals(request.getFundingMultiplierProducts(), emptyMap());
+        assertEquals(request.getFundingPositiveMultiplier(), valueOf(11));
+        assertEquals(request.getFundingNegativeMultiplier(), valueOf(12));
         assertEquals(request.getHedgeProducts(), emptyMap());
 
         // Null Argument
@@ -137,51 +144,63 @@ public class PipelineImplTest {
         assertNull(target.createRequest(targetTime, site, null));
 
         initializer.run();
-        doReturn(null).when(module.getMock(PropertyManager.class)).getNow();
+        doReturn(null).when(manager).getNow();
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();
-        doReturn(null).when(module.getMock(PropertyManager.class)).getTradingSpread(any(), any());
+        doReturn(null).when(manager).getTradingSpread(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();
-        doReturn(null).when(module.getMock(PropertyManager.class)).getTradingSpreadAsk(any(), any());
+        doReturn(null).when(manager).getTradingSpreadAsk(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();
-        doReturn(null).when(module.getMock(PropertyManager.class)).getTradingSpreadBid(any(), any());
+        doReturn(null).when(manager).getTradingSpreadBid(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();
-        doReturn(null).when(module.getMock(PropertyManager.class)).getTradingSigma(any(), any());
+        doReturn(null).when(manager).getTradingSigma(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();
-        doReturn(null).when(module.getMock(PropertyManager.class)).getTradingSamples(any(), any());
+        doReturn(null).when(manager).getTradingSamples(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();
-        doReturn(null).when(module.getMock(PropertyManager.class)).getTradingExposure(any(), any());
+        doReturn(null).when(manager).getTradingExposure(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();
-        doReturn(null).when(module.getMock(PropertyManager.class)).getTradingAversion(any(), any());
+        doReturn(null).when(manager).getTradingAversion(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();
-        doReturn(null).when(module.getMock(PropertyManager.class)).getTradingSplit(any(), any());
+        doReturn(null).when(manager).getTradingSplit(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();
-        doReturn(null).when(module.getMock(PropertyManager.class)).getTradingDuration(any(), any());
+        doReturn(null).when(manager).getTradingDuration(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();
-        doReturn(null).when(module.getMock(PropertyManager.class)).getFundingOffset(any(), any());
+        doReturn(null).when(manager).getFundingOffset(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();
-        doReturn(null).when(module.getMock(PropertyManager.class)).getHedgeProducts(any(), any());
+        doReturn(null).when(manager).getFundingMultiplierProducts(any(), any());
+        assertNull(target.createRequest(targetTime, site, instrument));
+
+        initializer.run();
+        doReturn(null).when(manager).getFundingPositiveMultiplier(any(), any());
+        assertNull(target.createRequest(targetTime, site, instrument));
+
+        initializer.run();
+        doReturn(null).when(manager).getFundingNegativeMultiplier(any(), any());
+        assertNull(target.createRequest(targetTime, site, instrument));
+
+        initializer.run();
+        doReturn(null).when(manager).getHedgeProducts(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
     }

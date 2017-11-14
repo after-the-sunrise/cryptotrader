@@ -95,6 +95,9 @@ public class PipelineImpl implements Pipeline {
                 .tradingSplit(propertyManager.getTradingSplit(site, instrument))
                 .tradingDuration(propertyManager.getTradingDuration(site, instrument))
                 .fundingOffset(propertyManager.getFundingOffset(site, instrument))
+                .fundingMultiplierProducts(propertyManager.getFundingMultiplierProducts(site, instrument))
+                .fundingPositiveMultiplier(propertyManager.getFundingPositiveMultiplier(site, instrument))
+                .fundingNegativeMultiplier(propertyManager.getFundingNegativeMultiplier(site, instrument))
                 .hedgeProducts(propertyManager.getHedgeProducts(site, instrument))
                 .build();
 
@@ -165,6 +168,21 @@ public class PipelineImpl implements Pipeline {
 
         if (request.getFundingOffset() == null) {
             log.warn("Invalid request : funding offset");
+            return null;
+        }
+
+        if (request.getFundingMultiplierProducts() == null) {
+            log.warn("Invalid request : funding multiplier products");
+            return null;
+        }
+
+        if (request.getFundingPositiveMultiplier() == null) {
+            log.warn("Invalid request : funding positive multiplier");
+            return null;
+        }
+
+        if (request.getFundingNegativeMultiplier() == null) {
+            log.warn("Invalid request : funding negative multiplier");
             return null;
         }
 

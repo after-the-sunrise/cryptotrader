@@ -46,6 +46,12 @@ public interface PropertyManager {
 
     BigDecimal getFundingOffset(String site, String instrument);
 
+    Map<String, Set<String>> getFundingMultiplierProducts(String site, String instrument);
+
+    BigDecimal getFundingPositiveMultiplier(String site, String instrument);
+
+    BigDecimal getFundingNegativeMultiplier(String site, String instrument);
+
     Map<String, Set<String>> getHedgeProducts(String site, String instrument);
 
     Set<String> getEstimators(String site, String instrument);

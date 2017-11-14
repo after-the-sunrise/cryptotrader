@@ -51,6 +51,12 @@ public class Request {
 
     private BigDecimal fundingOffset;
 
+    private Map<String, Set<String>> fundingMultiplierProducts;
+
+    private BigDecimal fundingPositiveMultiplier;
+
+    private BigDecimal fundingNegativeMultiplier;
+
     private Map<String, Set<String>> hedgeProducts;
 
 }

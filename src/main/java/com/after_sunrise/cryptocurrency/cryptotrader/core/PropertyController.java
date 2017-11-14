@@ -41,6 +41,12 @@ public interface PropertyController extends PropertyManager {
 
     void setFundingOffset(String site, String instrument, BigDecimal value);
 
+    void setFundingMultiplierProducts(String site, String instrument, Map<String, Set<String>> values);
+
+    void setFundingPositiveMultiplier(String site, String instrument, BigDecimal value);
+
+    void setFundingNegativeMultiplier(String site, String instrument, BigDecimal value);
+
     void setHedgeProducts(String site, String instrument, Map<String, Set<String>> values);
 
     void setEstimators(String site, String instrument, Set<String> values);
