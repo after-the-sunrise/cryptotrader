@@ -15,12 +15,13 @@ import java.util.*;
 
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.valueOf;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
+import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
 /**
  * @author takanori.takase
@@ -128,7 +129,7 @@ public class TemplateInstructor extends AbstractService implements Instructor {
             return emptyList();
         }
 
-        BigDecimal splits = request.getTradingSplit().setScale(INTEGER_ZERO, DOWN).max(ONE);
+        BigDecimal splits = valueOf(ofNullable(request.getTradingSplit()).orElse(INTEGER_ONE)).max(ONE);
 
         BigDecimal lotSize = Optional.ofNullable(context.roundLotSize(key, EPSILON, UP)).orElse(total);
 

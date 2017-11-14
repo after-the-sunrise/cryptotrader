@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.*;
 import static java.lang.String.format;
 import static java.math.BigDecimal.*;
-import static java.math.RoundingMode.DOWN;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptySet;
 import static java.util.Optional.ofNullable;
@@ -28,7 +27,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
-import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
 /**
  * @author takanori.takase
@@ -342,13 +340,13 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
-    public BigDecimal getTradingSplit(String site, String instrument) {
-        return getDecimal(site, instrument, TRADING_SPLIT, ONE, TEN, ONE).setScale(INTEGER_ZERO, DOWN);
+    public Integer getTradingSplit(String site, String instrument) {
+        return getDecimal(site, instrument, TRADING_SPLIT, ONE, TEN, ONE).intValue();
     }
 
     @Override
-    public void setTradingSplit(String site, String instrument, BigDecimal value) {
-        set(TRADING_SPLIT, site, instrument, value, BigDecimal::toPlainString);
+    public void setTradingSplit(String site, String instrument, Integer value) {
+        set(TRADING_SPLIT, site, instrument, value, input -> input);
     }
 
     @Override

@@ -503,32 +503,32 @@ public class PropertyManagerImplTest {
     @Test
     public void testGetTradingSplit() throws Exception {
 
-        assertEquals(target.getTradingSplit(site, inst), ONE);
+        assertEquals(target.getTradingSplit(site, inst), (Integer) 1);
 
         // Specific
         doReturn(new BigDecimal("2.3456")).when(conf).getBigDecimal(TRADING_SPLIT.getKey());
-        assertEquals(target.getTradingSplit(site, inst), ONE.add(ONE));
+        assertEquals(target.getTradingSplit(site, inst), (Integer) 2);
 
         // Ceiling
         doReturn(valueOf(Integer.MAX_VALUE)).when(conf).getBigDecimal(TRADING_SPLIT.getKey());
-        assertEquals(target.getTradingSplit(site, inst), TEN);
+        assertEquals(target.getTradingSplit(site, inst), (Integer) 10);
 
         // Floor
         doReturn(valueOf(Integer.MIN_VALUE)).when(conf).getBigDecimal(TRADING_SPLIT.getKey());
-        assertEquals(target.getTradingSplit(site, inst), ONE);
+        assertEquals(target.getTradingSplit(site, inst), (Integer) 1);
 
         // Error
         doThrow(new RuntimeException("test")).when(conf).getBigDecimal(TRADING_SPLIT.getKey());
-        assertEquals(target.getTradingSplit(site, inst), ONE);
+        assertEquals(target.getTradingSplit(site, inst), (Integer) 1);
         reset(conf);
 
         // Override
-        target.setTradingSplit(site, inst, TEN);
-        assertEquals(target.getTradingSplit(site, inst), TEN);
+        target.setTradingSplit(site, inst, 10);
+        assertEquals(target.getTradingSplit(site, inst), (Integer) 10);
 
         // Clear
         target.setTradingSplit(site, inst, null);
-        assertEquals(target.getTradingSplit(site, inst), ONE);
+        assertEquals(target.getTradingSplit(site, inst), (Integer) 1);
 
     }
 

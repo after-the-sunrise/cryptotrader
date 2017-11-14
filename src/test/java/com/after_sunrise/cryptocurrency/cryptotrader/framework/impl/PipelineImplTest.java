@@ -106,7 +106,7 @@ public class PipelineImplTest {
             when(module.getMock(PropertyManager.class).getTradingSigma(any(), any())).thenReturn(valueOf(9));
             when(module.getMock(PropertyManager.class).getTradingExposure(any(), any())).thenReturn(valueOf(3));
             when(module.getMock(PropertyManager.class).getTradingAversion(any(), any())).thenReturn(valueOf(6));
-            when(module.getMock(PropertyManager.class).getTradingSplit(any(), any())).thenReturn(valueOf(4));
+            when(module.getMock(PropertyManager.class).getTradingSplit(any(), any())).thenReturn(4);
             when(module.getMock(PropertyManager.class).getTradingDuration(any(), any())).thenReturn(Duration.ZERO);
             when(module.getMock(PropertyManager.class).getFundingOffset(any(), any())).thenReturn(valueOf(5));
             when(module.getMock(PropertyManager.class).getHedgeProducts(any(), any())).thenReturn(emptyMap());
@@ -123,7 +123,7 @@ public class PipelineImplTest {
         assertEquals(request.getTradingSpreadBid(), valueOf(8));
         assertEquals(request.getTradingExposure(), valueOf(3));
         assertEquals(request.getTradingAversion(), valueOf(6));
-        assertEquals(request.getTradingSplit(), valueOf(4));
+        assertEquals(request.getTradingSplit(), (Integer) 4);
         assertEquals(request.getTradingDuration(), Duration.ZERO);
         assertEquals(request.getFundingOffset(), valueOf(5));
         assertEquals(request.getHedgeProducts(), emptyMap());

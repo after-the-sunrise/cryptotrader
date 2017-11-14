@@ -43,7 +43,7 @@ public class Request {
 
     private BigDecimal tradingAversion;
 
-    private BigDecimal tradingSplit;
+    private Integer tradingSplit;
 
     private Duration tradingDuration;
 

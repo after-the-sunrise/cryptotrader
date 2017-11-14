@@ -67,7 +67,7 @@ public class TemplateInstructorTest {
         when(context.roundLotSize(any(), any(), any())).thenAnswer(i -> f.apply(i, new BigDecimal("0.3")));
 
         builder = Request.builder().site("s").instrument("i").targetTime(now())
-                .tradingExposure(ZERO).tradingSplit(new BigDecimal("5")).tradingSpread(ZERO);
+                .tradingExposure(ZERO).tradingSplit(5).tradingSpread(ZERO);
 
         target = spy(new TemplateInstructor("test"));
 
@@ -222,7 +222,7 @@ public class TemplateInstructorTest {
     @Test
     public void testSplitSize() {
 
-        Request request = builder.tradingSplit(valueOf(3)).build();
+        Request request = builder.tradingSplit(3).build();
 
         // Zero Quantity
         List<BigDecimal> results = target.splitSize(context, request, new BigDecimal("0.00"));
