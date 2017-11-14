@@ -15,7 +15,6 @@ import java.util.*;
 
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
 import static java.util.Collections.emptyList;
@@ -118,7 +117,8 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
     }
 
-    private List<BigDecimal> splitSize(Context context, Request request, BigDecimal value) {
+    @VisibleForTesting
+    List<BigDecimal> splitSize(Context context, Request request, BigDecimal value) {
 
         Key key = Key.from(request);
 
@@ -128,35 +128,31 @@ public class TemplateInstructor extends AbstractService implements Instructor {
             return emptyList();
         }
 
-        BigDecimal unit = Optional.ofNullable(context.roundLotSize(key, EPSILON, UP)).orElse(total);
+        BigDecimal splits = request.getTradingSplit().setScale(INTEGER_ZERO, DOWN).max(ONE);
 
-        BigDecimal split = request.getTradingSplit().setScale(INTEGER_ZERO, DOWN).max(ONE);
+        BigDecimal lotSize = Optional.ofNullable(context.roundLotSize(key, EPSILON, UP)).orElse(total);
 
-        BigDecimal fair = total.divide(split, SCALE, DOWN);
+        BigDecimal remainingUnits = total.divide(lotSize, 0, DOWN);
 
-        BigDecimal floor = Optional.ofNullable(context.roundLotSize(key, fair, DOWN)).orElse(ZERO);
+        List<BigDecimal> results = new ArrayList<>(splits.intValue());
 
-        BigDecimal residual = total.subtract(split.multiply(floor));
+        for (int i = 0; i < splits.intValue(); i++) {
 
-        List<BigDecimal> results = new ArrayList<>(split.intValue());
+            int power = (int) Math.log(remainingUnits.doubleValue());
 
-        for (int i = 0; i < split.intValue(); i++) {
+            if (power == 0 || i + 1 == splits.intValue()) {
 
-            BigDecimal slice = floor;
+                results.add(remainingUnits.multiply(lotSize));
 
-            if (residual.compareTo(unit) >= 0) {
-
-                slice = slice.add(unit);
-
-                residual = residual.subtract(unit);
+                break;
 
             }
 
-            if (slice.signum() <= 0) {
-                continue;
-            }
+            BigDecimal currentUnits = BigDecimal.valueOf((int) Math.exp(power));
 
-            results.add(slice);
+            results.add(currentUnits.multiply(lotSize));
+
+            remainingUnits = remainingUnits.subtract(currentUnits);
 
         }
 

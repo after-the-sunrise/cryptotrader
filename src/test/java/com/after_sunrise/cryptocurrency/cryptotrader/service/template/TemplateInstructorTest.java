@@ -139,21 +139,19 @@ public class TemplateInstructorTest {
         assertEquals(results.get(3).getPrice(), new BigDecimal("0.990"));
         assertEquals(results.get(4).getPrice(), new BigDecimal("0.987"));
 
-        assertEquals(results.get(0).getSize(), new BigDecimal("2.1"));
+        assertEquals(results.get(0).getSize(), new BigDecimal("6.0"));
         assertEquals(results.get(1).getSize(), new BigDecimal("2.1"));
-        assertEquals(results.get(2).getSize(), new BigDecimal("2.1"));
-        assertEquals(results.get(3).getSize(), new BigDecimal("1.8"));
-        assertEquals(results.get(4).getSize(), new BigDecimal("1.8"));
+        assertEquals(results.get(2).getSize(), new BigDecimal("0.6"));
+        assertEquals(results.get(3).getSize(), new BigDecimal("0.6"));
+        assertEquals(results.get(4).getSize(), new BigDecimal("0.6"));
 
         // Fraction size
         results = target.createBuys(context, request, builder.buyLimitSize(ONE).build());
-        assertEquals(results.size(), 3, results.toString());
+        assertEquals(results.size(), 2, results.toString());
         assertEquals(results.get(0).getPrice(), new BigDecimal("0.999"));
         assertEquals(results.get(1).getPrice(), new BigDecimal("0.996"));
-        assertEquals(results.get(2).getPrice(), new BigDecimal("0.993"));
-        assertEquals(results.get(0).getSize(), new BigDecimal("0.3"));
+        assertEquals(results.get(0).getSize(), new BigDecimal("0.6"));
         assertEquals(results.get(1).getSize(), new BigDecimal("0.3"));
-        assertEquals(results.get(2).getSize(), new BigDecimal("0.3"));
 
         // Too small
         results = target.createBuys(context, request, builder.buyLimitSize(ONE.movePointLeft(1)).build());
@@ -189,21 +187,19 @@ public class TemplateInstructorTest {
         assertEquals(results.get(3).getPrice(), new BigDecimal("1.011"));
         assertEquals(results.get(4).getPrice(), new BigDecimal("1.014"));
 
-        assertEquals(results.get(0).getSize(), new BigDecimal("-2.1"));
+        assertEquals(results.get(0).getSize(), new BigDecimal("-6.0"));
         assertEquals(results.get(1).getSize(), new BigDecimal("-2.1"));
-        assertEquals(results.get(2).getSize(), new BigDecimal("-2.1"));
-        assertEquals(results.get(3).getSize(), new BigDecimal("-1.8"));
-        assertEquals(results.get(4).getSize(), new BigDecimal("-1.8"));
+        assertEquals(results.get(2).getSize(), new BigDecimal("-0.6"));
+        assertEquals(results.get(3).getSize(), new BigDecimal("-0.6"));
+        assertEquals(results.get(4).getSize(), new BigDecimal("-0.6"));
 
         // Fraction size
         results = target.createSells(context, request, builder.sellLimitSize(ONE).build());
-        assertEquals(results.size(), 3, results.toString());
+        assertEquals(results.size(), 2, results.toString());
         assertEquals(results.get(0).getPrice(), new BigDecimal("1.002"));
         assertEquals(results.get(1).getPrice(), new BigDecimal("1.005"));
-        assertEquals(results.get(2).getPrice(), new BigDecimal("1.008"));
-        assertEquals(results.get(0).getSize(), new BigDecimal("-0.3"));
+        assertEquals(results.get(0).getSize(), new BigDecimal("-0.6"));
         assertEquals(results.get(1).getSize(), new BigDecimal("-0.3"));
-        assertEquals(results.get(2).getSize(), new BigDecimal("-0.3"));
 
         // Too small
         results = target.createSells(context, request, builder.sellLimitSize(ONE.movePointLeft(1)).build());
@@ -220,6 +216,62 @@ public class TemplateInstructorTest {
         // Negative size
         results = target.createSells(context, request, builder.sellLimitSize(ONE.negate()).build());
         assertEquals(results.size(), 0);
+
+    }
+
+    @Test
+    public void testSplitSize() {
+
+        Request request = builder.tradingSplit(valueOf(3)).build();
+
+        // Zero Quantity
+        List<BigDecimal> results = target.splitSize(context, request, new BigDecimal("0.00"));
+        assertEquals(results.size(), 0, results.toString());
+
+        // Null Quantity
+        results = target.splitSize(context, request, null);
+        assertEquals(results.size(), 0, results.toString());
+
+        // Insufficient Quantity
+        results = target.splitSize(context, request, new BigDecimal("0.29"));
+        assertEquals(results.size(), 0, results.toString());
+
+        // One lot
+        results = target.splitSize(context, request, new BigDecimal("0.30"));
+        assertEquals(results.size(), 1, results.toString());
+        assertEquals(results.get(0), new BigDecimal("0.3")); // 1 lot
+
+        // Two lots
+        results = target.splitSize(context, request, new BigDecimal("0.89"));
+        assertEquals(results.size(), 1, results.toString());
+        assertEquals(results.get(0), new BigDecimal("0.6")); // 2 lots
+
+        // Three lots
+        results = target.splitSize(context, request, new BigDecimal("0.91"));
+        assertEquals(results.size(), 2, results.toString());
+        assertEquals(results.get(0), new BigDecimal("0.6")); // 2 lots
+        assertEquals(results.get(1), new BigDecimal("0.3")); // 1 lots
+
+        // 100+ lots (30.1 / 0.3 = 100.33...)
+        results = target.splitSize(context, request, new BigDecimal("30.1"));
+        assertEquals(results.size(), 3, results.toString());
+        assertEquals(results.get(0), new BigDecimal("16.2")); // 54 lots
+        assertEquals(results.get(1), new BigDecimal("6.0")); // 20 lots
+        assertEquals(results.get(2), new BigDecimal("7.8")); // 26 lots
+
+        // 1000+ lots (543.2 / 0.3 = 1810.66...)
+        results = target.splitSize(context, request, new BigDecimal("543.2"));
+        assertEquals(results.size(), 3, results.toString());
+        assertEquals(results.get(0), new BigDecimal("328.8")); // 1096 lots
+        assertEquals(results.get(1), new BigDecimal("120.9")); // 403 lots
+        assertEquals(results.get(2), new BigDecimal("93.3")); // 311 lots
+
+        // 2000+ lots (600.2 / 0.3 = 2000.66...)
+        results = target.splitSize(context, request, new BigDecimal("600.2"));
+        assertEquals(results.size(), 3, results.toString());
+        assertEquals(results.get(0), new BigDecimal("328.8")); // 1096 lots
+        assertEquals(results.get(1), new BigDecimal("120.9")); // 403 lots
+        assertEquals(results.get(2), new BigDecimal("150.3")); // 501 lots
 
     }
 
