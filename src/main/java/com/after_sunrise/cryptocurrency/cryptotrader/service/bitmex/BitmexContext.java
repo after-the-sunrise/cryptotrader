@@ -644,7 +644,9 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
             BigDecimal clear = tick.map(BitmexTick::getSettleFee).orElse(ZERO);
 
-            rate = maker.add(clear).max(ZERO);
+            BigDecimal indicative = tick.map(BitmexTick::getIndicativeFee).orElse(ZERO).abs();
+
+            rate = maker.add(clear).add(indicative).max(ZERO);
 
         }
 

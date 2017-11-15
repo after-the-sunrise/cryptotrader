@@ -108,4 +108,11 @@ public class BitmexTick {
     @SerializedName("settlementFee")
     private BigDecimal settleFee;
 
+    /**
+     * Predicted funding rate in real number. (1 bps = "0.0001")
+     * Long position pays if positive, receives if negative.
+     */
+    @SerializedName("indicativeFundingRate")
+    private BigDecimal indicativeFee;
+
 }
