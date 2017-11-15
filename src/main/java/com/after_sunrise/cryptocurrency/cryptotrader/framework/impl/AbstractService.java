@@ -3,6 +3,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,8 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
@@ -96,6 +99,57 @@ public abstract class AbstractService implements Service {
         }
 
         return value;
+
+    }
+
+    @VisibleForTesting
+    public BigDecimal calculateComposite(Map<String, Set<String>> products, BiFunction<String, String, BigDecimal> f) {
+
+        if (MapUtils.isEmpty(products)) {
+            return null;
+        }
+
+        BigDecimal result = ONE;
+
+        for (Map.Entry<String, Set<String>> entry : products.entrySet()) {
+
+            if (entry.getKey() == null || entry.getKey().length() < 2) {
+                return null;
+            }
+
+            char operation = entry.getKey().charAt(0);
+
+            BinaryOperator<BigDecimal> operator = null;
+
+            if (operation == '*') {
+                operator = BigDecimal::multiply;
+            }
+
+            if (operation == '/') {
+                operator = (o1, o2) -> o1.divide(o2, SCALE, HALF_UP);
+            }
+
+            if (operator == null) {
+                return null;
+            }
+
+            String site = entry.getKey().substring(1);
+
+            for (String product : entry.getValue()) {
+
+                BigDecimal value = f.apply(site, product);
+
+                if (value == null || value.signum() == 0) {
+                    return null;
+                }
+
+                result = operator.apply(result, value);
+
+            }
+
+        }
+
+        return result;
 
     }
 

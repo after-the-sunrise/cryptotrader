@@ -1,6 +1,7 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
+import com.google.common.collect.Sets;
 import org.apache.commons.configuration2.MapConfiguration;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -9,12 +10,13 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.BiFunction;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.TEN;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 /**
  * @author takanori.takase
@@ -73,6 +75,68 @@ public class AbstractServiceTest {
         map.put(target.getClass().getName() + ".decimal", "a"); // Exception
         assertEquals(target.getDecimalProperty("decimal", TEN), TEN);
 
+
+    }
+
+    @Test
+    public void testCalculateComposite() {
+
+        class TestFunction implements BiFunction<String, String, BigDecimal> {
+            @Override
+            public BigDecimal apply(String s, String s2) {
+                return null;
+            }
+        }
+
+        BiFunction<String, String, BigDecimal> f = spy(new TestFunction());
+
+        Map<String, Set<String>> products = new LinkedHashMap<>();
+
+        Runnable initializer = () -> {
+            products.clear();
+            products.put("*s1", Sets.newHashSet("p1", "p2"));
+            products.put("/s1", Sets.newHashSet("p3"));
+            products.put("*s2", Sets.newHashSet("p4"));
+
+            reset(f);
+            when(f.apply("s1", "p1")).thenReturn(new BigDecimal("1.2"));
+            when(f.apply("s1", "p2")).thenReturn(new BigDecimal("2.3"));
+            when(f.apply("s1", "p3")).thenReturn(new BigDecimal("3.4"));
+            when(f.apply("s2", "p4")).thenReturn(new BigDecimal("4.5"));
+        };
+
+        // Empty products
+        initializer.run();
+        assertNull(target.calculateComposite(null, f));
+
+        // Unknown Operator
+        initializer.run();
+        products.put("+s", Sets.newHashSet("p0"));
+        assertNull(target.calculateComposite(null, f));
+
+        // Invalid Site 1
+        initializer.run();
+        products.put("s", Sets.newHashSet("p0"));
+        assertNull(target.calculateComposite(null, f));
+
+        // Invalid Site 2
+        initializer.run();
+        products.put(null, Sets.newHashSet("p0"));
+        assertNull(target.calculateComposite(null, f));
+
+        // Null Value
+        initializer.run();
+        when(f.apply("s2", "p4")).thenReturn(null);
+        assertNull(target.calculateComposite(null, f));
+
+        // Zero Value
+        initializer.run();
+        when(f.apply("s2", "p4")).thenReturn(new BigDecimal("0.0"));
+        assertNull(target.calculateComposite(null, f));
+
+        // 1 * 1.2 * 2.3 / 3.4 * 4.5
+        initializer.run();
+        assertEquals(target.calculateComposite(products, f), new BigDecimal("3.65294117655"));
 
     }
 
