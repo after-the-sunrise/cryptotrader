@@ -758,6 +758,14 @@ public class BitmexContextTest {
         doReturn(of(BitmexTick.builder().makerFee(ONE).settleFee(TEN).build())).when(target).queryTick(key);
         assertEquals(target.getCommissionRate(key), ONE.add(TEN));
 
+        // With negative commission
+        doReturn(of(BitmexTick.builder().makerFee(ONE.negate()).settleFee(TEN).build())).when(target).queryTick(key);
+        assertEquals(target.getCommissionRate(key), TEN.subtract(ONE));
+
+        // With negative commission
+        doReturn(of(BitmexTick.builder().makerFee(TEN.negate()).settleFee(ONE).build())).when(target).queryTick(key);
+        assertEquals(target.getCommissionRate(key), ZERO);
+
         // Without settle
         doReturn(of(BitmexTick.builder().makerFee(ONE).build())).when(target).queryTick(key);
         assertEquals(target.getCommissionRate(key), ONE);
