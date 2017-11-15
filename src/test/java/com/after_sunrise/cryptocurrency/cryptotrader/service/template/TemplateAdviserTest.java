@@ -387,9 +387,11 @@ public class TemplateAdviserTest {
     public void testCalculateFundingOffset() {
 
         BigDecimal offset = new BigDecimal("0.0000");
+
         Request r1 = Request.builder().instrument(BTC_JPY.name()).fundingOffset(offset)
-                .fundingMultiplierProducts(singletonMap(ID, singleton(BTCJPY_MAT1WK.name())))
+                .fundingMultiplierProducts(singletonMap("*" + ID, singleton(BTCJPY_MAT1WK.name())))
                 .fundingPositiveMultiplier(valueOf(100)).fundingNegativeMultiplier(valueOf(95)).build();
+
         Request r2 = Request.builder().site(ID).instrument(BTCJPY_MAT1WK.name()).build();
 
         Stream.of(

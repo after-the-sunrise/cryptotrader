@@ -263,41 +263,29 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal offset = request.getFundingOffset();
 
-        Map<String, Set<String>> offsetProducts = request.getFundingMultiplierProducts();
-
-        if (MapUtils.isEmpty(offsetProducts)) {
-            return offset;
-        }
-
         Key key = Key.from(request);
 
-        BigDecimal price = context.getMidPrice(key);
+        BigDecimal basePrice = context.getMidPrice(key);
 
-        if (price == null || price.signum() == 0) {
+        if (basePrice == null || basePrice.signum() == 0) {
             return offset;
         }
 
-        BigDecimal tilt = ONE;
+        Map<String, Set<String>> offsetProducts = request.getFundingMultiplierProducts();
 
-        for (Map.Entry<String, Set<String>> entry : offsetProducts.entrySet()) {
+        BigDecimal compositePrice = calculateComposite(offsetProducts, (site, product) -> {
 
-            for (String product : entry.getValue()) {
+            Key offsetKey = Key.build(key).site(site).instrument(product).build();
 
-                Key offsetKey = Key.build(key).site(entry.getKey()).instrument(product).build();
+            return context.getMidPrice(offsetKey);
 
-                BigDecimal offsetPrice = context.getMidPrice(offsetKey);
+        });
 
-                if (offsetPrice == null || offsetPrice.signum() == 0) {
-                    return offset;
-                }
-
-                tilt = tilt.multiply(offsetPrice.divide(price, SCALE, HALF_UP));
-
-            }
-
+        if (compositePrice == null || compositePrice.signum() == 0) {
+            return offset;
         }
 
-        BigDecimal adjustment = tilt.subtract(ONE);
+        BigDecimal adjustment = compositePrice.divide(basePrice, SCALE, HALF_UP).subtract(ONE);
 
         BigDecimal multiplier;
 
