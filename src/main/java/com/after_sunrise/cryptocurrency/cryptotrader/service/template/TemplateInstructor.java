@@ -22,6 +22,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
+import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
 /**
  * @author takanori.takase
@@ -151,9 +152,13 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
             BigDecimal currentUnits = BigDecimal.valueOf((int) Math.exp(power));
 
-            results.add(currentUnits.multiply(lotSize));
+            int p = Math.max(currentUnits.precision() - 2, 0);
 
-            remainingUnits = remainingUnits.subtract(currentUnits);
+            BigDecimal adjusted = currentUnits.movePointLeft(p).setScale(INTEGER_ZERO, DOWN).movePointRight(p);
+
+            results.add(adjusted.multiply(lotSize));
+
+            remainingUnits = remainingUnits.subtract(adjusted);
 
         }
 

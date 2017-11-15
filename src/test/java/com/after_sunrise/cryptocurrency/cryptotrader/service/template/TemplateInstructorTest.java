@@ -262,16 +262,23 @@ public class TemplateInstructorTest {
         // 1000+ lots (543.2 / 0.3 = 1810.66...)
         results = target.splitSize(context, request, new BigDecimal("543.2"));
         assertEquals(results.size(), 3, results.toString());
-        assertEquals(results.get(0), new BigDecimal("328.8")); // 1096 lots
-        assertEquals(results.get(1), new BigDecimal("120.9")); // 403 lots
-        assertEquals(results.get(2), new BigDecimal("93.3")); // 311 lots
+        assertEquals(results.get(0), new BigDecimal("300.0")); // 1096 -> 1000 lots
+        assertEquals(results.get(1), new BigDecimal("120.0")); // 403 -> 400 lots
+        assertEquals(results.get(2), new BigDecimal("123.0")); // 410 lots
 
-        // 2000+ lots (600.2 / 0.3 = 2000.66...)
-        results = target.splitSize(context, request, new BigDecimal("600.2"));
+        // 2000+ lots (600.5 / 0.3 = 2001.66...)
+        results = target.splitSize(context, request, new BigDecimal("600.5"));
         assertEquals(results.size(), 3, results.toString());
-        assertEquals(results.get(0), new BigDecimal("328.8")); // 1096 lots
-        assertEquals(results.get(1), new BigDecimal("120.9")); // 403 lots
-        assertEquals(results.get(2), new BigDecimal("150.3")); // 501 lots
+        assertEquals(results.get(0), new BigDecimal("300.0")); // 1096 -> 1000 lots
+        assertEquals(results.get(1), new BigDecimal("120.0")); // 403 -> 400 lots
+        assertEquals(results.get(2), new BigDecimal("180.3")); // 600 lots
+
+        // 20000+ lots (6000.5 / 0.3 = 20001.66...)
+        results = target.splitSize(context, request, new BigDecimal("6000.5"));
+        assertEquals(results.size(), 3, results.toString());
+        assertEquals(results.get(0), new BigDecimal("2430.0")); // 8103 -> 8100 lots
+        assertEquals(results.get(1), new BigDecimal("2430.0")); // 8103 -> 8100 lots
+        assertEquals(results.get(2), new BigDecimal("1140.3")); // 3801 lots
 
     }
 
