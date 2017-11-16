@@ -889,7 +889,7 @@ public class TemplateAdviserTest {
         doReturn(new BigDecimal("0.10")).when(target).calculateTradingExposure(context, request);
 
         // Exposed = Instrument * Exposure = 900
-        BigDecimal expect = new BigDecimal("900.00");
+        BigDecimal expect = new BigDecimal("900.000000000000");
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("9000"));
         when(context.getInstrumentCurrency(any())).thenReturn(BTC);
         when(context.getConversionPrice(key, BTC)).thenReturn(ONE);
@@ -907,31 +907,40 @@ public class TemplateAdviserTest {
         Map<String, Set<String>> hedgeProducts = new HashMap<>();
         hedgeProducts.put("a", Sets.newHashSet("XBTC", "XETH"));
         hedgeProducts.put("b", Sets.newHashSet("XBCH"));
+
         Request request = rBuilder.hedgeProducts(hedgeProducts).build();
+        Key keySen = Key.from(request);
+        Key keyBtc = Key.builder().site("a").instrument("XBTC").build();
+        Key keyEth = Key.builder().site("a").instrument("XETH").build();
+        Key keyBch = Key.builder().site("b").instrument("XBCH").build();
 
         Runnable initializer = () -> {
 
             when(context.getInstrumentCurrency(any())).thenReturn(null);
-            when(context.getInstrumentCurrency(Key.builder().site("a").instrument("XBTC").build())).thenReturn(BTC);
-            when(context.getInstrumentCurrency(Key.builder().site("a").instrument("XETH").build())).thenReturn(ETH);
-            when(context.getInstrumentCurrency(Key.builder().site("b").instrument("XBCH").build())).thenReturn(BCH);
+            when(context.getInstrumentCurrency(keySen)).thenReturn(JPY);
+            when(context.getInstrumentCurrency(keyBtc)).thenReturn(BTC);
+            when(context.getInstrumentCurrency(keyEth)).thenReturn(ETH);
+            when(context.getInstrumentCurrency(keyBch)).thenReturn(BCH);
+
+            // 1 JPY = ???
+            when(context.getConversionPrice(keySen, JPY)).thenReturn(new BigDecimal("100"));
+            when(context.getConversionPrice(keyBtc, JPY)).thenReturn(new BigDecimal("0.04"));
+            when(context.getConversionPrice(keyEth, JPY)).thenReturn(new BigDecimal("0.16"));
+            when(context.getConversionPrice(keyBch, JPY)).thenReturn(new BigDecimal("0.64"));
 
             when(context.getInstrumentPosition(any())).thenReturn(null);
-            when(context.getInstrumentPosition(Key.builder().site("a").instrument("XBTC").build())).thenReturn(valueOf(15));
-            when(context.getInstrumentPosition(Key.builder().site("a").instrument("XETH").build())).thenReturn(valueOf(25));
-            when(context.getInstrumentPosition(Key.builder().site("b").instrument("XBCH").build())).thenReturn(valueOf(35));
+            when(context.getInstrumentPosition(keyBtc)).thenReturn(valueOf(16)); // = JPY 400
+            when(context.getInstrumentPosition(keyEth)).thenReturn(valueOf(32)); // = JPY 200
+            when(context.getInstrumentPosition(keyBch)).thenReturn(valueOf(64)); // = JPY 100
 
-            when(context.getConversionPrice(Key.from(request), BTC)).thenReturn(new BigDecimal("1.0"));
-            when(context.getConversionPrice(Key.from(request), ETH)).thenReturn(new BigDecimal("0.4"));
-            when(context.getConversionPrice(Key.from(request), BCH)).thenReturn(new BigDecimal("0.6"));
-
-            doReturn(new BigDecimal("0.10")).when(target).calculateTradingExposure(context, request);
+            doReturn(new BigDecimal("0.25")).when(target).calculateTradingExposure(context, request);
 
         };
 
-        // [(15 * 1.0) + (25 * 0.4) + (35 * 0.6)] * 0.1 = (15 + 10 + 21) * 0.1 = 4.600
+        // = (400 + 200 + 100) = JPY 700 = 70000 SEN
+        // -> 25% Exposure = 17500 SEN
         initializer.run();
-        assertEquals(target.calculateInstrumentExposureSize(context, request), new BigDecimal("4.600"));
+        assertEquals(target.calculateInstrumentExposureSize(context, request), new BigDecimal("17500.000000000000"));
 
         // No price
         initializer.run();

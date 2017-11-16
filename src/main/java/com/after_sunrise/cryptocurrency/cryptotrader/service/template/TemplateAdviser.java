@@ -666,13 +666,21 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         Key key = Key.from(request);
 
-        Map<String, Set<String>> hedgeProducts = request.getHedgeProducts();
+        CurrencyType currency = context.getInstrumentCurrency(key);
 
-        if (MapUtils.isEmpty(hedgeProducts)) {
+        BigDecimal basePrice = context.getConversionPrice(key, currency);
 
-            hedgeProducts = singletonMap(request.getSite(), singleton(request.getInstrument()));
+        if (basePrice == null) {
+
+            log.trace("No base price for {}:{}:{}", key.getSite(), key.getInstrument(), currency);
+
+            return ZERO;
 
         }
+
+        Map<String, Set<String>> hedgeProducts = ofNullable(request.getHedgeProducts())
+                .filter(MapUtils::isNotEmpty)
+                .orElseGet(() -> singletonMap(request.getSite(), singleton(request.getInstrument())));
 
         BigDecimal position = ZERO;
 
@@ -682,11 +690,9 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
             for (String instrument : entry.getValue()) {
 
-                Key hedgeKey = Key.build(key).site(site).instrument(instrument).build();
+                Key instrumentKey = Key.build(key).site(site).instrument(instrument).build();
 
-                CurrencyType currency = context.getInstrumentCurrency(hedgeKey);
-
-                BigDecimal conversionPrice = context.getConversionPrice(key, currency);
+                BigDecimal conversionPrice = context.getConversionPrice(instrumentKey, currency);
 
                 if (conversionPrice == null) {
 
@@ -696,17 +702,19 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
                 }
 
-                BigDecimal hedgePosition = context.getInstrumentPosition(hedgeKey);
+                BigDecimal conversionPosition = context.getInstrumentPosition(instrumentKey);
 
-                if (hedgePosition == null) {
+                if (conversionPosition == null) {
 
-                    log.trace("No instrument position for {}:{}", site, instrument);
+                    log.trace("No conversion position for {}:{}", site, instrument);
 
                     return ZERO;
 
                 }
 
-                position = position.add(hedgePosition.multiply(conversionPrice));
+                BigDecimal basePosition = conversionPosition.divide(conversionPrice, SCALE, HALF_UP);
+
+                position = position.add(basePosition);
 
             }
 
@@ -714,7 +722,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal exposure = ofNullable(calculateTradingExposure(context, request)).orElse(ZERO);
 
-        BigDecimal exposed = position.multiply(exposure);
+        BigDecimal exposed = position.multiply(basePrice).multiply(exposure);
 
         log.trace("Instrument exposure size : {} (position=[{}])", exposed, position);
 
