@@ -24,7 +24,7 @@ public class BitmexMargin {
     /**
      * Margin = Wallet + Unrealized
      */
-    @SerializedName("marginBalance")
+    @SerializedName("excessMargin")
     private BigDecimal balance;
 
 }

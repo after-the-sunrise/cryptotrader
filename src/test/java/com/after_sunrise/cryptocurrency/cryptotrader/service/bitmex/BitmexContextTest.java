@@ -725,8 +725,8 @@ public class BitmexContextTest {
         doReturn(new BigDecimal("750000")).when(target).getFundingConversionRate(key2, XBT);
 
         // Found (margin = 49990819 SATOSHI)
-        assertEquals(target.getFundingPosition(key1), new BigDecimal("3249.4632239828"));
-        assertEquals(target.getFundingPosition(key2), new BigDecimal("374931.14250000"));
+        assertEquals(target.getFundingPosition(key1), new BigDecimal("3246.7830945044"));
+        assertEquals(target.getFundingPosition(key2), new BigDecimal("374621.90250000"));
         verify(target, times(1)).executePrivate(any(), any(), any(), any());
 
         // No data
