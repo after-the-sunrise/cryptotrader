@@ -783,28 +783,20 @@ public class BitmexContextTest {
         Key key = Key.builder().build();
 
         // With commission
-        doReturn(of(BitmexTick.builder().makerFee(ONE).settleFee(TEN).indicativeFee(ONE).build())).when(target).queryTick(key);
-        assertEquals(target.getCommissionRate(key), ONE.add(TEN).add(ONE));
-
-        // With negative commission
-        doReturn(of(BitmexTick.builder().makerFee(ONE.negate()).settleFee(TEN).indicativeFee(ONE.negate()).build())).when(target).queryTick(key);
-        assertEquals(target.getCommissionRate(key), TEN.subtract(ONE).add(ONE));
-
-        // With negative commission
-        doReturn(of(BitmexTick.builder().makerFee(TEN.negate()).settleFee(ONE).indicativeFee(ONE).build())).when(target).queryTick(key);
-        assertEquals(target.getCommissionRate(key), ZERO);
-
-        // Without settle
-        doReturn(of(BitmexTick.builder().makerFee(ONE).indicativeFee(ONE).build())).when(target).queryTick(key);
-        assertEquals(target.getCommissionRate(key), ONE.add(ONE));
-
-        // Without maker
-        doReturn(of(BitmexTick.builder().settleFee(TEN).indicativeFee(ONE).build())).when(target).queryTick(key);
-        assertEquals(target.getCommissionRate(key), TEN.add(ONE));
-
-        // Without indicative
         doReturn(of(BitmexTick.builder().makerFee(ONE).settleFee(TEN).build())).when(target).queryTick(key);
         assertEquals(target.getCommissionRate(key), ONE.add(TEN));
+
+        // With negative commission
+        doReturn(of(BitmexTick.builder().makerFee(ONE.negate()).settleFee(TEN).build())).when(target).queryTick(key);
+        assertEquals(target.getCommissionRate(key), TEN);
+
+        // Without settle
+        doReturn(of(BitmexTick.builder().makerFee(ONE).build())).when(target).queryTick(key);
+        assertEquals(target.getCommissionRate(key), ONE);
+
+        // Without maker
+        doReturn(of(BitmexTick.builder().settleFee(TEN).build())).when(target).queryTick(key);
+        assertEquals(target.getCommissionRate(key), TEN);
 
         // Null commission
         doReturn(of(BitmexTick.builder().build())).when(target).queryTick(key);

@@ -655,13 +655,11 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         if (tick.isPresent()) {
 
-            BigDecimal maker = tick.map(BitmexTick::getMakerFee).orElse(ZERO);
+            BigDecimal maker = tick.map(BitmexTick::getMakerFee).orElse(ZERO).max(ZERO);
 
-            BigDecimal clear = tick.map(BitmexTick::getSettleFee).orElse(ZERO);
+            BigDecimal clear = tick.map(BitmexTick::getSettleFee).orElse(ZERO).max(ZERO);
 
-            BigDecimal indicative = tick.map(BitmexTick::getIndicativeFee).orElse(ZERO).abs();
-
-            rate = maker.add(clear).add(indicative).max(ZERO);
+            rate = maker.add(clear);
 
         }
 
