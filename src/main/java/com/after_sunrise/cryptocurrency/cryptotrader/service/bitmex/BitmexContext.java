@@ -370,6 +370,67 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
     }
 
+    @Override
+    public CurrencyType getInstrumentCurrency(Key key) {
+
+        ProductType product = key == null ? null : ProductType.findByName(key.getInstrument());
+
+        return product == null ? null : product.getStructure();
+
+    }
+
+    @Override
+    public CurrencyType getFundingCurrency(Key key) {
+
+        ProductType product = key == null ? null : ProductType.findByName(key.getInstrument());
+
+        return product == null ? null : product.getFunding();
+
+    }
+
+    @Override
+    public BigDecimal getConversionPrice(Key key, CurrencyType currency) {
+
+        ProductType product = ProductType.findByName(key.getInstrument());
+
+        if (product == null) {
+            return null;
+        }
+
+        BigDecimal price = getMidPrice(key);
+
+        if (price == null || price.signum() == 0) {
+            return null;
+        }
+
+        if (product.getStructure() == currency) {
+
+            // Contract Value = Multiplier / Contract Price
+
+            // 1 Currency Value = 1 / Contract Value
+
+            BigDecimal multiplier = BigDecimal.valueOf(product.getMultiplier());
+
+            return price.divide(multiplier, SCALE, HALF_UP);
+
+        }
+
+        if (product.getFunding() == currency) {
+
+            // Contract Value = Multiplier * Contract Price
+
+            // 1 Currency Value = 1 / Contract Value
+
+            BigDecimal multiplier = BigDecimal.valueOf(product.getMultiplier());
+
+            return ONE.divide(multiplier.multiply(price), SCALE, HALF_UP);
+
+        }
+
+        return null;
+
+    }
+
     @VisibleForTesting
     String computeHash(String secret, String method, String path, String nonce, String data) throws IOException {
 
@@ -447,33 +508,6 @@ public class BitmexContext extends TemplateContext implements BitmexService {
         }
 
         return result;
-
-    }
-
-    @Override
-    public CurrencyType getInstrumentCurrency(Key key) {
-
-        ProductType product = key == null ? null : ProductType.findByName(key.getInstrument());
-
-        return product == null ? null : product.getStructure();
-
-    }
-
-    @Override
-    public CurrencyType getFundingCurrency(Key key) {
-
-        ProductType product = key == null ? null : ProductType.findByName(key.getInstrument());
-
-        return product == null ? null : product.getFunding();
-
-    }
-
-    @Override
-    public BigDecimal getConversionPrice(Key key, CurrencyType currency) {
-
-        CurrencyType instrument = getInstrumentCurrency(key);
-
-        return instrument == null || instrument != currency ? null : ONE;
 
     }
 

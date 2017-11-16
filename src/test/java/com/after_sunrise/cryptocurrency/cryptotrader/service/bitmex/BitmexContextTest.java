@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.*;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.FundingType.XBT;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.*;
 import static com.google.common.io.Resources.getResource;
@@ -515,6 +516,81 @@ public class BitmexContextTest {
         // Null key
         trades = target.listTrades(null, null);
         assertEquals(trades.size(), 0);
+
+    }
+
+    @Test
+    public void testGetInstrumentCurrency() {
+
+        Key key = Key.builder().build();
+        assertEquals(target.getInstrumentCurrency(key), null);
+        assertEquals(target.getInstrumentCurrency(null), null);
+
+        key = Key.builder().instrument("XBTUSD").build();
+        assertEquals(target.getInstrumentCurrency(key), BTC);
+
+        key = Key.builder().instrument("XBJ_QT").build();
+        assertEquals(target.getInstrumentCurrency(key), BTC);
+
+        key = Key.builder().instrument("ETH_QT").build();
+        assertEquals(target.getInstrumentCurrency(key), ETH);
+
+    }
+
+    @Test
+    public void testGetFundingCurrency() {
+
+        Key key = Key.builder().build();
+        assertEquals(target.getFundingCurrency(key), null);
+        assertEquals(target.getFundingCurrency(null), null);
+
+        key = Key.builder().instrument("XBTUSD").build();
+        assertEquals(target.getFundingCurrency(key), USD);
+
+        key = Key.builder().instrument("XBJ_QT").build();
+        assertEquals(target.getFundingCurrency(key), JPY);
+
+        key = Key.builder().instrument("ETH_QT").build();
+        assertEquals(target.getFundingCurrency(key), BTC);
+
+    }
+
+    @Test
+    public void testGetConversionPrice() {
+
+        Key key1 = Key.builder().instrument("XBTUSD").build();
+        Key key2 = Key.builder().instrument("XBJ_QT").build();
+        Key key3 = Key.builder().instrument("ETH_QT").build();
+        Key key4 = Key.builder().instrument("FOOBAR").build();
+
+        doReturn(null).when(target).getMidPrice(any());
+        doReturn(new BigDecimal("6543")).when(target).getMidPrice(key1);
+        doReturn(new BigDecimal("765432")).when(target).getMidPrice(key2);
+        doReturn(new BigDecimal("0.0432")).when(target).getMidPrice(key3);
+
+        // Structure
+        assertEquals(target.getConversionPrice(key1, BTC), new BigDecimal("6543.0000000000"));
+        assertEquals(target.getConversionPrice(key2, BTC), new BigDecimal("7654.3200000000"));
+        assertEquals(target.getConversionPrice(key3, BTC), new BigDecimal("0023.1481481481"));
+        assertEquals(target.getConversionPrice(key4, BTC), null);
+
+        // Funding
+        assertEquals(target.getConversionPrice(key1, USD), new BigDecimal("0.0001528351"));
+        assertEquals(target.getConversionPrice(key2, JPY), new BigDecimal("0.0000000131"));
+        assertEquals(target.getConversionPrice(key3, ETH), new BigDecimal("0.0432000000"));
+
+        // Incompatible
+        assertEquals(target.getConversionPrice(key1, ETH), null);
+        assertEquals(target.getConversionPrice(key2, USD), null);
+        assertEquals(target.getConversionPrice(key3, JPY), null);
+
+        // Invalid Price
+        doReturn(null).when(target).getMidPrice(key1);
+        doReturn(ZERO).when(target).getMidPrice(key2);
+        doReturn(ZERO).when(target).getMidPrice(key3);
+        assertEquals(target.getConversionPrice(key1, BTC), null);
+        assertEquals(target.getConversionPrice(key2, BTC), null);
+        assertEquals(target.getConversionPrice(key3, BTC), null);
 
     }
 
