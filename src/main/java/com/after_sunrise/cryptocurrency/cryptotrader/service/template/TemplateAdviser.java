@@ -722,6 +722,9 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
     }
 
+    /**
+     * The rate to convert from 1 unit of {@code currency} to the {@code request} product.
+     */
     protected BigDecimal calculateConversionPrice(Context context, Request request, CurrencyType currency) {
 
         CurrencyType instrument = context.getInstrumentCurrency(Key.from(request));
