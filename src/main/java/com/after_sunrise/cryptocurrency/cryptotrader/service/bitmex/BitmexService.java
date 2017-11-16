@@ -74,24 +74,59 @@ public interface BitmexService extends Service {
 
     enum ProductType {
 
+        /**
+         * Minutely Bitcoin Price Index
+         */
         BXBT(".BXBT", null, BTC, USD, null),
 
+        /**
+         * Half-Hour Bitcoin Price Index
+         */
         BXBT30M(".BXBT30M", null, BTC, USD, null),
 
+        /**
+         * XBT/USD Swap
+         */
         XBTUSD("XBTUSD", "XBT:perpetual", BTC, USD, 1),
 
+        /**
+         * XBT/USD Swap Funding Rate
+         */
+        XBT_FR("XBT_FR", "XBT:perpetual", null, null, null),
+
+        /**
+         * XBT/USD Futures
+         */
         XBT_QT(null, "XBT:quarterly", BTC, USD, 1),
 
+        /**
+         * XBT/JPY Futures
+         */
         XBJ_QT(null, "XBJ:quarterly", BTC, JPY, 100),
 
+        /**
+         * XBT/JPY BitMEX Price Index
+         */
         BXBTJPY(".BXBTJPY", null, BTC, JPY, null),
 
+        /**
+         * 30-Minute XBT/JPY BitMEX Price Index
+         */
         BXBTJPY30M(".BXBTJPY30M", null, BTC, JPY, null),
 
+        /**
+         * Minutely Ether Price Index
+         */
         ETHXBT(".ETHXBT", null, ETH, BTC, null),
 
+        /**
+         * 30-Minute Ether Price Index
+         */
         ETHXBT30M(".ETHXBT30M", null, ETH, BTC, null),
 
+        /**
+         * ETH/XBT Futures
+         */
         ETH_QT(null, "ETH:quarterly", ETH, BTC, 1);
 
         private static final Map<String, ProductType> NAME = Stream.of(values())

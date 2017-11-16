@@ -139,7 +139,6 @@ public class BitmexContextTest {
         doReturn(Resources.toString(getResource("json/bitmex_alias.json"), UTF_8)).when(target)
                 .request(GET, "https://www.bitmex.com/api/v1/instrument/activeIntervals", null, null);
 
-
         for (ProductType product : ProductType.values()) {
 
             String expect = null;
@@ -155,6 +154,9 @@ public class BitmexContextTest {
                     break;
                 case XBTUSD:
                     expect = "XBTUSD";
+                    break;
+                case XBT_FR:
+                    expect = "XBT_FR";
                     break;
                 case XBT_QT:
                     expect = "XBTZ17";
@@ -175,7 +177,6 @@ public class BitmexContextTest {
         assertNull(target.convertAlias(Key.builder().instrument(null).build()));
         assertNull(target.convertAlias(null));
 
-
     }
 
     @Test
@@ -187,15 +188,18 @@ public class BitmexContextTest {
         Key key1 = Key.builder().instrument("XBTUSD").build();
         Key key2 = Key.builder().instrument("BXBT").build();
         Key key3 = Key.builder().instrument("XBT_QT").build();
+        Key key4 = Key.builder().instrument("XBT_FR").build();
         doReturn("XBTUSD").when(target).convertAlias(key1);
         doReturn(".BXBT").when(target).convertAlias(key2);
         doReturn("XBTZ17").when(target).convertAlias(key3);
+        doReturn("XBTUSD").when(target).convertAlias(key4);
 
         Optional<BitmexTick> result = target.queryTick(key1);
         assertTrue(result.isPresent());
         assertEquals(result.get().getSymbol(), "XBTUSD");
         assertEquals(result.get().getSettleCurrency(), "XBt");
         assertEquals(result.get().getState(), "Open");
+        assertEquals(result.get().getTimestamp(), Instant.parse("2017-11-01T22:13:32.101Z"));
         assertEquals(result.get().getLast(), new BigDecimal("6593.7"));
         assertEquals(result.get().getAsk(), new BigDecimal("6593.9"));
         assertEquals(result.get().getBid(), new BigDecimal("6593.8"));
@@ -207,12 +211,14 @@ public class BitmexContextTest {
         assertEquals(result.get().getMakerFee(), new BigDecimal("-0.00025"));
         assertEquals(result.get().getTakerFee(), new BigDecimal("0.00075"));
         assertEquals(result.get().getSettleFee(), new BigDecimal("0"));
+        assertEquals(result.get().getIndicativeFee(), new BigDecimal("-0.001375"));
 
         result = target.queryTick(key2);
         assertTrue(result.isPresent());
         assertEquals(result.get().getSymbol(), ".BXBT");
         assertEquals(result.get().getSettleCurrency(), "");
         assertEquals(result.get().getState(), "Unlisted");
+        assertEquals(result.get().getTimestamp(), Instant.parse("2017-11-01T22:13:20.000Z"));
         assertEquals(result.get().getLast(), new BigDecimal("6601.72"));
         assertEquals(result.get().getAsk(), null);
         assertEquals(result.get().getBid(), null);
@@ -224,12 +230,14 @@ public class BitmexContextTest {
         assertEquals(result.get().getMakerFee(), null);
         assertEquals(result.get().getTakerFee(), null);
         assertEquals(result.get().getSettleFee(), null);
+        assertEquals(result.get().getIndicativeFee(), null);
 
         result = target.queryTick(key3);
         assertTrue(result.isPresent());
         assertEquals(result.get().getSymbol(), "XBTZ17");
         assertEquals(result.get().getSettleCurrency(), "XBt");
         assertEquals(result.get().getState(), "Open");
+        assertEquals(result.get().getTimestamp(), Instant.parse("2017-11-03T07:28:24.468Z"));
         assertEquals(result.get().getLast(), new BigDecimal("6712.3"));
         assertEquals(result.get().getAsk(), new BigDecimal("6712.5"));
         assertEquals(result.get().getBid(), new BigDecimal("6712.4"));
@@ -241,6 +249,26 @@ public class BitmexContextTest {
         assertEquals(result.get().getMakerFee(), new BigDecimal("-0.00025"));
         assertEquals(result.get().getTakerFee(), new BigDecimal("0.00075"));
         assertEquals(result.get().getSettleFee(), new BigDecimal("0.0005"));
+        assertEquals(result.get().getIndicativeFee(), null);
+
+        result = target.queryTick(key4);
+        assertTrue(result.isPresent());
+        assertEquals(result.get().getSymbol(), "XBT_FR");
+        assertEquals(result.get().getSettleCurrency(), null);
+        assertEquals(result.get().getState(), "Unlisted");
+        assertEquals(result.get().getTimestamp(), Instant.parse("2017-11-01T22:13:32.101Z"));
+        assertEquals(result.get().getLast(), new BigDecimal("0.998625"));
+        assertEquals(result.get().getAsk(), null);
+        assertEquals(result.get().getBid(), null);
+        assertEquals(result.get().getMid(), null);
+        assertEquals(result.get().getLotSize(), null);
+        assertEquals(result.get().getTickSize(), null);
+        assertEquals(result.get().getExpiry(), null);
+        assertEquals(result.get().getReference(), null);
+        assertEquals(result.get().getMakerFee(), null);
+        assertEquals(result.get().getTakerFee(), null);
+        assertEquals(result.get().getSettleFee(), null);
+        assertEquals(result.get().getIndicativeFee(), new BigDecimal("-0.001375"));
 
         // Empty
         target.clear();

@@ -175,11 +175,26 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         String instrument = convertAlias(key);
 
-        return ticks.stream()
+        Optional<BitmexTick> result = ticks.stream()
                 .filter(Objects::nonNull)
                 .filter(t -> StringUtils.isNotBlank(t.getSymbol()))
                 .filter(t -> StringUtils.equals(t.getSymbol(), instrument))
                 .findAny();
+
+        if (ProductType.XBT_FR.getId().equals(key.getInstrument())) {
+
+            result = result.filter(t -> t.getIndicativeFee() != null).map(tick -> BitmexTick.builder()
+                    .state(UNLISTED)
+                    .symbol(key.getInstrument())
+                    .timestamp(tick.getTimestamp())
+                    .last(ONE.add(tick.getIndicativeFee()))
+                    .indicativeFee(tick.getIndicativeFee())
+                    .build()
+            );
+
+        }
+
+        return result;
 
     }
 
