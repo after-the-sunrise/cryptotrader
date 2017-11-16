@@ -39,7 +39,9 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.Bit
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.COLLATERAL_BTC;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.COLLATERAL_JPY;
 import static java.lang.Boolean.TRUE;
+import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.HALF_UP;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Collections.*;
 import static java.util.Optional.ofNullable;
@@ -485,6 +487,57 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     public CurrencyType getFundingCurrency(Key key) {
 
         return getCurrency(key, p -> p.getFunding().getCurrency());
+
+    }
+
+    @Override
+    public BigDecimal getConversionPrice(Key key, CurrencyType currency) {
+
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null) {
+            return null;
+        }
+
+        CurrencyType structureCurrency = product.getStructure().getCurrency();
+
+        if (structureCurrency == currency) {
+            return ONE;
+        }
+
+        for (ProductType p : ProductType.values()) {
+
+            if (p.getFunding().getCurrency() != structureCurrency) {
+                continue;
+            }
+
+            if (p.getStructure().getCurrency() != currency) {
+                continue;
+            }
+
+            BigDecimal price = getMidPrice(Key.build(key).instrument(p.name()).build());
+
+            return price == null || price.signum() == 0 ? null : price;
+
+        }
+
+        for (ProductType p : ProductType.values()) {
+
+            if (p.getStructure().getCurrency() != structureCurrency) {
+                continue;
+            }
+
+            if (p.getFunding().getCurrency() != currency) {
+                continue;
+            }
+
+            BigDecimal price = getMidPrice(Key.build(key).instrument(p.name()).build());
+
+            return price == null || price.signum() == 0 ? null : ONE.divide(price, SCALE, HALF_UP);
+
+        }
+
+        return null;
 
     }
 

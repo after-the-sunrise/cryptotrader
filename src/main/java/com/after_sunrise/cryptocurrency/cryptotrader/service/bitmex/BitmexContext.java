@@ -469,6 +469,15 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     }
 
     @Override
+    public BigDecimal getConversionPrice(Key key, CurrencyType currency) {
+
+        CurrencyType instrument = getInstrumentCurrency(key);
+
+        return instrument == null || instrument != currency ? null : ONE;
+
+    }
+
+    @Override
     public BigDecimal getInstrumentPosition(Key key) {
 
         if (key == null) {

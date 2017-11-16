@@ -686,7 +686,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
                 CurrencyType currency = context.getInstrumentCurrency(hedgeKey);
 
-                BigDecimal conversionPrice = calculateConversionPrice(context, request, currency);
+                BigDecimal conversionPrice = context.getConversionPrice(key, currency);
 
                 if (conversionPrice == null) {
 
@@ -719,17 +719,6 @@ public class TemplateAdviser extends AbstractService implements Adviser {
         log.trace("Instrument exposure size : {} (position=[{}])", exposed, position);
 
         return exposed;
-
-    }
-
-    /**
-     * The rate to convert from 1 unit of {@code currency} to the {@code request} product.
-     */
-    protected BigDecimal calculateConversionPrice(Context context, Request request, CurrencyType currency) {
-
-        CurrencyType instrument = context.getInstrumentCurrency(Key.from(request));
-
-        return instrument == null || instrument != currency ? null : ONE;
 
     }
 

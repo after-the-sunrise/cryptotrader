@@ -14,7 +14,6 @@ import java.time.temporal.ChronoUnit;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.HALF_UP;
 import static java.math.RoundingMode.UP;
 
 /**
@@ -153,61 +152,6 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
         BigDecimal theoretical = ask.multiply(ONE.add(comm).add(spread).add(swap));
 
         return price.max(theoretical);
-
-    }
-
-    @Override
-    protected BigDecimal calculateConversionPrice(Context context, Request request, CurrencyType currency) {
-
-        ProductType product = ProductType.find(request.getInstrument());
-
-        if (product == null) {
-            return null;
-        }
-
-        CurrencyType structureCurrency = product.getStructure().getCurrency();
-
-        if (structureCurrency == currency) {
-            return ONE;
-        }
-
-        for (ProductType p : ProductType.values()) {
-
-            if (p.getFunding().getCurrency() != structureCurrency) {
-                continue;
-            }
-
-            if (p.getStructure().getCurrency() != currency) {
-                continue;
-            }
-
-            Key key = Key.build(Key.from(request)).instrument(p.name()).build();
-
-            BigDecimal price = context.getMidPrice(key);
-
-            return price == null || price.signum() == 0 ? null : price;
-
-        }
-
-        for (ProductType p : ProductType.values()) {
-
-            if (p.getStructure().getCurrency() != structureCurrency) {
-                continue;
-            }
-
-            if (p.getFunding().getCurrency() != currency) {
-                continue;
-            }
-
-            Key key = Key.build(Key.from(request)).instrument(p.name()).build();
-
-            BigDecimal price = context.getMidPrice(key);
-
-            return price == null || price.signum() == 0 ? null : ONE.divide(price, SCALE, HALF_UP);
-
-        }
-
-        return null;
 
     }
 

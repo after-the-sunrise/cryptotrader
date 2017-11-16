@@ -371,6 +371,11 @@ public abstract class TemplateContext extends AbstractService implements Context
     }
 
     @Override
+    public BigDecimal getConversionPrice(Key key, CurrencyType currency) {
+        return null;
+    }
+
+    @Override
     public BigDecimal getInstrumentPosition(Key key) {
         return null;
     }

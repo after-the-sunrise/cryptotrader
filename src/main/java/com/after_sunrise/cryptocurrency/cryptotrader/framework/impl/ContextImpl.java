@@ -131,6 +131,11 @@ public class ContextImpl extends AbstractService implements Context {
     }
 
     @Override
+    public BigDecimal getConversionPrice(Key key, CurrencyType currency) {
+        return forContext(key, c -> c.getConversionPrice(key, currency));
+    }
+
+    @Override
     public BigDecimal getInstrumentPosition(Key key) {
         return forContext(key, c -> c.getInstrumentPosition(key));
     }

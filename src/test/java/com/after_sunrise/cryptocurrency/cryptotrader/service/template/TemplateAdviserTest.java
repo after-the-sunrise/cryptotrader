@@ -892,7 +892,7 @@ public class TemplateAdviserTest {
         BigDecimal expect = new BigDecimal("900.00");
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("9000"));
         when(context.getInstrumentCurrency(any())).thenReturn(BTC);
-        doReturn(ONE).when(target).calculateConversionPrice(context, request, BTC);
+        when(context.getConversionPrice(key, BTC)).thenReturn(ONE);
         assertEquals(target.calculateInstrumentExposureSize(context, request), expect);
 
         // Invalid Fund
@@ -921,9 +921,9 @@ public class TemplateAdviserTest {
             when(context.getInstrumentPosition(Key.builder().site("a").instrument("XETH").build())).thenReturn(valueOf(25));
             when(context.getInstrumentPosition(Key.builder().site("b").instrument("XBCH").build())).thenReturn(valueOf(35));
 
-            doReturn(new BigDecimal("1.0")).when(target).calculateConversionPrice(context, request, BTC);
-            doReturn(new BigDecimal("0.4")).when(target).calculateConversionPrice(context, request, ETH);
-            doReturn(new BigDecimal("0.6")).when(target).calculateConversionPrice(context, request, BCH);
+            when(context.getConversionPrice(Key.from(request), BTC)).thenReturn(new BigDecimal("1.0"));
+            when(context.getConversionPrice(Key.from(request), ETH)).thenReturn(new BigDecimal("0.4"));
+            when(context.getConversionPrice(Key.from(request), BCH)).thenReturn(new BigDecimal("0.6"));
 
             doReturn(new BigDecimal("0.10")).when(target).calculateTradingExposure(context, request);
 
@@ -935,31 +935,13 @@ public class TemplateAdviserTest {
 
         // No price
         initializer.run();
-        doReturn(null).when(target).calculateConversionPrice(any(), any(), any());
+        when(context.getConversionPrice(any(), any())).thenReturn(null);
         assertEquals(target.calculateInstrumentExposureSize(context, request), new BigDecimal("0"));
 
         // No position
         initializer.run();
         when(context.getInstrumentCurrency(any())).thenReturn(null);
         assertEquals(target.calculateInstrumentExposureSize(context, request), new BigDecimal("0"));
-
-    }
-
-    @Test
-    public void testCalculateConversionPrice() {
-
-        Request request = rBuilder.build();
-        when(context.getInstrumentCurrency(Key.from(request))).thenReturn(JPY);
-        assertEquals(target.calculateConversionPrice(context, request, JPY), ONE);
-
-        when(context.getInstrumentCurrency(Key.from(request))).thenReturn(USD);
-        assertNull(target.calculateConversionPrice(context, request, JPY));
-
-        when(context.getInstrumentCurrency(Key.from(request))).thenReturn(null);
-        assertNull(target.calculateConversionPrice(context, request, JPY));
-
-        when(context.getInstrumentCurrency(Key.from(request))).thenReturn(null);
-        assertNull(target.calculateConversionPrice(context, request, null));
 
     }
 

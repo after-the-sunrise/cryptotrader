@@ -89,6 +89,8 @@ public interface Context extends Service, AutoCloseable {
 
     CurrencyType getFundingCurrency(Key key);
 
+    BigDecimal getConversionPrice(Key key, CurrencyType currency);
+
     BigDecimal getInstrumentPosition(Key key);
 
     BigDecimal getFundingPosition(Key key);

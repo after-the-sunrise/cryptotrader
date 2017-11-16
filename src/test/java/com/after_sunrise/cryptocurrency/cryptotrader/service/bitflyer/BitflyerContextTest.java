@@ -7,13 +7,10 @@ import com.after_sunrise.cryptocurrency.bitflyer4j.service.MarketService;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.OrderService;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.RealtimeService;
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -36,8 +33,10 @@ import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.SELL;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.COLLATERAL;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.FUTURE_BTC1W;
-import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.BTCJPY_MAT1WK;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ID;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.*;
 import static java.math.BigDecimal.*;
+import static java.math.BigDecimal.valueOf;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
 import static java.util.Arrays.asList;
@@ -456,6 +455,160 @@ public class BitflyerContextTest {
         assertNull(target.getFundingCurrency(Key.builder().build()));
 
         assertNull(target.getFundingCurrency(null));
+
+    }
+
+    @Test
+    public void testGetConversionPrice() {
+
+        doReturn(null).when(target).getMidPrice(any());
+        doReturn(valueOf(840000)).when(target).getMidPrice(Key.builder().instrument(BTC_JPY.name()).build());
+        doReturn(valueOf(830000)).when(target).getMidPrice(Key.builder().instrument(FX_BTC_JPY.name()).build());
+        doReturn(valueOf(820000)).when(target).getMidPrice(Key.builder().instrument(BTCJPY_MAT1WK.name()).build());
+        doReturn(valueOf(810000)).when(target).getMidPrice(Key.builder().instrument(BTCJPY_MAT2WK.name()).build());
+        doReturn(valueOf(4, 1)).when(target).getMidPrice(Key.builder().instrument(ETH_BTC.name()).build());
+        doReturn(valueOf(6, 1)).when(target).getMidPrice(Key.builder().instrument(BCH_BTC.name()).build());
+
+        for (Service.CurrencyType currency : Service.CurrencyType.values()) {
+
+            for (ProductType product : ProductType.values()) {
+
+                Key key = Key.builder().instrument(product.name()).build();
+
+                BigDecimal expect = null;
+
+                switch (currency) {
+                    case JPY:
+                        switch (product) {
+                            case COLLATERAL_JPY:
+                                expect = ONE;
+                                break;
+                            case BTC_JPY:
+                            case FX_BTC_JPY:
+                            case BTCJPY_MAT1WK:
+                            case BTCJPY_MAT2WK:
+                            case COLLATERAL_BTC:
+                                // First one found = 1 / 840000
+                                expect = new BigDecimal("0.0000011905");
+                                break;
+                        }
+                        break;
+                    case BTC:
+                        switch (product) {
+                            case BTC_JPY:
+                            case FX_BTC_JPY:
+                            case BTCJPY_MAT1WK:
+                            case BTCJPY_MAT2WK:
+                            case COLLATERAL_BTC:
+                                expect = ONE;
+                                break;
+                            case COLLATERAL_JPY:
+                                expect = valueOf(840000);
+                                break;
+                            case ETH_BTC:
+                                expect = new BigDecimal("2.5000000000");
+                                break;
+                            case BCH_BTC:
+                                expect = new BigDecimal("1.6666666667");
+                                break;
+                        }
+                        break;
+                    case ETH:
+                        switch (product) {
+                            case ETH_BTC:
+                                expect = ONE;
+                                break;
+                            case BTC_JPY:
+                            case FX_BTC_JPY:
+                            case BTCJPY_MAT1WK:
+                            case BTCJPY_MAT2WK:
+                            case COLLATERAL_BTC:
+                                expect = new BigDecimal("0.4");
+                                break;
+                        }
+                        break;
+                    case BCH:
+                        switch (product) {
+                            case BCH_BTC:
+                                expect = ONE;
+                                break;
+                            case BTC_JPY:
+                            case FX_BTC_JPY:
+                            case BTCJPY_MAT1WK:
+                            case BTCJPY_MAT2WK:
+                            case COLLATERAL_BTC:
+                                expect = new BigDecimal("0.6");
+                                break;
+                        }
+                        break;
+                }
+
+                String message = String.format("%s -> %s", currency, product);
+                assertEquals(target.getConversionPrice(key, currency), expect, message);
+
+                // Null Currency
+                assertNull(target.getConversionPrice(key, null));
+
+            }
+
+            // Unknown Product
+            Key key = Key.builder().site(ID).instrument("foo").build();
+            assertNull(target.getConversionPrice(key, currency));
+
+        }
+
+        // Zero Price
+        doReturn(new BigDecimal("0.0")).when(target).getMidPrice(any());
+
+        for (Service.CurrencyType currency : Service.CurrencyType.values()) {
+
+            for (ProductType product : ProductType.values()) {
+
+                Key key = Key.builder().instrument(product.name()).build();
+
+                BigDecimal expect = null;
+
+                switch (currency) {
+                    case JPY:
+                        switch (product) {
+                            case COLLATERAL_JPY:
+                                expect = ONE;
+                                break;
+                        }
+                        break;
+                    case BTC:
+                        switch (product) {
+                            case BTC_JPY:
+                            case FX_BTC_JPY:
+                            case BTCJPY_MAT1WK:
+                            case BTCJPY_MAT2WK:
+                            case COLLATERAL_BTC:
+                                expect = ONE;
+                                break;
+                        }
+                        break;
+                    case ETH:
+                        switch (product) {
+                            case ETH_BTC:
+                                expect = ONE;
+                                break;
+                        }
+                        break;
+                    case BCH:
+                        switch (product) {
+                            case BCH_BTC:
+                                expect = ONE;
+                                break;
+                        }
+                        break;
+                }
+
+                String message = String.format("%s -> %s", currency, product);
+                assertEquals(target.getConversionPrice(key, currency), expect, message);
+
+            }
+
+        }
 
     }
 
