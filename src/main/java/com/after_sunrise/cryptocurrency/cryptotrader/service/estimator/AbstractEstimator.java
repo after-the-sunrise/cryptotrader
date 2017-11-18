@@ -46,6 +46,7 @@ public abstract class AbstractEstimator extends AbstractService implements Estim
         DEFAULTS.get(CurrencyType.BTC).get(CurrencyType.JPY).put("bitflyer", "BTC_JPY");
         DEFAULTS.get(CurrencyType.BTC).get(CurrencyType.JPY).put("coincheck", "btc_jpy");
         DEFAULTS.get(CurrencyType.BTC).get(CurrencyType.JPY).put("zaif", "btc_jpy");
+        DEFAULTS.get(CurrencyType.BTC).get(CurrencyType.JPY).put("bitmex", "BXBTJPY");
 
         // Structure = BTC, Funding = USD
         DEFAULTS.get(CurrencyType.BTC).get(CurrencyType.USD).put("bitfinex", "btcusd");
