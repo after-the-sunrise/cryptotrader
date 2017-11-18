@@ -156,10 +156,8 @@ public class BitmexContextTest {
                     expect = "." + product.name();
                     break;
                 case XBTUSD:
-                    expect = "XBTUSD";
-                    break;
                 case XBT_FR:
-                    expect = "XBT_FR";
+                    expect = "XBTUSD";
                     break;
                 case XBT_QT:
                     expect = "XBTZ17";

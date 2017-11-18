@@ -89,7 +89,7 @@ public interface BitmexService extends Service {
         /**
          * XBT/USD Swap Funding Rate
          */
-        XBT_FR("XBT_FR", "XBT:perpetual", null, null, null),
+        XBT_FR(null, "XBT:perpetual", null, null, null),
 
         /**
          * XBT/USD Futures

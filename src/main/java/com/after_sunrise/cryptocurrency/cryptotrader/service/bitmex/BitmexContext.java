@@ -181,7 +181,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
                 .filter(t -> StringUtils.equals(t.getSymbol(), instrument))
                 .findAny();
 
-        if (ProductType.XBT_FR.getId().equals(key.getInstrument())) {
+        if (ProductType.XBT_FR.name().equals(key.getInstrument())) {
 
             result = result.filter(t -> t.getIndicativeFee() != null).map(tick -> BitmexTick.builder()
                     .state(UNLISTED)
