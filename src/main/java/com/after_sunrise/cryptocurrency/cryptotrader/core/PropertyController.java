@@ -33,6 +33,8 @@ public interface PropertyController extends PropertyManager {
 
     void setTradingExposure(String site, String instrument, BigDecimal value);
 
+    void setTradingMinimum(String site, String instrument, BigDecimal value);
+
     void setTradingAversion(String site, String instrument, BigDecimal value);
 
     void setTradingSplit(String site, String instrument, Integer value);
@@ -46,6 +48,10 @@ public interface PropertyController extends PropertyManager {
     void setFundingPositiveMultiplier(String site, String instrument, BigDecimal value);
 
     void setFundingNegativeMultiplier(String site, String instrument, BigDecimal value);
+
+    void setFundingPositiveThreshold(String site, String instrument, BigDecimal value);
+
+    void setFundingNegativeThreshold(String site, String instrument, BigDecimal value);
 
     void setHedgeProducts(String site, String instrument, Map<String, Set<String>> values);
 

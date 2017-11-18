@@ -43,6 +43,8 @@ public class Request {
 
     private BigDecimal tradingExposure;
 
+    private BigDecimal tradingMinimum;
+
     private BigDecimal tradingAversion;
 
     private Integer tradingSplit;
@@ -56,6 +58,10 @@ public class Request {
     private BigDecimal fundingPositiveMultiplier;
 
     private BigDecimal fundingNegativeMultiplier;
+
+    private BigDecimal fundingPositiveThreshold;
+
+    private BigDecimal fundingNegativeThreshold;
 
     private Map<String, Set<String>> hedgeProducts;
 

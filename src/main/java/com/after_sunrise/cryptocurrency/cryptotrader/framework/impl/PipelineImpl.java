@@ -8,11 +8,12 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 
+import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import static java.util.Collections.emptyMap;
@@ -91,6 +92,7 @@ public class PipelineImpl implements Pipeline {
                 .tradingSigma(propertyManager.getTradingSigma(site, instrument))
                 .tradingSamples(propertyManager.getTradingSamples(site, instrument))
                 .tradingExposure(propertyManager.getTradingExposure(site, instrument))
+                .tradingMinimum(propertyManager.getTradingMinimum(site, instrument))
                 .tradingAversion(propertyManager.getTradingAversion(site, instrument))
                 .tradingSplit(propertyManager.getTradingSplit(site, instrument))
                 .tradingDuration(propertyManager.getTradingDuration(site, instrument))
@@ -98,103 +100,36 @@ public class PipelineImpl implements Pipeline {
                 .fundingMultiplierProducts(propertyManager.getFundingMultiplierProducts(site, instrument))
                 .fundingPositiveMultiplier(propertyManager.getFundingPositiveMultiplier(site, instrument))
                 .fundingNegativeMultiplier(propertyManager.getFundingNegativeMultiplier(site, instrument))
+                .fundingPositiveThreshold(propertyManager.getFundingPositiveThreshold(site, instrument))
+                .fundingNegativeThreshold(propertyManager.getFundingNegativeThreshold(site, instrument))
                 .hedgeProducts(propertyManager.getHedgeProducts(site, instrument))
                 .estimatorComposites(propertyManager.getEstimatorComposites(site, instrument))
                 .build();
 
-        if (StringUtils.isEmpty(site)) {
-            log.warn("Invalid request : site");
-            return null;
-        }
+        for (Method m : Request.class.getMethods()) {
 
-        if (StringUtils.isEmpty(instrument)) {
-            log.warn("Invalid request : instrument");
-            return null;
-        }
+            if (!m.getName().startsWith("get")) {
+                continue;
+            }
 
-        if (request.getCurrentTime() == null) {
-            log.warn("Invalid request : current time");
-            return null;
-        }
+            if (m.getParameterCount() != 0) {
+                continue;
+            }
 
-        if (request.getTargetTime() == null) {
-            log.warn("Invalid request : target time");
-            return null;
-        }
+            try {
 
-        if (request.getTradingSpread() == null) {
-            log.warn("Invalid request : trading spread");
-            return null;
-        }
+                Object value = m.invoke(request);
 
-        if (request.getTradingSpreadAsk() == null) {
-            log.warn("Invalid request : trading spread ask");
-            return null;
-        }
+                Objects.requireNonNull(value);
 
-        if (request.getTradingSpreadBid() == null) {
-            log.warn("Invalid request : trading spread bid");
-            return null;
-        }
+            } catch (Exception e) {
 
-        if (request.getTradingSigma() == null) {
-            log.warn("Invalid request : trading sigma");
-            return null;
-        }
+                log.warn("Invalid Request : " + m.getName());
 
-        if (request.getTradingSamples() == null) {
-            log.warn("Invalid request : trading samples");
-            return null;
-        }
+                return null;
 
-        if (request.getTradingExposure() == null) {
-            log.warn("Invalid request : trading exposure");
-            return null;
-        }
+            }
 
-        if (request.getTradingAversion() == null) {
-            log.warn("Invalid request : trading aversion");
-            return null;
-        }
-
-        if (request.getTradingSplit() == null) {
-            log.warn("Invalid request : trading split");
-            return null;
-        }
-
-        if (request.getTradingDuration() == null) {
-            log.warn("Invalid request : trading duration");
-            return null;
-        }
-
-        if (request.getFundingOffset() == null) {
-            log.warn("Invalid request : funding offset");
-            return null;
-        }
-
-        if (request.getFundingMultiplierProducts() == null) {
-            log.warn("Invalid request : funding multiplier products");
-            return null;
-        }
-
-        if (request.getFundingPositiveMultiplier() == null) {
-            log.warn("Invalid request : funding positive multiplier");
-            return null;
-        }
-
-        if (request.getFundingNegativeMultiplier() == null) {
-            log.warn("Invalid request : funding negative multiplier");
-            return null;
-        }
-
-        if (request.getHedgeProducts() == null) {
-            log.warn("Invalid request : hedge products");
-            return null;
-        }
-
-        if (request.getEstimatorComposites() == null) {
-            log.warn("Invalid request : estimator composites");
-            return null;
         }
 
         return request;

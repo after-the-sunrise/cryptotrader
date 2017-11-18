@@ -500,6 +500,39 @@ public class PropertyManagerImplTest {
     }
 
     @Test
+    public void testGetTradingMinimum() throws Exception {
+
+        // Default
+        assertEquals(target.getTradingMinimum(site, inst), new BigDecimal("0.00000000"));
+
+        // Mocked
+        doReturn(new BigDecimal("0.1234")).when(conf).getBigDecimal(TRADING_MINIMUM.getKey());
+        assertEquals(target.getTradingMinimum(site, inst), new BigDecimal("0.1234"));
+
+        // Ceiling
+        doReturn(valueOf(Integer.MAX_VALUE)).when(conf).getBigDecimal(TRADING_MINIMUM.getKey());
+        assertEquals(target.getTradingMinimum(site, inst), valueOf(Integer.MAX_VALUE));
+
+        // Floor
+        doReturn(valueOf(Integer.MIN_VALUE)).when(conf).getBigDecimal(TRADING_MINIMUM.getKey());
+        assertEquals(target.getTradingMinimum(site, inst), ZERO);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(TRADING_MINIMUM.getKey());
+        assertEquals(target.getTradingMinimum(site, inst), ZERO);
+        reset(conf);
+
+        // Override
+        target.setTradingMinimum(site, inst, new BigDecimal("0.02"));
+        assertEquals(target.getTradingMinimum(site, inst), new BigDecimal("0.02"));
+
+        // Clear
+        target.setTradingMinimum(site, inst, null);
+        assertEquals(target.getTradingMinimum(site, inst), new BigDecimal("0.00000000"));
+
+    }
+
+    @Test
     public void testGetTradingAversion() throws Exception {
 
         // Default
@@ -736,6 +769,70 @@ public class PropertyManagerImplTest {
         // Clear
         target.setFundingNegativeMultiplier(site, inst, null);
         assertEquals(target.getFundingNegativeMultiplier(site, inst), new BigDecimal("1.0"));
+
+    }
+
+    @Test
+    public void testGetFundingPositiveThreshold() throws Exception {
+
+        assertEquals(target.getFundingPositiveThreshold(site, inst), new BigDecimal("0.0"));
+
+        // Specific
+        doReturn(new BigDecimal("2.3456")).when(conf).getBigDecimal(FUNDING_POSITIVE_THRESHOLD.getKey());
+        assertEquals(target.getFundingPositiveThreshold(site, inst), new BigDecimal("2.3456"));
+
+        // Ceiling
+        doReturn(valueOf(Integer.MAX_VALUE)).when(conf).getBigDecimal(FUNDING_POSITIVE_THRESHOLD.getKey());
+        assertEquals(target.getFundingPositiveThreshold(site, inst), valueOf(Integer.MAX_VALUE));
+
+        // Floor
+        doReturn(valueOf(Integer.MIN_VALUE)).when(conf).getBigDecimal(FUNDING_POSITIVE_THRESHOLD.getKey());
+        assertEquals(target.getFundingPositiveThreshold(site, inst), valueOf(Integer.MIN_VALUE));
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(FUNDING_POSITIVE_THRESHOLD.getKey());
+        assertEquals(target.getFundingPositiveThreshold(site, inst), ONE);
+        reset(conf);
+
+        // Override
+        target.setFundingPositiveThreshold(site, inst, TEN);
+        assertEquals(target.getFundingPositiveThreshold(site, inst), TEN);
+
+        // Clear
+        target.setFundingPositiveThreshold(site, inst, null);
+        assertEquals(target.getFundingPositiveThreshold(site, inst), new BigDecimal("0.0"));
+
+    }
+
+    @Test
+    public void testGetFundingNegativeThreshold() throws Exception {
+
+        assertEquals(target.getFundingNegativeThreshold(site, inst), new BigDecimal("0.0"));
+
+        // Specific
+        doReturn(new BigDecimal("2.3456")).when(conf).getBigDecimal(FUNDING_NEGATIVE_THRESHOLD.getKey());
+        assertEquals(target.getFundingNegativeThreshold(site, inst), new BigDecimal("2.3456"));
+
+        // Ceiling
+        doReturn(valueOf(Integer.MAX_VALUE)).when(conf).getBigDecimal(FUNDING_NEGATIVE_THRESHOLD.getKey());
+        assertEquals(target.getFundingNegativeThreshold(site, inst), valueOf(Integer.MAX_VALUE));
+
+        // Floor
+        doReturn(valueOf(Integer.MIN_VALUE)).when(conf).getBigDecimal(FUNDING_NEGATIVE_THRESHOLD.getKey());
+        assertEquals(target.getFundingNegativeThreshold(site, inst), valueOf(Integer.MIN_VALUE));
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(FUNDING_NEGATIVE_THRESHOLD.getKey());
+        assertEquals(target.getFundingNegativeThreshold(site, inst), ONE);
+        reset(conf);
+
+        // Override
+        target.setFundingNegativeThreshold(site, inst, TEN);
+        assertEquals(target.getFundingNegativeThreshold(site, inst), TEN);
+
+        // Clear
+        target.setFundingNegativeThreshold(site, inst, null);
+        assertEquals(target.getFundingNegativeThreshold(site, inst), new BigDecimal("0.0"));
 
     }
 

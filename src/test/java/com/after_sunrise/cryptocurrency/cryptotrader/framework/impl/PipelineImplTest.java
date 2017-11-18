@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import static java.math.BigDecimal.valueOf;
-import static java.util.Collections.emptyMap;
+import static java.util.Collections.*;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -100,21 +100,25 @@ public class PipelineImplTest {
         PropertyManager manager = module.getMock(PropertyManager.class);
 
         Runnable initializer = () -> {
+            int count = 0;
             when(manager.getNow()).thenReturn(currentTime);
-            when(manager.getTradingSpread(any(), any())).thenReturn(valueOf(2));
-            when(manager.getTradingSpreadAsk(any(), any())).thenReturn(valueOf(7));
-            when(manager.getTradingSpreadBid(any(), any())).thenReturn(valueOf(8));
-            when(manager.getTradingSigma(any(), any())).thenReturn(valueOf(9));
-            when(manager.getTradingSamples(any(), any())).thenReturn(10);
-            when(manager.getTradingExposure(any(), any())).thenReturn(valueOf(3));
-            when(manager.getTradingAversion(any(), any())).thenReturn(valueOf(6));
-            when(manager.getTradingSplit(any(), any())).thenReturn(4);
-            when(manager.getTradingDuration(any(), any())).thenReturn(Duration.ZERO);
-            when(manager.getFundingOffset(any(), any())).thenReturn(valueOf(5));
-            when(manager.getFundingMultiplierProducts(any(), any())).thenReturn(emptyMap());
-            when(manager.getFundingPositiveMultiplier(any(), any())).thenReturn(valueOf(11));
-            when(manager.getFundingNegativeMultiplier(any(), any())).thenReturn(valueOf(12));
-            when(manager.getHedgeProducts(any(), any())).thenReturn(emptyMap());
+            when(manager.getTradingSpread(any(), any())).thenReturn(valueOf(++count));
+            when(manager.getTradingSpreadAsk(any(), any())).thenReturn(valueOf(++count));
+            when(manager.getTradingSpreadBid(any(), any())).thenReturn(valueOf(++count));
+            when(manager.getTradingSigma(any(), any())).thenReturn(valueOf(++count));
+            when(manager.getTradingSamples(any(), any())).thenReturn(++count);
+            when(manager.getTradingExposure(any(), any())).thenReturn(valueOf(++count));
+            when(manager.getTradingMinimum(any(), any())).thenReturn(valueOf(++count));
+            when(manager.getTradingAversion(any(), any())).thenReturn(valueOf(++count));
+            when(manager.getTradingSplit(any(), any())).thenReturn(++count);
+            when(manager.getTradingDuration(any(), any())).thenReturn(Duration.ofMillis(++count));
+            when(manager.getFundingOffset(any(), any())).thenReturn(valueOf(++count));
+            when(manager.getFundingMultiplierProducts(any(), any())).thenReturn(singletonMap("mp", emptySet()));
+            when(manager.getFundingPositiveMultiplier(any(), any())).thenReturn(valueOf(++count));
+            when(manager.getFundingNegativeMultiplier(any(), any())).thenReturn(valueOf(++count));
+            when(manager.getFundingPositiveThreshold(any(), any())).thenReturn(valueOf(++count));
+            when(manager.getFundingNegativeThreshold(any(), any())).thenReturn(valueOf(++count));
+            when(manager.getHedgeProducts(any(), any())).thenReturn(singletonMap("hp", emptySet()));
         };
 
         initializer.run();
@@ -123,20 +127,23 @@ public class PipelineImplTest {
         assertEquals(request.getInstrument(), instrument);
         assertEquals(request.getCurrentTime(), currentTime);
         assertEquals(request.getTargetTime(), targetTime);
-        assertEquals(request.getTradingSpread(), valueOf(2));
-        assertEquals(request.getTradingSpreadAsk(), valueOf(7));
-        assertEquals(request.getTradingSpreadBid(), valueOf(8));
-        assertEquals(request.getTradingExposure(), valueOf(3));
-        assertEquals(request.getTradingAversion(), valueOf(6));
-        assertEquals(request.getTradingSigma(), valueOf(9));
-        assertEquals(request.getTradingSamples(), (Integer) 10);
-        assertEquals(request.getTradingSplit(), (Integer) 4);
-        assertEquals(request.getTradingDuration(), Duration.ZERO);
-        assertEquals(request.getFundingOffset(), valueOf(5));
-        assertEquals(request.getFundingMultiplierProducts(), emptyMap());
-        assertEquals(request.getFundingPositiveMultiplier(), valueOf(11));
-        assertEquals(request.getFundingNegativeMultiplier(), valueOf(12));
-        assertEquals(request.getHedgeProducts(), emptyMap());
+        assertEquals(request.getTradingSpread(), valueOf(1));
+        assertEquals(request.getTradingSpreadAsk(), valueOf(2));
+        assertEquals(request.getTradingSpreadBid(), valueOf(3));
+        assertEquals(request.getTradingSigma(), valueOf(4));
+        assertEquals(request.getTradingSamples(), (Integer) 5);
+        assertEquals(request.getTradingExposure(), valueOf(6));
+        assertEquals(request.getTradingMinimum(), valueOf(7));
+        assertEquals(request.getTradingAversion(), valueOf(8));
+        assertEquals(request.getTradingSplit(), (Integer) 9);
+        assertEquals(request.getTradingDuration(), Duration.ofMillis(10));
+        assertEquals(request.getFundingOffset(), valueOf(11));
+        assertEquals(request.getFundingMultiplierProducts(), singletonMap("mp", emptySet()));
+        assertEquals(request.getFundingPositiveMultiplier(), valueOf(12));
+        assertEquals(request.getFundingNegativeMultiplier(), valueOf(13));
+        assertEquals(request.getFundingPositiveThreshold(), valueOf(14));
+        assertEquals(request.getFundingNegativeThreshold(), valueOf(15));
+        assertEquals(request.getHedgeProducts(), singletonMap("hp", emptySet()));
 
         // Null Argument
         assertNull(target.createRequest(null, site, instrument));
@@ -172,6 +179,10 @@ public class PipelineImplTest {
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();
+        doReturn(null).when(manager).getTradingMinimum(any(), any());
+        assertNull(target.createRequest(targetTime, site, instrument));
+
+        initializer.run();
         doReturn(null).when(manager).getTradingAversion(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
@@ -197,6 +208,14 @@ public class PipelineImplTest {
 
         initializer.run();
         doReturn(null).when(manager).getFundingNegativeMultiplier(any(), any());
+        assertNull(target.createRequest(targetTime, site, instrument));
+
+        initializer.run();
+        doReturn(null).when(manager).getFundingPositiveThreshold(any(), any());
+        assertNull(target.createRequest(targetTime, site, instrument));
+
+        initializer.run();
+        doReturn(null).when(manager).getFundingNegativeThreshold(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();

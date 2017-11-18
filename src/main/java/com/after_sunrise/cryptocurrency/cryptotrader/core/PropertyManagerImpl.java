@@ -376,6 +376,16 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
+    public BigDecimal getTradingMinimum(String site, String instrument) {
+        return getDecimal(site, instrument, TRADING_MINIMUM, ZERO, null, ZERO);
+    }
+
+    @Override
+    public void setTradingMinimum(String site, String instrument, BigDecimal value) {
+        set(TRADING_MINIMUM, site, instrument, value, BigDecimal::toPlainString);
+    }
+
+    @Override
     public BigDecimal getTradingAversion(String site, String instrument) {
         return getDecimal(site, instrument, TRADING_AVERSION, ZERO, null, ONE);
     }
@@ -456,6 +466,26 @@ public class PropertyManagerImpl implements PropertyController {
     @Override
     public void setFundingNegativeMultiplier(String site, String instrument, BigDecimal value) {
         set(FUNDING_NEGATIVE_MULTIPLIER, site, instrument, value, BigDecimal::toPlainString);
+    }
+
+    @Override
+    public BigDecimal getFundingPositiveThreshold(String site, String instrument) {
+        return getDecimal(site, instrument, FUNDING_POSITIVE_THRESHOLD, null, null, ONE);
+    }
+
+    @Override
+    public void setFundingPositiveThreshold(String site, String instrument, BigDecimal value) {
+        set(FUNDING_POSITIVE_THRESHOLD, site, instrument, value, BigDecimal::toPlainString);
+    }
+
+    @Override
+    public BigDecimal getFundingNegativeThreshold(String site, String instrument) {
+        return getDecimal(site, instrument, FUNDING_NEGATIVE_THRESHOLD, null, null, ONE);
+    }
+
+    @Override
+    public void setFundingNegativeThreshold(String site, String instrument, BigDecimal value) {
+        set(FUNDING_NEGATIVE_THRESHOLD, site, instrument, value, BigDecimal::toPlainString);
     }
 
     @Override

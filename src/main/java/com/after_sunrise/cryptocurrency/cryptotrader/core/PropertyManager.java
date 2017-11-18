@@ -38,6 +38,8 @@ public interface PropertyManager {
 
     BigDecimal getTradingExposure(String site, String instrument);
 
+    BigDecimal getTradingMinimum(String site, String instrument);
+
     BigDecimal getTradingAversion(String site, String instrument);
 
     Integer getTradingSplit(String site, String instrument);
@@ -51,6 +53,10 @@ public interface PropertyManager {
     BigDecimal getFundingPositiveMultiplier(String site, String instrument);
 
     BigDecimal getFundingNegativeMultiplier(String site, String instrument);
+
+    BigDecimal getFundingPositiveThreshold(String site, String instrument);
+
+    BigDecimal getFundingNegativeThreshold(String site, String instrument);
 
     Map<String, Set<String>> getHedgeProducts(String site, String instrument);
 

@@ -297,7 +297,21 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal basis = adjustment.multiply(multiplier);
 
-        return offset.add(basis.setScale(SCALE, HALF_UP));
+        BigDecimal result = offset.add(basis.setScale(SCALE, HALF_UP));
+
+        BigDecimal max = request.getFundingPositiveThreshold();
+
+        if (max != null && max.signum() != 0) {
+            result = result.min(max);
+        }
+
+        BigDecimal min = request.getFundingNegativeThreshold();
+
+        if (min != null && min.signum() != 0) {
+            result = result.max(min);
+        }
+
+        return result;
 
     }
 
@@ -751,11 +765,17 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         }
 
-        BigDecimal rounded = context.roundLotSize(Key.from(request), size, HALF_UP);
+        BigDecimal rounded = ofNullable(context.roundLotSize(Key.from(request), size, HALF_UP)).orElse(ZERO);
+
+        BigDecimal minimum = request.getTradingMinimum();
+
+        if (minimum != null && rounded.compareTo(minimum) < 0) {
+            rounded = ZERO;
+        }
 
         log.trace("Buy size : {} (funding=[{}] instrument[{}])", rounded, fundingSize, instrumentSize);
 
-        return ofNullable(rounded).orElse(ZERO);
+        return rounded;
 
     }
 
@@ -780,11 +800,17 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         }
 
-        BigDecimal rounded = context.roundLotSize(Key.from(request), size, HALF_UP);
+        BigDecimal rounded = ofNullable(context.roundLotSize(Key.from(request), size, HALF_UP)).orElse(ZERO);
+
+        BigDecimal minimum = request.getTradingMinimum();
+
+        if (minimum != null && rounded.compareTo(minimum) < 0) {
+            rounded = ZERO;
+        }
 
         log.trace("Sell size : {} (funding=[{}] instrument[{}])", rounded, fundingSize, instrumentSize);
 
-        return ofNullable(rounded).orElse(ZERO);
+        return rounded;
 
     }
 
