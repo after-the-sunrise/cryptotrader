@@ -151,6 +151,8 @@ public class BitmexContextTest {
                 case BXBTJPY30M:
                 case ETHXBT:
                 case ETHXBT30M:
+                case BCHXBT:
+                case BCHXBT30M:
                     expect = "." + product.name();
                     break;
                 case XBTUSD:
@@ -167,6 +169,9 @@ public class BitmexContextTest {
                     break;
                 case ETH_QT:
                     expect = "ETHZ17";
+                    break;
+                case BCH_MT:
+                    expect = "BCHX17";
                     break;
             }
 

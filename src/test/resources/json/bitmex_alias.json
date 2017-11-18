@@ -1,5 +1,6 @@
 {
   "intervals": [
+    "BCH:monthly",
     "XMR:quarterly",
     "DASH:quarterly",
     "XRP:quarterly",
@@ -15,6 +16,7 @@
     "LTC:quarterly"
   ],
   "symbols": [
+    "BCHX17",
     "XMRZ17",
     "DASHZ17",
     "XRPZ17",

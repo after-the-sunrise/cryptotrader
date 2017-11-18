@@ -57,14 +57,14 @@ public abstract class AbstractEstimator extends AbstractService implements Estim
         DEFAULTS.get(CurrencyType.ETH).get(CurrencyType.BTC).put("zaif", "eth_btc");
         DEFAULTS.get(CurrencyType.ETH).get(CurrencyType.BTC).put("bitfinex", "ethbtc");
         DEFAULTS.get(CurrencyType.ETH).get(CurrencyType.BTC).put("poloniex", "BTC_ETH");
-        DEFAULTS.get(CurrencyType.ETH).get(CurrencyType.BTC).put("bitmex", "ETH_QT");
+        DEFAULTS.get(CurrencyType.ETH).get(CurrencyType.BTC).put("bitmex", "ETHXBT");
 
         // Structure = BCT, Funding = BTC
         DEFAULTS.get(CurrencyType.BCH).get(CurrencyType.BTC).put("bitflyer", "BCH_BTC");
         DEFAULTS.get(CurrencyType.BCH).get(CurrencyType.BTC).put("zaif", "bch_btc");
         DEFAULTS.get(CurrencyType.BCH).get(CurrencyType.BTC).put("bitfinex", "bchbtc");
         DEFAULTS.get(CurrencyType.BCH).get(CurrencyType.BTC).put("poloniex", "BTC_BCH");
-        DEFAULTS.get(CurrencyType.BCH).get(CurrencyType.BTC).put("bitmex", "BCH_MT");
+        DEFAULTS.get(CurrencyType.BCH).get(CurrencyType.BTC).put("bitmex", "BCHXBT");
 
         // Structure = USD, Funding = JPY
         DEFAULTS.get(CurrencyType.USD).get(CurrencyType.JPY).put("oanda", "USD_JPY");

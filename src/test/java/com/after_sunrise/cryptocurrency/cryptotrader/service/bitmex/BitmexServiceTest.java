@@ -37,7 +37,7 @@ public class BitmexServiceTest {
         when(context.getInstrumentCurrency(Context.Key.from(request))).thenReturn(CurrencyType.ETH);
         when(context.getFundingCurrency(Context.Key.from(request))).thenReturn(CurrencyType.BTC);
 
-        key = Context.Key.builder().site("bitmex").instrument("ETH_QT")
+        key = Context.Key.builder().site("bitmex").instrument("ETHXBT")
                 .timestamp(request.getCurrentTime()).build();
 
     }

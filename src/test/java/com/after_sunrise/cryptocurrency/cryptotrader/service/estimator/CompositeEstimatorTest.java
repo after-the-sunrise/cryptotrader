@@ -137,6 +137,8 @@ public class CompositeEstimatorTest {
 
         CompositeMidEstimator target = new CompositeMidEstimator();
 
+        assertEquals(target.get(), "CompositeMidEstimator");
+
         Estimator.Estimation result = target.estimate(context, Context.Key.builder().build());
 
         assertEquals(result.getPrice(), null);
@@ -149,6 +151,8 @@ public class CompositeEstimatorTest {
     public void testCompositeLastEstimator() {
 
         CompositeLastEstimator target = new CompositeLastEstimator();
+
+        assertEquals(target.get(), "CompositeLastEstimator");
 
         Estimator.Estimation result = target.estimate(context, Context.Key.builder().build());
 

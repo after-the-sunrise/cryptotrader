@@ -124,7 +124,22 @@ public interface BitmexService extends Service {
         /**
          * ETH/XBT Futures
          */
-        ETH_QT(null, "ETH:quarterly", ETH, BTC, 1);
+        ETH_QT(null, "ETH:quarterly", ETH, BTC, 1),
+
+        /**
+         * Minutely BCH Price Index
+         */
+        BCHXBT(".BCHXBT", null, BCH, BTC, null),
+
+        /**
+         * 30-Minute BCH Price Index
+         */
+        BCHXBT30M(".BCHXBT30M", null, BCH, BTC, null),
+
+        /**
+         * BCH/XBT Futures
+         */
+        BCH_MT(null, "BCH:monthly", BCH, BTC, 1);
 
         private static final Map<String, ProductType> NAME = Stream.of(values())
                 .collect(toMap(Enum::name, e -> e));
