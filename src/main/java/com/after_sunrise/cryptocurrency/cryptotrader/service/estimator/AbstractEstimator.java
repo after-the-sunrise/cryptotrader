@@ -1,15 +1,18 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.estimator;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.AbstractService;
 
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
 
 /**
  * @author takanori.takase
@@ -20,77 +23,69 @@ public abstract class AbstractEstimator extends AbstractService implements Estim
     protected static final Estimation BAIL = Estimation.builder().confidence(ZERO).build();
 
     // Source Site -> Source Product -> Target Site -> Target Product
-    private static final Map<String, Map<String, Map<String, String>>> MAPPING = new HashMap<>();
-
-    private static void addMapping(String ss, String sp, String ts, String tp) {
-        MAPPING.computeIfAbsent(
-                ss, key -> new HashMap<>()
-        ).computeIfAbsent(
-                sp, key -> new HashMap<>()
-        ).put(
-                ts, tp
-        );
-    }
+    private static final Map<CurrencyType, Map<CurrencyType, Map<String, String>>> DEFAULTS = new IdentityHashMap<>();
 
     static {
 
-        // bitflyer -> bitflyer
-        addMapping("bitflyer", "BTC_JPY", "bitflyer", "FX_BTC_JPY");
-        addMapping("bitflyer", "FX_BTC_JPY", "bitflyer", "BTC_JPY");
-        addMapping("bitflyer", "BTCJPY_MAT1WK", "bitflyer", "BTC_JPY");
-        addMapping("bitflyer", "BTCJPY_MAT2WK", "bitflyer", "BTC_JPY");
+        for (CurrencyType structure : CurrencyType.values()) {
 
-        // bitflyer -> coincheck
-        addMapping("bitflyer", "BTC_JPY", "coincheck", "btc_jpy");
-        addMapping("bitflyer", "FX_BTC_JPY", "coincheck", "btc_jpy");
-        addMapping("bitflyer", "BTCJPY_MAT1WK", "coincheck", "btc_jpy");
-        addMapping("bitflyer", "BTCJPY_MAT2WK", "coincheck", "btc_jpy");
+            Map<CurrencyType, Map<String, String>> m = new IdentityHashMap<>();
 
-        // bitflyer -> zaif
-        addMapping("bitflyer", "BTC_JPY", "zaif", "btc_jpy");
-        addMapping("bitflyer", "FX_BTC_JPY", "zaif", "btc_jpy");
-        addMapping("bitflyer", "BTCJPY_MAT1WK", "zaif", "btc_jpy");
-        addMapping("bitflyer", "BTCJPY_MAT2WK", "zaif", "btc_jpy");
-        addMapping("bitflyer", "ETH_BTC", "zaif", "eth_btc");
-        addMapping("bitflyer", "BCH_BTC", "zaif", "bch_btc");
+            for (CurrencyType funding : CurrencyType.values()) {
+                m.put(funding, new HashMap<>());
+            }
 
-        // bitflyer -> bitfinex
-        addMapping("bitflyer", "ETH_BTC", "bitfinex", "ethbtc");
-        addMapping("bitflyer", "BCH_BTC", "bitfinex", "bchbtc");
-        addMapping("bitflyer", "BTC_JPY", "bitfinex", "*bitfinex:btcusd|*oanda:USD_JPY");
-        addMapping("bitflyer", "FX_BTC_JPY", "bitfinex", "*bitfinex:btcusd|*oanda:USD_JPY");
+            DEFAULTS.put(structure, m);
 
-        // bitflyer -> poloniex
-        addMapping("bitflyer", "ETH_BTC", "poloniex", "BTC_ETH");
-        addMapping("bitflyer", "BCH_BTC", "poloniex", "BTC_BCH");
-        addMapping("bitflyer", "BTC_JPY", "poloniex", "*poloniex:USDT_BTC|*oanda:USD_JPY");
-        addMapping("bitflyer", "FX_BTC_JPY", "poloniex", "*poloniex:USDT_BTC|*oanda:USD_JPY");
+        }
 
-        // BitMEX -> BitMEX
-        addMapping("bitmex", "ETH_QT", "bitmex", "ETHXBT");
-        addMapping("bitmex", "XBTUSD", "bitmex", "BXBT");
-        addMapping("bitmex", "XBT_QT", "bitmex", "*bitmex:XBJ_QT|/bitmex:BXBTJPY|*bitmex:BXBT");
-        addMapping("bitmex", "XBJ_QT", "bitmex", "*bitmex:XBT_QT|*bitmex:BXBTJPY|/bitmex:BXBT");
+        // Catch Unknown
+        DEFAULTS.put(null, singletonMap(null, emptyMap()));
+
+        // Structure = BTC, Funding = JPY
+        DEFAULTS.get(CurrencyType.BTC).get(CurrencyType.JPY).put("bitflyer", "BTC_JPY");
+        DEFAULTS.get(CurrencyType.BTC).get(CurrencyType.JPY).put("coincheck", "btc_jpy");
+        DEFAULTS.get(CurrencyType.BTC).get(CurrencyType.JPY).put("zaif", "btc_jpy");
+
+        // Structure = BTC, Funding = USD
+        DEFAULTS.get(CurrencyType.BTC).get(CurrencyType.USD).put("bitfinex", "btcusd");
+        DEFAULTS.get(CurrencyType.BTC).get(CurrencyType.USD).put("poloniex", "USDT_BTC");
+        DEFAULTS.get(CurrencyType.BTC).get(CurrencyType.USD).put("bitmex", "BXBT");
+
+        // Structure = ETH, Funding = BTC
+        DEFAULTS.get(CurrencyType.ETH).get(CurrencyType.BTC).put("bitflyer", "ETH_BTC");
+        DEFAULTS.get(CurrencyType.ETH).get(CurrencyType.BTC).put("zaif", "eth_btc");
+        DEFAULTS.get(CurrencyType.ETH).get(CurrencyType.BTC).put("bitfinex", "ethbtc");
+        DEFAULTS.get(CurrencyType.ETH).get(CurrencyType.BTC).put("poloniex", "BTC_ETH");
+        DEFAULTS.get(CurrencyType.ETH).get(CurrencyType.BTC).put("bitmex", "ETH_QT");
+
+        // Structure = BCT, Funding = BTC
+        DEFAULTS.get(CurrencyType.BCH).get(CurrencyType.BTC).put("bitflyer", "BCH_BTC");
+        DEFAULTS.get(CurrencyType.BCH).get(CurrencyType.BTC).put("zaif", "bch_btc");
+        DEFAULTS.get(CurrencyType.BCH).get(CurrencyType.BTC).put("bitfinex", "bchbtc");
+        DEFAULTS.get(CurrencyType.BCH).get(CurrencyType.BTC).put("poloniex", "BTC_BCH");
+        DEFAULTS.get(CurrencyType.BCH).get(CurrencyType.BTC).put("bitmex", "BCH_MT");
+
+        // Structure = USD, Funding = JPY
+        DEFAULTS.get(CurrencyType.USD).get(CurrencyType.JPY).put("oanda", "USD_JPY");
 
     }
 
-    protected Key getKey(Request request) {
+    protected Key getKey(Context context, Request request) {
         return Key.from(request);
     }
 
-    protected Key convertKey(Request request, String site) {
+    protected Key convertKey(Context context, Request request, String site) {
 
         Key key = Key.from(request);
 
-        String ss = key.getSite();
+        CurrencyType structure = context.getInstrumentCurrency(key);
 
-        String sp = key.getInstrument();
+        CurrencyType funding = context.getFundingCurrency(key);
 
-        String ts = site;
+        String instrument = DEFAULTS.get(structure).get(funding).get(site);
 
-        String tp = MAPPING.getOrDefault(ss, emptyMap()).getOrDefault(sp, emptyMap()).get(ts);
-
-        return Key.build(key).site(ts).instrument(tp).build();
+        return Key.build(key).site(site).instrument(instrument).build();
 
     }
 

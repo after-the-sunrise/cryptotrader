@@ -99,6 +99,7 @@ public class PipelineImpl implements Pipeline {
                 .fundingPositiveMultiplier(propertyManager.getFundingPositiveMultiplier(site, instrument))
                 .fundingNegativeMultiplier(propertyManager.getFundingNegativeMultiplier(site, instrument))
                 .hedgeProducts(propertyManager.getHedgeProducts(site, instrument))
+                .estimatorComposites(propertyManager.getEstimatorComposites(site, instrument))
                 .build();
 
         if (StringUtils.isEmpty(site)) {
@@ -188,6 +189,11 @@ public class PipelineImpl implements Pipeline {
 
         if (request.getHedgeProducts() == null) {
             log.warn("Invalid request : hedge products");
+            return null;
+        }
+
+        if (request.getEstimatorComposites() == null) {
+            log.warn("Invalid request : estimator composites");
             return null;
         }
 

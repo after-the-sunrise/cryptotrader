@@ -7,6 +7,9 @@ import org.testng.annotations.Test;
 
 import java.time.Instant;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 
 /**
@@ -24,9 +27,15 @@ public class AbstractEstimatorTest {
 
     private AbstractEstimator target;
 
+    private Context context;
+
     @BeforeMethod
     public void setUp() throws Exception {
+
+        context = mock(Context.class);
+
         target = new TestEstimator();
+
     }
 
     @Test
@@ -34,7 +43,7 @@ public class AbstractEstimatorTest {
 
         Request r = Request.builder().build();
 
-        assertEquals(target.getKey(r), Context.Key.from(r));
+        assertEquals(target.getKey(null, r), Context.Key.from(r));
 
     }
 
@@ -42,31 +51,40 @@ public class AbstractEstimatorTest {
     public void testConvertKey() throws Exception {
 
         Instant now = Instant.now();
-        Request.RequestBuilder b = Request.builder().currentTime(now);
+        Request request = Request.builder().site("s").instrument("i").currentTime(now).build();
+        Context.Key key = Context.Key.from(request);
 
-        Context.Key key = target.convertKey(b.build(), null);
-        assertEquals(key.getSite(), null);
-        assertEquals(key.getInstrument(), null);
+        when(context.getInstrumentCurrency(key)).thenReturn(BTC, ETH, BCH, USD, null);
+        when(context.getFundingCurrency(key)).thenReturn(JPY, BTC, BTC, JPY, null);
+
+        // BTC JPY
+        key = target.convertKey(context, request, "bitflyer");
+        assertEquals(key.getSite(), "bitflyer");
+        assertEquals(key.getInstrument(), "BTC_JPY");
         assertEquals(key.getTimestamp(), now);
 
-        key = target.convertKey(b.build(), "test");
-        assertEquals(key.getSite(), "test");
-        assertEquals(key.getInstrument(), null);
+        // ETH BTC
+        key = target.convertKey(context, request, "bitfinex");
+        assertEquals(key.getSite(), "bitfinex");
+        assertEquals(key.getInstrument(), "ethbtc");
         assertEquals(key.getTimestamp(), now);
 
-        key = target.convertKey(b.site("bitflyer").build(), null);
-        assertEquals(key.getSite(), null);
-        assertEquals(key.getInstrument(), null);
+        // BCH BTC
+        key = target.convertKey(context, request, "poloniex");
+        assertEquals(key.getSite(), "poloniex");
+        assertEquals(key.getInstrument(), "BTC_BCH");
         assertEquals(key.getTimestamp(), now);
 
-        key = target.convertKey(b.site("bitflyer").instrument("BTC_JPY").build(), null);
-        assertEquals(key.getSite(), null);
-        assertEquals(key.getInstrument(), null);
+        // USD JPY
+        key = target.convertKey(context, request, "oanda");
+        assertEquals(key.getSite(), "oanda");
+        assertEquals(key.getInstrument(), "USD_JPY");
         assertEquals(key.getTimestamp(), now);
 
-        key = target.convertKey(b.site("bitflyer").instrument("BTC_JPY").build(), "coincheck");
-        assertEquals(key.getSite(), "coincheck");
-        assertEquals(key.getInstrument(), "btc_jpy");
+        // None
+        key = target.convertKey(context, request, "foo");
+        assertEquals(key.getSite(), "foo");
+        assertEquals(key.getInstrument(), null);
         assertEquals(key.getTimestamp(), now);
 
     }

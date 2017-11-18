@@ -59,4 +59,6 @@ public class Request {
 
     private Map<String, Set<String>> hedgeProducts;
 
+    private Map<String, Set<String>> estimatorComposites;
+
 }

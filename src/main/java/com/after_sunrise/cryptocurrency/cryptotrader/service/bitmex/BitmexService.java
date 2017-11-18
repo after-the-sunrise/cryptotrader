@@ -3,11 +3,8 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.composite.CompositeService.CompositeLastEstimator;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.composite.CompositeService.CompositeMidEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
@@ -163,36 +160,15 @@ public interface BitmexService extends Service {
 
     class BitmexLastEstimator extends LastEstimator {
         @Override
-        public Context.Key getKey(Request request) {
-            return convertKey(request, ID);
+        public Context.Key getKey(Context context, Request request) {
+            return convertKey(context, request, ID);
         }
     }
 
     class BitmexMidEstimator extends MidEstimator {
         @Override
-        public Context.Key getKey(Request request) {
-            return convertKey(request, ID);
-        }
-    }
-
-    class BitmexVwapEstimator extends VwapEstimator {
-        @Override
-        public Context.Key getKey(Request request) {
-            return convertKey(request, ID);
-        }
-    }
-
-    class BitmexCompositeMidEstimator extends CompositeMidEstimator {
-        @Override
-        public Context.Key getKey(Request request) {
-            return convertKey(request, ID);
-        }
-    }
-
-    class BitmexCompositeLastEstimator extends CompositeLastEstimator {
-        @Override
-        public Context.Key getKey(Request request) {
-            return convertKey(request, ID);
+        public Context.Key getKey(Context context, Request request) {
+            return convertKey(context, request, ID);
         }
     }
 

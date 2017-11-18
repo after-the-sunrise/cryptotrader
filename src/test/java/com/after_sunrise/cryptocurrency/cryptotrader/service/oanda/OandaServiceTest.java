@@ -1,4 +1,4 @@
-package com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex;
+package com.after_sunrise.cryptocurrency.cryptotrader.service.oanda;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
@@ -20,7 +20,7 @@ import static org.testng.Assert.assertTrue;
  * @author takanori.takase
  * @version 0.0.1
  */
-public class PoloniexServiceTest {
+public class OandaServiceTest {
 
     private Context context;
 
@@ -34,20 +34,20 @@ public class PoloniexServiceTest {
         context = mock(Context.class);
 
         request = Request.builder().site("s").instrument("i").currentTime(Instant.now()).build();
-        when(context.getInstrumentCurrency(Key.from(request))).thenReturn(CurrencyType.ETH);
-        when(context.getFundingCurrency(Key.from(request))).thenReturn(CurrencyType.BTC);
+        when(context.getInstrumentCurrency(Key.from(request))).thenReturn(CurrencyType.USD);
+        when(context.getFundingCurrency(Key.from(request))).thenReturn(CurrencyType.JPY);
 
-        key = Key.builder().site("poloniex").instrument("BTC_ETH")
+        key = Key.builder().site("oanda").instrument("USD_JPY")
                 .timestamp(request.getCurrentTime()).build();
 
     }
 
     @Test
-    public void testPoloniexLastEstimator() {
+    public void testOandaLastEstimator() {
 
-        PoloniexService.PoloniexLastEstimator target = new PoloniexService.PoloniexLastEstimator();
+        OandaService.OandaLastEstimator target = new OandaService.OandaLastEstimator();
 
-        assertEquals(target.get(), "PoloniexLastEstimator");
+        assertEquals(target.get(), "OandaLastEstimator");
 
         assertTrue(LastEstimator.class.isInstance(target));
 
@@ -56,11 +56,11 @@ public class PoloniexServiceTest {
     }
 
     @Test
-    public void testPoloniexMidEstimator() {
+    public void testOandaMidEstimator() {
 
-        PoloniexService.PoloniexMidEstimator target = new PoloniexService.PoloniexMidEstimator();
+        OandaService.OandaMidEstimator target = new OandaService.OandaMidEstimator();
 
-        assertEquals(target.get(), "PoloniexMidEstimator");
+        assertEquals(target.get(), "OandaMidEstimator");
 
         assertTrue(MidEstimator.class.isInstance(target));
 

@@ -32,7 +32,7 @@ public class LastEstimator extends AbstractEstimator {
     @Override
     public Estimation estimate(Context context, Request request) {
 
-        Key key = getKey(request);
+        Key key = getKey(context, request);
 
         return estimate(context, key);
 
@@ -41,6 +41,10 @@ public class LastEstimator extends AbstractEstimator {
     protected Estimation estimate(Context context, Key key) {
 
         Instant now = key.getTimestamp();
+
+        if (now == null) {
+            return BAIL;
+        }
 
         Instant from = now.minus(LONG_ONE, HOURS);
 

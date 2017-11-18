@@ -2,18 +2,18 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.FundingType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.ProductType;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.composite.CompositeService;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.time.Instant;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.*;
 
 /**
@@ -33,10 +33,11 @@ public class BitmexServiceTest {
 
         context = mock(Context.class);
 
-        request = Request.builder().site("bitmex").instrument("ETH_QT")
-                .currentTime(Instant.now()).build();
+        request = Request.builder().site("s").instrument("i").currentTime(Instant.now()).build();
+        when(context.getInstrumentCurrency(Context.Key.from(request))).thenReturn(CurrencyType.ETH);
+        when(context.getFundingCurrency(Context.Key.from(request))).thenReturn(CurrencyType.BTC);
 
-        key = Context.Key.builder().site("bitmex").instrument("ETHXBT")
+        key = Context.Key.builder().site("bitmex").instrument("ETH_QT")
                 .timestamp(request.getCurrentTime()).build();
 
     }
@@ -76,7 +77,7 @@ public class BitmexServiceTest {
 
         assertTrue(LastEstimator.class.isInstance(target));
 
-        assertEquals(target.getKey(request), key);
+        assertEquals(target.getKey(context, request), key);
 
     }
 
@@ -89,46 +90,7 @@ public class BitmexServiceTest {
 
         assertTrue(MidEstimator.class.isInstance(target));
 
-        assertEquals(target.getKey(request), key);
-
-    }
-
-    @Test
-    public void testBitmexVwapEstimator() {
-
-        BitmexService.BitmexVwapEstimator target = new BitmexService.BitmexVwapEstimator();
-
-        assertEquals(target.get(), "BitmexVwapEstimator");
-
-        assertTrue(VwapEstimator.class.isInstance(target));
-
-        assertEquals(target.getKey(request), key);
-
-    }
-
-    @Test
-    public void testBitmexCompositeMidEstimator() {
-
-        BitmexService.BitmexCompositeMidEstimator target = new BitmexService.BitmexCompositeMidEstimator();
-
-        assertEquals(target.get(), "BitmexCompositeMidEstimator");
-
-        assertTrue(CompositeService.CompositeMidEstimator.class.isInstance(target));
-
-        assertEquals(target.getKey(request), key);
-
-    }
-
-    @Test
-    public void testBitmexCompositeLastEstimator() {
-
-        BitmexService.BitmexCompositeLastEstimator target = new BitmexService.BitmexCompositeLastEstimator();
-
-        assertEquals(target.get(), "BitmexCompositeLastEstimator");
-
-        assertTrue(CompositeService.CompositeLastEstimator.class.isInstance(target));
-
-        assertEquals(target.getKey(request), key);
+        assertEquals(target.getKey(context, request), key);
 
     }
 

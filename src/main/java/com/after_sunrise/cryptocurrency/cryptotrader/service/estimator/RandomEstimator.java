@@ -21,7 +21,7 @@ public class RandomEstimator extends AbstractEstimator {
     @Override
     public Estimation estimate(Context context, Request request) {
 
-        BigDecimal last = context.getLastPrice(getKey(request));
+        BigDecimal last = context.getLastPrice(getKey(context, request));
 
         if (last == null) {
             return BAIL;

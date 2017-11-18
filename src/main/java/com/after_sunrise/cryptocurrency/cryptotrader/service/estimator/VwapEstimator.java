@@ -34,7 +34,7 @@ public class VwapEstimator extends AbstractEstimator {
     @Override
     public Estimation estimate(Context context, Request request) {
 
-        Key key = getKey(request);
+        Key key = getKey(context, request);
 
         return estimate(context, key);
 

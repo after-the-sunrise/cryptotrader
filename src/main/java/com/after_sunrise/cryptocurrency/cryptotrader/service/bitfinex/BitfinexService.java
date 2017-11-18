@@ -3,11 +3,8 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitfinex;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.composite.CompositeService.CompositeLastEstimator;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.composite.CompositeService.CompositeMidEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator;
 
 /**
  * @author takanori.takase
@@ -24,36 +21,15 @@ public interface BitfinexService extends Service {
 
     class BitfinexLastEstimator extends LastEstimator {
         @Override
-        public Context.Key getKey(Request request) {
-            return convertKey(request, ID);
+        public Context.Key getKey(Context context, Request request) {
+            return convertKey(context, request, ID);
         }
     }
 
     class BitfinexMidEstimator extends MidEstimator {
         @Override
-        public Context.Key getKey(Request request) {
-            return convertKey(request, ID);
-        }
-    }
-
-    class BitfinexVwapEstimator extends VwapEstimator {
-        @Override
-        public Context.Key getKey(Request request) {
-            return convertKey(request, ID);
-        }
-    }
-
-    class BitfinexCompositeMidEstimator extends CompositeMidEstimator {
-        @Override
-        public Context.Key getKey(Request request) {
-            return convertKey(request, ID);
-        }
-    }
-
-    class BitfinexCompositeLastEstimator extends CompositeLastEstimator {
-        @Override
-        public Context.Key getKey(Request request) {
-            return convertKey(request, ID);
+        public Context.Key getKey(Context context, Request request) {
+            return convertKey(context, request, ID);
         }
     }
 

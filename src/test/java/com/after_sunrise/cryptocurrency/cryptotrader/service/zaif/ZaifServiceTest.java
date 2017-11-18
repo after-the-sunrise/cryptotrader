@@ -3,15 +3,16 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.zaif;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.time.Instant;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -32,8 +33,9 @@ public class ZaifServiceTest {
 
         context = mock(Context.class);
 
-        request = Request.builder().site("bitflyer").instrument("BTC_JPY")
-                .currentTime(Instant.now()).build();
+        request = Request.builder().site("s").instrument("i").currentTime(Instant.now()).build();
+        when(context.getInstrumentCurrency(Key.from(request))).thenReturn(CurrencyType.BTC);
+        when(context.getFundingCurrency(Key.from(request))).thenReturn(CurrencyType.JPY);
 
         key = Key.builder().site("zaif").instrument("btc_jpy")
                 .timestamp(request.getCurrentTime()).build();
@@ -49,7 +51,7 @@ public class ZaifServiceTest {
 
         assertTrue(LastEstimator.class.isInstance(target));
 
-        assertEquals(target.getKey(request), key);
+        assertEquals(target.getKey(context, request), key);
 
     }
 
@@ -62,20 +64,7 @@ public class ZaifServiceTest {
 
         assertTrue(MidEstimator.class.isInstance(target));
 
-        assertEquals(target.getKey(request), key);
-
-    }
-
-    @Test
-    public void testZaifVwapEstimator() {
-
-        ZaifService.ZaifVwapEstimator target = new ZaifService.ZaifVwapEstimator();
-
-        assertEquals(target.get(), "ZaifVwapEstimator");
-
-        assertTrue(VwapEstimator.class.isInstance(target));
-
-        assertEquals(target.getKey(request), key);
+        assertEquals(target.getKey(context, request), key);
 
     }
 

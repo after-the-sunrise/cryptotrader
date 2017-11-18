@@ -2,11 +2,11 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -17,6 +17,7 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.Bit
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.ETH_BTC;
 import static java.math.RoundingMode.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.*;
 
 /**
@@ -36,8 +37,9 @@ public class BitflyerServiceTest {
 
         context = mock(Context.class);
 
-        request = Request.builder().site("bitflyer").instrument("BTCJPY_MAT1WK")
-                .currentTime(Instant.now()).build();
+        request = Request.builder().site("s").instrument("i").currentTime(Instant.now()).build();
+        when(context.getInstrumentCurrency(Context.Key.from(request))).thenReturn(CurrencyType.BTC);
+        when(context.getFundingCurrency(Context.Key.from(request))).thenReturn(CurrencyType.JPY);
 
         key = Context.Key.builder().site("bitflyer").instrument("BTC_JPY")
                 .timestamp(request.getCurrentTime()).build();
@@ -53,7 +55,7 @@ public class BitflyerServiceTest {
 
         assertTrue(LastEstimator.class.isInstance(target));
 
-        assertEquals(target.getKey(request), key);
+        assertEquals(target.getKey(context, request), key);
 
     }
 
@@ -66,20 +68,7 @@ public class BitflyerServiceTest {
 
         assertTrue(MidEstimator.class.isInstance(target));
 
-        assertEquals(target.getKey(request), key);
-
-    }
-
-    @Test
-    public void testBitflyerVwapEstimator() {
-
-        BitflyerService.BitflyerVwapEstimator target = new BitflyerService.BitflyerVwapEstimator();
-
-        assertEquals(target.get(), "BitflyerVwapEstimator");
-
-        assertTrue(VwapEstimator.class.isInstance(target));
-
-        assertEquals(target.getKey(request), key);
+        assertEquals(target.getKey(context, request), key);
 
     }
 

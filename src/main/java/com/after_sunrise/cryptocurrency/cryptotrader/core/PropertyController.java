@@ -51,4 +51,6 @@ public interface PropertyController extends PropertyManager {
 
     void setEstimators(String site, String instrument, Set<String> values);
 
+    void setEstimatorComposites(String site, String instrument, Map<String, Set<String>> values);
+
 }

@@ -509,4 +509,23 @@ public class PropertyManagerImpl implements PropertyController {
                 .collect(Collectors.joining(SEPARATOR_ENTRY)));
     }
 
+    @Override
+    public Map<String, Set<String>> getEstimatorComposites(String site, String instrument) {
+        return getProducts(site, instrument, ESTIMATOR_COMPOSITES);
+    }
+
+    @Override
+    public void setEstimatorComposites(String site, String instrument, Map<String, Set<String>> values) {
+        set(ESTIMATOR_COMPOSITES, site, instrument, values, input -> StringUtils.join(
+                input.entrySet().stream()
+                        .filter(e -> StringUtils.isNotEmpty(e.getKey()))
+                        .filter(e -> CollectionUtils.isNotEmpty(e.getValue()))
+                        .map(entry -> StringUtils.join(entry.getValue().stream()
+                                .filter(StringUtils::isNotEmpty)
+                                .map(v -> entry.getKey() + SEPARATOR_KEYVAL + v)
+                                .toArray(), SEPARATOR_ENTRY))
+                        .toArray()
+                , SEPARATOR_ENTRY));
+    }
+
 }

@@ -48,7 +48,9 @@ public enum PropertyType {
 
     HEDGE_PRODUCTS,
 
-    ESTIMATORS;
+    ESTIMATORS,
+
+    ESTIMATOR_COMPOSITES;
 
     private static final String PREFIX = "cryptotrader.";
 

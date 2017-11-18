@@ -56,4 +56,6 @@ public interface PropertyManager {
 
     Set<String> getEstimators(String site, String instrument);
 
+    Map<String, Set<String>> getEstimatorComposites(String site, String instrument);
+
 }

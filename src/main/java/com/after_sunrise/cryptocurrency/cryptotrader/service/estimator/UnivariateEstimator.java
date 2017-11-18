@@ -43,7 +43,7 @@ public class UnivariateEstimator extends AbstractEstimator {
 
         Instant from = request.getCurrentTime().minus(interval.toMillis() * getSamples(), MILLIS);
 
-        List<Trade> trades = context.listTrades(getKey(request), from.minus(interval));
+        List<Trade> trades = context.listTrades(getKey(context, request), from.minus(interval));
 
         NavigableMap<Instant, BigDecimal> prices = collapsePrices(trades, interval, from, now);
 
