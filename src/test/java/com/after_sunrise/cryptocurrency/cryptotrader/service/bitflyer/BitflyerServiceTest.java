@@ -6,6 +6,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyT
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
+import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MicroEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -54,6 +55,19 @@ public class BitflyerServiceTest {
         assertEquals(target.get(), "BitflyerLastEstimator");
 
         assertTrue(LastEstimator.class.isInstance(target));
+
+        assertEquals(target.getKey(context, request), key);
+
+    }
+
+    @Test
+    public void testBitflyerMicroEstimator() {
+
+        BitflyerService.BitflyerMicroEstimator target = new BitflyerService.BitflyerMicroEstimator();
+
+        assertEquals(target.get(), "BitflyerMicroEstimator");
+
+        assertTrue(MicroEstimator.class.isInstance(target));
 
         assertEquals(target.getKey(context, request), key);
 

@@ -91,14 +91,21 @@ public class CompositeEstimator extends AbstractEstimator {
 
     }
 
-    public static class CompositeMidEstimator extends MidEstimator {
+    public static class CompositeLastEstimator extends LastEstimator {
         @Override
         public Estimation estimate(Context context, Request request) {
             return INSTANCE.estimate(context, request, super::estimate);
         }
     }
 
-    public static class CompositeLastEstimator extends LastEstimator {
+    public static class CompositeMicroEstimator extends MicroEstimator {
+        @Override
+        public Estimation estimate(Context context, Request request) {
+            return INSTANCE.estimate(context, request, super::estimate);
+        }
+    }
+
+    public static class CompositeMidEstimator extends MidEstimator {
         @Override
         public Estimation estimate(Context context, Request request) {
             return INSTANCE.estimate(context, request, super::estimate);

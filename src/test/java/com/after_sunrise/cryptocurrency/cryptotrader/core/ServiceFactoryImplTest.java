@@ -2,11 +2,16 @@ package com.after_sunrise.cryptocurrency.cryptotrader.core;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.TestInterface;
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.google.inject.ConfigurationException;
 import org.apache.commons.configuration2.ImmutableConfiguration;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +23,8 @@ import static org.testng.Assert.*;
  */
 public class ServiceFactoryImplTest {
 
+    private static final String SERVICES = "src/main/resources/META-INF/services/com.after_sunrise.cryptocurrency.";
+
     private ServiceFactoryImpl target;
 
     private TestModule module;
@@ -28,6 +35,17 @@ public class ServiceFactoryImplTest {
         module = new TestModule();
 
         target = new ServiceFactoryImpl(module.createInjector());
+
+    }
+
+    @Test
+    public void testEstimator() throws IOException {
+
+        List<Estimator> estimators = target.load(Estimator.class);
+
+        List<String> lines = Files.readAllLines(Paths.get(SERVICES + "cryptotrader.framework.Estimator"));
+
+        assertEquals(estimators.size(), lines.stream().filter(StringUtils::isNotEmpty).count());
 
     }
 

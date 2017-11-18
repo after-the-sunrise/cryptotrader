@@ -5,6 +5,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
+import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MicroEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -50,6 +51,19 @@ public class ZaifServiceTest {
         assertEquals(target.get(), "ZaifLastEstimator");
 
         assertTrue(LastEstimator.class.isInstance(target));
+
+        assertEquals(target.getKey(context, request), key);
+
+    }
+
+    @Test
+    public void testZaifMicroEstimator() {
+
+        ZaifService.ZaifMicroEstimator target = new ZaifService.ZaifMicroEstimator();
+
+        assertEquals(target.get(), "ZaifMicroEstimator");
+
+        assertTrue(MicroEstimator.class.isInstance(target));
 
         assertEquals(target.getKey(context, request), key);
 

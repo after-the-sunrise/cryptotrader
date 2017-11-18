@@ -4,6 +4,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
+import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MicroEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
 
 /**
@@ -20,6 +21,13 @@ public interface CoincheckService extends Service {
     }
 
     class CoincheckLastEstimator extends LastEstimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return convertKey(context, request, ID);
+        }
+    }
+
+    class CoincheckMicroEstimator extends MicroEstimator {
         @Override
         public Context.Key getKey(Context context, Request request) {
             return convertKey(context, request, ID);
