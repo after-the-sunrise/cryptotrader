@@ -215,7 +215,7 @@ public class BitmexContextTest {
         assertEquals(result.get().getMakerFee(), new BigDecimal("-0.00025"));
         assertEquals(result.get().getTakerFee(), new BigDecimal("0.00075"));
         assertEquals(result.get().getSettleFee(), new BigDecimal("0"));
-        assertEquals(result.get().getIndicativeFee(), new BigDecimal("-0.001375"));
+        assertEquals(result.get().getFundingFee(), new BigDecimal("-0.001213"));
 
         result = target.queryTick(key2);
         assertTrue(result.isPresent());
@@ -234,7 +234,7 @@ public class BitmexContextTest {
         assertEquals(result.get().getMakerFee(), null);
         assertEquals(result.get().getTakerFee(), null);
         assertEquals(result.get().getSettleFee(), null);
-        assertEquals(result.get().getIndicativeFee(), null);
+        assertEquals(result.get().getFundingFee(), null);
 
         result = target.queryTick(key3);
         assertTrue(result.isPresent());
@@ -253,7 +253,7 @@ public class BitmexContextTest {
         assertEquals(result.get().getMakerFee(), new BigDecimal("-0.00025"));
         assertEquals(result.get().getTakerFee(), new BigDecimal("0.00075"));
         assertEquals(result.get().getSettleFee(), new BigDecimal("0.0005"));
-        assertEquals(result.get().getIndicativeFee(), null);
+        assertEquals(result.get().getFundingFee(), null);
 
         result = target.queryTick(key4);
         assertTrue(result.isPresent());
@@ -261,7 +261,7 @@ public class BitmexContextTest {
         assertEquals(result.get().getSettleCurrency(), null);
         assertEquals(result.get().getState(), "Unlisted");
         assertEquals(result.get().getTimestamp(), Instant.parse("2017-11-01T22:13:32.101Z"));
-        assertEquals(result.get().getLast(), new BigDecimal("0.998625"));
+        assertEquals(result.get().getLast(), new BigDecimal("0.998787"));
         assertEquals(result.get().getAsk(), null);
         assertEquals(result.get().getBid(), null);
         assertEquals(result.get().getMid(), null);
@@ -272,7 +272,7 @@ public class BitmexContextTest {
         assertEquals(result.get().getMakerFee(), null);
         assertEquals(result.get().getTakerFee(), null);
         assertEquals(result.get().getSettleFee(), null);
-        assertEquals(result.get().getIndicativeFee(), new BigDecimal("-0.001375"));
+        assertEquals(result.get().getFundingFee(), new BigDecimal("-0.001213"));
 
         // Empty
         target.clear();

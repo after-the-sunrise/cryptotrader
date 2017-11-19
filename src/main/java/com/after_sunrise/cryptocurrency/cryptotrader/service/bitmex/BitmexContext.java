@@ -183,12 +183,12 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         if (ProductType.XBT_FR.name().equals(key.getInstrument())) {
 
-            result = result.filter(t -> t.getIndicativeFee() != null).map(tick -> BitmexTick.builder()
+            result = result.filter(t -> t.getFundingFee() != null).map(tick -> BitmexTick.builder()
                     .state(UNLISTED)
                     .symbol(key.getInstrument())
                     .timestamp(tick.getTimestamp())
-                    .last(ONE.add(tick.getIndicativeFee()))
-                    .indicativeFee(tick.getIndicativeFee())
+                    .last(ONE.add(tick.getFundingFee()))
+                    .fundingFee(tick.getFundingFee())
                     .build()
             );
 

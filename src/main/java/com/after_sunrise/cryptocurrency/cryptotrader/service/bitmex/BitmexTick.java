@@ -112,7 +112,7 @@ public class BitmexTick {
      * Predicted funding rate in real number. (1 bps = "0.0001")
      * Long position pays if positive, receives if negative.
      */
-    @SerializedName("indicativeFundingRate")
-    private BigDecimal indicativeFee;
+    @SerializedName("fundingRate")
+    private BigDecimal fundingFee;
 
 }
