@@ -7,6 +7,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.google.common.collect.Sets;
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -16,7 +17,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static java.math.BigDecimal.*;
-import static java.util.stream.Collectors.toSet;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -43,14 +43,14 @@ public class EstimatorImplTest {
     public void setUp() throws Exception {
 
         services = new TreeMap<>();
-        services.put("0", mock(Estimator.class));
-        services.put("1", mock(Estimator.class));
-        services.put("2", mock(Estimator.class));
-        services.put("3", mock(Estimator.class));
-        services.put("4", mock(Estimator.class));
-        services.put("5", mock(Estimator.class));
-        services.put("6", mock(Estimator.class));
-        services.put("7", mock(Estimator.class));
+        services.put("id0", mock(Estimator.class));
+        services.put("id1", mock(Estimator.class));
+        services.put("id2", mock(Estimator.class));
+        services.put("id3", mock(Estimator.class));
+        services.put("id4", mock(Estimator.class));
+        services.put("id5", mock(Estimator.class));
+        services.put("id6", mock(Estimator.class));
+        services.put("id7", mock(Estimator.class));
         services.forEach((k, v) -> when(v.get()).thenReturn(k));
 
         module = new TestModule();
@@ -72,49 +72,49 @@ public class EstimatorImplTest {
     public void testEstimate() throws Exception {
 
         when(module.getMock(PropertyManager.class).getEstimators(request.getSite(), request.getInstrument()))
-                .thenReturn(services.keySet().stream().filter(id -> !id.equals("7")).collect(toSet()));
+                .thenReturn(Sets.newHashSet("id0", "id1", "id2", "id3", "id4", "id5:0.7", "id6"));
 
         // Valid Estimation (1st)
         Estimation estimation0 = Estimation.builder().price(TEN).confidence(HALF).build();
-        when(services.get("0").estimate(context, request)).thenReturn(estimation0);
+        when(services.get("id0").estimate(context, request)).thenReturn(estimation0);
 
         // Null Estimation
-        when(services.get("1").estimate(context, request)).thenReturn(null);
+        when(services.get("id1").estimate(context, request)).thenReturn(null);
 
         // Null Price
         Estimation estimation2 = Estimation.builder().confidence(ONE).build();
-        when(services.get("2").estimate(context, request)).thenReturn(estimation2);
+        when(services.get("id2").estimate(context, request)).thenReturn(estimation2);
 
         // Null Confidence
         Estimation estimation3 = Estimation.builder().price(ONE).build();
-        when(services.get("3").estimate(context, request)).thenReturn(estimation3);
+        when(services.get("id3").estimate(context, request)).thenReturn(estimation3);
 
         // Execution Failure
-        when(services.get("4").estimate(context, request)).thenThrow(new RuntimeException("test"));
+        when(services.get("id4").estimate(context, request)).thenThrow(new RuntimeException("test"));
 
-        // Valid Estimation (2nd)
+        // Valid Estimation - Under-Weight (2nd)
         Estimation estimation5 = Estimation.builder().price(ONE).confidence(ONE).build();
-        when(services.get("5").estimate(context, request)).thenReturn(estimation5);
+        when(services.get("id5").estimate(context, request)).thenReturn(estimation5);
 
         // Valid Estimation (3rd)
         Estimation estimation6 = Estimation.builder().price(ONE).confidence(ZERO).build();
-        when(services.get("6").estimate(context, request)).thenReturn(estimation6);
+        when(services.get("id6").estimate(context, request)).thenReturn(estimation6);
 
         // Valid Estimation but filtered out.
         Estimation estimation7 = Estimation.builder().price(ONE).confidence(ONE).build();
-        when(services.get("7").estimate(context, request)).thenReturn(estimation7);
+        when(services.get("id7").estimate(context, request)).thenReturn(estimation7);
 
         // Consensus
-        // Price = [(10 * 0.5) + (1 * 1) + (1 * 0)] / (0.5 + 1 + 0) = 6 / 1.5 = 4
+        // Price = [(10 * 0.5) + (1 * (1 * 1.1)) + (1 * 0)] / (0.5 + (1 * 1.1) + 0) = 6.1 / 1.6 = 3.8125
         // Confidence = (0.5 + 1 + 0) / 3 = 0.5
         Estimation result = target.estimate(context, request);
-        assertEquals(result.getPrice(), new BigDecimal("4.0000000000"));
-        assertEquals(result.getConfidence(), new BigDecimal("0.5000000000"));
+        assertEquals(result.getPrice(), new BigDecimal("4.7500000000"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.4000000000"));
         services.values().stream()
-                .filter(e -> !"7".equals(e.get()))
+                .filter(e -> !"id7".equals(e.get()))
                 .forEach(mock -> Mockito.verify(mock).estimate(context, request));
         services.values().stream()
-                .filter(e -> "7".equals(e.get()))
+                .filter(e -> "id7".equals(e.get()))
                 .forEach(mock -> Mockito.verify(mock, never()).estimate(context, request));
 
     }

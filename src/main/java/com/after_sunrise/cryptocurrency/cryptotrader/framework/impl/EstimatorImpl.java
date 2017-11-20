@@ -8,18 +8,19 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
-import java.util.IdentityHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.HALF_UP;
+import static java.util.Optional.ofNullable;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 
@@ -54,9 +55,11 @@ public class EstimatorImpl extends AbstractService implements Estimator {
     @Override
     public Estimation estimate(Context context, Request request) {
 
-        Map<Estimator, Estimation> estimations = collect(context, request);
+        Map<String, BigDecimal> ids = getConfiguredEstimators(request.getSite(), request.getInstrument());
 
-        Estimation collapsed = collapse(estimations);
+        Map<Estimator, Estimation> estimations = collect(context, request, ids);
+
+        Estimation collapsed = collapse(estimations, ids);
 
         log.info("Estimate : [{} {}] price=[{}] confidence=[{}]",
                 request.getSite(), request.getInstrument(), collapsed.getPrice(), collapsed.getConfidence());
@@ -65,15 +68,32 @@ public class EstimatorImpl extends AbstractService implements Estimator {
 
     }
 
-    private Map<Estimator, Estimation> collect(Context context, Request request) {
+    private Map<String, BigDecimal> getConfiguredEstimators(String site, String instrument) {
 
-        Set<String> ids = manager.getEstimators(request.getSite(), request.getInstrument());
+        Collection<String> ids = manager.getEstimators(site, instrument);
+
+        if (CollectionUtils.isEmpty(ids)) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, BigDecimal> map = new HashMap<>();
+
+        ids.stream()
+                .filter(StringUtils::isNotEmpty)
+                .map(id -> StringUtils.split(id, ":", 2))
+                .forEach(s -> map.put(s[0], s.length <= 1 ? null : new BigDecimal(s[1])));
+
+        return map;
+
+    }
+
+    private Map<Estimator, Estimation> collect(Context context, Request request, Map<String, BigDecimal> ids) {
 
         Map<Estimator, CompletableFuture<Estimation>> futures = new IdentityHashMap<>();
 
         estimators.values().stream()
                 .filter(e -> ids != null)
-                .filter(e -> ids.contains(WILDCARD) || ids.contains(e.get()))
+                .filter(e -> ids.containsKey(WILDCARD) || ids.containsKey(e.get()))
                 .forEach(estimator ->
                         futures.put(estimator,
                                 supplyAsync(() -> estimator.estimate(context, request), executor)
@@ -101,7 +121,7 @@ public class EstimatorImpl extends AbstractService implements Estimator {
 
     }
 
-    private Estimation collapse(Map<Estimator, Estimation> estimations) {
+    private Estimation collapse(Map<Estimator, Estimation> estimations, Map<String, BigDecimal> ids) {
 
         BigDecimal numerator = BigDecimal.ZERO;
 
@@ -111,19 +131,23 @@ public class EstimatorImpl extends AbstractService implements Estimator {
 
         for (Entry<Estimator, Estimation> entry : estimations.entrySet()) {
 
+            String id = entry.getKey().get();
+
             Estimation estimation = entry.getValue();
 
             if (estimation == null || estimation.getPrice() == null || estimation.getConfidence() == null) {
 
-                log.debug("Omitting estimate : {} ({})", estimation, entry.getKey().get());
+                log.debug("Omitting estimate : {} ({})", estimation, id);
 
                 continue;
 
             }
 
-            log.debug("Including estimate : {} - {}", estimation, entry.getKey().get());
+            BigDecimal multiplier = ofNullable(ids.get(id)).orElse(ONE);
 
-            BigDecimal confidence = estimation.getConfidence().max(ZERO).min(ONE);
+            log.debug("Including estimate : {} - {} (x{})", estimation, id, multiplier);
+
+            BigDecimal confidence = estimation.getConfidence().multiply(multiplier).max(ZERO).min(ONE);
 
             numerator = numerator.add(estimation.getPrice().multiply(confidence));
 
