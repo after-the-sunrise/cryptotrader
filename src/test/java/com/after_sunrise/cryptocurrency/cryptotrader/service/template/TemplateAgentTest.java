@@ -2,6 +2,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
@@ -141,8 +142,12 @@ public class TemplateAgentTest {
         Thread.currentThread().interrupt();
         assertFalse(target.checkCreated(context, key, id, retry, interval));
 
+        // Terminated
+        when(context.getState(any())).thenReturn(StateType.TERMINATE, null, null);
+        assertFalse(target.checkCreated(context, key, id, retry, interval));
+
         // Found
-        when(context.findOrder(any(), eq(id))).thenReturn(null, null, mock(Order.class));
+        when(context.findOrder(any(), eq(id))).thenReturn(null, null, mock(Order.class), null);
         assertTrue(target.checkCreated(context, key, id, retry, interval));
 
     }
@@ -165,11 +170,14 @@ public class TemplateAgentTest {
         Thread.currentThread().interrupt();
         assertFalse(target.checkCancelled(context, key, id, retry, interval));
 
+        // Terminated
+        when(context.getState(any())).thenReturn(StateType.TERMINATE, null, null);
+        assertFalse(target.checkCancelled(context, key, id, retry, interval));
+
         // Found and inactive
         when(order.getActive()).thenReturn(FALSE);
         when(context.findOrder(any(), eq(id))).thenReturn(order);
         assertTrue(target.checkCancelled(context, key, id, retry, interval));
-
 
         // Not found
         when(context.findOrder(any(), eq(id))).thenReturn(null);

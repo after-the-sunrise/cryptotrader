@@ -34,6 +34,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -101,11 +102,15 @@ public abstract class TemplateContext extends AbstractService implements Context
 
     private final CloseableHttpClient client;
 
+    private final AtomicReference<StateType> state;
+
     protected TemplateContext(String id) {
 
         this.id = id;
 
         this.client = HttpClients.createDefault();
+
+        this.state = new AtomicReference<>(StateType.ACTIVE);
 
     }
 
@@ -116,7 +121,11 @@ public abstract class TemplateContext extends AbstractService implements Context
 
     @Override
     public void close() throws Exception {
+
         client.close();
+
+        state.set(StateType.TERMINATE);
+
     }
 
     @VisibleForTesting
@@ -313,6 +322,11 @@ public abstract class TemplateContext extends AbstractService implements Context
         } catch (Exception e) {
             return null;
         }
+    }
+
+    @Override
+    public StateType getState(Key key) {
+        return state.get();
     }
 
     @Override

@@ -71,6 +71,12 @@ public interface Context extends Service, AutoCloseable {
 
     }
 
+    enum StateType {
+        ACTIVE, TERMINATE;
+    }
+
+    StateType getState(Key key);
+
     BigDecimal getBestAskPrice(Key key);
 
     BigDecimal getBestBidPrice(Key key);

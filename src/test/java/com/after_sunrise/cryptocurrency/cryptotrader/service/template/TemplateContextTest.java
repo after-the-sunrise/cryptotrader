@@ -2,6 +2,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.jboss.resteasy.plugins.server.undertow.UndertowJaxrsServer;
 import org.jboss.resteasy.test.TestPortProvider;
@@ -94,7 +95,13 @@ public class TemplateContextTest {
 
     @Test
     public void testClose() throws Exception {
+
+        assertEquals(target.getState(null), StateType.ACTIVE);
+
         target.close();
+
+        assertEquals(target.getState(null), StateType.TERMINATE);
+
     }
 
     @Test
@@ -281,6 +288,10 @@ public class TemplateContextTest {
         for (Method m : Context.class.getMethods()) {
 
             if (m.getDeclaringClass() != Context.class) {
+                continue;
+            }
+
+            if (m.getName().equals("getState")) {
                 continue;
             }
 

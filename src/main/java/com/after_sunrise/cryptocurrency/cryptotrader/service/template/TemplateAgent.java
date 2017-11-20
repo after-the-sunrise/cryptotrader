@@ -2,6 +2,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Visitor;
@@ -151,6 +152,14 @@ public class TemplateAgent extends AbstractService implements Agent {
 
             }
 
+            if (context.getState(current) == StateType.TERMINATE) {
+
+                log.trace("Reconciling create terminated : {}", id);
+
+                return FALSE;
+
+            }
+
             try {
 
                 Thread.sleep(interval.toMillis());
@@ -189,6 +198,14 @@ public class TemplateAgent extends AbstractService implements Agent {
                 log.trace("Reconcile cancel succeeded : {}", id);
 
                 return TRUE;
+
+            }
+
+            if (context.getState(current) == StateType.TERMINATE) {
+
+                log.trace("Reconciling cancel terminated : {}", id);
+
+                return FALSE;
 
             }
 

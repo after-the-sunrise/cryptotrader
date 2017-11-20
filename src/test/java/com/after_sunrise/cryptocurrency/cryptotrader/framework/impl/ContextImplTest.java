@@ -113,6 +113,17 @@ public class ContextImplTest {
     }
 
     @Test
+    public void testGetState() {
+
+        Context.StateType value = Context.StateType.TERMINATE;
+
+        when(contexts.get("c1").getState(key)).thenReturn(value);
+
+        assertEquals(target.getState(key), value);
+
+    }
+
+    @Test
     public void testGetBestAskPrice() {
 
         BigDecimal value = new BigDecimal(Math.random());
