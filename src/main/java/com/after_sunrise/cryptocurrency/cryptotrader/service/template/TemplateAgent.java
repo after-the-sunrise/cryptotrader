@@ -142,6 +142,14 @@ public class TemplateAgent extends AbstractService implements Agent {
 
             Key current = builder.build();
 
+            if (context.getState(current) == StateType.TERMINATE) {
+
+                log.trace("Reconciling create terminated : {}", id);
+
+                return FALSE;
+
+            }
+
             Order order = context.findOrder(current, id);
 
             if (order != null) {
@@ -149,14 +157,6 @@ public class TemplateAgent extends AbstractService implements Agent {
                 log.trace("Reconcile create succeeded : {}", id);
 
                 return TRUE;
-
-            }
-
-            if (context.getState(current) == StateType.TERMINATE) {
-
-                log.trace("Reconciling create terminated : {}", id);
-
-                return FALSE;
 
             }
 
@@ -191,6 +191,14 @@ public class TemplateAgent extends AbstractService implements Agent {
 
             Key current = builder.build();
 
+            if (context.getState(current) == StateType.TERMINATE) {
+
+                log.trace("Reconciling cancel terminated : {}", id);
+
+                return FALSE;
+
+            }
+
             Order order = context.findOrder(current, id);
 
             if (order == null || !TRUE.equals(order.getActive())) {
@@ -198,14 +206,6 @@ public class TemplateAgent extends AbstractService implements Agent {
                 log.trace("Reconcile cancel succeeded : {}", id);
 
                 return TRUE;
-
-            }
-
-            if (context.getState(current) == StateType.TERMINATE) {
-
-                log.trace("Reconciling cancel terminated : {}", id);
-
-                return FALSE;
 
             }
 
