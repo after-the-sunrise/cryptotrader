@@ -740,9 +740,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal exposure = ofNullable(calculateTradingExposure(context, request)).orElse(ZERO);
 
-        BigDecimal commission = ofNullable(context.getCommissionRate(key)).orElse(ZERO).max(ZERO).min(ONE);
-
-        BigDecimal exposed = position.multiply(basePrice).multiply(exposure.min(ONE.subtract(commission)));
+        BigDecimal exposed = position.multiply(basePrice).multiply(exposure);
 
         log.trace("Instrument exposure size : {} (position=[{}])", exposed, position);
 

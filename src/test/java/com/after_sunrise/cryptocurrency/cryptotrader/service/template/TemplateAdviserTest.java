@@ -911,16 +911,6 @@ public class TemplateAdviserTest {
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("9000"));
         when(context.getInstrumentCurrency(any())).thenReturn(BTC);
         when(context.getConversionPrice(key, BTC)).thenReturn(ONE);
-        when(context.getCommissionRate(key)).thenReturn(null);
-        assertEquals(target.calculateInstrumentExposureSize(context, request), expect);
-
-        // Less than commission
-        when(context.getCommissionRate(key)).thenReturn(new BigDecimal("0.05"));
-        assertEquals(target.calculateInstrumentExposureSize(context, request), expect);
-
-        // More than commission
-        expect = new BigDecimal("720.000000000000");
-        when(context.getCommissionRate(key)).thenReturn(new BigDecimal("0.92"));
         assertEquals(target.calculateInstrumentExposureSize(context, request), expect);
 
         // Invalid Fund
