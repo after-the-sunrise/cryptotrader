@@ -128,6 +128,21 @@ public interface BitmexService extends Service {
         ETH_QT(null, "ETH:quarterly", ETH, BTC, 1),
 
         /**
+         * Minutely Ether Classic Price Index
+         */
+        ETCXBT(".ETCXBT", null, ETC, BTC, null),
+
+        /**
+         * 30-Minute Ether Classic Price Index
+         */
+        ETCXBT30M(".ETCXBT30M", null, ETC, BTC, null),
+
+        /**
+         * ETC/XBT Classic Futures
+         */
+        ETC_WK(null, "ETC:weekly", ETC, BTC, 1),
+
+        /**
          * Minutely BCH Price Index
          */
         BCHXBT(".BCHXBT", null, BCH, BTC, null),
