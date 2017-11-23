@@ -859,6 +859,7 @@ public class TemplateAdviserTest {
 
         Request.RequestBuilder builder = rBuilder.fundingOffset(new BigDecimal("-0.50"));
         when(context.getFundingPosition(any())).thenReturn(new BigDecimal("18000"));
+        when(context.getCommissionRate(any())).thenReturn(new BigDecimal("0.0020"));
         doReturn(new BigDecimal("0.10")).when(target).calculateTradingExposure(eq(context), any());
         BigDecimal price = new BigDecimal("123.4567");
 
@@ -878,8 +879,9 @@ public class TemplateAdviserTest {
         // Exposed = Fund * (1 + 100) * Exposure = 180000
         // Exposed / Price = 180000 / 123.4567 = 1,458.00106434...
         // Actual Fund / Price = 18000 / 123.4567 = 145.800106434077697
+        // Commission Adjusted = 145.800106434077697 * (1 - 0.0020) = 145.508506221209542
         builder = builder.fundingOffset(BigDecimal.valueOf(100));
-        expect = new BigDecimal("145.8001064340");
+        expect = new BigDecimal("145.5085062212");
         assertEquals(target.calculateFundingExposureSize(context, builder.build(), price), expect);
 
         // Invalid price
@@ -909,6 +911,16 @@ public class TemplateAdviserTest {
         when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("9000"));
         when(context.getInstrumentCurrency(any())).thenReturn(BTC);
         when(context.getConversionPrice(key, BTC)).thenReturn(ONE);
+        when(context.getCommissionRate(key)).thenReturn(null);
+        assertEquals(target.calculateInstrumentExposureSize(context, request), expect);
+
+        // Less than commission
+        when(context.getCommissionRate(key)).thenReturn(new BigDecimal("0.05"));
+        assertEquals(target.calculateInstrumentExposureSize(context, request), expect);
+
+        // More than commission
+        expect = new BigDecimal("720.000000000000");
+        when(context.getCommissionRate(key)).thenReturn(new BigDecimal("0.92"));
         assertEquals(target.calculateInstrumentExposureSize(context, request), expect);
 
         // Invalid Fund

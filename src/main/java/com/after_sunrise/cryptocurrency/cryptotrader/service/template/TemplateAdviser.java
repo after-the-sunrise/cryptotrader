@@ -667,7 +667,11 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal exposure = ofNullable(calculateTradingExposure(context, request)).orElse(ZERO);
 
-        BigDecimal exposed = product.multiply(exposure).min(fund.divide(price, SCALE, DOWN));
+        BigDecimal commission = ofNullable(context.getCommissionRate(key)).orElse(ZERO).max(ZERO).min(ONE);
+
+        BigDecimal available = fund.multiply(ONE.subtract(commission)).divide(price, SCALE, DOWN);
+
+        BigDecimal exposed = product.multiply(exposure).min(available);
 
         log.trace("Funding exposure size : {} (fund=[{}] price=[{}])", exposed, adjFund, price);
 
@@ -736,7 +740,9 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal exposure = ofNullable(calculateTradingExposure(context, request)).orElse(ZERO);
 
-        BigDecimal exposed = position.multiply(basePrice).multiply(exposure);
+        BigDecimal commission = ofNullable(context.getCommissionRate(key)).orElse(ZERO).max(ZERO).min(ONE);
+
+        BigDecimal exposed = position.multiply(basePrice).multiply(exposure.min(ONE.subtract(commission)));
 
         log.trace("Instrument exposure size : {} (position=[{}])", exposed, position);
 
