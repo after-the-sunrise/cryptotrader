@@ -1,6 +1,18 @@
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.NullEstimator
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.RandomEstimator
+
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator$Vwap001Estimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator$Vwap003Estimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator$Vwap005Estimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator$Vwap010Estimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator$Vwap015Estimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator$Vwap030Estimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator$Vwap060Estimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator$Vwap120Estimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator$Vwap240Estimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator$Vwap480Estimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator$Vwap960Estimator
 
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.UnivariateEstimator
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.UnivariateEstimator$Univariate010Estimator

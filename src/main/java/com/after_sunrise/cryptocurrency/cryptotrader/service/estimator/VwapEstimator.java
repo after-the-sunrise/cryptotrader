@@ -6,6 +6,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -15,11 +16,9 @@ import java.util.stream.Collectors;
 
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
-import static java.time.temporal.ChronoUnit.HOURS;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
-import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 
 /**
  * @author takanori.takase
@@ -28,6 +27,10 @@ import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 public class VwapEstimator extends AbstractEstimator {
 
     private static final Comparator<Trade> COMPARATOR = Comparator.comparing(Trade::getTimestamp);
+
+    private static final String DURATION_KEY = "duration";
+
+    private static final int DURATION_VAL = 60;
 
     private static final double SIGMA = 1.96;
 
@@ -44,7 +47,7 @@ public class VwapEstimator extends AbstractEstimator {
 
         Instant now = key.getTimestamp();
 
-        Instant from = now.minus(LONG_ONE, HOURS);
+        Instant from = now.minus(getDuration());
 
         List<Trade> trades = ofNullable(context.listTrades(key, from)).orElse(emptyList())
                 .stream().filter(Objects::nonNull)
@@ -82,6 +85,14 @@ public class VwapEstimator extends AbstractEstimator {
         log.debug("Estimated : {} (confidence=[{}] points=[{}])", p, c, trades.size());
 
         return Estimation.builder().price(p).confidence(c).build();
+
+    }
+
+    protected Duration getDuration() {
+
+        int value = getIntProperty(DURATION_KEY, DURATION_VAL);
+
+        return Duration.ofMinutes(value);
 
     }
 
@@ -127,6 +138,83 @@ public class VwapEstimator extends AbstractEstimator {
 
         return Math.sqrt(variance / Math.max(rates.length - INTEGER_ONE, INTEGER_ONE));
 
+    }
+
+    public static class Vwap001Estimator extends VwapEstimator {
+        @Override
+        protected Duration getDuration() {
+            return Duration.ofMinutes(1);
+        }
+    }
+
+    public static class Vwap003Estimator extends VwapEstimator {
+        @Override
+        protected Duration getDuration() {
+            return Duration.ofMinutes(3);
+        }
+    }
+
+    public static class Vwap005Estimator extends VwapEstimator {
+        @Override
+        protected Duration getDuration() {
+            return Duration.ofMinutes(5);
+        }
+    }
+
+    public static class Vwap010Estimator extends VwapEstimator {
+        @Override
+        protected Duration getDuration() {
+            return Duration.ofMinutes(10);
+        }
+    }
+
+    public static class Vwap015Estimator extends VwapEstimator {
+        @Override
+        protected Duration getDuration() {
+            return Duration.ofMinutes(15);
+        }
+    }
+
+    public static class Vwap030Estimator extends VwapEstimator {
+        @Override
+        protected Duration getDuration() {
+            return Duration.ofMinutes(30);
+        }
+    }
+
+    public static class Vwap060Estimator extends VwapEstimator {
+        @Override
+        protected Duration getDuration() {
+            return Duration.ofHours(1);
+        }
+    }
+
+    public static class Vwap120Estimator extends VwapEstimator {
+        @Override
+        protected Duration getDuration() {
+            return Duration.ofHours(2);
+        }
+    }
+
+    public static class Vwap240Estimator extends VwapEstimator {
+        @Override
+        protected Duration getDuration() {
+            return Duration.ofHours(4);
+        }
+    }
+
+    public static class Vwap480Estimator extends VwapEstimator {
+        @Override
+        protected Duration getDuration() {
+            return Duration.ofHours(8);
+        }
+    }
+
+    public static class Vwap960Estimator extends VwapEstimator {
+        @Override
+        protected Duration getDuration() {
+            return Duration.ofHours(16);
+        }
     }
 
 }
