@@ -28,6 +28,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType.SELL;
@@ -155,6 +156,19 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return Optional.empty();
         }
 
+        if (ProductType.XBT == ProductType.findByName(key.getInstrument())) {
+
+            return Optional.of(BitmexTick.builder()
+                    .state(UNLISTED)
+                    .symbol(key.getInstrument())
+                    .timestamp(key.getTimestamp())
+                    .last(ONE)
+                    .settleCurrency(FundingType.XBT.getId())
+                    .build()
+            );
+
+        }
+
         Key newKey = Key.build(key).instrument(WILDCARD).build();
 
         List<BitmexTick> ticks = listCached(BitmexTick.class, newKey, () -> {
@@ -181,7 +195,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
                 .filter(t -> StringUtils.equals(t.getSymbol(), instrument))
                 .findAny();
 
-        if (ProductType.XBT_FR.name().equals(key.getInstrument())) {
+        if (ProductType.XBT_FR == ProductType.findByName(key.getInstrument())) {
 
             result = result.filter(t -> t.getFundingFee() != null).map(tick -> BitmexTick.builder()
                     .state(UNLISTED)
@@ -522,6 +536,10 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return null;
         }
 
+        if (ProductType.XBT == ProductType.findByName(key.getInstrument())) {
+            return getMarginAmount(key, BitmexMargin::getMarginBalance);
+        }
+
         Key newKey = Key.build(key).instrument(WILDCARD).build();
 
         List<BitmexPosition> positions = listCached(BitmexPosition.class, newKey, () -> {
@@ -553,6 +571,11 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
     @Override
     public BigDecimal getFundingPosition(Key key) {
+        return getMarginAmount(key, BitmexMargin::getExcess);
+    }
+
+    @VisibleForTesting
+    BigDecimal getMarginAmount(Key key, Function<BitmexMargin, BigDecimal> function) {
 
         String currency = queryTick(key).map(BitmexTick::getSettleCurrency).orElse(null);
 
@@ -586,7 +609,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
                 .filter(Objects::nonNull)
                 .filter(m -> StringUtils.equals(currency, m.getCurrency()))
                 .findAny()
-                .map(BitmexMargin::getExcess)
+                .map(function)
                 .map(v -> v.multiply(SATOSHI).multiply(conversionRate))
                 .orElse(ZERO);
 

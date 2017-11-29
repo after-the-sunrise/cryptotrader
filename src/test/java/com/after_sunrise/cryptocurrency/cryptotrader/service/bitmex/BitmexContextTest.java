@@ -201,6 +201,7 @@ public class BitmexContextTest {
         Key key2 = Key.builder().instrument("BXBT").build();
         Key key3 = Key.builder().instrument("XBT_QT").build();
         Key key4 = Key.builder().instrument("XBT_FR").build();
+        Key key5 = Key.builder().instrument("XBT").timestamp(Instant.ofEpochMilli(123)).build();
         doReturn("XBTUSD").when(target).convertAlias(key1);
         doReturn(".BXBT").when(target).convertAlias(key2);
         doReturn("XBTZ17").when(target).convertAlias(key3);
@@ -291,6 +292,27 @@ public class BitmexContextTest {
         target.clear();
         doThrow(new IOException("test")).when(target).request(any(), any(), any(), any());
         assertFalse(target.queryTick(key1).isPresent());
+
+        // XBT
+        target.clear();
+        result = target.queryTick(key5);
+        assertTrue(result.isPresent());
+        assertEquals(result.get().getSymbol(), "XBT");
+        assertEquals(result.get().getSettleCurrency(), "XBt");
+        assertEquals(result.get().getState(), "Unlisted");
+        assertEquals(result.get().getTimestamp(), Instant.ofEpochMilli(123));
+        assertEquals(result.get().getLast(), ONE);
+        assertEquals(result.get().getAsk(), null);
+        assertEquals(result.get().getBid(), null);
+        assertEquals(result.get().getMid(), null);
+        assertEquals(result.get().getLotSize(), null);
+        assertEquals(result.get().getTickSize(), null);
+        assertEquals(result.get().getExpiry(), null);
+        assertEquals(result.get().getReference(), null);
+        assertEquals(result.get().getMakerFee(), null);
+        assertEquals(result.get().getTakerFee(), null);
+        assertEquals(result.get().getSettleFee(), null);
+        assertEquals(result.get().getFundingFee(), null);
 
     }
 
