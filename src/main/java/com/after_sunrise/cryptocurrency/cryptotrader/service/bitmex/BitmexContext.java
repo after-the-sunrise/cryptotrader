@@ -397,11 +397,19 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return null;
         }
 
+        Integer multiplier = product.getMultiplier();
+
+        if (multiplier == null) {
+            return null;
+        }
+
         BigDecimal price = getMidPrice(key);
 
         if (price == null || price.signum() == 0) {
             return null;
         }
+
+        BigDecimal result = null;
 
         if (product.getStructure() == currency) {
 
@@ -409,9 +417,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
             // 1 Currency Value = 1 / Contract Value
 
-            BigDecimal multiplier = BigDecimal.valueOf(product.getMultiplier());
-
-            return price.divide(multiplier, SCALE, HALF_UP);
+            result = price.divide(BigDecimal.valueOf(multiplier), SCALE, HALF_UP);
 
         }
 
@@ -421,13 +427,11 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
             // 1 Currency Value = 1 / Contract Value
 
-            BigDecimal multiplier = BigDecimal.valueOf(product.getMultiplier());
-
-            return ONE.divide(multiplier.multiply(price), SCALE, HALF_UP);
+            result = ONE.divide(BigDecimal.valueOf(multiplier).multiply(price), SCALE, HALF_UP);
 
         }
 
-        return null;
+        return result;
 
     }
 
