@@ -157,6 +157,9 @@ public class BitmexContextTest {
                 case BCHXBT30M:
                     expect = "." + product.name();
                     break;
+                case XBT:
+                    expect = "XBT";
+                    break;
                 case XBTUSD:
                 case XBT_FR:
                     expect = "XBTUSD";

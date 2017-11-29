@@ -73,6 +73,11 @@ public interface BitmexService extends Service {
     enum ProductType {
 
         /**
+         * Cash
+         */
+        XBT("XBT", null, BTC, BTC, 1),
+
+        /**
          * Minutely Bitcoin Price Index
          */
         BXBT(".BXBT", null, BTC, USD, null),
