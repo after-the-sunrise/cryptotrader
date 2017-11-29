@@ -586,7 +586,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
                 .filter(Objects::nonNull)
                 .filter(m -> StringUtils.equals(currency, m.getCurrency()))
                 .findAny()
-                .map(BitmexMargin::getBalance)
+                .map(BitmexMargin::getExcess)
                 .map(v -> v.multiply(SATOSHI).multiply(conversionRate))
                 .orElse(ZERO);
 

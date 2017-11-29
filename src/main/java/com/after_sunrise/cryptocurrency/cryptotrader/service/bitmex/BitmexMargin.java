@@ -22,9 +22,21 @@ public class BitmexMargin {
     private String currency;
 
     /**
+     * Amount in wallet.
+     */
+    @SerializedName("walletBalance")
+    private BigDecimal walletBalance;
+
+    /**
      * Margin = Wallet + Unrealized
      */
+    @SerializedName("marginBalance")
+    private BigDecimal marginBalance;
+
+    /**
+     * Excess = Balance - Used
+     */
     @SerializedName("excessMargin")
-    private BigDecimal balance;
+    private BigDecimal excess;
 
 }
