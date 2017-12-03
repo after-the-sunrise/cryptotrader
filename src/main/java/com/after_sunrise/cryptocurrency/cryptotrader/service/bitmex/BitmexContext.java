@@ -26,7 +26,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -65,6 +64,8 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     private static final String URL_MARGIN = "/api/v1/user/margin";
 
     private static final String URL_ORDER = "/api/v1/order";
+
+    private static final String URL_ORDER_BULK = "/api/v1/order/bulk";
 
     private static final String URL_EXECUTION = "/api/v1/execution/tradeHistory";
 
@@ -825,52 +826,52 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return Collections.emptyMap();
         }
 
-        Map<CreateInstruction, CompletableFuture<String>> futures = new IdentityHashMap<>();
+        List<CreateInstruction> inputs = instructions.stream().filter(Objects::nonNull).collect(toList());
 
-        instructions.stream().filter(Objects::nonNull).forEach(i -> {
+        Map<CreateInstruction, String> map = new IdentityHashMap<>();
 
-            futures.put(i, CompletableFuture.supplyAsync(() -> {
+        try {
 
-                if (i.getPrice() == null || i.getPrice().signum() == 0) {
-                    return null;
-                }
+            Map<CreateInstruction, String> ids = new IdentityHashMap<>();
 
-                if (i.getSize() == null || i.getSize().signum() == 0) {
-                    return null;
-                }
+            String data = gson.toJson(singletonMap("orders", inputs.stream()
+                    .filter(i -> i.getPrice() != null)
+                    .filter(i -> i.getPrice().signum() != 0)
+                    .filter(i -> i.getSize() != null)
+                    .filter(i -> i.getSize().signum() != 0)
+                    .map(i -> {
+                        ids.put(i, getUniqueId());
+                        Map<String, Object> params = new TreeMap<>();
+                        params.put("symbol", convertAlias(key));
+                        params.put("side", (i.getSize().signum() >= 0 ? BUY : SELL).getId());
+                        params.put("orderQty", i.getSize().abs());
+                        params.put("price", i.getPrice());
+                        params.put("clOrdID", ids.get(i));
+                        params.put("ordType", "Limit");
+                        params.put("execInst", "ParticipateDoNotInitiate");
+                        return params;
+                    }).collect(toList())
+            ));
 
-                try {
+            String result = executePrivate(RequestType.POST, URL_ORDER_BULK, emptyMap(), data);
 
-                    Map<String, Object> data = new TreeMap<>();
-                    data.put("symbol", convertAlias(key));
-                    data.put("side", (i.getSize().signum() >= 0 ? BUY : SELL).getId());
-                    data.put("orderQty", i.getSize().abs().toPlainString());
-                    data.put("price", i.getPrice().toPlainString());
-                    data.put("clOrdID", getUniqueId());
-                    data.put("ordType", "Limit");
-                    data.put("execInst", "ParticipateDoNotInitiate");
+            List<BitmexOrder> results = gson.fromJson(result, TYPE_ORDER);
 
-                    String result = executePrivate(RequestType.POST, URL_ORDER, emptyMap(), gson.toJson(data));
+            inputs.forEach(i -> map.put(i, results.stream()
+                    .filter(Objects::nonNull)
+                    .filter(o -> StringUtils.isNotEmpty(o.getClientId()))
+                    .filter(o -> StringUtils.equals(o.getClientId(), ids.get(i)))
+                    .map(BitmexOrder::getClientId)
+                    .findAny().orElse(null))
+            );
 
-                    BitmexOrder results = gson.fromJson(result, BitmexOrder.class);
+        } catch (Exception e) {
 
-                    return results.getClientId();
+            instructions.stream().filter(Objects::nonNull).forEach(i -> map.put(i, null));
 
-                } catch (Exception e) {
+        }
 
-                    throw new IllegalArgumentException("Create failure : " + i, e);
-
-                }
-
-            }));
-
-        });
-
-        Map<CreateInstruction, String> results = new IdentityHashMap<>();
-
-        futures.forEach((k, v) -> results.put(k, extractQuietly(v, TIMEOUT)));
-
-        return results;
+        return map;
 
     }
 
@@ -899,7 +900,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
                 String id = results.stream()
                         .filter(Objects::nonNull)
-                        .filter(o -> StringUtils.isNoneEmpty(o.getClientId()))
+                        .filter(o -> StringUtils.isNotEmpty(o.getClientId()))
                         .filter(o -> StringUtils.equals(o.getClientId(), i.getId()))
                         .map(BitmexOrder::getClientId)
                         .findAny().orElse(null);
