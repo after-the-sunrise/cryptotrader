@@ -881,37 +881,40 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             return Collections.emptyMap();
         }
 
-        Map<CancelInstruction, CompletableFuture<String>> futures = new IdentityHashMap<>();
+        Map<CancelInstruction, String> map = new IdentityHashMap<>();
 
-        instructions.stream().filter(Objects::nonNull).forEach(i -> {
+        try {
 
-            futures.put(i, CompletableFuture.supplyAsync(() -> {
+            String data = gson.toJson(singletonMap("clOrdID", instructions.stream()
+                    .filter(Objects::nonNull)
+                    .map(CancelInstruction::getId)
+                    .collect(toList())
+            ));
 
-                try {
+            String result = executePrivate(RequestType.DELETE, URL_ORDER, emptyMap(), data);
 
-                    String data = gson.toJson(singletonMap("clOrdID", i.getId()));
+            List<BitmexOrder> results = gson.fromJson(result, TYPE_ORDER);
 
-                    String result = executePrivate(RequestType.DELETE, URL_ORDER, emptyMap(), data);
+            instructions.stream().filter(Objects::nonNull).forEach(i -> {
 
-                    List<BitmexOrder> results = gson.fromJson(result, TYPE_ORDER);
+                String id = results.stream()
+                        .filter(Objects::nonNull)
+                        .filter(o -> StringUtils.isNoneEmpty(o.getClientId()))
+                        .filter(o -> StringUtils.equals(o.getClientId(), i.getId()))
+                        .map(BitmexOrder::getClientId)
+                        .findAny().orElse(null);
 
-                    return results.stream().findAny().map(BitmexOrder::getClientId).orElse(null);
+                map.put(i, id);
 
-                } catch (Exception e) {
+            });
 
-                    throw new IllegalArgumentException("Cancel failure : " + i, e);
+        } catch (Exception e) {
 
-                }
+            instructions.stream().filter(Objects::nonNull).forEach(i -> map.put(i, null));
 
-            }));
+        }
 
-        });
-
-        Map<CancelInstruction, String> results = new IdentityHashMap<>();
-
-        futures.forEach((k, v) -> results.put(k, extractQuietly(v, TIMEOUT)));
-
-        return results;
+        return map;
 
     }
 

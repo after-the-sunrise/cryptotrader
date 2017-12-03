@@ -24,6 +24,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.*;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.FundingType.XBT;
@@ -114,23 +115,25 @@ public class BitmexContextTest {
 
         doCallRealMethod().when(target).request(any(), any(), any(), any());
 
-        Key key = Key.builder().instrument("XBJZ17").timestamp(Instant.now()).build();
+        Key key = Key.builder().instrument("XBJ_QT").timestamp(Instant.now()).build();
 
         Map<CreateInstruction, String> ids = target.createOrders(
-                key, Collections.singleton(CreateInstruction.builder()
-                        .price(new BigDecimal("700000"))
-                        .size(new BigDecimal("1")).build()
+                key, Sets.newHashSet(
+                        CreateInstruction.builder()
+                                .price(new BigDecimal("1200000"))
+                                .size(new BigDecimal("1")).build(),
+                        CreateInstruction.builder()
+                                .price(new BigDecimal("1200000"))
+                                .size(new BigDecimal("2")).build()
                 ));
 
         System.out.println("NEW : " + ids);
 
-        Thread.sleep(TimeUnit.SECONDS.toMillis(3));
+        Thread.sleep(TimeUnit.SECONDS.toMillis(5));
 
-        ids.forEach((k, v) -> {
-            System.out.println("CND : " + target.cancelOrders(key, Collections.singleton(
-                    CancelInstruction.builder().id(v).build()
-            )));
-        });
+        System.out.println("CND : " + target.cancelOrders(key, ids.values().stream()
+                .map(id -> CancelInstruction.builder().id(id).build()).collect(Collectors.toSet())
+        ));
 
     }
 
@@ -1165,11 +1168,11 @@ public class BitmexContextTest {
             assertEquals(i.getArgumentAt(2, Map.class), emptyMap());
             String data = i.getArgumentAt(3, String.class);
 
-            Map<String, String> map = new Gson().fromJson(data, new TypeToken<Map<String, String>>() {
+            Map<String, Set<String>> map = new Gson().fromJson(data, new TypeToken<Map<String, Set<String>>>() {
             }.getType());
-            assertEquals(map.remove("clOrdID"), "uid1");
+            assertEquals(map.remove("clOrdID"), Sets.newHashSet(null, "uid1"));
 
-            return new Gson().toJson(singleton(singletonMap("clOrdID", "cid1")));
+            return new Gson().toJson(singleton(singletonMap("clOrdID", "uid1")));
 
         }).when(target).executePrivate(any(), any(), any(), any());
 
@@ -1180,7 +1183,7 @@ public class BitmexContextTest {
         Map<CancelInstruction, String> result = target.cancelOrders(key, Sets.newHashSet(i1, null, i2));
         assertEquals(result.size(), 2);
         assertEquals(result.get(i1), null);
-        assertEquals(result.get(i2), "cid1");
+        assertEquals(result.get(i2), "uid1");
 
     }
 
