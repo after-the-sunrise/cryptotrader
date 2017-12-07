@@ -136,13 +136,24 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         BigDecimal remainingUnits = total.divide(lotSize, 0, DOWN);
 
+        BigDecimal averageUnits = remainingUnits.divide(splits, 0, DOWN).max(ONE);
+
+        int points = Math.max(averageUnits.precision() - 2, 0);
+
+        BigDecimal adjustedUnits = averageUnits
+                .movePointLeft(points)
+                .setScale(INTEGER_ZERO, DOWN)
+                .movePointRight(points);
+
         List<BigDecimal> results = new ArrayList<>(splits.intValue());
 
         for (int i = 0; i < splits.intValue(); i++) {
 
-            int power = (int) Math.log(remainingUnits.doubleValue());
+            if (remainingUnits.signum() == 0) {
+                break;
+            }
 
-            if (power == 0 || i + 1 == splits.intValue()) {
+            if (i + 1 == splits.intValue() || adjustedUnits.signum() == 0) {
 
                 results.add(remainingUnits.multiply(lotSize));
 
@@ -150,15 +161,9 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
             }
 
-            BigDecimal currentUnits = BigDecimal.valueOf((int) Math.exp(power));
+            results.add(adjustedUnits.multiply(lotSize));
 
-            int p = Math.max(currentUnits.precision() - 2, 0);
-
-            BigDecimal adjusted = currentUnits.movePointLeft(p).setScale(INTEGER_ZERO, DOWN).movePointRight(p);
-
-            results.add(adjusted.multiply(lotSize));
-
-            remainingUnits = remainingUnits.subtract(adjusted);
+            remainingUnits = remainingUnits.subtract(adjustedUnits);
 
         }
 
