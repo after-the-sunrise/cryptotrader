@@ -114,22 +114,28 @@ public class TemplateAdviserTest {
         Advice result = target.advise(context, request, estimation);
         assertEquals(result.getBuyLimitPrice(), bPrice);
         assertEquals(result.getBuyLimitSize(), bSize);
+        assertEquals(result.getBuySpread(), bBasis);
         assertEquals(result.getSellLimitPrice(), sPrice);
         assertEquals(result.getSellLimitSize(), sSize);
+        assertEquals(result.getSellSpread(), sBasis);
 
         // Invalid Request
         result = target.advise(context, Request.builder().build(), estimation);
         assertEquals(result.getBuyLimitPrice(), null);
         assertEquals(result.getBuyLimitSize().signum(), 0);
+        assertEquals(result.getBuySpread(), null);
         assertEquals(result.getSellLimitPrice(), null);
         assertEquals(result.getSellLimitSize().signum(), 0);
+        assertEquals(result.getSellSpread(), null);
 
         // Invalid Estimation
         result = target.advise(context, request, Estimation.builder().build());
         assertEquals(result.getBuyLimitPrice(), null);
         assertEquals(result.getBuyLimitSize().signum(), 0);
+        assertEquals(result.getBuySpread(), bBasis);
         assertEquals(result.getSellLimitPrice(), null);
         assertEquals(result.getSellLimitSize().signum(), 0);
+        assertEquals(result.getSellSpread(), sBasis);
 
     }
 

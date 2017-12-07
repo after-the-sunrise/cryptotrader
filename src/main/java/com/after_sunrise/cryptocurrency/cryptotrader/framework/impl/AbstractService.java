@@ -102,6 +102,18 @@ public abstract class AbstractService implements Service {
 
     }
 
+    protected <V> V trim(V first, V second) {
+        return first != null ? first : second;
+    }
+
+    protected BigDecimal trimToZero(BigDecimal value) {
+        return trim(value, ZERO);
+    }
+
+    protected <T> List<T> trimToEmpty(List<T> values) {
+        return trim(values, Collections.<T>emptyList());
+    }
+
     @VisibleForTesting
     public BigDecimal calculateComposite(Map<String, Set<String>> products, BiFunction<String, String, BigDecimal> f) {
 

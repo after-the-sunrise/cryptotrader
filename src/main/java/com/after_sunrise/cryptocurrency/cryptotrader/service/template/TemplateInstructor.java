@@ -16,10 +16,8 @@ import java.util.*;
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.valueOf;
-import static java.math.RoundingMode.DOWN;
-import static java.math.RoundingMode.UP;
+import static java.math.RoundingMode.*;
 import static java.util.Collections.emptyList;
-import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
@@ -29,8 +27,6 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
  * @version 0.0.1
  */
 public class TemplateInstructor extends AbstractService implements Instructor {
-
-    private static final List<Order> EMPTY = emptyList();
 
     private final String id;
 
@@ -61,7 +57,7 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         Key key = Key.from(request);
 
-        List<Order> orders = ofNullable(context.listActiveOrders(key)).orElse(EMPTY);
+        List<Order> orders = trimToEmpty(context.listActiveOrders(key));
 
         Map<CancelInstruction, Order> cancels = new IdentityHashMap<>();
 
@@ -82,7 +78,9 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         List<BigDecimal> s = splitSize(context, request, adv.getBuyLimitSize());
 
-        List<BigDecimal> p = splitPrice(context, request, adv.getBuyLimitPrice(), s.size(), EPSILON.negate());
+        BigDecimal spread = trimToZero(adv.getBuySpread()).max(EPSILON).negate();
+
+        List<BigDecimal> p = splitPrice(context, request, adv.getBuyLimitPrice(), s.size(), spread);
 
         List<CreateInstruction> instructions = new ArrayList<>(s.size());
 
@@ -101,7 +99,9 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         List<BigDecimal> s = splitSize(context, request, adv.getSellLimitSize());
 
-        List<BigDecimal> p = splitPrice(context, request, adv.getSellLimitPrice(), s.size(), EPSILON);
+        BigDecimal spread = trimToZero(adv.getSellSpread()).max(EPSILON);
+
+        List<BigDecimal> p = splitPrice(context, request, adv.getSellLimitPrice(), s.size(), spread);
 
         List<CreateInstruction> instructions = new ArrayList<>(s.size());
 
@@ -130,9 +130,9 @@ public class TemplateInstructor extends AbstractService implements Instructor {
             return emptyList();
         }
 
-        BigDecimal splits = valueOf(ofNullable(request.getTradingSplit()).orElse(INTEGER_ONE)).max(ONE);
+        BigDecimal splits = valueOf(trim(request.getTradingSplit(), INTEGER_ONE)).max(ONE);
 
-        BigDecimal lotSize = Optional.ofNullable(context.roundLotSize(key, EPSILON, UP)).orElse(total);
+        BigDecimal lotSize = trim(context.roundLotSize(key, EPSILON, UP), total);
 
         BigDecimal remainingUnits = total.divide(lotSize, 0, DOWN);
 
@@ -171,23 +171,25 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
     }
 
-    private List<BigDecimal> splitPrice(Context context, Request request, BigDecimal value, int size, BigDecimal delta) {
+    private List<BigDecimal> splitPrice(Context c, Request r, BigDecimal base, int splits, BigDecimal basis) {
 
-        Key key = Key.from(request);
+        Key key = Key.from(r);
 
-        List<BigDecimal> values = new ArrayList<>(size);
+        List<BigDecimal> values = new ArrayList<>(splits);
 
-        RoundingMode mode = delta.signum() >= 0 ? UP : DOWN;
+        BigDecimal delta = base.multiply(basis.divide(valueOf(splits - 1).max(ONE), SCALE, HALF_UP));
 
-        values.add(context.roundTickSize(key, value, mode));
+        RoundingMode mode = basis.signum() >= 0 ? UP : DOWN;
 
-        for (int i = 1; i < size; i++) {
+        values.add(c.roundTickSize(key, base, mode));
+
+        for (int i = 1; i < splits; i++) {
 
             BigDecimal previous = values.get(i - 1);
 
             BigDecimal adjusted = previous == null ? null : previous.add(delta);
 
-            BigDecimal rounded = context.roundTickSize(key, adjusted, mode);
+            BigDecimal rounded = c.roundTickSize(key, adjusted, mode);
 
             values.add(rounded == null ? previous : rounded);
 

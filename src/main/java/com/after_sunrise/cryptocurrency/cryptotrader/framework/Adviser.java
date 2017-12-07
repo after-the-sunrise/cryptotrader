@@ -26,9 +26,13 @@ public interface Adviser extends Service {
 
         private final BigDecimal buyLimitSize;
 
+        private final BigDecimal buySpread;
+
         private final BigDecimal sellLimitPrice;
 
         private final BigDecimal sellLimitSize;
+
+        private final BigDecimal sellSpread;
 
     }
 

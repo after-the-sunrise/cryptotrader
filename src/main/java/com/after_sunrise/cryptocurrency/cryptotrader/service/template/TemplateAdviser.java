@@ -61,8 +61,8 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal sSize = calculateSellLimitSize(context, request, sPrice);
 
-        Advice advice = Advice.builder().buyLimitPrice(bPrice).buyLimitSize(bSize) //
-                .sellLimitPrice(sPrice).sellLimitSize(sSize).build();
+        Advice advice = Advice.builder().buyLimitPrice(bPrice).buyLimitSize(bSize).buySpread(bBasis) //
+                .sellLimitPrice(sPrice).sellLimitSize(sSize).sellSpread(sBasis).build();
 
         log.trace("Advice : {} - {}", advice, request);
 
