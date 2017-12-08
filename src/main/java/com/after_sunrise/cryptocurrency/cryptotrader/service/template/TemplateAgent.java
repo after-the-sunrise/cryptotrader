@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -104,6 +105,8 @@ public class TemplateAgent extends AbstractService implements Agent {
 
         Map<Instruction, Boolean> results = new IdentityHashMap<>();
 
+        AtomicLong retry = new AtomicLong(RETRY);
+
         instructions.entrySet().stream()
                 .filter(entry -> Objects.nonNull(entry.getKey()))
                 .filter(entry -> Objects.nonNull(entry.getValue()))
@@ -114,12 +117,12 @@ public class TemplateAgent extends AbstractService implements Agent {
                     Boolean matched = instruction.accept(new Visitor<Boolean>() {
                         @Override
                         public Boolean visit(CreateInstruction instruction) {
-                            return checkCreated(context, key, entry.getValue(), RETRY, INTERVAL);
+                            return checkCreated(context, key, entry.getValue(), retry, INTERVAL);
                         }
 
                         @Override
                         public Boolean visit(CancelInstruction instruction) {
-                            return checkCancelled(context, key, entry.getValue(), RETRY, INTERVAL);
+                            return checkCancelled(context, key, entry.getValue(), retry, INTERVAL);
                         }
                     });
 
@@ -134,11 +137,11 @@ public class TemplateAgent extends AbstractService implements Agent {
     }
 
     @VisibleForTesting
-    Boolean checkCreated(Context context, Key key, String id, long retry, Duration interval) {
+    Boolean checkCreated(Context context, Key key, String id, AtomicLong retry, Duration interval) {
 
         Key.KeyBuilder builder = Key.build(key);
 
-        for (long i = 0; i <= retry; i++) {
+        while (true) {
 
             Key current = builder.build();
 
@@ -158,6 +161,10 @@ public class TemplateAgent extends AbstractService implements Agent {
 
                 return TRUE;
 
+            }
+
+            if (retry.decrementAndGet() < 0) {
+                break;
             }
 
             try {
@@ -183,11 +190,11 @@ public class TemplateAgent extends AbstractService implements Agent {
     }
 
     @VisibleForTesting
-    Boolean checkCancelled(Context context, Key key, String id, long retry, Duration interval) {
+    Boolean checkCancelled(Context context, Key key, String id, AtomicLong retry, Duration interval) {
 
         Key.KeyBuilder builder = Key.build(key);
 
-        for (long i = 0; i <= retry; i++) {
+        while (true) {
 
             Key current = builder.build();
 
@@ -207,6 +214,10 @@ public class TemplateAgent extends AbstractService implements Agent {
 
                 return TRUE;
 
+            }
+
+            if (retry.decrementAndGet() < 0) {
+                break;
             }
 
             try {

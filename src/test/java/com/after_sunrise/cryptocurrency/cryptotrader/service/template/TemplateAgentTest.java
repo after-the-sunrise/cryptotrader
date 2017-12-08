@@ -20,6 +20,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -112,14 +113,14 @@ public class TemplateAgentTest {
         values.put(null, "i3");
         values.put(CancelInstruction.builder().build(), null);
         Request request = Request.builder().build();
-        doReturn(TRUE).when(target).checkCreated(same(context), any(), eq("i1"), anyLong(), any());
-        doReturn(TRUE).when(target).checkCancelled(same(context), any(), eq("i2"), anyLong(), any());
+        doReturn(TRUE).when(target).checkCreated(same(context), any(), eq("i1"), any(), any());
+        doReturn(TRUE).when(target).checkCancelled(same(context), any(), eq("i2"), any(), any());
 
         Map<Instruction, Boolean> results = target.reconcile(context, request, values);
         assertEquals(results.size(), 2);
         results.values().forEach(Assert::assertTrue);
-        verify(target).checkCreated(same(context), any(), eq("i1"), anyLong(), any());
-        verify(target).checkCancelled(same(context), any(), eq("i2"), anyLong(), any());
+        verify(target).checkCreated(same(context), any(), eq("i1"), any(), any());
+        verify(target).checkCancelled(same(context), any(), eq("i2"), any(), any());
 
         // No input
         assertEquals(target.reconcile(context, request, null).size(), 0);
@@ -132,23 +133,22 @@ public class TemplateAgentTest {
         Key key = Key.builder().timestamp(Instant.ofEpochMilli(1000)).build();
         String id = "id";
         Duration interval = Duration.ofMillis(1L);
-        long retry = 10;
 
         // Not found
         when(context.findOrder(any(), eq(id))).thenReturn(null);
-        assertFalse(target.checkCreated(context, key, id, retry, interval));
+        assertFalse(target.checkCreated(context, key, id, new AtomicLong(10), interval));
 
         // Interrupted
         Thread.currentThread().interrupt();
-        assertFalse(target.checkCreated(context, key, id, retry, interval));
+        assertFalse(target.checkCreated(context, key, id, new AtomicLong(10), interval));
 
         // Terminated
         when(context.getState(any())).thenReturn(StateType.TERMINATE, null, null);
-        assertFalse(target.checkCreated(context, key, id, retry, interval));
+        assertFalse(target.checkCreated(context, key, id, new AtomicLong(10), interval));
 
         // Found
         when(context.findOrder(any(), eq(id))).thenReturn(null, null, mock(Order.class), null);
-        assertTrue(target.checkCreated(context, key, id, retry, interval));
+        assertTrue(target.checkCreated(context, key, id, new AtomicLong(10), interval));
 
     }
 
@@ -158,30 +158,29 @@ public class TemplateAgentTest {
         Key key = Key.builder().timestamp(Instant.ofEpochMilli(1000)).build();
         String id = "id";
         Duration interval = Duration.ofMillis(1L);
-        long retry = 10;
 
         // Found but Active
         Order order = mock(Order.class);
         when(order.getActive()).thenReturn(TRUE);
         when(context.findOrder(any(), eq(id))).thenReturn(order);
-        assertFalse(target.checkCancelled(context, key, id, retry, interval));
+        assertFalse(target.checkCancelled(context, key, id, new AtomicLong(10), interval));
 
         // Interrupted
         Thread.currentThread().interrupt();
-        assertFalse(target.checkCancelled(context, key, id, retry, interval));
+        assertFalse(target.checkCancelled(context, key, id, new AtomicLong(10), interval));
 
         // Terminated
         when(context.getState(any())).thenReturn(StateType.TERMINATE, null, null);
-        assertFalse(target.checkCancelled(context, key, id, retry, interval));
+        assertFalse(target.checkCancelled(context, key, id, new AtomicLong(10), interval));
 
         // Found and inactive
         when(order.getActive()).thenReturn(FALSE);
         when(context.findOrder(any(), eq(id))).thenReturn(order);
-        assertTrue(target.checkCancelled(context, key, id, retry, interval));
+        assertTrue(target.checkCancelled(context, key, id, new AtomicLong(10), interval));
 
         // Not found
         when(context.findOrder(any(), eq(id))).thenReturn(null);
-        assertTrue(target.checkCancelled(context, key, id, retry, interval));
+        assertTrue(target.checkCancelled(context, key, id, new AtomicLong(10), interval));
 
     }
 
