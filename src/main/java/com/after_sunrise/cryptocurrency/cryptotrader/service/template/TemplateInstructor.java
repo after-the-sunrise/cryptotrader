@@ -145,6 +145,10 @@ public class TemplateInstructor extends AbstractService implements Instructor {
                 .setScale(INTEGER_ZERO, DOWN)
                 .movePointRight(points);
 
+        BigDecimal minimumQuantity = trimToZero(request.getTradingMinimum());
+
+        BigDecimal minimumUnits = minimumQuantity.divide(lotSize, 0, UP);
+
         List<BigDecimal> results = new ArrayList<>(splits.intValue());
 
         for (int i = 0; i < splits.intValue(); i++) {
@@ -161,9 +165,19 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
             }
 
-            results.add(adjustedUnits.multiply(lotSize));
+            if (remainingUnits.subtract(minimumUnits).subtract(minimumUnits).signum() < 0) {
 
-            remainingUnits = remainingUnits.subtract(adjustedUnits);
+                results.add(remainingUnits.multiply(lotSize));
+
+                break;
+
+            }
+
+            BigDecimal currentUnits = adjustedUnits.max(minimumUnits).min(remainingUnits);
+
+            results.add(currentUnits.multiply(lotSize));
+
+            remainingUnits = remainingUnits.subtract(currentUnits);
 
         }
 

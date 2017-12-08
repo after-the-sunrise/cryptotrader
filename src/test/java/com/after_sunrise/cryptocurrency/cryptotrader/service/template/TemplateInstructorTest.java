@@ -290,6 +290,21 @@ public class TemplateInstructorTest {
         assertEquals(results.get(2), new BigDecimal("135.0")); // 452 -> 450 lots
         assertEquals(results.get(3), new BigDecimal("138.0")); // 460 lots
 
+        // With minimum
+        // 1000+ lots (543.2 / 0.3 = 1810.66...)
+        request = builder.tradingMinimum(new BigDecimal("200")).build(); // 666.66.. lots
+        results = target.splitSize(context, request, new BigDecimal("543.2"));
+        assertEquals(results.size(), 2, results.toString());
+        assertEquals(results.get(0), new BigDecimal("200.1")); // 667 lots
+        assertEquals(results.get(1), new BigDecimal("342.9")); // 667 + 476 = 1143 lots
+
+        // With minimum
+        // 1000+ lots (543.2 / 0.3 = 1810.66...)
+        request = builder.tradingMinimum(new BigDecimal("2000")).build(); // 666.66.. lots
+        results = target.splitSize(context, request, new BigDecimal("543.2"));
+        assertEquals(results.size(), 1, results.toString());
+        assertEquals(results.get(0), new BigDecimal("543.0")); // 1810 lots
+
     }
 
     @Test
