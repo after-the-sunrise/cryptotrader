@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.stream.IntStream;
 
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
@@ -85,7 +86,13 @@ public class TemplateInstructor extends AbstractService implements Instructor {
         List<CreateInstruction> instructions = new ArrayList<>(s.size());
 
         for (int i = 0; i < s.size(); i++) {
-            instructions.add(CreateInstruction.builder().price(p.get(i)).size(s.get(i)).build());
+
+            BigDecimal price = p.get(i);
+
+            BigDecimal size = s.get(i);
+
+            instructions.add(CreateInstruction.builder().price(price).size(size).build());
+
         }
 
         instructions.forEach((v) -> log.trace("Buy candidate : {}", v));
@@ -107,9 +114,11 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         for (int i = 0; i < s.size(); i++) {
 
+            BigDecimal price = p.get(i);
+
             BigDecimal size = s.get(i) == null ? null : s.get(i).negate();
 
-            instructions.add(CreateInstruction.builder().price(p.get(i)).size(size).build());
+            instructions.add(CreateInstruction.builder().price(price).size(size).build());
 
         }
 
@@ -187,13 +196,19 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
     private List<BigDecimal> splitPrice(Context c, Request r, BigDecimal base, int splits, BigDecimal basis) {
 
+        if (base == null) {
+            return IntStream.range(0, splits).mapToObj(i -> (BigDecimal) null).collect(toList());
+        }
+
         Key key = Key.from(r);
 
         List<BigDecimal> values = new ArrayList<>(splits);
 
-        BigDecimal delta = base.multiply(basis.divide(valueOf(splits - 1).max(ONE), SCALE, HALF_UP));
+        BigDecimal deltaBasis = trimToZero(basis).divide(valueOf(splits - 1).max(ONE), SCALE, HALF_UP);
 
-        RoundingMode mode = basis.signum() >= 0 ? UP : DOWN;
+        BigDecimal deltaAmount = base.multiply(deltaBasis);
+
+        RoundingMode mode = trimToZero(basis).signum() >= 0 ? UP : DOWN;
 
         values.add(c.roundTickSize(key, base, mode));
 
@@ -201,7 +216,7 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
             BigDecimal previous = values.get(i - 1);
 
-            BigDecimal adjusted = previous == null ? null : previous.add(delta);
+            BigDecimal adjusted = previous == null ? null : previous.add(deltaAmount);
 
             BigDecimal rounded = c.roundTickSize(key, adjusted, mode);
 

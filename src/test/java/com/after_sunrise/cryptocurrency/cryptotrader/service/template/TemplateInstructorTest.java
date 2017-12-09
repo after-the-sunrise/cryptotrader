@@ -155,6 +155,16 @@ public class TemplateInstructorTest {
         assertEquals(results.get(1).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("0.3"));
 
+        // Null Price
+        results = target.createBuys(context, request, builder.buyLimitPrice(null).build());
+        assertEquals(results.size(), 3, results.toString());
+        assertEquals(results.get(0).getPrice(), null);
+        assertEquals(results.get(1).getPrice(), null);
+        assertEquals(results.get(2).getPrice(), null);
+        assertEquals(results.get(0).getSize(), new BigDecimal("0.3"));
+        assertEquals(results.get(1).getSize(), new BigDecimal("0.3"));
+        assertEquals(results.get(2).getSize(), new BigDecimal("0.3"));
+
         // Too small
         results = target.createBuys(context, request, builder.buyLimitSize(ONE.movePointLeft(1)).build());
         assertEquals(results.size(), 0);
@@ -201,6 +211,16 @@ public class TemplateInstructorTest {
         assertEquals(results.get(0).getPrice(), new BigDecimal("1.002"));
         assertEquals(results.get(1).getPrice(), new BigDecimal("1.032"));
         assertEquals(results.get(2).getPrice(), new BigDecimal("1.062"));
+        assertEquals(results.get(0).getSize(), new BigDecimal("-0.3"));
+        assertEquals(results.get(1).getSize(), new BigDecimal("-0.3"));
+        assertEquals(results.get(2).getSize(), new BigDecimal("-0.3"));
+
+        // Null Price
+        results = target.createSells(context, request, builder.sellLimitPrice(null).build());
+        assertEquals(results.size(), 3, results.toString());
+        assertEquals(results.get(0).getPrice(), null);
+        assertEquals(results.get(1).getPrice(), null);
+        assertEquals(results.get(2).getPrice(), null);
         assertEquals(results.get(0).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(1).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("-0.3"));
@@ -308,7 +328,7 @@ public class TemplateInstructorTest {
     }
 
     @Test
-    public void testMerge() throws Exception {
+    public void testMerge() {
 
         CreateInstruction new1 = CreateInstruction.builder().price(valueOf(11)).size(valueOf(21)).build();
         CreateInstruction new2 = CreateInstruction.builder().price(valueOf(12)).size(valueOf(22)).build();
