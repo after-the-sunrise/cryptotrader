@@ -216,7 +216,15 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
             BigDecimal previous = values.get(i - 1);
 
-            BigDecimal adjusted = previous == null ? null : previous.add(deltaAmount);
+            BigDecimal adjusted = null;
+
+            if (previous != null) {
+
+                BigDecimal delta = deltaAmount.multiply(valueOf(i));
+
+                adjusted = previous.add(delta);
+
+            }
 
             BigDecimal rounded = c.roundTickSize(key, adjusted, mode);
 

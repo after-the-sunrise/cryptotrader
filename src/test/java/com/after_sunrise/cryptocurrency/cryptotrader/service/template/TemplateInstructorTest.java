@@ -134,10 +134,10 @@ public class TemplateInstructorTest {
         assertEquals(results.size(), 5, results.toString());
 
         assertEquals(results.get(0).getPrice(), new BigDecimal("0.999"));
-        assertEquals(results.get(1).getPrice(), new BigDecimal("0.984")); // 0.999 - 0.014985 = 0.984015
-        assertEquals(results.get(2).getPrice(), new BigDecimal("0.969")); // 0.984 - 0.014985 = 0.969015
-        assertEquals(results.get(3).getPrice(), new BigDecimal("0.954")); // 0.969 - 0.014985 = 0.954015
-        assertEquals(results.get(4).getPrice(), new BigDecimal("0.939")); // 0.954 - 0.014985 = 0.939015
+        assertEquals(results.get(1).getPrice(), new BigDecimal("0.984"));
+        assertEquals(results.get(2).getPrice(), new BigDecimal("0.954"));
+        assertEquals(results.get(3).getPrice(), new BigDecimal("0.909"));
+        assertEquals(results.get(4).getPrice(), new BigDecimal("0.849"));
 
         assertEquals(results.get(0).getSize(), new BigDecimal("1.8"));
         assertEquals(results.get(1).getSize(), new BigDecimal("1.8"));
@@ -150,7 +150,7 @@ public class TemplateInstructorTest {
         assertEquals(results.size(), 3, results.toString());
         assertEquals(results.get(0).getPrice(), new BigDecimal("0.999"));
         assertEquals(results.get(1).getPrice(), new BigDecimal("0.969"));
-        assertEquals(results.get(2).getPrice(), new BigDecimal("0.939"));
+        assertEquals(results.get(2).getPrice(), new BigDecimal("0.909"));
         assertEquals(results.get(0).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(1).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("0.3"));
@@ -194,10 +194,10 @@ public class TemplateInstructorTest {
         assertEquals(results.size(), 5, results.toString());
 
         assertEquals(results.get(0).getPrice(), new BigDecimal("1.002"));
-        assertEquals(results.get(1).getPrice(), new BigDecimal("1.017")); // 1.002 + 0.01503 = 1.01703
-        assertEquals(results.get(2).getPrice(), new BigDecimal("1.032")); // 1.017 + 0.01503 = 1.03203
-        assertEquals(results.get(3).getPrice(), new BigDecimal("1.047")); // 1.032 + 0.01503 = 1.04703
-        assertEquals(results.get(4).getPrice(), new BigDecimal("1.062")); // 1.047 + 0.01503 = 1.06203
+        assertEquals(results.get(1).getPrice(), new BigDecimal("1.017"));
+        assertEquals(results.get(2).getPrice(), new BigDecimal("1.047"));
+        assertEquals(results.get(3).getPrice(), new BigDecimal("1.092"));
+        assertEquals(results.get(4).getPrice(), new BigDecimal("1.152"));
 
         assertEquals(results.get(0).getSize(), new BigDecimal("-1.8"));
         assertEquals(results.get(1).getSize(), new BigDecimal("-1.8"));
@@ -210,7 +210,7 @@ public class TemplateInstructorTest {
         assertEquals(results.size(), 3, results.toString());
         assertEquals(results.get(0).getPrice(), new BigDecimal("1.002"));
         assertEquals(results.get(1).getPrice(), new BigDecimal("1.032"));
-        assertEquals(results.get(2).getPrice(), new BigDecimal("1.062"));
+        assertEquals(results.get(2).getPrice(), new BigDecimal("1.092"));
         assertEquals(results.get(0).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(1).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("-0.3"));
