@@ -3,6 +3,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.StateType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.entity.OrderList;
+import com.after_sunrise.cryptocurrency.bitflyer4j.entity.ParentList;
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -18,127 +19,196 @@ import static org.testng.Assert.*;
  */
 public class BitflyerOrderTest {
 
-    private BitflyerOrder target;
+    private BitflyerOrder.Child child;
 
-    private OrderList delegate;
+    private OrderList dChild;
+
+    private BitflyerOrder.Parent parent;
+
+    private ParentList dParent;
 
     @BeforeMethod
     public void setUp() throws Exception {
 
-        delegate = Mockito.mock(OrderList.class);
+        dChild = Mockito.mock(OrderList.class);
+        child = spy(new BitflyerOrder.Child(dChild));
 
-        target = spy(new BitflyerOrder(delegate));
-
-    }
-
-    @Test
-    public void testToString() throws Exception {
-        assertNotNull(target.toString());
-    }
-
-    @Test
-    public void testGetId() throws Exception {
-
-        assertNull(target.getId());
-
-        when(delegate.getAcceptanceId()).thenReturn("test");
-
-        assertEquals(target.getId(), "test");
+        dParent = Mockito.mock(ParentList.class);
+        parent = spy(new BitflyerOrder.Parent(dParent));
 
     }
 
     @Test
-    public void testGetProduct() throws Exception {
+    public void testToString() {
 
-        assertNull(target.getProduct());
+        assertNotNull(child.toString());
 
-        when(delegate.getProduct()).thenReturn("test");
-
-        assertEquals(target.getProduct(), "test");
+        assertNotNull(parent.toString());
 
     }
 
     @Test
-    public void testGetActive() throws Exception {
+    public void testGetId() {
 
-        when(delegate.getState()).thenReturn(null);
-        assertFalse(target.getActive());
+        assertNull(child.getId());
+        when(dChild.getAcceptanceId()).thenReturn("test");
+        assertEquals(child.getId(), "test");
 
-        when(delegate.getState()).thenReturn(StateType.EXPIRED);
-        assertFalse(target.getActive());
-
-        when(delegate.getState()).thenReturn(StateType.ACTIVE);
-        assertTrue(target.getActive());
-
-    }
-
-    @Test
-    public void testGetOrderPrice() throws Exception {
-
-        assertNull(target.getOrderPrice());
-
-        when(delegate.getPrice()).thenReturn(TEN);
-
-        assertEquals(target.getOrderPrice(), TEN);
+        assertNull(parent.getId());
+        when(dParent.getAcceptanceId()).thenReturn("test");
+        assertEquals(parent.getId(), "test");
 
     }
 
     @Test
-    public void testGetOrderQuantity() throws Exception {
+    public void testGetProduct() {
 
-        doReturn(ONE).when(target).getFilledQuantity();
-        doReturn(TEN).when(target).getRemainingQuantity();
-        assertEquals(target.getOrderQuantity(), TEN.add(ONE));
+        assertNull(child.getProduct());
+        when(dChild.getProduct()).thenReturn("test");
+        assertEquals(child.getProduct(), "test");
 
-        doReturn(ONE).when(target).getFilledQuantity();
-        doReturn(null).when(target).getRemainingQuantity();
-        assertNull(target.getOrderQuantity());
-
-        doReturn(null).when(target).getFilledQuantity();
-        doReturn(TEN).when(target).getRemainingQuantity();
-        assertNull(target.getOrderQuantity());
+        assertNull(parent.getProduct());
+        when(dParent.getProduct()).thenReturn("test");
+        assertEquals(parent.getProduct(), "test");
 
     }
 
     @Test
-    public void testGetFilledQuantity() throws Exception {
+    public void testGetActive() {
 
-        when(delegate.getExecutedSize()).thenReturn(ONE);
-        when(delegate.getSide()).thenReturn(SideType.BUY);
-        assertEquals(target.getFilledQuantity(), ONE);
+        when(dChild.getState()).thenReturn(null);
+        assertFalse(child.getActive());
 
-        when(delegate.getExecutedSize()).thenReturn(ONE);
-        when(delegate.getSide()).thenReturn(SideType.SELL);
-        assertEquals(target.getFilledQuantity(), ONE.negate());
+        when(dChild.getState()).thenReturn(StateType.EXPIRED);
+        assertFalse(child.getActive());
 
-        when(delegate.getExecutedSize()).thenReturn(null);
-        when(delegate.getSide()).thenReturn(SideType.BUY);
-        assertNull(target.getFilledQuantity());
+        when(dChild.getState()).thenReturn(StateType.ACTIVE);
+        assertTrue(child.getActive());
 
-        when(delegate.getExecutedSize()).thenReturn(ONE);
-        when(delegate.getSide()).thenReturn(null);
-        assertNull(target.getFilledQuantity());
+        when(dParent.getState()).thenReturn(null);
+        assertFalse(parent.getActive());
+
+        when(dParent.getState()).thenReturn(StateType.EXPIRED);
+        assertFalse(parent.getActive());
+
+        when(dParent.getState()).thenReturn(StateType.ACTIVE);
+        assertTrue(parent.getActive());
 
     }
 
     @Test
-    public void testGetRemainingQuantity() throws Exception {
+    public void testGetOrderPrice() {
 
-        when(delegate.getOutstandingSize()).thenReturn(ONE);
-        when(delegate.getSide()).thenReturn(SideType.BUY);
-        assertEquals(target.getRemainingQuantity(), ONE);
+        assertNull(child.getOrderPrice());
+        when(dChild.getPrice()).thenReturn(TEN);
+        assertEquals(child.getOrderPrice(), TEN);
 
-        when(delegate.getOutstandingSize()).thenReturn(ONE);
-        when(delegate.getSide()).thenReturn(SideType.SELL);
-        assertEquals(target.getRemainingQuantity(), ONE.negate());
+        assertNull(parent.getOrderPrice());
+        when(dParent.getPrice()).thenReturn(TEN);
+        assertEquals(parent.getOrderPrice(), TEN);
 
-        when(delegate.getOutstandingSize()).thenReturn(null);
-        when(delegate.getSide()).thenReturn(SideType.BUY);
-        assertNull(target.getRemainingQuantity());
+    }
 
-        when(delegate.getOutstandingSize()).thenReturn(ONE);
-        when(delegate.getSide()).thenReturn(null);
-        assertNull(target.getRemainingQuantity());
+    @Test
+    public void testGetOrderQuantity() {
+
+        doReturn(ONE).when(child).getFilledQuantity();
+        doReturn(TEN).when(child).getRemainingQuantity();
+        assertEquals(child.getOrderQuantity(), TEN.add(ONE));
+
+        doReturn(ONE).when(child).getFilledQuantity();
+        doReturn(null).when(child).getRemainingQuantity();
+        assertNull(child.getOrderQuantity());
+
+        doReturn(null).when(child).getFilledQuantity();
+        doReturn(TEN).when(child).getRemainingQuantity();
+        assertNull(child.getOrderQuantity());
+
+        doReturn(ONE).when(parent).getFilledQuantity();
+        doReturn(TEN).when(parent).getRemainingQuantity();
+        assertEquals(parent.getOrderQuantity(), TEN.add(ONE));
+
+        doReturn(ONE).when(parent).getFilledQuantity();
+        doReturn(null).when(parent).getRemainingQuantity();
+        assertNull(parent.getOrderQuantity());
+
+        doReturn(null).when(parent).getFilledQuantity();
+        doReturn(TEN).when(parent).getRemainingQuantity();
+        assertNull(parent.getOrderQuantity());
+
+    }
+
+    @Test
+    public void testGetFilledQuantity() {
+
+        when(dChild.getExecutedSize()).thenReturn(ONE);
+        when(dChild.getSide()).thenReturn(SideType.BUY);
+        assertEquals(child.getFilledQuantity(), ONE);
+
+        when(dChild.getExecutedSize()).thenReturn(ONE);
+        when(dChild.getSide()).thenReturn(SideType.SELL);
+        assertEquals(child.getFilledQuantity(), ONE.negate());
+
+        when(dChild.getExecutedSize()).thenReturn(null);
+        when(dChild.getSide()).thenReturn(SideType.BUY);
+        assertNull(child.getFilledQuantity());
+
+        when(dChild.getExecutedSize()).thenReturn(ONE);
+        when(dChild.getSide()).thenReturn(null);
+        assertNull(child.getFilledQuantity());
+
+        when(dParent.getExecutedSize()).thenReturn(ONE);
+        when(dParent.getSide()).thenReturn(SideType.BUY);
+        assertEquals(parent.getFilledQuantity(), ONE);
+
+        when(dParent.getExecutedSize()).thenReturn(ONE);
+        when(dParent.getSide()).thenReturn(SideType.SELL);
+        assertEquals(parent.getFilledQuantity(), ONE.negate());
+
+        when(dParent.getExecutedSize()).thenReturn(null);
+        when(dParent.getSide()).thenReturn(SideType.BUY);
+        assertNull(parent.getFilledQuantity());
+
+        when(dParent.getExecutedSize()).thenReturn(ONE);
+        when(dParent.getSide()).thenReturn(null);
+        assertNull(parent.getFilledQuantity());
+
+    }
+
+    @Test
+    public void testGetRemainingQuantity() {
+
+        when(dChild.getOutstandingSize()).thenReturn(ONE);
+        when(dChild.getSide()).thenReturn(SideType.BUY);
+        assertEquals(child.getRemainingQuantity(), ONE);
+
+        when(dChild.getOutstandingSize()).thenReturn(ONE);
+        when(dChild.getSide()).thenReturn(SideType.SELL);
+        assertEquals(child.getRemainingQuantity(), ONE.negate());
+
+        when(dChild.getOutstandingSize()).thenReturn(null);
+        when(dChild.getSide()).thenReturn(SideType.BUY);
+        assertNull(child.getRemainingQuantity());
+
+        when(dChild.getOutstandingSize()).thenReturn(ONE);
+        when(dChild.getSide()).thenReturn(null);
+        assertNull(child.getRemainingQuantity());
+
+        when(dParent.getOutstandingSize()).thenReturn(ONE);
+        when(dParent.getSide()).thenReturn(SideType.BUY);
+        assertEquals(parent.getRemainingQuantity(), ONE);
+
+        when(dParent.getOutstandingSize()).thenReturn(ONE);
+        when(dParent.getSide()).thenReturn(SideType.SELL);
+        assertEquals(parent.getRemainingQuantity(), ONE.negate());
+
+        when(dParent.getOutstandingSize()).thenReturn(null);
+        when(dParent.getSide()).thenReturn(SideType.BUY);
+        assertNull(parent.getRemainingQuantity());
+
+        when(dParent.getOutstandingSize()).thenReturn(ONE);
+        when(dParent.getSide()).thenReturn(null);
+        assertNull(parent.getRemainingQuantity());
 
     }
 

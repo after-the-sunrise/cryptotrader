@@ -3,6 +3,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.StateType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.entity.OrderList;
+import com.after_sunrise.cryptocurrency.bitflyer4j.entity.ParentList;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import lombok.ToString;
 
@@ -12,37 +13,95 @@ import java.math.BigDecimal;
  * @author takanori.takase
  * @version 0.0.1
  */
-@ToString
-public class BitflyerOrder implements Order {
+public interface BitflyerOrder extends Order {
 
-    private final OrderList delegate;
+    @ToString
+    class Child implements BitflyerOrder {
 
-    public BitflyerOrder(OrderList delegate) {
-        this.delegate = delegate;
+        private final OrderList delegate;
+
+        public Child(OrderList delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public String getId() {
+            return delegate.getAcceptanceId();
+        }
+
+        @Override
+        public String getProduct() {
+            return delegate.getProduct();
+        }
+
+        @Override
+        public Boolean getActive() {
+            return delegate.getState() == StateType.ACTIVE;
+        }
+
+        @Override
+        public BigDecimal getOrderPrice() {
+            return delegate.getPrice();
+        }
+
+
+        @Override
+        public BigDecimal getFilledQuantity() {
+            return convertSize(delegate.getSide(), delegate.getExecutedSize());
+        }
+
+        @Override
+        public BigDecimal getRemainingQuantity() {
+            return convertSize(delegate.getSide(), delegate.getOutstandingSize());
+        }
+
     }
 
-    @Override
-    public String getId() {
-        return delegate.getAcceptanceId();
+    @ToString
+    class Parent implements BitflyerOrder {
+
+        private final ParentList delegate;
+
+        public Parent(ParentList delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public String getId() {
+            return delegate.getAcceptanceId();
+        }
+
+        @Override
+        public String getProduct() {
+            return delegate.getProduct();
+        }
+
+        @Override
+        public Boolean getActive() {
+            return delegate.getState() == StateType.ACTIVE;
+        }
+
+        @Override
+        public BigDecimal getOrderPrice() {
+            return delegate.getPrice();
+        }
+
+
+        @Override
+        public BigDecimal getFilledQuantity() {
+            return convertSize(delegate.getSide(), delegate.getExecutedSize());
+        }
+
+        @Override
+        public BigDecimal getRemainingQuantity() {
+            return convertSize(delegate.getSide(), delegate.getOutstandingSize());
+        }
+
     }
 
-    @Override
-    public String getProduct() {
-        return delegate.getProduct();
-    }
 
     @Override
-    public Boolean getActive() {
-        return delegate.getState() == StateType.ACTIVE;
-    }
-
-    @Override
-    public BigDecimal getOrderPrice() {
-        return delegate.getPrice();
-    }
-
-    @Override
-    public BigDecimal getOrderQuantity() {
+    default BigDecimal getOrderQuantity() {
 
         BigDecimal filled = getFilledQuantity();
 
@@ -60,41 +119,13 @@ public class BitflyerOrder implements Order {
 
     }
 
-    @Override
-    public BigDecimal getFilledQuantity() {
+    default BigDecimal convertSize(SideType side, BigDecimal size) {
 
-        BigDecimal value = delegate.getExecutedSize();
-
-        if (value == null) {
+        if (side == null || size == null) {
             return null;
         }
 
-        SideType side = delegate.getSide();
-
-        if (side == null) {
-            return null;
-        }
-
-        return side == SideType.BUY ? value : value.negate();
-
-    }
-
-    @Override
-    public BigDecimal getRemainingQuantity() {
-
-        BigDecimal value = delegate.getOutstandingSize();
-
-        if (value == null) {
-            return null;
-        }
-
-        SideType side = delegate.getSide();
-
-        if (side == null) {
-            return null;
-        }
-
-        return side == SideType.BUY ? value : value.negate();
+        return side == SideType.BUY ? size : size.negate();
 
     }
 

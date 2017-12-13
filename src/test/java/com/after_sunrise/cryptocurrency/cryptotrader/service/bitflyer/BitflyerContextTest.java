@@ -12,6 +12,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType;
+import com.google.common.collect.Sets;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -1016,34 +1017,45 @@ public class BitflyerContextTest {
         Key key = Key.from(Request.builder().instrument("inst").build());
         doReturn("prod").when(target).convertProductAlias(key);
 
-        OrderList r1 = mock(OrderList.class);
-        OrderList r2 = mock(OrderList.class);
-        when(r1.getPrice()).thenReturn(ONE);
-        when(r2.getPrice()).thenReturn(TEN);
+        OrderList c1 = mock(OrderList.class);
+        OrderList c2 = mock(OrderList.class);
+        when(c1.getPrice()).thenReturn(ONE);
+        when(c2.getPrice()).thenReturn(TEN);
         when(orderService.listOrders(any())).thenAnswer(i -> {
-
             assertEquals(i.getArgumentAt(0, OrderList.Request.class).getProduct(), "prod");
             assertNull(i.getArgumentAt(0, OrderList.Request.class).getState());
             assertNull(i.getArgumentAt(0, OrderList.Request.class).getAcceptanceId());
             assertNull(i.getArgumentAt(0, OrderList.Request.class).getOrderId());
             assertNull(i.getArgumentAt(0, OrderList.Request.class).getParentId());
+            return completedFuture(asList(c1, null, c2));
+        }).thenReturn(null);
 
-            return completedFuture(asList(r1, null, r2));
-
+        ParentList p1 = mock(ParentList.class);
+        ParentList p2 = mock(ParentList.class);
+        when(p1.getPrice()).thenReturn(ONE.add(ONE));
+        when(p2.getPrice()).thenReturn(TEN.add(TEN));
+        when(orderService.listParents(any())).thenAnswer(i -> {
+            assertEquals(i.getArgumentAt(0, ParentList.Request.class).getProduct(), "prod");
+            assertNull(i.getArgumentAt(0, ParentList.Request.class).getState());
+            return completedFuture(asList(p1, null, p2));
         }).thenReturn(null);
 
         // Queried
         List<? extends Order> orders = target.fetchOrder(key);
-        assertEquals(orders.size(), 2);
+        assertEquals(orders.size(), 4);
         assertEquals(orders.get(0).getOrderPrice(), ONE);
         assertEquals(orders.get(1).getOrderPrice(), TEN);
+        assertEquals(orders.get(2).getOrderPrice(), ONE.add(ONE));
+        assertEquals(orders.get(3).getOrderPrice(), TEN.add(TEN));
         verify(orderService).listOrders(any());
 
         // Cached
         orders = target.fetchOrder(key);
-        assertEquals(orders.size(), 2);
+        assertEquals(orders.size(), 4);
         assertEquals(orders.get(0).getOrderPrice(), ONE);
         assertEquals(orders.get(1).getOrderPrice(), TEN);
+        assertEquals(orders.get(2).getOrderPrice(), ONE.add(ONE));
+        assertEquals(orders.get(3).getOrderPrice(), TEN.add(TEN));
         verify(orderService).listOrders(any());
 
         target.clear();
@@ -1060,9 +1072,9 @@ public class BitflyerContextTest {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
 
-        Order o1 = mock(Order.class);
-        Order o2 = mock(Order.class);
-        Order o3 = mock(Order.class);
+        BitflyerOrder o1 = mock(BitflyerOrder.class);
+        BitflyerOrder o2 = mock(BitflyerOrder.class);
+        BitflyerOrder o3 = mock(BitflyerOrder.class);
         when(o2.getId()).thenReturn("id");
         doReturn(asList(o1, o2, o3)).when(target).fetchOrder(key);
 
@@ -1083,10 +1095,10 @@ public class BitflyerContextTest {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
 
-        Order o1 = mock(Order.class);
-        Order o2 = mock(Order.class);
-        Order o3 = mock(Order.class);
-        Order o4 = mock(Order.class);
+        BitflyerOrder o1 = mock(BitflyerOrder.class);
+        BitflyerOrder o2 = mock(BitflyerOrder.class);
+        BitflyerOrder o3 = mock(BitflyerOrder.class);
+        BitflyerOrder o4 = mock(BitflyerOrder.class);
         when(o2.getActive()).thenReturn(true);
         when(o3.getActive()).thenReturn(false);
         when(o4.getActive()).thenReturn(true);
@@ -1218,40 +1230,77 @@ public class BitflyerContextTest {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
         doReturn("prod").when(target).convertProductAlias(key);
-        CancelInstruction.CancelInstructionBuilder builder = CancelInstruction.builder().id("aid");
-        CompletableFuture<OrderCancel> future = completedFuture(mock(OrderCancel.class));
-        AtomicReference<OrderCancel.Request> reference = new AtomicReference<>();
+
+        CancelInstruction.CancelInstructionBuilder bc1 = CancelInstruction.builder().id("cid1");
+        CompletableFuture<OrderCancel> fc1 = completedFuture(mock(OrderCancel.class));
+        AtomicReference<OrderCancel.Request> rc1 = new AtomicReference<>();
+
+        CancelInstruction.CancelInstructionBuilder bc2 = CancelInstruction.builder().id("cid2");
+        CompletableFuture<OrderCancel> fc2 = completedFuture(mock(OrderCancel.class));
+        AtomicReference<OrderCancel.Request> rc2 = new AtomicReference<>();
+
+        CancelInstruction.CancelInstructionBuilder bp = CancelInstruction.builder().id("pid");
+        CompletableFuture<ParentCancel> fp = completedFuture(mock(ParentCancel.class));
+        AtomicReference<ParentCancel.Request> rp = new AtomicReference<>();
 
         when(orderService.cancelOrder(any())).thenAnswer(i -> {
 
-            reference.set(i.getArgumentAt(0, OrderCancel.Request.class));
+            OrderCancel.Request r = i.getArgumentAt(0, OrderCancel.Request.class);
 
-            return future;
+            if ("cid1".equals(r.getAcceptanceId())) {
+                rc1.set(r);
+                return fc1;
+            }
+
+            if ("cid2".equals(r.getAcceptanceId())) {
+                rc2.set(r);
+                return fc2;
+            }
+
+            return null;
 
         });
 
-        CancelInstruction instruction = builder.build();
-        Map<CancelInstruction, String> results = target.cancelOrders(key, singleton(instruction));
-        assertEquals(results.get(instruction), instruction.getId());
-        verify(orderService, times(1)).cancelOrder(any());
-        assertEquals(reference.get().getProduct(), "prod");
-        assertEquals(reference.get().getAcceptanceId(), "aid");
+        when(orderService.cancelParent(any())).thenAnswer(i -> {
+            rp.set(i.getArgumentAt(0, ParentCancel.Request.class));
+            return fp;
+        });
+
+        CancelInstruction ic1 = bc1.build();
+        CancelInstruction ic2 = bc2.build();
+        CancelInstruction ip = bp.build();
+        doReturn(null).when(target).findOrder(key, ic1.getId());
+        doReturn(mock(BitflyerOrder.Child.class)).when(target).findOrder(key, ic2.getId());
+        doReturn(mock(BitflyerOrder.Parent.class)).when(target).findOrder(key, ip.getId());
+
+        Map<CancelInstruction, String> results = target.cancelOrders(key, Sets.newHashSet(ic1, ip, ic2));
+        assertEquals(results.get(ic1), ic1.getId());
+        assertEquals(results.get(ic2), ic2.getId());
+        assertEquals(results.get(ip), ip.getId());
+        verify(orderService, times(2)).cancelOrder(any());
+        verify(orderService, times(1)).cancelParent(any());
+        assertEquals(rc1.get().getProduct(), "prod");
+        assertEquals(rc1.get().getAcceptanceId(), "cid1");
+        assertEquals(rc2.get().getProduct(), "prod");
+        assertEquals(rc2.get().getAcceptanceId(), "cid2");
+        assertEquals(rp.get().getProduct(), "prod");
+        assertEquals(rp.get().getAcceptanceId(), "pid");
 
         // Invalid Key (Null)
-        instruction = builder.build();
-        results = target.cancelOrders(null, singleton(instruction));
-        assertEquals(results.get(instruction), null);
+        ic1 = bc1.build();
+        results = target.cancelOrders(null, Sets.newHashSet(ic1));
+        assertEquals(results.get(ic1), null);
 
         // Invalid Key (Empty)
-        instruction = builder.build();
-        results = target.cancelOrders(Key.from(Request.builder().build()), singleton(instruction));
-        assertEquals(results.get(instruction), null);
+        ic1 = bc1.build();
+        results = target.cancelOrders(Key.from(Request.builder().build()), singleton(ic1));
+        assertEquals(results.get(ic1), null);
         verifyNoMoreInteractions(orderService);
 
         // Invalid Instruction
         assertEquals(target.cancelOrders(key, null).size(), 0);
         assertEquals(target.cancelOrders(key, singleton(null)).size(), 1);
-        assertEquals(target.cancelOrders(key, singleton(builder.id(null).build())).size(), 1);
+        assertEquals(target.cancelOrders(key, singleton(bc1.id(null).build())).size(), 1);
         verifyNoMoreInteractions(orderService);
 
     }

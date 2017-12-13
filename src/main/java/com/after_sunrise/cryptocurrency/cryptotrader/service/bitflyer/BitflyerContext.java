@@ -44,7 +44,6 @@ import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Collections.*;
-import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 
@@ -249,7 +248,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
                 extract(marketService.getProducts(), TIMEOUT)
         );
 
-        return ofNullable(products).orElse(emptyList()).stream()
+        return trimToEmpty(products).stream()
                 .filter(Objects::nonNull)
                 .filter(p -> StringUtils.isNotEmpty(p.getProduct()))
                 .filter(p ->
@@ -425,9 +424,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
                     Execution.Request r = b.before(minimumId).build();
 
-                    List<Execution> execs = ofNullable(
-                            extractQuietly(marketService.getExecutions(r), TIMEOUT)
-                    ).orElse(emptyList());
+                    List<Execution> execs = trimToEmpty(extractQuietly(marketService.getExecutions(r), TIMEOUT));
 
                     updateExecutions(trades, execs);
 
@@ -580,7 +577,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         String currency = mapper.apply(product).name();
 
-        return ofNullable(balances).orElse(emptyList()).stream()
+        return trimToEmpty(balances).stream()
                 .filter(Objects::nonNull)
                 .filter(b -> StringUtils.equals(currency, b.getCurrency()))
                 .map(Balance::getAmount)
@@ -663,7 +660,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         });
 
-        Optional<BigDecimal> sum = ofNullable(positions).orElse(emptyList()).stream()
+        Optional<BigDecimal> sum = trimToEmpty(positions).stream()
                 .filter(Objects::nonNull)
                 .filter(p -> Objects.nonNull(p.getSide()))
                 .filter(p -> Objects.nonNull(p.getSize()))
@@ -769,24 +766,30 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     }
 
     @VisibleForTesting
-    List<? extends Order> fetchOrder(Key key) {
+    List<BitflyerOrder> fetchOrder(Key key) {
 
         return listCached(BitflyerOrder.class, key, () -> {
 
             String product = convertProductAlias(key);
 
-            OrderList.Request request = OrderList.Request.builder().product(product).build();
+            List<BitflyerOrder> values = new ArrayList<>();
 
-            return unmodifiableList(ofNullable(extract(orderService.listOrders(request), TIMEOUT))
-                    .orElse(emptyList()).stream().filter(Objects::nonNull)
-                    .map(BitflyerOrder::new).collect(toList()));
+            trimToEmpty(extract(orderService.listOrders(
+                    OrderList.Request.builder().product(product).build()), TIMEOUT)
+            ).stream().filter(Objects::nonNull).map(BitflyerOrder.Child::new).forEach(values::add);
+
+            trimToEmpty(extract(orderService.listParents(
+                    ParentList.Request.builder().product(product).build()), TIMEOUT)
+            ).stream().filter(Objects::nonNull).map(BitflyerOrder.Parent::new).forEach(values::add);
+
+            return unmodifiableList(values);
 
         });
 
     }
 
     @Override
-    public Order findOrder(Key key, String id) {
+    public BitflyerOrder findOrder(Key key, String id) {
 
         return fetchOrder(key).stream().filter(o -> StringUtils.isNotEmpty(o.getId()))
                 .filter(o -> StringUtils.equals(o.getId(), id)).findFirst().orElse(null);
@@ -809,9 +812,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             TradeExecution.Request request = TradeExecution.Request.builder().product(product).build();
 
-            return unmodifiableList(ofNullable(extract(orderService.listExecutions(request), TIMEOUT))
-                    .orElse(emptyList()).stream().filter(Objects::nonNull)
-                    .map(BitflyerExecution::new).collect(toList()));
+            return unmodifiableList(trimToEmpty(extract(orderService.listExecutions(request), TIMEOUT))
+                    .stream().filter(Objects::nonNull).map(BitflyerExecution::new).collect(toList()));
 
         });
 
@@ -874,23 +876,48 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
         for (CancelInstruction instruction : instructions) {
 
             if (key == null || StringUtils.isBlank(key.getInstrument())) {
+
                 futures.put(instruction, CompletableFuture.completedFuture(null));
+
                 continue;
+
             }
 
             if (instruction == null || StringUtils.isEmpty(instruction.getId())) {
+
                 futures.put(instruction, CompletableFuture.completedFuture(null));
+
                 continue;
+
             }
 
-            OrderCancel.Request.RequestBuilder builder = OrderCancel.Request.builder();
-            builder.product(convertProductAlias(key));
-            builder.acceptanceId(instruction.getId());
-            OrderCancel.Request request = builder.build();
+            CompletableFuture<String> future;
 
-            CompletableFuture<OrderCancel> future = orderService.cancelOrder(request);
+            BitflyerOrder order = findOrder(key, instruction.getId());
 
-            futures.put(instruction, future.thenApply(r -> r == null ? null : instruction.getId()));
+            if (order instanceof BitflyerOrder.Parent) {
+
+                ParentCancel.Request.RequestBuilder builder = ParentCancel.Request.builder();
+                builder.product(convertProductAlias(key));
+                builder.acceptanceId(instruction.getId());
+                ParentCancel.Request request = builder.build();
+
+                CompletableFuture<ParentCancel> f = orderService.cancelParent(request);
+                future = f.thenApply(r -> r == null ? null : instruction.getId());
+
+            } else {
+
+                OrderCancel.Request.RequestBuilder builder = OrderCancel.Request.builder();
+                builder.product(convertProductAlias(key));
+                builder.acceptanceId(instruction.getId());
+                OrderCancel.Request request = builder.build();
+
+                CompletableFuture<OrderCancel> f = orderService.cancelOrder(request);
+                future = f.thenApply(r -> r == null ? null : instruction.getId());
+
+            }
+
+            futures.put(instruction, future);
 
         }
 
