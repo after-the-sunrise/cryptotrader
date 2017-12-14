@@ -93,8 +93,6 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     private static final Type TYPE_EXECUTION = new TypeToken<List<BitmexExecution>>() {
     }.getType();
 
-    private static final Duration TIMEOUT = Duration.ofMinutes(3);
-
     private static final Duration BUCKETED = Duration.ofHours(1);
 
     private final AtomicLong lastNonce = new AtomicLong();

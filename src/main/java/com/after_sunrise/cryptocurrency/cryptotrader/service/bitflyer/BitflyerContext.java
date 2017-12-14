@@ -67,7 +67,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
     private static final Duration REALTIME_EXPIRY = Duration.ofMinutes(1);
 
-    private static final Duration REALTIME_TRADE = Duration.ofDays(1);
+    private static final Duration REALTIME_TRADE = Duration.ofDays(3);
 
     private static final int REALTIME_COUNT = 1000;
 
