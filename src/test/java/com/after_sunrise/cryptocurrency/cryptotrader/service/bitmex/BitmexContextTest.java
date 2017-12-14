@@ -188,7 +188,13 @@ public class BitmexContextTest {
 
         }
 
-        assertEquals(target.convertAlias(Key.builder().instrument("foo").build()), "foo");
+        configuration.setProperty(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexContext.alias.XBT_QT",
+                "XBT???"
+        );
+        assertEquals(target.convertAlias(Key.builder().instrument("XBT_QT").build()), "XBT???");
+
+        assertNull(target.convertAlias(Key.builder().instrument("foo").build()));
         assertNull(target.convertAlias(Key.builder().instrument(null).build()));
         assertNull(target.convertAlias(null));
 

@@ -123,11 +123,17 @@ public class BitmexContext extends TemplateContext implements BitmexService {
         ProductType product = ProductType.findByName(key.getInstrument());
 
         if (product == null) {
-            return key.getInstrument();
+            return null;
         }
 
         if (product.getId() != null) {
             return product.getId();
+        }
+
+        String specific = getStringProperty("alias." + key.getInstrument(), null);
+
+        if (specific != null) {
+            return specific;
         }
 
         Key newKey = Key.build(key).instrument(WILDCARD).build();
