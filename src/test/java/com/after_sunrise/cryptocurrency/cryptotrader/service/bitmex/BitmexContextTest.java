@@ -188,7 +188,7 @@ public class BitmexContextTest {
 
         }
 
-        assertNull(target.convertAlias(Key.builder().instrument("foo").build()));
+        assertEquals(target.convertAlias(Key.builder().instrument("foo").build()), "foo");
         assertNull(target.convertAlias(Key.builder().instrument(null).build()));
         assertNull(target.convertAlias(null));
 
