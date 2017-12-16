@@ -98,12 +98,22 @@ public interface BitmexService extends Service {
         XBT_FR(null, "XBT:perpetual", null, null, null),
 
         /**
-         * XBT/USD Futures
+         * XBT/USD Monthly Futures
+         */
+        XBT_MT(null, "XBT:monthly", BTC, USD, 1),
+
+        /**
+         * XBT/USD Quarterly Futures
          */
         XBT_QT(null, "XBT:quarterly", BTC, USD, 1),
 
         /**
-         * XBT/JPY Futures
+         * XBT/JPY Monthly Futures
+         */
+        XBJ_MT(null, "XBJ:monthly", BTC, JPY, 100),
+
+        /**
+         * XBT/JPY Quarterly Futures
          */
         XBJ_QT(null, "XBJ:quarterly", BTC, JPY, 100),
 
