@@ -318,9 +318,9 @@ public class TemplateAdviser extends AbstractService implements Adviser {
     @VisibleForTesting
     BigDecimal calculateRecentPrice(Context context, Request request, int signum) {
 
-        Instant cutoff = request.getCurrentTime().minus(request.getTradingDuration());
+        Duration duration = request.getTradingDuration();
 
-        if (cutoff.compareTo(request.getCurrentTime()) >= 0) {
+        if (duration.isZero()) {
             return null;
         }
 
@@ -328,18 +328,44 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         Comparator<BigDecimal> comparator = signum == SIGNUM_BUY ? Comparator.reverseOrder() : Comparator.naturalOrder();
 
-        return ofNullable(context.listExecutions(key))
-                .orElse(emptyList()).stream()
-                .filter(Objects::nonNull)
-                .filter(v -> v.getTime() != null)
-                .filter(v -> v.getTime().isAfter(cutoff))
-                .filter(v -> v.getPrice() != null)
-                .filter(v -> v.getPrice().signum() != 0)
-                .filter(v -> v.getSize() != null)
-                .filter(v -> v.getSize().signum() == signum)
-                .map(Order.Execution::getPrice)
-                .sorted(comparator)
-                .findFirst().orElse(null);
+        BigDecimal price;
+
+        if (duration.isNegative()) {
+
+            Instant cutoff = request.getCurrentTime().plus(duration);
+
+            price = trimToEmpty(context.listTrades(key, cutoff)).stream()
+                    .filter(Objects::nonNull)
+                    .filter(t -> t.getTimestamp() != null)
+                    .filter(t -> t.getTimestamp().isAfter(cutoff))
+                    .filter(t -> t.getPrice() != null)
+                    .filter(t -> t.getPrice().signum() != 0)
+                    .filter(t -> t.getSize() != null)
+                    .filter(t -> t.getSize().signum() != 0)
+                    .map(Trade::getPrice)
+                    .sorted(comparator)
+                    .findFirst().orElse(null);
+
+        } else {
+
+            Instant cutoff = request.getCurrentTime().minus(duration);
+
+            price = ofNullable(context.listExecutions(key))
+                    .orElse(emptyList()).stream()
+                    .filter(Objects::nonNull)
+                    .filter(v -> v.getTime() != null)
+                    .filter(v -> v.getTime().isAfter(cutoff))
+                    .filter(v -> v.getPrice() != null)
+                    .filter(v -> v.getPrice().signum() != 0)
+                    .filter(v -> v.getSize() != null)
+                    .filter(v -> v.getSize().signum() == signum)
+                    .map(Order.Execution::getPrice)
+                    .sorted(comparator)
+                    .findFirst().orElse(null);
+
+        }
+
+        return price;
 
     }
 

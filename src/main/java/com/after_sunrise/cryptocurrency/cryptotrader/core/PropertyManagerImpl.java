@@ -408,7 +408,7 @@ public class PropertyManagerImpl implements PropertyController {
     @Override
     public Duration getTradingDuration(String site, String instrument) {
 
-        BigDecimal value = getDecimal(site, instrument, TRADING_DURATION, ZERO, null, ZERO);
+        BigDecimal value = getDecimal(site, instrument, TRADING_DURATION, null, null, ZERO);
 
         return Duration.ofMillis(value.longValue());
 

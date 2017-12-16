@@ -612,7 +612,7 @@ public class PropertyManagerImplTest {
 
         // Floor
         doReturn(valueOf(Long.MIN_VALUE)).when(conf).getBigDecimal(TRADING_DURATION.getKey());
-        assertEquals(target.getTradingDuration(site, inst), Duration.ZERO);
+        assertEquals(target.getTradingDuration(site, inst), Duration.ofMillis(Long.MIN_VALUE));
 
         // Error
         doThrow(new RuntimeException("test")).when(conf).getBigDecimal(TRADING_DURATION.getKey());

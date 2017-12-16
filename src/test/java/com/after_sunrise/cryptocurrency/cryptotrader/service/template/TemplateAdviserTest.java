@@ -478,6 +478,17 @@ public class TemplateAdviserTest {
             executions.add(exec);
         }
 
+        List<Trade> trades = new ArrayList<>();
+
+        for (int i = 0; i < 20; i++) {
+            Trade trade = mock(Trade.class);
+            when(trade.getTimestamp()).thenReturn(Instant.ofEpochMilli(135 + i)); // 6 <= i <= 19
+            when(trade.getPrice()).thenReturn(BigDecimal.valueOf(10 + i));
+            when(trade.getSize()).thenReturn(BigDecimal.valueOf((1000 + i) * (i % 2 == 0 ? 1 : -1)));
+            trades.add(trade);
+        }
+
+        when(context.listTrades(Key.from(request), now.minus(duration))).thenReturn(trades);
         when(context.listExecutions(Key.from(request))).thenReturn(executions);
         assertEquals(target.calculateRecentPrice(context, request, SIGNUM_BUY), new BigDecimal("118"));
         assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("107"));
@@ -504,6 +515,11 @@ public class TemplateAdviserTest {
         when(context.listExecutions(Key.from(request))).thenReturn(null);
         assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
         assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
+
+        // Negative Duration
+        request = rBuilder.tradingDuration(duration.negated()).build();
+        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_BUY), new BigDecimal("29"));
+        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("16"));
 
         // Zero Duration
         reset(context);
