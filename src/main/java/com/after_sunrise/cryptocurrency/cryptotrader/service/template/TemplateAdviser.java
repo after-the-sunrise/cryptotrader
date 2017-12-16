@@ -334,7 +334,9 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
             Instant cutoff = request.getCurrentTime().plus(duration);
 
-            price = trimToEmpty(context.listTrades(key, cutoff)).stream()
+            double[] average = {0.0, 0.0, 0.0};
+
+            trimToEmpty(context.listTrades(key, cutoff)).stream()
                     .filter(Objects::nonNull)
                     .filter(t -> t.getTimestamp() != null)
                     .filter(t -> t.getTimestamp().isAfter(cutoff))
@@ -342,9 +344,13 @@ public class TemplateAdviser extends AbstractService implements Adviser {
                     .filter(t -> t.getPrice().signum() != 0)
                     .filter(t -> t.getSize() != null)
                     .filter(t -> t.getSize().signum() != 0)
-                    .map(Trade::getPrice)
-                    .sorted(comparator)
-                    .findFirst().orElse(null);
+                    .forEach(t -> {
+                        average[0] += t.getSize().multiply(t.getPrice()).doubleValue();
+                        average[1] += t.getSize().doubleValue();
+                        average[2] += 1;
+                    });
+
+            price = average[2] > 0 ? BigDecimal.valueOf(average[0] / average[1]).setScale(SCALE, HALF_UP) : null;
 
         } else {
 
