@@ -848,9 +848,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             builder.side(instruction.getSize().signum() > 0 ? BUY : SELL);
             builder.price(instruction.getPrice());
             builder.size(instruction.getSize().abs());
-            OrderCreate.Request request = builder.build();
 
-            CompletableFuture<OrderCreate> future = orderService.sendOrder(request);
+            CompletableFuture<OrderCreate> future = orderService.sendOrder(builder.build());
 
             futures.put(instruction, future.thenApply(r -> r == null ? null : r.getAcceptanceId()));
 
@@ -891,31 +890,43 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             }
 
-            CompletableFuture<String> future;
-
             BitflyerOrder order = findOrder(key, instruction.getId());
 
-            if (order instanceof BitflyerOrder.Parent) {
+            if (order == null) {
 
-                ParentCancel.Request.RequestBuilder builder = ParentCancel.Request.builder();
-                builder.product(convertProductAlias(key));
-                builder.acceptanceId(instruction.getId());
-                ParentCancel.Request request = builder.build();
+                futures.put(instruction, CompletableFuture.completedFuture(null));
 
-                CompletableFuture<ParentCancel> f = orderService.cancelParent(request);
-                future = f.thenApply(r -> r == null ? null : instruction.getId());
-
-            } else {
-
-                OrderCancel.Request.RequestBuilder builder = OrderCancel.Request.builder();
-                builder.product(convertProductAlias(key));
-                builder.acceptanceId(instruction.getId());
-                OrderCancel.Request request = builder.build();
-
-                CompletableFuture<OrderCancel> f = orderService.cancelOrder(request);
-                future = f.thenApply(r -> r == null ? null : instruction.getId());
+                continue;
 
             }
+
+            CompletableFuture<String> future = order.accept(new BitflyerOrder.Visitor<CompletableFuture<String>>() {
+                @Override
+                public CompletableFuture<String> visit(BitflyerOrder.Child order) {
+
+                    OrderCancel.Request.RequestBuilder builder = OrderCancel.Request.builder();
+                    builder.product(convertProductAlias(key));
+                    builder.acceptanceId(instruction.getId());
+
+                    CompletableFuture<OrderCancel> f = orderService.cancelOrder(builder.build());
+
+                    return f.thenApply(r -> r == null ? null : instruction.getId());
+
+                }
+
+                @Override
+                public CompletableFuture<String> visit(BitflyerOrder.Parent order) {
+
+                    ParentCancel.Request.RequestBuilder builder = ParentCancel.Request.builder();
+                    builder.product(convertProductAlias(key));
+                    builder.acceptanceId(instruction.getId());
+
+                    CompletableFuture<ParentCancel> f = orderService.cancelParent(builder.build());
+
+                    return f.thenApply(r -> r == null ? null : instruction.getId());
+
+                }
+            });
 
             futures.put(instruction, future);
 

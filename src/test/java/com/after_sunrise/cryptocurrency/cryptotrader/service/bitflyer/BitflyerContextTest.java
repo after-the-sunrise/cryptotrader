@@ -1269,9 +1269,16 @@ public class BitflyerContextTest {
         CancelInstruction ic1 = bc1.build();
         CancelInstruction ic2 = bc2.build();
         CancelInstruction ip = bp.build();
+        BitflyerOrder.Child c1 = mock(BitflyerOrder.Child.class);
+        BitflyerOrder.Child c2 = mock(BitflyerOrder.Child.class);
+        BitflyerOrder.Parent p = mock(BitflyerOrder.Parent.class);
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(c1)).when(c1).accept(any());
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(c2)).when(c2).accept(any());
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(p)).when(p).accept(any());
         doReturn(null).when(target).findOrder(key, ic1.getId());
-        doReturn(mock(BitflyerOrder.Child.class)).when(target).findOrder(key, ic2.getId());
-        doReturn(mock(BitflyerOrder.Parent.class)).when(target).findOrder(key, ip.getId());
+        doReturn(c1).when(target).findOrder(key, ic1.getId());
+        doReturn(c2).when(target).findOrder(key, ic2.getId());
+        doReturn(p).when(target).findOrder(key, ip.getId());
 
         Map<CancelInstruction, String> results = target.cancelOrders(key, Sets.newHashSet(ic1, ip, ic2));
         assertEquals(results.get(ic1), ic1.getId());
