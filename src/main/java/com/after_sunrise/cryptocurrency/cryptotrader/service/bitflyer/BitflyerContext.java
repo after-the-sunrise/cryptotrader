@@ -139,6 +139,11 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
     @Override
     public void onBoards(String product, Board value) {
+        // TODO
+    }
+
+    @Override
+    public void onBoardsSnapshot(String product, Board value) {
 
         if (value == null) {
             return;

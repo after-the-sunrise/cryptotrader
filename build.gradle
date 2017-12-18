@@ -24,7 +24,7 @@ configurations {
 }
 
 dependencies {
-    compile 'com.after_sunrise.cryptocurrency:bitflyer4j:0.1.5'
+    compile 'com.after_sunrise.cryptocurrency:bitflyer4j:0.3.1'
     compile 'org.apache.httpcomponents:httpclient:4.5.3'
     compile 'org.jboss.resteasy:resteasy-jaxrs:3.1.4.Final'
     compile 'org.jboss.resteasy:resteasy-guice:3.1.4.Final'

@@ -215,7 +215,7 @@ public class BitflyerContextTest {
         // Realtime found, but no time.
         doReturn(null).when(target).getNow();
         target.clear();
-        target.onBoards("a", board);
+        target.onBoardsSnapshot("a", board);
         assertSame(target.getBoard(key), null);
         verify(marketService, times(3)).getBoard(any());
         verify(realtimeService, times(1)).subscribeBoard(singletonList("a"));
@@ -223,7 +223,7 @@ public class BitflyerContextTest {
         // Realtime found, but old.
         doReturn(now.minusMinutes(10).toInstant()).when(target).getNow();
         target.clear();
-        target.onBoards("a", board);
+        target.onBoardsSnapshot("a", board);
         assertSame(target.getBoard(key), null);
         verify(marketService, times(4)).getBoard(any());
         verify(realtimeService, times(1)).subscribeBoard(singletonList("a"));
@@ -231,7 +231,7 @@ public class BitflyerContextTest {
         // Realtime found.
         doReturn(now.plusMinutes(10).toInstant()).when(target).getNow();
         target.clear();
-        target.onBoards("a", board);
+        target.onBoardsSnapshot("a", board);
         assertSame(target.getBoard(key).getDelegate(), board);
         verify(marketService, times(4)).getBoard(any());
         verify(realtimeService, times(1)).subscribeBoard(singletonList("a"));
