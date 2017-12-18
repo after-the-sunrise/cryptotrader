@@ -8,6 +8,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Cance
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import org.apache.commons.configuration2.Configuration;
 import org.mockito.invocation.InvocationOnMock;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -41,6 +42,8 @@ public class TemplateInstructorTest {
 
     private Context context;
 
+    private Configuration configuration;
+
     private Request.RequestBuilder builder;
 
     @BeforeMethod
@@ -66,10 +69,14 @@ public class TemplateInstructorTest {
         when(context.roundTickSize(any(), any(), any())).thenAnswer(i -> f.apply(i, new BigDecimal("0.003")));
         when(context.roundLotSize(any(), any(), any())).thenAnswer(i -> f.apply(i, new BigDecimal("0.3")));
 
+        configuration = mock(Configuration.class);
+
         builder = Request.builder().site("s").instrument("i").targetTime(now())
                 .tradingExposure(ZERO).tradingSplit(5).tradingSpread(ZERO);
 
         target = spy(new TemplateInstructor("test"));
+
+        target.setConfiguration(configuration);
 
     }
 
@@ -132,6 +139,7 @@ public class TemplateInstructorTest {
 
         List<CreateInstruction> results = target.createBuys(context, request, builder.build());
         assertEquals(results.size(), 5, results.toString());
+        results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
 
         assertEquals(results.get(0).getPrice(), new BigDecimal("0.999"));
         assertEquals(results.get(1).getPrice(), new BigDecimal("0.984"));
@@ -154,6 +162,7 @@ public class TemplateInstructorTest {
         assertEquals(results.get(0).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(1).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("0.3"));
+        results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
 
         // Null Price
         results = target.createBuys(context, request, builder.buyLimitPrice(null).build());
@@ -164,6 +173,15 @@ public class TemplateInstructorTest {
         assertEquals(results.get(0).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(1).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("0.3"));
+        results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
+
+        // With strategy
+        when(configuration.getString(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateInstructor.strategy",
+                null)).thenReturn("foo");
+        results = target.createBuys(context, request, builder.build());
+        assertEquals(results.size(), 3, results.toString());
+        results.forEach(r -> assertEquals(r.getStrategy(), "foo"));
 
         // Too small
         results = target.createBuys(context, request, builder.buyLimitSize(ONE.movePointLeft(1)).build());
@@ -192,6 +210,7 @@ public class TemplateInstructorTest {
 
         List<CreateInstruction> results = target.createSells(context, request, builder.build());
         assertEquals(results.size(), 5, results.toString());
+        results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
 
         assertEquals(results.get(0).getPrice(), new BigDecimal("1.002"));
         assertEquals(results.get(1).getPrice(), new BigDecimal("1.017"));
@@ -214,6 +233,7 @@ public class TemplateInstructorTest {
         assertEquals(results.get(0).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(1).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("-0.3"));
+        results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
 
         // Null Price
         results = target.createSells(context, request, builder.sellLimitPrice(null).build());
@@ -224,6 +244,15 @@ public class TemplateInstructorTest {
         assertEquals(results.get(0).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(1).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("-0.3"));
+        results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
+
+        // With strategy
+        when(configuration.getString(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateInstructor.strategy",
+                null)).thenReturn("bar");
+        results = target.createSells(context, request, builder.build());
+        assertEquals(results.size(), 3, results.toString());
+        results.forEach(r -> assertEquals(r.getStrategy(), "bar"));
 
         // Too small
         results = target.createSells(context, request, builder.sellLimitSize(ONE.movePointLeft(1)).build());

@@ -29,6 +29,8 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
  */
 public class TemplateInstructor extends AbstractService implements Instructor {
 
+    private static final String KEY_STRATEGY = "strategy";
+
     private final String id;
 
     public TemplateInstructor(String id) {
@@ -85,13 +87,15 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         List<CreateInstruction> instructions = new ArrayList<>(s.size());
 
+        String strategy = getStringProperty(KEY_STRATEGY, null);
+
         for (int i = 0; i < s.size(); i++) {
 
             BigDecimal price = p.get(i);
 
             BigDecimal size = s.get(i);
 
-            instructions.add(CreateInstruction.builder().price(price).size(size).build());
+            instructions.add(CreateInstruction.builder().price(price).size(size).strategy(strategy).build());
 
         }
 
@@ -112,13 +116,15 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         List<CreateInstruction> instructions = new ArrayList<>(s.size());
 
+        String strategy = getStringProperty(KEY_STRATEGY, null);
+
         for (int i = 0; i < s.size(); i++) {
 
             BigDecimal price = p.get(i);
 
             BigDecimal size = s.get(i) == null ? null : s.get(i).negate();
 
-            instructions.add(CreateInstruction.builder().price(price).size(size).build());
+            instructions.add(CreateInstruction.builder().price(price).size(size).strategy(strategy).build());
 
         }
 
