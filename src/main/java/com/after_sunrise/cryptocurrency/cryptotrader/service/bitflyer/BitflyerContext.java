@@ -2,6 +2,8 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 
 import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4j;
 import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4jFactory;
+import com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType;
+import com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.entity.*;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
@@ -33,6 +35,7 @@ import java.util.regex.Pattern;
 
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.LIMIT;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.MARKET;
+import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ParentType.IFD;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.SELL;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.COLLATERAL;
@@ -42,6 +45,7 @@ import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
+import static java.math.RoundingMode.UP;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
@@ -842,14 +846,39 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
                 continue;
             }
 
-            OrderCreate.Request.RequestBuilder builder = OrderCreate.Request.builder();
-            builder.product(convertProductAlias(key));
-            builder.type(instruction.getPrice().signum() == 0 ? MARKET : LIMIT);
-            builder.side(instruction.getSize().signum() > 0 ? BUY : SELL);
-            builder.price(instruction.getPrice());
-            builder.size(instruction.getSize().abs());
+            String product = convertProductAlias(key);
+            ConditionType condition = instruction.getPrice().signum() == 0 ? MARKET : LIMIT;
+            SideType side = instruction.getSize().signum() > 0 ? BUY : SELL;
+            BigDecimal size = instruction.getSize().abs();
+            BigDecimal price = instruction.getPrice();
 
-            CompletableFuture<OrderCreate> future = orderService.sendOrder(builder.build());
+            if (IFD.name().equals(instruction.getStrategy())) {
+
+                BigDecimal lotSize = roundLotSize(key, EPSILON, UP);
+
+                if (lotSize != null && lotSize.compareTo(size) <= 0) {
+
+                    ParentCreate.Request.Parameter.ParameterBuilder pb = ParentCreate.Request.Parameter.builder()
+                            .product(product).condition(condition).side(side).price(price);
+
+                    CompletableFuture<ParentCreate> future = orderService.sendParent(ParentCreate.Request.builder()
+                            .type(IFD)
+                            .parameters(Arrays.asList(
+                                    pb.size(lotSize).build(),
+                                    pb.size(size.subtract(lotSize)).build()
+                            )).build());
+
+                    futures.put(instruction, future.thenApply(r -> r == null ? null : r.getAcceptanceId()));
+
+                    continue;
+
+                }
+
+            }
+
+            CompletableFuture<OrderCreate> future = orderService.sendOrder(OrderCreate.Request.builder()
+                    .product(product).type(condition).side(side).price(price).size(size).build()
+            );
 
             futures.put(instruction, future.thenApply(r -> r == null ? null : r.getAcceptanceId()));
 
