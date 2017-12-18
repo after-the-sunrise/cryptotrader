@@ -48,6 +48,8 @@ public interface Instruction {
 
         private final BigDecimal size;
 
+        private final String strategy;
+
         @Override
         public <T> T accept(Visitor<T> visitor) {
             return visitor.visit(this);

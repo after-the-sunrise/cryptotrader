@@ -37,11 +37,13 @@ public class InstructionTest {
     @Test
     public void testCreate() throws Exception {
 
-        CreateInstruction i = CreateInstruction.builder().price(TEN).size(ONE).build();
+        CreateInstruction i = CreateInstruction.builder().price(TEN).size(ONE).strategy("foo").build();
 
         assertEquals(i.getPrice(), TEN);
 
         assertEquals(i.getSize(), ONE);
+
+        assertEquals(i.getStrategy(), "foo");
 
         assertEquals(i.accept(visitor), i.getUid());
 
