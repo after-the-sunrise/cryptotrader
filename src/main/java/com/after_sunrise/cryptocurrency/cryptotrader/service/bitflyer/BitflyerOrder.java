@@ -143,7 +143,15 @@ public interface BitflyerOrder extends Order {
             return null;
         }
 
-        return side == SideType.BUY ? size : size.negate();
+        if (side == SideType.BUY) {
+            return size;
+        }
+
+        if (side == SideType.SELL) {
+            return size.negate();
+        }
+
+        return null;
 
     }
 
