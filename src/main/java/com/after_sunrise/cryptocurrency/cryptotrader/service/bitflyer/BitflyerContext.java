@@ -3,6 +3,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4j;
 import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4jFactory;
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType;
+import com.after_sunrise.cryptocurrency.bitflyer4j.core.ParentType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.entity.*;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.*;
@@ -33,8 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.LIMIT;
-import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.MARKET;
+import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.*;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ParentType.IFD;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.SELL;
@@ -878,6 +878,36 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
                     continue;
 
                 }
+
+            }
+
+            if (STOP.name().equals(instruction.getStrategy())) {
+
+                CompletableFuture<ParentCreate> future = orderService.sendParent(ParentCreate.Request.builder()
+                        .type(ParentType.SIMPLE)
+                        .parameters(singletonList(ParentCreate.Request.Parameter.builder()
+                                .product(product).condition(STOP).side(side == BUY ? SELL : BUY)
+                                .triggerPrice(price).size(size).build()
+                        )).build());
+
+                futures.put(instruction, future.thenApply(r -> r == null ? null : r.getAcceptanceId()));
+
+                continue;
+
+            }
+
+            if (STOP_LIMIT.name().equals(instruction.getStrategy())) {
+
+                CompletableFuture<ParentCreate> future = orderService.sendParent(ParentCreate.Request.builder()
+                        .type(ParentType.SIMPLE)
+                        .parameters(singletonList(ParentCreate.Request.Parameter.builder()
+                                .product(product).condition(STOP_LIMIT).side(side == BUY ? SELL : BUY)
+                                .price(price).triggerPrice(price).size(size).build()
+                        )).build());
+
+                futures.put(instruction, future.thenApply(r -> r == null ? null : r.getAcceptanceId()));
+
+                continue;
 
             }
 
