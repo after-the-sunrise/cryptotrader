@@ -48,6 +48,18 @@ public class BitflyerOrderTest {
     }
 
     @Test
+    public void testAccept() {
+
+        BitflyerOrder.Visitor<?> visitor = mock(BitflyerOrder.Visitor.class);
+        doReturn("c").when(visitor).visit(any(BitflyerOrder.Child.class));
+        doReturn("p").when(visitor).visit(any(BitflyerOrder.Parent.class));
+
+        assertEquals("c", child.accept(visitor));
+        assertEquals("p", parent.accept(visitor));
+
+    }
+
+    @Test
     public void testGetId() {
 
         assertNull(child.getId());

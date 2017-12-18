@@ -55,6 +55,11 @@ public interface BitflyerOrder extends Order {
             return convertSize(delegate.getSide(), delegate.getOutstandingSize());
         }
 
+        @Override
+        public <T> T accept(Visitor<T> visitor) {
+            return visitor.visit(this);
+        }
+
     }
 
     @ToString
@@ -86,7 +91,6 @@ public interface BitflyerOrder extends Order {
             return delegate.getPrice();
         }
 
-
         @Override
         public BigDecimal getFilledQuantity() {
             return convertSize(delegate.getSide(), delegate.getExecutedSize());
@@ -97,8 +101,22 @@ public interface BitflyerOrder extends Order {
             return convertSize(delegate.getSide(), delegate.getOutstandingSize());
         }
 
+        @Override
+        public <T> T accept(Visitor<T> visitor) {
+            return visitor.visit(this);
+        }
+
     }
 
+    interface Visitor<T> {
+
+        T visit(Child order);
+
+        T visit(Parent order);
+
+    }
+
+    <T> T accept(Visitor<T> visitor);
 
     @Override
     default BigDecimal getOrderQuantity() {
