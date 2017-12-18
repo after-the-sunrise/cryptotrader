@@ -851,8 +851,8 @@ public class BitmexContext extends TemplateContext implements BitmexService {
                         params.put("orderQty", i.getSize().abs());
                         params.put("price", i.getPrice());
                         params.put("clOrdID", ids.get(i));
-                        params.put("ordType", "Limit");
-                        params.put("execInst", "ParticipateDoNotInitiate");
+                        params.put("ordType", i.getPrice().signum() == 0 ? "Market" : "Limit");
+                        params.put("execInst", i.getStrategy());
                         return params;
                     }).collect(toList())
             ));

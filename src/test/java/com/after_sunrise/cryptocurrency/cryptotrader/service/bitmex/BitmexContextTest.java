@@ -1094,7 +1094,7 @@ public class BitmexContextTest {
 
             Map<String, String> m = orders.get(0);
             assertEquals(m.remove("clOrdID"), "uid1");
-            assertEquals(m.remove("execInst"), "ParticipateDoNotInitiate");
+            assertEquals(m.remove("execInst"), "LastPrice");
             assertEquals(m.remove("ordType"), "Limit");
             assertEquals(m.remove("orderQty"), "10");
             assertEquals(m.remove("price"), "1");
@@ -1106,11 +1106,11 @@ public class BitmexContextTest {
 
         }).when(target).executePrivate(any(), any(), any(), any());
 
-        CreateInstruction i1 = CreateInstruction.builder().price(ZERO).size(TEN).build();
-        CreateInstruction i2 = CreateInstruction.builder().price(null).size(TEN).build();
-        CreateInstruction i3 = CreateInstruction.builder().price(ONE).size(TEN).build(); // Valid
-        CreateInstruction i4 = CreateInstruction.builder().price(ONE).size(ZERO).build();
-        CreateInstruction i5 = CreateInstruction.builder().price(ONE).size(null).build();
+        CreateInstruction i1 = CreateInstruction.builder().price(ZERO).size(TEN).strategy("LastPrice").build();
+        CreateInstruction i2 = CreateInstruction.builder().price(null).size(TEN).strategy("LastPrice").build();
+        CreateInstruction i3 = CreateInstruction.builder().price(ONE).size(TEN).strategy("LastPrice").build(); // Valid
+        CreateInstruction i4 = CreateInstruction.builder().price(ONE).size(ZERO).strategy("LastPrice").build();
+        CreateInstruction i5 = CreateInstruction.builder().price(ONE).size(null).strategy("LastPrice").build();
         Set<CreateInstruction> instructions = Sets.newHashSet(i1, i2, null, i3, i4, i5);
 
         Map<CreateInstruction, String> result = target.createOrders(key, instructions);
@@ -1145,7 +1145,7 @@ public class BitmexContextTest {
 
             Map<String, String> m = orders.get(0);
             assertEquals(m.remove("clOrdID"), "uid1");
-            assertEquals(m.remove("execInst"), "ParticipateDoNotInitiate");
+            assertEquals(m.remove("execInst"), "Fixed");
             assertEquals(m.remove("ordType"), "Limit");
             assertEquals(m.remove("orderQty"), "10");
             assertEquals(m.remove("price"), "1");
@@ -1157,11 +1157,11 @@ public class BitmexContextTest {
 
         }).when(target).executePrivate(any(), any(), any(), any());
 
-        CreateInstruction i1 = CreateInstruction.builder().price(ZERO).size(TEN).build();
-        CreateInstruction i2 = CreateInstruction.builder().price(null).size(TEN).build();
-        CreateInstruction i3 = CreateInstruction.builder().price(ONE).size(TEN.negate()).build(); // Valid
-        CreateInstruction i4 = CreateInstruction.builder().price(ONE).size(ZERO).build();
-        CreateInstruction i5 = CreateInstruction.builder().price(ONE).size(null).build();
+        CreateInstruction i1 = CreateInstruction.builder().price(ZERO).size(TEN).strategy("Fixed").build();
+        CreateInstruction i2 = CreateInstruction.builder().price(null).size(TEN).strategy("Fixed").build();
+        CreateInstruction i3 = CreateInstruction.builder().price(ONE).size(TEN.negate()).strategy("Fixed").build(); // Valid
+        CreateInstruction i4 = CreateInstruction.builder().price(ONE).size(ZERO).strategy("Fixed").build();
+        CreateInstruction i5 = CreateInstruction.builder().price(ONE).size(null).strategy("Fixed").build();
         Set<CreateInstruction> instructions = Sets.newHashSet(i1, i2, null, i3, i4, i5);
 
         Map<CreateInstruction, String> result = target.createOrders(key, instructions);
