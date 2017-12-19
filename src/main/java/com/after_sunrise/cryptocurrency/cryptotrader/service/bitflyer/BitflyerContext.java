@@ -846,7 +846,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
                 continue;
             }
 
-            if (instruction == null || instruction.getPrice() == null || instruction.getSize() == null) {
+            if (instruction == null || instruction.getPrice() == null
+                    || instruction.getSize() == null || instruction.getSize().signum() == 0) {
                 futures.put(instruction, CompletableFuture.completedFuture(null));
                 continue;
             }
