@@ -862,7 +862,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
                 BigDecimal lotSize = roundLotSize(key, EPSILON, UP);
 
-                if (lotSize != null && lotSize.compareTo(size) <= 0) {
+                if (lotSize != null && lotSize.compareTo(size) < 0) {
 
                     ParentCreate.Request.Parameter.ParameterBuilder pb = ParentCreate.Request.Parameter.builder()
                             .product(product).condition(condition).side(side).price(price);
