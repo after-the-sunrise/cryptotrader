@@ -933,6 +933,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     @Override
     public Map<CancelInstruction, String> cancelOrders(Key key, Set<CancelInstruction> instructions) {
 
+        String product = convertProductAlias(key);
+
         Map<String, BitflyerOrder> orders = trimToEmpty(fetchOrder(key)).stream()
                 .filter(o -> TRUE.equals(o.getActive()))
                 .collect(toMap(BitflyerOrder::getId, Function.identity(), (o1, o2) -> o1, HashMap::new));
@@ -943,7 +945,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         for (CancelInstruction instruction : trimToEmpty(instructions)) {
 
-            if (key == null || instruction == null) {
+            if (StringUtils.isEmpty(product) || instruction == null) {
 
                 results.put(instruction, null);
 
@@ -966,7 +968,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
                 public CompletableFuture<String> visit(BitflyerOrder.Child order) {
 
                     OrderCancel.Request.RequestBuilder builder = OrderCancel.Request.builder();
-                    builder.product(convertProductAlias(key));
+                    builder.product(product);
                     builder.acceptanceId(instruction.getId());
 
                     CompletableFuture<OrderCancel> f = orderService.cancelOrder(builder.build());
@@ -979,7 +981,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
                 public CompletableFuture<String> visit(BitflyerOrder.Parent order) {
 
                     ParentCancel.Request.RequestBuilder builder = ParentCancel.Request.builder();
-                    builder.product(convertProductAlias(key));
+                    builder.product(product);
                     builder.acceptanceId(instruction.getId());
 
                     CompletableFuture<ParentCancel> f = orderService.cancelParent(builder.build());
@@ -996,7 +998,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
         if (key != null && orders.isEmpty()) {
 
             CompletableFuture<ProductCancel> f = orderService.cancelProduct(
-                    ProductCancel.Request.builder().product(key.getInstrument()).build()
+                    ProductCancel.Request.builder().product(product).build()
             );
 
             suppliers.forEach((i, s) -> futures.put(i, f.thenApply(p -> i.getId())));
