@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.*;
@@ -49,6 +50,7 @@ import static java.math.RoundingMode.UP;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 
 /**
@@ -931,41 +933,35 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     @Override
     public Map<CancelInstruction, String> cancelOrders(Key key, Set<CancelInstruction> instructions) {
 
-        if (CollectionUtils.isEmpty(instructions)) {
-            return emptyMap();
-        }
+        Map<String, BitflyerOrder> orders = trimToEmpty(fetchOrder(key)).stream()
+                .filter(o -> TRUE.equals(o.getActive()))
+                .collect(toMap(BitflyerOrder::getId, Function.identity(), (o1, o2) -> o1, HashMap::new));
 
-        Map<CancelInstruction, CompletableFuture<String>> futures = new IdentityHashMap<>();
+        Map<CancelInstruction, String> results = new IdentityHashMap<>();
 
-        for (CancelInstruction instruction : instructions) {
+        Map<CancelInstruction, Supplier<CompletableFuture<String>>> suppliers = new IdentityHashMap<>();
 
-            if (key == null || StringUtils.isBlank(key.getInstrument())) {
+        for (CancelInstruction instruction : trimToEmpty(instructions)) {
 
-                futures.put(instruction, CompletableFuture.completedFuture(null));
+            if (key == null || instruction == null) {
 
-                continue;
-
-            }
-
-            if (instruction == null || StringUtils.isEmpty(instruction.getId())) {
-
-                futures.put(instruction, CompletableFuture.completedFuture(null));
+                results.put(instruction, null);
 
                 continue;
 
             }
 
-            BitflyerOrder order = findOrder(key, instruction.getId());
+            BitflyerOrder order = orders.remove(instruction.getId());
 
             if (order == null) {
 
-                futures.put(instruction, CompletableFuture.completedFuture(null));
+                results.put(instruction, null);
 
                 continue;
 
             }
 
-            CompletableFuture<String> future = order.accept(new BitflyerOrder.Visitor<CompletableFuture<String>>() {
+            suppliers.put(instruction, () -> order.accept(new BitflyerOrder.Visitor<CompletableFuture<String>>() {
                 @Override
                 public CompletableFuture<String> visit(BitflyerOrder.Child order) {
 
@@ -991,15 +987,27 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
                     return f.thenApply(r -> r == null ? null : instruction.getId());
 
                 }
-            });
-
-            futures.put(instruction, future);
+            }));
 
         }
 
-        Map<CancelInstruction, String> results = new IdentityHashMap<>();
+        Map<CancelInstruction, CompletableFuture<String>> futures = new IdentityHashMap<>();
 
-        futures.forEach((k, v) -> results.put(k, extractQuietly(v, TIMEOUT)));
+        if (key != null && orders.isEmpty()) {
+
+            CompletableFuture<ProductCancel> f = orderService.cancelProduct(
+                    ProductCancel.Request.builder().product(key.getInstrument()).build()
+            );
+
+            suppliers.forEach((i, s) -> futures.put(i, f.thenApply(p -> i.getId())));
+
+        } else {
+
+            suppliers.forEach((i, s) -> futures.put(i, s.get()));
+
+        }
+
+        futures.forEach((i, f) -> results.put(i, extractQuietly(f, TIMEOUT)));
 
         return results;
 

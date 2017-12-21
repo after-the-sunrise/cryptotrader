@@ -20,10 +20,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -1231,83 +1228,68 @@ public class BitflyerContextTest {
         Key key = Key.from(Request.builder().instrument("inst").build());
         doReturn("prod").when(target).convertProductAlias(key);
 
-        CancelInstruction.CancelInstructionBuilder bc1 = CancelInstruction.builder().id("cid1");
-        CompletableFuture<OrderCancel> fc1 = completedFuture(mock(OrderCancel.class));
-        AtomicReference<OrderCancel.Request> rc1 = new AtomicReference<>();
+        CancelInstruction ic1 = CancelInstruction.builder().id("cid1").build();
+        CancelInstruction ic2 = CancelInstruction.builder().id("cid2").build();
+        CancelInstruction ip1 = CancelInstruction.builder().id("pid1").build();
+        CancelInstruction ip2 = CancelInstruction.builder().id("hoge").build();
+        Set<CancelInstruction> instructions = Sets.newHashSet(ic1, ip1, null, ic2, null, ip2);
 
-        CancelInstruction.CancelInstructionBuilder bc2 = CancelInstruction.builder().id("cid2");
-        CompletableFuture<OrderCancel> fc2 = completedFuture(mock(OrderCancel.class));
-        AtomicReference<OrderCancel.Request> rc2 = new AtomicReference<>();
+        BitflyerOrder.Child oc1 = mock(BitflyerOrder.Child.class);
+        BitflyerOrder.Child oc2 = mock(BitflyerOrder.Child.class);
+        BitflyerOrder.Parent op1 = mock(BitflyerOrder.Parent.class);
+        BitflyerOrder.Parent op2 = mock(BitflyerOrder.Parent.class);
+        when(oc1.getId()).thenReturn("cid1");
+        when(oc2.getId()).thenReturn("cid2");
+        when(op1.getId()).thenReturn("pid1");
+        when(op2.getId()).thenReturn("pid2");
+        when(oc1.getActive()).thenReturn(true);
+        when(oc2.getActive()).thenReturn(true);
+        when(op1.getActive()).thenReturn(true);
+        when(op2.getActive()).thenReturn(true);
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(oc1)).when(oc1).accept(any());
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(oc2)).when(oc2).accept(any());
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(op1)).when(op1).accept(any());
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(op2)).when(op2).accept(any());
 
-        CancelInstruction.CancelInstructionBuilder bp = CancelInstruction.builder().id("pid");
-        CompletableFuture<ParentCancel> fp = completedFuture(mock(ParentCancel.class));
-        AtomicReference<ParentCancel.Request> rp = new AtomicReference<>();
+        doAnswer(i -> completedFuture(mock(OrderCancel.class))).when(orderService).cancelOrder(any());
+        doAnswer(i -> completedFuture(mock(ParentCancel.class))).when(orderService).cancelParent(any());
+        doAnswer(i -> completedFuture(mock(ProductCancel.class))).when(orderService).cancelProduct(any());
+        doReturn(Arrays.asList(oc1, op1, oc2, op2)).when(target).fetchOrder(key);
 
-        when(orderService.cancelOrder(any())).thenAnswer(i -> {
-
-            OrderCancel.Request r = i.getArgumentAt(0, OrderCancel.Request.class);
-
-            if ("cid1".equals(r.getAcceptanceId())) {
-                rc1.set(r);
-                return fc1;
-            }
-
-            if ("cid2".equals(r.getAcceptanceId())) {
-                rc2.set(r);
-                return fc2;
-            }
-
-            return null;
-
-        });
-
-        when(orderService.cancelParent(any())).thenAnswer(i -> {
-            rp.set(i.getArgumentAt(0, ParentCancel.Request.class));
-            return fp;
-        });
-
-        CancelInstruction ic1 = bc1.build();
-        CancelInstruction ic2 = bc2.build();
-        CancelInstruction ip = bp.build();
-        BitflyerOrder.Child c1 = mock(BitflyerOrder.Child.class);
-        BitflyerOrder.Child c2 = mock(BitflyerOrder.Child.class);
-        BitflyerOrder.Parent p = mock(BitflyerOrder.Parent.class);
-        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(c1)).when(c1).accept(any());
-        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(c2)).when(c2).accept(any());
-        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(p)).when(p).accept(any());
-        doReturn(null).when(target).findOrder(key, ic1.getId());
-        doReturn(c1).when(target).findOrder(key, ic1.getId());
-        doReturn(c2).when(target).findOrder(key, ic2.getId());
-        doReturn(p).when(target).findOrder(key, ip.getId());
-
-        Map<CancelInstruction, String> results = target.cancelOrders(key, Sets.newHashSet(ic1, ip, ic2));
-        assertEquals(results.get(ic1), ic1.getId());
-        assertEquals(results.get(ic2), ic2.getId());
-        assertEquals(results.get(ip), ip.getId());
-        verify(orderService, times(2)).cancelOrder(any());
-        verify(orderService, times(1)).cancelParent(any());
-        assertEquals(rc1.get().getProduct(), "prod");
-        assertEquals(rc1.get().getAcceptanceId(), "cid1");
-        assertEquals(rc2.get().getProduct(), "prod");
-        assertEquals(rc2.get().getAcceptanceId(), "cid2");
-        assertEquals(rp.get().getProduct(), "prod");
-        assertEquals(rp.get().getAcceptanceId(), "pid");
-
-        // Invalid Key (Null)
-        ic1 = bc1.build();
-        results = target.cancelOrders(null, Sets.newHashSet(ic1));
-        assertEquals(results.get(ic1), null);
-
-        // Invalid Key (Empty)
-        ic1 = bc1.build();
-        results = target.cancelOrders(Key.from(Request.builder().build()), singleton(ic1));
-        assertEquals(results.get(ic1), null);
+        // Cancel None
+        Map<CancelInstruction, String> results = target.cancelOrders(key, null);
+        assertEquals(results.size(), 0);
         verifyNoMoreInteractions(orderService);
 
-        // Invalid Instruction
-        assertEquals(target.cancelOrders(key, null).size(), 0);
-        assertEquals(target.cancelOrders(key, singleton(null)).size(), 1);
-        assertEquals(target.cancelOrders(key, singleton(bc1.id(null).build())).size(), 1);
+        // Cancel 3, Remaining 1
+        results = target.cancelOrders(key, instructions);
+        assertEquals(results.size(), 5);
+        assertEquals(results.get(ic1), ic1.getId());
+        assertEquals(results.get(ic2), ic2.getId());
+        assertEquals(results.get(ip1), ip1.getId());
+        assertEquals(results.get(ip2), null);
+        verify(orderService, times(2)).cancelOrder(any());
+        verify(orderService, times(1)).cancelParent(any());
+        verifyNoMoreInteractions(orderService);
+
+        // Cancel All
+        when(op2.getActive()).thenReturn(null);
+        results = target.cancelOrders(key, instructions);
+        assertEquals(results.size(), 5);
+        assertEquals(results.get(ic1), ic1.getId());
+        assertEquals(results.get(ic2), ic2.getId());
+        assertEquals(results.get(ip1), ip1.getId());
+        assertEquals(results.get(ip2), null);
+        verify(orderService, times(1)).cancelProduct(any());
+        verifyNoMoreInteractions(orderService);
+
+        // Null Key
+        results = target.cancelOrders(null, instructions);
+        assertEquals(results.size(), 5);
+        assertEquals(results.get(ic1), null);
+        assertEquals(results.get(ic2), null);
+        assertEquals(results.get(ip1), null);
+        assertEquals(results.get(ip2), null);
         verifyNoMoreInteractions(orderService);
 
     }

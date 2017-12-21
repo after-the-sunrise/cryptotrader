@@ -114,6 +114,14 @@ public abstract class AbstractService implements Service {
         return trim(values, Collections.<T>emptyList());
     }
 
+    protected <T> Set<T> trimToEmpty(Set<T> values) {
+        return trim(values, Collections.<T>emptySet());
+    }
+
+    protected <K, V> Map<K, V> trimToEmpty(Map<K, V> values) {
+        return trim(values, Collections.<K, V>emptyMap());
+    }
+
     @VisibleForTesting
     public BigDecimal calculateComposite(Map<String, Set<String>> products, BiFunction<String, String, BigDecimal> f) {
 
