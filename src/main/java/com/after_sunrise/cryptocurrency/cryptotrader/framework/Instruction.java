@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.ToString;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -49,6 +50,8 @@ public interface Instruction {
         private final BigDecimal size;
 
         private final String strategy;
+
+        private final Duration timeToLive;
 
         @Override
         public <T> T accept(Visitor<T> visitor) {

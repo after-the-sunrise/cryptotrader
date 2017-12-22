@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -89,13 +90,17 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         String strategy = getStringProperty(KEY_STRATEGY, null);
 
+        Duration ttl = Duration.between(request.getCurrentTime(), request.getTargetTime());
+
         for (int i = 0; i < s.size(); i++) {
 
             BigDecimal price = p.get(i);
 
             BigDecimal size = s.get(i);
 
-            instructions.add(CreateInstruction.builder().price(price).size(size).strategy(strategy).build());
+            instructions.add(
+                    CreateInstruction.builder().price(price).size(size).strategy(strategy).timeToLive(ttl).build()
+            );
 
         }
 
@@ -118,13 +123,17 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         String strategy = getStringProperty(KEY_STRATEGY, null);
 
+        Duration ttl = Duration.between(request.getCurrentTime(), request.getTargetTime());
+
         for (int i = 0; i < s.size(); i++) {
 
             BigDecimal price = p.get(i);
 
             BigDecimal size = s.get(i) == null ? null : s.get(i).negate();
 
-            instructions.add(CreateInstruction.builder().price(price).size(size).strategy(strategy).build());
+            instructions.add(
+                    CreateInstruction.builder().price(price).size(size).strategy(strategy).timeToLive(ttl).build()
+            );
 
         }
 

@@ -16,6 +16,7 @@ import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +25,7 @@ import java.util.function.BiFunction;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.*;
-import static java.time.Instant.now;
+import static java.time.Instant.ofEpochMilli;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
@@ -71,7 +72,8 @@ public class TemplateInstructorTest {
 
         configuration = mock(Configuration.class);
 
-        builder = Request.builder().site("s").instrument("i").targetTime(now())
+        builder = Request.builder().site("s").instrument("i")
+                .currentTime(ofEpochMilli(123L)).targetTime(ofEpochMilli(456L))
                 .tradingExposure(ZERO).tradingSplit(5).tradingSpread(ZERO);
 
         target = spy(new TemplateInstructor("test"));
@@ -140,6 +142,7 @@ public class TemplateInstructorTest {
         List<CreateInstruction> results = target.createBuys(context, request, builder.build());
         assertEquals(results.size(), 5, results.toString());
         results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
+        results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         assertEquals(results.get(0).getPrice(), new BigDecimal("0.999"));
         assertEquals(results.get(1).getPrice(), new BigDecimal("0.984"));
@@ -163,6 +166,7 @@ public class TemplateInstructorTest {
         assertEquals(results.get(1).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("0.3"));
         results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
+        results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         // Null Price
         results = target.createBuys(context, request, builder.buyLimitPrice(null).build());
@@ -174,6 +178,7 @@ public class TemplateInstructorTest {
         assertEquals(results.get(1).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("0.3"));
         results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
+        results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         // With strategy
         when(configuration.getString(
@@ -182,6 +187,7 @@ public class TemplateInstructorTest {
         results = target.createBuys(context, request, builder.build());
         assertEquals(results.size(), 3, results.toString());
         results.forEach(r -> assertEquals(r.getStrategy(), "foo"));
+        results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         // Too small
         results = target.createBuys(context, request, builder.buyLimitSize(ONE.movePointLeft(1)).build());
@@ -211,6 +217,7 @@ public class TemplateInstructorTest {
         List<CreateInstruction> results = target.createSells(context, request, builder.build());
         assertEquals(results.size(), 5, results.toString());
         results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
+        results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         assertEquals(results.get(0).getPrice(), new BigDecimal("1.002"));
         assertEquals(results.get(1).getPrice(), new BigDecimal("1.017"));
@@ -234,6 +241,7 @@ public class TemplateInstructorTest {
         assertEquals(results.get(1).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("-0.3"));
         results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
+        results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         // Null Price
         results = target.createSells(context, request, builder.sellLimitPrice(null).build());
@@ -245,6 +253,7 @@ public class TemplateInstructorTest {
         assertEquals(results.get(1).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("-0.3"));
         results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
+        results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         // With strategy
         when(configuration.getString(
@@ -253,6 +262,7 @@ public class TemplateInstructorTest {
         results = target.createSells(context, request, builder.build());
         assertEquals(results.size(), 3, results.toString());
         results.forEach(r -> assertEquals(r.getStrategy(), "bar"));
+        results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         // Too small
         results = target.createSells(context, request, builder.sellLimitSize(ONE.movePointLeft(1)).build());

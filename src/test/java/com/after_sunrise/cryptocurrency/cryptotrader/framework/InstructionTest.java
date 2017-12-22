@@ -6,6 +6,8 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Visit
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.time.Duration;
+
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.TEN;
 import static org.mockito.Matchers.any;
@@ -37,13 +39,16 @@ public class InstructionTest {
     @Test
     public void testCreate() throws Exception {
 
-        CreateInstruction i = CreateInstruction.builder().price(TEN).size(ONE).strategy("foo").build();
+        CreateInstruction i = CreateInstruction.builder().price(TEN).size(ONE)
+                .strategy("foo").timeToLive(Duration.ofMillis(123)).build();
 
         assertEquals(i.getPrice(), TEN);
 
         assertEquals(i.getSize(), ONE);
 
         assertEquals(i.getStrategy(), "foo");
+
+        assertEquals(i.getTimeToLive(), Duration.ofMillis(123));
 
         assertEquals(i.accept(visitor), i.getUid());
 

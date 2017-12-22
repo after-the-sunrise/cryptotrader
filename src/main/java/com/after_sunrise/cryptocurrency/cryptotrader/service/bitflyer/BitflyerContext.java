@@ -876,6 +876,8 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             SideType side = instruction.getSize().signum() > 0 ? BUY : SELL;
             BigDecimal size = instruction.getSize().abs();
             BigDecimal price = instruction.getPrice();
+            Integer expiry = instruction.getTimeToLive() == null ? null : (int)
+                    Math.min(instruction.getTimeToLive().plusMinutes(1).minusMillis(1).toMinutes(), 1);
 
             if (IFD.name().equals(instruction.getStrategy())) {
 
@@ -888,6 +890,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
                     CompletableFuture<ParentCreate> future = orderService.sendParent(ParentCreate.Request.builder()
                             .type(IFD)
+                            .expiry(expiry)
                             .parameters(Arrays.asList(
                                     pb.size(lotSize).build(),
                                     pb.size(size.subtract(lotSize)).build()
@@ -905,6 +908,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
                 CompletableFuture<ParentCreate> future = orderService.sendParent(ParentCreate.Request.builder()
                         .type(ParentType.SIMPLE)
+                        .expiry(expiry)
                         .parameters(singletonList(ParentCreate.Request.Parameter.builder()
                                 .product(product).condition(STOP).side(side == BUY ? SELL : BUY)
                                 .triggerPrice(price).size(size).build()
@@ -920,6 +924,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
                 CompletableFuture<ParentCreate> future = orderService.sendParent(ParentCreate.Request.builder()
                         .type(ParentType.SIMPLE)
+                        .expiry(expiry)
                         .parameters(singletonList(ParentCreate.Request.Parameter.builder()
                                 .product(product).condition(STOP_LIMIT).side(side == BUY ? SELL : BUY)
                                 .price(price).triggerPrice(price).size(size).build()
@@ -932,7 +937,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             }
 
             CompletableFuture<OrderCreate> future = orderService.sendOrder(OrderCreate.Request.builder()
-                    .product(product).type(condition).side(side).price(price).size(size).build()
+                    .product(product).type(condition).side(side).price(price).size(size).expiry(expiry).build()
             );
 
             futures.put(instruction, future.thenApply(r -> r == null ? null : r.getAcceptanceId()));
