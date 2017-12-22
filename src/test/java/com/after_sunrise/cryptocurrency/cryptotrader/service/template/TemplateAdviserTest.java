@@ -915,10 +915,6 @@ public class TemplateAdviserTest {
         assertEquals(target.calculateFundingExposureSize(context, builder.build(), price), ZERO);
         when(context.getFundingPosition(any())).thenReturn(new BigDecimal("18000"));
 
-        // Hedge
-        builder = builder.hedgeProducts(singletonMap("foo", singleton("bar")));
-        assertEquals(target.calculateFundingExposureSize(context, builder.build(), price), ZERO);
-
     }
 
     @Test
@@ -978,9 +974,9 @@ public class TemplateAdviserTest {
         };
 
         // = (400 + 200 + 100) = JPY 700 = 70000 SEN
-        // -> 25% Exposure = 17500 SEN
+        // Hedge -> 100% Exposure
         initializer.run();
-        assertEquals(target.calculateInstrumentExposureSize(context, request), new BigDecimal("17500.000000000000"));
+        assertEquals(target.calculateInstrumentExposureSize(context, request), new BigDecimal("70000.0000000000"));
 
         // No price
         initializer.run();

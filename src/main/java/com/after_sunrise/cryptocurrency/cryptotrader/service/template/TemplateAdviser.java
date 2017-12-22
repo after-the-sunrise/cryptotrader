@@ -665,12 +665,6 @@ public class TemplateAdviser extends AbstractService implements Adviser {
     @VisibleForTesting
     BigDecimal calculateFundingExposureSize(Context context, Request request, BigDecimal price) {
 
-        Map<String, Set<String>> hedgeProducts = request.getHedgeProducts();
-
-        if (MapUtils.isNotEmpty(hedgeProducts)) {
-            return ZERO;
-        }
-
         if (price == null || price.signum() == 0) {
 
             log.trace("No funding exposure size. Price : {}", price);
@@ -770,7 +764,8 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         }
 
-        BigDecimal exposure = ofNullable(calculateTradingExposure(context, request)).orElse(ZERO);
+        BigDecimal exposure = MapUtils.isNotEmpty(request.getHedgeProducts()) ? ONE :
+                ofNullable(calculateTradingExposure(context, request)).orElse(ZERO);
 
         BigDecimal exposed = position.multiply(basePrice).multiply(exposure);
 
