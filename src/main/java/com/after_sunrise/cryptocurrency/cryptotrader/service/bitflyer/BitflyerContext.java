@@ -877,7 +877,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             BigDecimal size = instruction.getSize().abs();
             BigDecimal price = instruction.getPrice();
             Integer expiry = instruction.getTimeToLive() == null ? null : (int)
-                    Math.min(instruction.getTimeToLive().plusMinutes(1).toMinutes(), 1);
+                    Math.max(instruction.getTimeToLive().plusMinutes(1).toMinutes(), 1);
 
             if (IFD.name().equals(instruction.getStrategy())) {
 
