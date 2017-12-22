@@ -40,8 +40,7 @@ import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ParentType.IFD;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.SELL;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.COLLATERAL;
-import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.COLLATERAL_BTC;
-import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.COLLATERAL_JPY;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.*;
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
@@ -510,7 +509,23 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
         CurrencyType structureCurrency = product.getStructure().getCurrency();
 
         if (structureCurrency == currency) {
+
+            if (product == FX_BTC_JPY) {
+
+                BigDecimal p1 = getMidPrice(key);
+
+                BigDecimal p2 = getMidPrice(Key.build(key).instrument(BTC_JPY.name()).build());
+
+                if (p1 == null || p2 == null || p2.signum() == 0) {
+                    return null;
+                }
+
+                return p1.add(p2).multiply(HALF).divide(p2, SCALE, HALF_UP);
+
+            }
+
             return ONE;
+
         }
 
         for (ProductType p : ProductType.values()) {

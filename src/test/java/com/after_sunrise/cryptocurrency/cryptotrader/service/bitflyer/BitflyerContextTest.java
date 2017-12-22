@@ -494,7 +494,6 @@ public class BitflyerContextTest {
                     case BTC:
                         switch (product) {
                             case BTC_JPY:
-                            case FX_BTC_JPY:
                             case BTCJPY_MAT1WK:
                             case BTCJPY_MAT2WK:
                             case COLLATERAL_BTC:
@@ -508,6 +507,9 @@ public class BitflyerContextTest {
                                 break;
                             case BCH_BTC:
                                 expect = new BigDecimal("1.6666666667");
+                                break;
+                            case FX_BTC_JPY:
+                                expect = new BigDecimal("0.9940476190");
                                 break;
                         }
                         break;
@@ -577,11 +579,13 @@ public class BitflyerContextTest {
                     case BTC:
                         switch (product) {
                             case BTC_JPY:
-                            case FX_BTC_JPY:
                             case BTCJPY_MAT1WK:
                             case BTCJPY_MAT2WK:
                             case COLLATERAL_BTC:
                                 expect = ONE;
+                                break;
+                            case FX_BTC_JPY:
+                                expect = null;
                                 break;
                         }
                         break;
