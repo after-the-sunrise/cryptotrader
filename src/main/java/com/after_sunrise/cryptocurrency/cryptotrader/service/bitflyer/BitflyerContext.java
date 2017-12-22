@@ -516,11 +516,13 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
                 BigDecimal p2 = getMidPrice(Key.build(key).instrument(BTC_JPY.name()).build());
 
-                if (p1 == null || p2 == null || p2.signum() == 0) {
+                if (p1 == null || p2 == null || p1.signum() == 0) {
                     return null;
                 }
 
-                return p1.add(p2).multiply(HALF).divide(p2, SCALE, HALF_UP);
+                BigDecimal ratio = getDecimalProperty("conversion.ratio", new BigDecimal("0.75"));
+
+                return p1.multiply(ratio).add(p2.multiply(ONE.subtract(ratio))).divide(p1, SCALE, HALF_UP);
 
             }
 

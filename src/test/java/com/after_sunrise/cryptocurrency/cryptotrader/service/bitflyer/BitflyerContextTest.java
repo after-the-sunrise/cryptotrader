@@ -509,7 +509,7 @@ public class BitflyerContextTest {
                                 expect = new BigDecimal("1.6666666667");
                                 break;
                             case FX_BTC_JPY:
-                                expect = new BigDecimal("0.9940476190");
+                                expect = new BigDecimal("1.0030120482");
                                 break;
                         }
                         break;
