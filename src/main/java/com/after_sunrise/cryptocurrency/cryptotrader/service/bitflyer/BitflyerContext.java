@@ -77,7 +77,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
     private static final int REALTIME_COUNT = 1000;
 
-    private static final int REALTIME_QUERIES = 64;
+    private static final int REALTIME_QUERIES = 32;
 
     private final Bitflyer4j bitflyer4j;
 
@@ -427,11 +427,13 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
                 Execution.Request.RequestBuilder b = Execution.Request.builder().product(id).count(REALTIME_COUNT);
 
+                int queries = getIntProperty("trade.queries", REALTIME_QUERIES);
+
                 Instant cutoff = getNow().minus(REALTIME_TRADE);
 
                 Long minimumId = null;
 
-                for (int i = 0; i < REALTIME_QUERIES; i++) {
+                for (int i = 0; i < queries; i++) {
 
                     Execution.Request r = b.before(minimumId).build();
 
