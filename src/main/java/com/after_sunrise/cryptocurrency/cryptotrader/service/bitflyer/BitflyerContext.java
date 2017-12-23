@@ -5,6 +5,7 @@ import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4jFactory;
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.ParentType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType;
+import com.after_sunrise.cryptocurrency.bitflyer4j.core.TimeInForceType;
 import com.after_sunrise.cryptocurrency.bitflyer4j.entity.*;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
@@ -936,9 +937,18 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             }
 
-            CompletableFuture<OrderCreate> future = orderService.sendOrder(OrderCreate.Request.builder()
-                    .product(product).type(condition).side(side).price(price).size(size).expiry(expiry).build()
-            );
+            OrderCreate.Request.RequestBuilder builder = OrderCreate.Request.builder()
+                    .product(product).type(condition).side(side).price(price).size(size).expiry(expiry);
+
+            if (TimeInForceType.IOC.name().equals(instruction.getStrategy())) {
+                builder = builder.expiry(null).timeInForce(TimeInForceType.IOC);
+            }
+
+            if (TimeInForceType.FOK.name().equals(instruction.getStrategy())) {
+                builder = builder.expiry(null).timeInForce(TimeInForceType.FOK);
+            }
+
+            CompletableFuture<OrderCreate> future = orderService.sendOrder(builder.build());
 
             futures.put(instruction, future.thenApply(r -> r == null ? null : r.getAcceptanceId()));
 
