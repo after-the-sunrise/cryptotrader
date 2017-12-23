@@ -22,14 +22,18 @@ import static java.math.RoundingMode.UP;
  */
 public class BitflyerAdviser extends TemplateAdviser implements BitflyerService {
 
-    private static final double SWAP_RATE = 0.0004;
+    private static final BigDecimal SWAP_RATE = new BigDecimal("0.0004");
 
     public BitflyerAdviser() {
         super(ID);
     }
 
     @VisibleForTesting
-    BigDecimal calculateSwapRate(Context context, Request request) {
+    BigDecimal calculateSwapRate(Context context, Request request, BigDecimal dailyRate) {
+
+        if (dailyRate == null) {
+            return ZERO;
+        }
 
         Instant now = request.getCurrentTime();
 
@@ -55,20 +59,37 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         long swaps = maturity.toDays();
 
-        double rate = Math.pow(1 + SWAP_RATE, swaps) - 1;
+        double rate = Math.pow(ONE.add(dailyRate).doubleValue(), swaps) - 1;
 
         return BigDecimal.valueOf(rate).setScale(SCALE, UP);
 
     }
 
     @Override
-    protected BigDecimal adjustBasis(Context context, Request request, BigDecimal basis) {
+    protected BigDecimal adjustBuyBasis(Context context, Request request, BigDecimal basis) {
 
         if (basis == null) {
             return null;
         }
 
-        BigDecimal swapRate = calculateSwapRate(context, request);
+        BigDecimal dailyRate = getDecimalProperty("swap.buy", SWAP_RATE);
+
+        BigDecimal swapRate = calculateSwapRate(context, request, dailyRate);
+
+        return basis.add(swapRate);
+
+    }
+
+    @Override
+    protected BigDecimal adjustSellBasis(Context context, Request request, BigDecimal basis) {
+
+        if (basis == null) {
+            return null;
+        }
+
+        BigDecimal dailyRate = getDecimalProperty("swap.sell", SWAP_RATE);
+
+        BigDecimal swapRate = calculateSwapRate(context, request, dailyRate);
 
         return basis.add(swapRate);
 
@@ -112,7 +133,9 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         BigDecimal spread = request.getTradingSpread();
 
-        BigDecimal swap = calculateSwapRate(context, request);
+        BigDecimal dailyRate = getDecimalProperty("swap.buy", SWAP_RATE);
+
+        BigDecimal swap = calculateSwapRate(context, request, dailyRate);
 
         if (bid == null || comm == null || swap == null) {
             return null;
@@ -143,7 +166,9 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         BigDecimal spread = request.getTradingSpread();
 
-        BigDecimal swap = calculateSwapRate(context, request);
+        BigDecimal dailyRate = getDecimalProperty("swap.sell", SWAP_RATE);
+
+        BigDecimal swap = calculateSwapRate(context, request, dailyRate);
 
         if (ask == null || comm == null || swap == null) {
             return null;
