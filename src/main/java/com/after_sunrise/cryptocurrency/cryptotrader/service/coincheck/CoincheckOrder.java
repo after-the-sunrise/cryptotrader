@@ -75,4 +75,18 @@ public class CoincheckOrder implements Order {
 
     }
 
+    @Getter
+    @Builder
+    @ToString
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class Response {
+
+        @SerializedName("success")
+        private Boolean success;
+
+        @SerializedName("id")
+        private String id;
+
+    }
+
 }

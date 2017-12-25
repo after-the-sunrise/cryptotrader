@@ -1,12 +1,15 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import org.apache.commons.configuration2.MapConfiguration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -16,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -28,6 +32,7 @@ import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singleton;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
 
@@ -94,6 +99,36 @@ public class CoincheckContextTest {
         System.out.println("FDO : " + target.findOrder(key, "some_order_id"));
         System.out.println("LAO : " + target.listActiveOrders(key));
         System.out.println("LSE : " + target.listExecutions(key));
+
+    }
+
+    @Test(enabled = false)
+    public void test_Order() throws Exception {
+
+        Path path = Paths.get(System.getProperty("user.home"), ".cryptotrader");
+        target.setConfiguration(new Configurations().properties(path.toAbsolutePath().toFile()));
+
+        doCallRealMethod().when(target).request(any(), any(), any(), any());
+
+        Key key = Key.builder().instrument("btc_jpy").timestamp(Instant.now()).build();
+
+        Map<CreateInstruction, String> creates = target.createOrders(key, singleton(
+                CreateInstruction.builder()
+                        .price(new BigDecimal("1000000"))
+                        .size(new BigDecimal("0.005")).build()
+        ));
+
+        creates.forEach((instruction, id) -> System.out.println(instruction + " -> " + id));
+
+        TimeUnit.SECONDS.sleep(5);
+
+        Map<CancelInstruction, String> cancels = target.cancelOrders(key, creates.values().stream()
+                .filter(StringUtils::isNotEmpty)
+                .map(id -> CancelInstruction.builder().id(id).build())
+                .collect(Collectors.toSet())
+        );
+
+        cancels.forEach((instruction, id) -> System.out.println(instruction + " -> " + id));
 
     }
 

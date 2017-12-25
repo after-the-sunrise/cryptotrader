@@ -1,6 +1,7 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
@@ -20,7 +21,9 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckService.SideType.*;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.*;
+import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.unmodifiableList;
@@ -45,6 +48,10 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     private static final String URL_ORDER_LIST = "https://coincheck.com/api/exchange/orders/opens";
 
     private static final String URL_EXECUTION = "https://coincheck.com/api/exchange/orders/transactions";
+
+    private static final String URL_ORDER_CREATE = "https://coincheck.com/api/exchange/orders";
+
+    private static final String URL_ORDER_CANCEL = "https://coincheck.com/api/exchange/orders/";
 
     private static final long TRADE_LIMIT = 64;
 
@@ -347,7 +354,7 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
             CoincheckBalance balance = gson.fromJson(data, CoincheckBalance.class);
 
-            return Objects.equals(Boolean.TRUE, balance.getSuccess()) ? balance : null;
+            return Objects.equals(TRUE, balance.getSuccess()) ? balance : null;
 
         });
 
@@ -445,7 +452,7 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
             CoincheckOrder.Container c = gson.fromJson(data, CoincheckOrder.Container.class);
 
-            return Objects.equals(Boolean.TRUE, c.getSuccess()) ? c.getOrders() : null;
+            return Objects.equals(TRUE, c.getSuccess()) ? c.getOrders() : null;
 
         });
 
@@ -488,7 +495,7 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
             CoincheckTransaction.Container c = gson.fromJson(data, CoincheckTransaction.Container.class);
 
-            return Objects.equals(Boolean.TRUE, c.getSuccess()) ? c.getTransactions() : null;
+            return Objects.equals(TRUE, c.getSuccess()) ? c.getTransactions() : null;
 
         });
 
@@ -501,24 +508,83 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     }
 
     @Override
-    public Map<Instruction.CreateInstruction, String> createOrders(Key key, Set<Instruction.CreateInstruction> instructions) {
+    public Map<CreateInstruction, String> createOrders(Key key, Set<CreateInstruction> instructions) {
 
-        if (!BTC_JPY.equals(key.getInstrument())) {
-            return null;
+        Map<CreateInstruction, String> results = new IdentityHashMap<>();
+
+        for (CreateInstruction i : trimToEmpty(instructions)) {
+
+            if (i == null || i.getPrice() == null || i.getSize() == null || i.getSize().signum() == 0) {
+
+                results.put(i, null);
+
+                continue;
+
+            }
+
+            try {
+
+                Map<String, String> body = new LinkedHashMap<>();
+                body.put("pair", key.getInstrument());
+                body.put("amount", i.getSize().abs().toPlainString());
+
+                if (i.getPrice().signum() != 0) {
+                    body.put("rate", i.getPrice().toPlainString());
+                    body.put("order_type", (i.getSize().signum() >= 0 ? BUY : SELL).getId());
+                } else {
+                    body.put("order_type", (i.getSize().signum() >= 0 ? MARKET_BUY : MARKET_SELL).getId());
+                }
+
+                String result = executePrivate(POST, URL_ORDER_CREATE, null, gson.toJson(body));
+
+                CoincheckOrder.Response response = gson.fromJson(result, CoincheckOrder.Response.class);
+
+                results.put(i, TRUE.equals(response.getSuccess()) ? response.getId() : null);
+
+            } catch (Exception e) {
+
+                results.put(i, null);
+
+            }
+
         }
 
-        return null;
+        return results;
 
     }
 
     @Override
-    public Map<Instruction.CancelInstruction, String> cancelOrders(Key key, Set<Instruction.CancelInstruction> instructions) {
+    public Map<CancelInstruction, String> cancelOrders(Key key, Set<CancelInstruction> instructions) {
 
-        if (!BTC_JPY.equals(key.getInstrument())) {
-            return null;
-        }
+        Map<CancelInstruction, String> results = new IdentityHashMap<>();
 
-        return null;
+        trimToEmpty(instructions).stream().filter(Objects::nonNull).forEach(i -> {
+
+            try {
+
+                String data = executePrivate(DELETE, URL_ORDER_CANCEL + i.getId(), null, null);
+
+                if (StringUtils.isEmpty(data)) {
+
+                    results.put(i, null);
+
+                } else {
+
+                    CoincheckOrder.Response response = gson.fromJson(data, CoincheckOrder.Response.class);
+
+                    results.put(i, TRUE.equals(response.getSuccess()) ? response.getId() : null);
+
+                }
+
+            } catch (Exception e) {
+
+                results.put(i, null);
+
+            }
+
+        });
+
+        return results;
 
     }
 
