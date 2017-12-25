@@ -6,6 +6,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Creat
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 import org.apache.commons.configuration2.MapConfiguration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckContext.CurrencyType;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckService.ProductType.BTC_JPY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
 import static com.google.common.io.Resources.getResource;
 import static java.lang.Boolean.FALSE;
@@ -32,7 +34,6 @@ import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.singleton;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
 
@@ -72,7 +73,7 @@ public class CoincheckContextTest {
 
         doCallRealMethod().when(target).request(any(), any(), any(), any());
 
-        Key key = Key.builder().instrument("btc_jpy").timestamp(Instant.now()).build();
+        Key key = Key.builder().instrument(BTC_JPY.name()).timestamp(Instant.now()).build();
 
         System.out.println("APX : " + target.getBestAskPrice(key));
         System.out.println("ASZ : " + target.getBestAskSize(key));
@@ -110,17 +111,20 @@ public class CoincheckContextTest {
 
         doCallRealMethod().when(target).request(any(), any(), any(), any());
 
-        Key key = Key.builder().instrument("btc_jpy").timestamp(Instant.now()).build();
+        Key key = Key.builder().instrument(BTC_JPY.name()).timestamp(Instant.now()).build();
 
-        Map<CreateInstruction, String> creates = target.createOrders(key, singleton(
+        Map<CreateInstruction, String> creates = target.createOrders(key, Sets.newHashSet(
                 CreateInstruction.builder()
-                        .price(new BigDecimal("1000000"))
+                        .price(new BigDecimal("1000001"))
+                        .size(new BigDecimal("0.005")).build(),
+                CreateInstruction.builder()
+                        .price(new BigDecimal("1000002"))
                         .size(new BigDecimal("0.005")).build()
         ));
 
         creates.forEach((instruction, id) -> System.out.println(instruction + " -> " + id));
 
-        TimeUnit.SECONDS.sleep(5);
+        TimeUnit.SECONDS.sleep(10);
 
         Map<CancelInstruction, String> cancels = target.cancelOrders(key, creates.values().stream()
                 .filter(StringUtils::isNotEmpty)
@@ -144,7 +148,7 @@ public class CoincheckContextTest {
         doReturn(data).when(target).request(GET, "https://coincheck.com/api/ticker", null, null);
 
         // Found
-        CoincheckTick tick = target.queryTick(Key.builder().instrument("btc_jpy").build()).get();
+        CoincheckTick tick = target.queryTick(Key.builder().instrument(BTC_JPY.name()).build()).get();
         assertEquals(tick.getAsk(), new BigDecimal("396000"));
         assertEquals(tick.getBid(), new BigDecimal("395835"));
         assertEquals(tick.getLast(), new BigDecimal("396000"));
@@ -154,7 +158,7 @@ public class CoincheckContextTest {
 
         // Cached
         doReturn(null).when(target).request(any(), any(), any(), any());
-        CoincheckTick cached = target.queryTick(Key.builder().instrument("btc_jpy").build()).get();
+        CoincheckTick cached = target.queryTick(Key.builder().instrument(BTC_JPY.name()).build()).get();
         assertSame(cached, tick);
 
     }
@@ -166,7 +170,7 @@ public class CoincheckContextTest {
         doReturn(data).when(target).request(GET, "https://coincheck.com/api/order_books", null, null);
 
         // Found
-        CoincheckBook book = target.queryBook(Key.builder().instrument("btc_jpy").build()).get();
+        CoincheckBook book = target.queryBook(Key.builder().instrument(BTC_JPY.name()).build()).get();
         assertEquals(book.getBestAskPrice(), new BigDecimal("1613281.0"));
         assertEquals(book.getBestBidPrice(), new BigDecimal("1613120.0"));
         assertEquals(book.getBestAskSize(), new BigDecimal("0.008"));
@@ -177,7 +181,7 @@ public class CoincheckContextTest {
 
         // Cached
         doReturn(null).when(target).request(any(), any(), any(), any());
-        CoincheckBook cached = target.queryBook(Key.builder().instrument("btc_jpy").build()).get();
+        CoincheckBook cached = target.queryBook(Key.builder().instrument(BTC_JPY.name()).build()).get();
         assertSame(cached, book);
 
     }
@@ -284,7 +288,7 @@ public class CoincheckContextTest {
     @Test
     public void testListTrades() throws Exception {
 
-        Key key = Key.builder().instrument("btc_jpy").timestamp(Instant.parse("2017-08-02T00:00:00.000Z")).build();
+        Key key = Key.builder().instrument(BTC_JPY.name()).timestamp(Instant.parse("2017-08-02T00:00:00.000Z")).build();
         String data = Resources.toString(getResource("json/coincheck_trade.json"), UTF_8);
         doReturn(data).when(target).request(GET, "https://coincheck.com/api/trades?pair=btc_jpy&limit=500", null, null);
 
@@ -323,7 +327,7 @@ public class CoincheckContextTest {
 
         Key.KeyBuilder b = Key.builder();
 
-        assertEquals(target.getInstrumentCurrency(b.instrument("btc_jpy").build()), CurrencyType.BTC);
+        assertEquals(target.getInstrumentCurrency(b.instrument(BTC_JPY.name()).build()), CurrencyType.BTC);
         assertEquals(target.getInstrumentCurrency(b.instrument("foo").build()), null);
         assertEquals(target.getInstrumentCurrency(b.instrument(null).build()), null);
 
@@ -334,7 +338,7 @@ public class CoincheckContextTest {
 
         Key.KeyBuilder b = Key.builder();
 
-        assertEquals(target.getFundingCurrency(b.instrument("btc_jpy").build()), CurrencyType.JPY);
+        assertEquals(target.getFundingCurrency(b.instrument(BTC_JPY.name()).build()), CurrencyType.JPY);
         assertEquals(target.getFundingCurrency(b.instrument("foo").build()), null);
         assertEquals(target.getFundingCurrency(b.instrument(null).build()), null);
 
@@ -343,7 +347,7 @@ public class CoincheckContextTest {
     @Test
     public void testGetConversionPrice() {
 
-        Key key = Key.builder().instrument("btc_jpy").build();
+        Key key = Key.builder().instrument(BTC_JPY.name()).build();
         doReturn(TEN).when(target).getMidPrice(key);
 
         assertEquals(target.getConversionPrice(key, CurrencyType.BTC), ONE);
@@ -407,7 +411,7 @@ public class CoincheckContextTest {
     @Test
     public void testGetInstrumentPosition() {
 
-        Key key = Key.builder().instrument("btc_jpy").build();
+        Key key = Key.builder().instrument(BTC_JPY.name()).build();
         CoincheckBalance balance = mock(CoincheckBalance.class);
         doReturn(TEN).when(balance).getBtc();
 
@@ -423,7 +427,7 @@ public class CoincheckContextTest {
     @Test
     public void testGetFundingPosition() {
 
-        Key key = Key.builder().instrument("btc_jpy").build();
+        Key key = Key.builder().instrument(BTC_JPY.name()).build();
         CoincheckBalance balance = mock(CoincheckBalance.class);
         doReturn(TEN).when(balance).getJpy();
 
@@ -439,7 +443,7 @@ public class CoincheckContextTest {
     @Test
     public void testRoundLotSize() {
 
-        Key key = Key.builder().instrument("btc_jpy").build();
+        Key key = Key.builder().instrument(BTC_JPY.name()).build();
         BigDecimal input = new BigDecimal("1.23456");
 
         assertEquals(target.roundLotSize(key, input, UP), new BigDecimal("1.235"));
@@ -464,7 +468,7 @@ public class CoincheckContextTest {
     @Test
     public void testRoundTickSize() {
 
-        Key key = Key.builder().instrument("btc_jpy").build();
+        Key key = Key.builder().instrument(BTC_JPY.name()).build();
         BigDecimal input = new BigDecimal("1.23456");
 
         assertEquals(target.roundTickSize(key, input, UP), new BigDecimal("2"));
@@ -489,7 +493,7 @@ public class CoincheckContextTest {
     @Test
     public void testGetCommissionRate() {
 
-        Key key = Key.builder().instrument("btc_jpy").build();
+        Key key = Key.builder().instrument(BTC_JPY.name()).build();
         assertEquals(target.getCommissionRate(key), ZERO);
 
         conf.addProperty(
@@ -550,7 +554,7 @@ public class CoincheckContextTest {
         when(orders.get(1).getProduct()).thenReturn(null);
         when(orders.get(2).getProduct()).thenReturn("foo");
 
-        Key key = Key.builder().instrument("btc_jpy").build();
+        Key key = Key.builder().instrument(BTC_JPY.name()).build();
         doReturn(orders).when(target).fetchOrders(key);
 
         assertNull(target.findOrder(key, "0"));
@@ -573,7 +577,7 @@ public class CoincheckContextTest {
         when(orders.get(1).getActive()).thenReturn(FALSE);
         when(orders.get(3).getProduct()).thenReturn("foo");
 
-        Key key = Key.builder().instrument("btc_jpy").build();
+        Key key = Key.builder().instrument(BTC_JPY.name()).build();
         doReturn(orders).when(target).fetchOrders(key);
 
         List<Order> results = target.listActiveOrders(key);
@@ -591,7 +595,7 @@ public class CoincheckContextTest {
         doReturn(data).when(target).executePrivate(GET, "https://coincheck.com/api/exchange/orders/transactions", null, null);
 
         // Found
-        List<Order.Execution> executions = target.listExecutions(Key.builder().instrument("btc_jpy").build());
+        List<Order.Execution> executions = target.listExecutions(Key.builder().instrument(BTC_JPY.name()).build());
         assertEquals(executions.size(), 2, executions.toString());
         assertEquals(executions.get(0).getId(), "38");
         assertEquals(executions.get(0).getOrderId(), "49");
@@ -606,7 +610,7 @@ public class CoincheckContextTest {
 
         // Cached
         doReturn(null).when(target).executePrivate(any(), any(), any(), any());
-        List<Order.Execution> cached = target.listExecutions(Key.builder().instrument("btc_jpy").build());
+        List<Order.Execution> cached = target.listExecutions(Key.builder().instrument(BTC_JPY.name()).build());
         assertEquals(cached, executions);
     }
 

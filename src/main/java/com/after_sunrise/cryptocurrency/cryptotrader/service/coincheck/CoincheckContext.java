@@ -25,7 +25,7 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.Co
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.*;
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.ZERO;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toList;
 
@@ -34,8 +34,6 @@ import static java.util.stream.Collectors.toList;
  * @version 0.0.1
  */
 public class CoincheckContext extends TemplateContext implements CoincheckService {
-
-    private static final String BTC_JPY = "btc_jpy";
 
     private static final String URL_TICK = "https://coincheck.com/api/ticker";
 
@@ -56,12 +54,6 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     private static final long TRADE_LIMIT = 64;
 
     private static final Duration TRADE_EXPIRY = Duration.ofHours(24);
-
-    private static final BigDecimal LOT_SIZE = new BigDecimal("0.005");
-
-    private static final BigDecimal TICK_SIZE = ONE;
-
-    private static final BigDecimal COMMISSION = ZERO;
 
     private final Gson gson;
 
@@ -101,7 +93,9 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     @VisibleForTesting
     Optional<CoincheckTick> queryTick(Key key) {
 
-        if (!BTC_JPY.equals(key.getInstrument())) {
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null) {
             return Optional.empty();
         }
 
@@ -124,7 +118,9 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     @VisibleForTesting
     Optional<CoincheckBook> queryBook(Key key) {
 
-        if (!BTC_JPY.equals(key.getInstrument())) {
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null) {
             return Optional.empty();
         }
 
@@ -172,13 +168,16 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     @Override
     public List<Trade> listTrades(Key key, Instant fromTime) {
 
-        if (StringUtils.isEmpty(key.getInstrument())) {
+
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null) {
             return Collections.emptyList();
         }
 
         List<CoincheckTrade> values;
 
-        String id = StringUtils.trimToEmpty(key.getInstrument());
+        String id = product.getId();
 
         Instant cutoff = trim(key.getTimestamp(), getNow()).minus(TRADE_EXPIRY);
 
@@ -255,38 +254,34 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     @Override
     public CurrencyType getInstrumentCurrency(Key key) {
 
-        if (!BTC_JPY.equals(key.getInstrument())) {
-            return null;
-        }
+        ProductType product = ProductType.find(key.getInstrument());
 
-        return CurrencyType.BTC;
+        return product == null ? null : product.getInstrumentCurrency();
 
     }
 
     @Override
     public CurrencyType getFundingCurrency(Key key) {
 
-        if (!BTC_JPY.equals(key.getInstrument())) {
-            return null;
-        }
+        ProductType product = ProductType.find(key.getInstrument());
 
-        return CurrencyType.JPY;
+        return product == null ? null : product.getFundingCurrency();
 
     }
 
     @Override
     public BigDecimal getConversionPrice(Key key, CurrencyType currency) {
 
-        if (!BTC_JPY.equals(key.getInstrument())) {
-            return null;
-        }
+        if (currency != null) {
 
-        if (currency == CurrencyType.BTC) {
-            return ONE;
-        }
+            if (currency == getInstrumentCurrency(key)) {
+                return ONE;
+            }
 
-        if (currency == CurrencyType.JPY) {
-            return getMidPrice(key);
+            if (currency == getFundingCurrency(key)) {
+                return getMidPrice(key);
+            }
+
         }
 
         return null;
@@ -365,29 +360,43 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     @Override
     public BigDecimal getInstrumentPosition(Key key) {
 
-        if (!BTC_JPY.equals(key.getInstrument())) {
-            return null;
+        CurrencyType currency = getInstrumentCurrency(key);
+
+        if (currency == CurrencyType.BTC) {
+            return queryBalance(key).map(CoincheckBalance::getBtc).orElse(null);
         }
 
-        return queryBalance(key).map(CoincheckBalance::getBtc).orElse(null);
+        if (currency == CurrencyType.JPY) {
+            return queryBalance(key).map(CoincheckBalance::getJpy).orElse(null);
+        }
+
+        return null;
 
     }
 
     @Override
     public BigDecimal getFundingPosition(Key key) {
 
-        if (!BTC_JPY.equals(key.getInstrument())) {
-            return null;
+        CurrencyType currency = getFundingCurrency(key);
+
+        if (currency == CurrencyType.BTC) {
+            return queryBalance(key).map(CoincheckBalance::getBtc).orElse(null);
         }
 
-        return queryBalance(key).map(CoincheckBalance::getJpy).orElse(null);
+        if (currency == CurrencyType.JPY) {
+            return queryBalance(key).map(CoincheckBalance::getJpy).orElse(null);
+        }
+
+        return null;
 
     }
 
     @Override
     public BigDecimal roundLotSize(Key key, BigDecimal value, RoundingMode mode) {
 
-        if (!BTC_JPY.equals(key.getInstrument())) {
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null) {
             return null;
         }
 
@@ -395,7 +404,7 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
             return null;
         }
 
-        BigDecimal lotSize = getDecimalProperty("size.lot", LOT_SIZE);
+        BigDecimal lotSize = getDecimalProperty("size.lot", product.getLotSize());
 
         if (lotSize.signum() == 0) {
             return null;
@@ -408,7 +417,9 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     @Override
     public BigDecimal roundTickSize(Key key, BigDecimal value, RoundingMode mode) {
 
-        if (!BTC_JPY.equals(key.getInstrument())) {
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null) {
             return null;
         }
 
@@ -416,7 +427,7 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
             return null;
         }
 
-        BigDecimal tickSize = getDecimalProperty("size.tick", TICK_SIZE);
+        BigDecimal tickSize = getDecimalProperty("size.tick", product.getTickSize());
 
         if (tickSize.signum() == 0) {
             return null;
@@ -429,11 +440,13 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     @Override
     public BigDecimal getCommissionRate(Key key) {
 
-        if (!BTC_JPY.equals(key.getInstrument())) {
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null) {
             return null;
         }
 
-        return getDecimalProperty("commission.rate", COMMISSION);
+        return getDecimalProperty("commission.rate", product.getCommissionRate());
 
     }
 
@@ -460,10 +473,17 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
     @Override
     public Order findOrder(Key key, String id) {
+
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null) {
+            return null;
+        }
+
         return trimToEmpty(fetchOrders(key)).stream()
                 .filter(Objects::nonNull)
                 .filter(o -> o.getProduct() != null)
-                .filter(o -> StringUtils.equals(o.getProduct(), key.getInstrument()))
+                .filter(o -> StringUtils.equals(o.getProduct(), product.getId()))
                 .filter(o -> o.getId() != null)
                 .filter(o -> StringUtils.equals(o.getId(), id))
                 .findAny().orElse(null);
@@ -471,10 +491,17 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
     @Override
     public List<Order> listActiveOrders(Key key) {
+
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null) {
+            return emptyList();
+        }
+
         return trimToEmpty(fetchOrders(key)).stream()
                 .filter(Objects::nonNull)
                 .filter(o -> o.getProduct() != null)
-                .filter(o -> StringUtils.equals(o.getProduct(), key.getInstrument()))
+                .filter(o -> StringUtils.equals(o.getProduct(), product.getId()))
                 .filter(o -> o.getActive() != null)
                 .filter(CoincheckOrder::getActive)
                 .collect(toList());
@@ -482,6 +509,12 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
     @Override
     public List<Order.Execution> listExecutions(Key key) {
+
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null) {
+            return emptyList();
+        }
 
         Key newKey = Key.build(key).instrument(WILDCARD).build();
 
@@ -502,7 +535,7 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
         return trimToEmpty(values).stream()
                 .filter(Objects::nonNull)
                 .filter(t -> t.getProduct() != null)
-                .filter(t -> t.getProduct().equals(key.getInstrument()))
+                .filter(t -> t.getProduct().equals(product.getId()))
                 .collect(toList());
 
     }
@@ -522,10 +555,20 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
             }
 
+            ProductType product = ProductType.find(key.getInstrument());
+
+            if (product == null) {
+
+                results.put(i, null);
+
+                continue;
+
+            }
+
             try {
 
                 Map<String, String> body = new LinkedHashMap<>();
-                body.put("pair", key.getInstrument());
+                body.put("pair", product.getId());
                 body.put("amount", i.getSize().abs().toPlainString());
 
                 if (i.getPrice().signum() != 0) {

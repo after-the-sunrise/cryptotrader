@@ -8,11 +8,17 @@ import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MicroEsti
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
 import lombok.Getter;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.BTC;
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.JPY;
+import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.ZERO;
 
 /**
  * @author takanori.takase
@@ -25,6 +31,47 @@ public interface CoincheckService extends Service {
     @Override
     default String get() {
         return ID;
+    }
+
+    enum ProductType {
+
+        BTC_JPY(BTC, JPY, new BigDecimal("0.005"), ONE, ZERO);
+
+        private static final Map<String, ProductType> NAMES = Stream.of(values()).collect(
+                Collectors.toMap(Enum::name, Function.identity())
+        );
+
+        public static ProductType find(String name) {
+            return NAMES.get(name);
+        }
+
+        @Getter
+        private final String id;
+
+        @Getter
+        private final CurrencyType instrumentCurrency;
+
+        @Getter
+        private final CurrencyType fundingCurrency;
+
+        @Getter
+        private final BigDecimal lotSize;
+
+        @Getter
+        private final BigDecimal tickSize;
+
+        @Getter
+        private final BigDecimal commissionRate;
+
+        ProductType(CurrencyType instrument, CurrencyType funding, BigDecimal lotSize, BigDecimal tickSize, BigDecimal commissionRate) {
+            this.id = name().toLowerCase();
+            this.instrumentCurrency = instrument;
+            this.fundingCurrency = funding;
+            this.lotSize = lotSize;
+            this.tickSize = tickSize;
+            this.commissionRate = commissionRate;
+        }
+
     }
 
     enum SideType {
@@ -54,10 +101,10 @@ public interface CoincheckService extends Service {
         }
 
         @Getter
-        final String id;
+        private final String id;
 
         @Getter
-        final boolean buy;
+        private final boolean buy;
 
         SideType(boolean buy) {
             this.id = name().toLowerCase();
