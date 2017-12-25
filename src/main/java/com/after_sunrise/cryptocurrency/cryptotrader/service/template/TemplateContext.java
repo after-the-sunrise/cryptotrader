@@ -21,11 +21,14 @@ import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLEncoder;
+import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -136,6 +139,33 @@ public abstract class TemplateContext extends AbstractService implements Context
     @VisibleForTesting
     public String getUniqueId() {
         return UUID.randomUUID().toString();
+    }
+
+    @VisibleForTesting
+    public String computeHash(String algorithm, byte[] key, byte[] data) throws IOException {
+
+        try {
+
+            Mac mac = Mac.getInstance(algorithm);
+
+            mac.init(new SecretKeySpec(key, algorithm));
+
+            byte[] hash = mac.doFinal(data);
+
+            StringBuilder sb = new StringBuilder(hash.length);
+
+            for (byte b : hash) {
+                sb.append(String.format("%02x", b & 0xff));
+            }
+
+            return sb.toString();
+
+        } catch (GeneralSecurityException e) {
+
+            throw new IOException("Failed to compute hash.", e);
+
+        }
+
     }
 
     @VisibleForTesting

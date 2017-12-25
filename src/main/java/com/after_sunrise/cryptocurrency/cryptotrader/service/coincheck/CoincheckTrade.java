@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * @author takanori.takase
@@ -17,6 +18,9 @@ import java.time.Instant;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class CoincheckTrade implements Trade {
 
+    @SerializedName("id")
+    private Long id;
+
     @SerializedName("created_at")
     private Instant timestamp;
 
@@ -26,8 +30,31 @@ public class CoincheckTrade implements Trade {
     @SerializedName("amount")
     private BigDecimal size;
 
-    private String buyOrderId;
+    @Override
+    public String getBuyOrderId() {
+        return null;
+    }
 
-    private String sellOrderId;
+    @Override
+    public String getSellOrderId() {
+        return null;
+    }
+
+    @Getter
+    @Builder
+    @ToString
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class Container {
+
+        @SerializedName("success")
+        private Boolean success;
+
+        @SerializedName("pagination")
+        private CoincheckPagination pagination;
+
+        @SerializedName("data")
+        private List<CoincheckTrade> trades;
+
+    }
 
 }

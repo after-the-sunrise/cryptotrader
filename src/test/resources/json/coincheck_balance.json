@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "jpy": "1234.0",
+  "btc": "0.1",
+  "jpy_reserved": "0.0",
+  "btc_reserved": "0.0",
+  "jpy_lend_in_use": "0.0",
+  "btc_lend_in_use": "0.0",
+  "jpy_lent": "0.0",
+  "btc_lent": "0.0",
+  "jpy_debt": "0.0",
+  "btc_debt": "0.0"
+}

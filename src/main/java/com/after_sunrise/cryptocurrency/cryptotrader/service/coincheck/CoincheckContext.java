@@ -1,20 +1,28 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.reflect.TypeToken;
 import com.google.gson.*;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
+import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toList;
 
@@ -24,16 +32,35 @@ import static java.util.stream.Collectors.toList;
  */
 public class CoincheckContext extends TemplateContext implements CoincheckService {
 
-    static final String PRODUCT = "btc_jpy";
+    private static final String BTC_JPY = "btc_jpy";
 
-    static final String URL_TICKER = "https://coincheck.com/api/ticker";
+    private static final String URL_TICK = "https://coincheck.com/api/ticker";
 
-    static final String URL_TRADE = "https://coincheck.com/api/trades";
+    private static final String URL_BOOK = "https://coincheck.com/api/order_books";
 
-    private static final Type TYPE_TRADE = new TypeToken<List<CoincheckTrade>>() {
-    }.getType();
+    private static final String URL_TRADE = "https://coincheck.com/api/trades";
+
+    private static final String URL_BALANCE = "https://coincheck.com/api/accounts/balance";
+
+    private static final String URL_ORDER_LIST = "https://coincheck.com/api/exchange/orders/opens";
+
+    private static final String URL_EXECUTION = "https://coincheck.com/api/exchange/orders/transactions";
+
+    private static final long TRADE_LIMIT = 64;
+
+    private static final Duration TRADE_EXPIRY = Duration.ofHours(24);
+
+    private static final BigDecimal LOT_SIZE = new BigDecimal("0.005");
+
+    private static final BigDecimal TICK_SIZE = ONE;
+
+    private static final BigDecimal COMMISSION = ZERO;
 
     private final Gson gson;
+
+    private final Map<String, NavigableMap<Long, CoincheckTrade>> trades;
+
+    private final AtomicLong lastNonce;
 
     public CoincheckContext() {
 
@@ -58,18 +85,22 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
         gson = builder.create();
 
+        trades = Collections.synchronizedMap(new HashMap<>());
+
+        lastNonce = new AtomicLong();
+
     }
 
     @VisibleForTesting
     Optional<CoincheckTick> queryTick(Key key) {
 
-        if (!PRODUCT.equals(key.getInstrument())) {
+        if (!BTC_JPY.equals(key.getInstrument())) {
             return Optional.empty();
         }
 
         CoincheckTick tick = findCached(CoincheckTick.class, key, () -> {
 
-            String data = request(URL_TICKER);
+            String data = request(URL_TICK);
 
             if (StringUtils.isEmpty(data)) {
                 return null;
@@ -83,14 +114,47 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
     }
 
+    @VisibleForTesting
+    Optional<CoincheckBook> queryBook(Key key) {
+
+        if (!BTC_JPY.equals(key.getInstrument())) {
+            return Optional.empty();
+        }
+
+        CoincheckBook book = findCached(CoincheckBook.class, key, () -> {
+
+            String data = request(URL_BOOK);
+
+            if (StringUtils.isEmpty(data)) {
+                return null;
+            }
+
+            return gson.fromJson(data, CoincheckBook.class);
+
+        });
+
+        return Optional.ofNullable(book);
+
+    }
+
     @Override
     public BigDecimal getBestAskPrice(Key key) {
-        return queryTick(key).map(CoincheckTick::getAsk).orElse(null);
+        return queryBook(key).map(CoincheckBook::getBestAskPrice).orElse(null);
     }
 
     @Override
     public BigDecimal getBestBidPrice(Key key) {
-        return queryTick(key).map(CoincheckTick::getBid).orElse(null);
+        return queryBook(key).map(CoincheckBook::getBestBidPrice).orElse(null);
+    }
+
+    @Override
+    public BigDecimal getBestAskSize(Key key) {
+        return queryBook(key).map(CoincheckBook::getBestAskSize).orElse(null);
+    }
+
+    @Override
+    public BigDecimal getBestBidSize(Key key) {
+        return queryBook(key).map(CoincheckBook::getBestBidSize).orElse(null);
     }
 
     @Override
@@ -101,23 +165,74 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     @Override
     public List<Trade> listTrades(Key key, Instant fromTime) {
 
-        if (!PRODUCT.equals(key.getInstrument())) {
+        if (StringUtils.isEmpty(key.getInstrument())) {
             return Collections.emptyList();
         }
 
-        List<CoincheckTrade> values = listCached(CoincheckTrade.class, key, () -> {
+        List<CoincheckTrade> values;
 
-            String data = request(URL_TRADE);
+        String id = StringUtils.trimToEmpty(key.getInstrument());
 
-            if (StringUtils.isEmpty(data)) {
-                return null;
-            }
+        Instant cutoff = trim(key.getTimestamp(), getNow()).minus(TRADE_EXPIRY);
 
-            List<CoincheckTrade> trades = gson.fromJson(data, TYPE_TRADE);
+        NavigableMap<Long, CoincheckTrade> map = trades.computeIfAbsent(id, i -> new TreeMap<>());
 
-            return Collections.unmodifiableList(trades);
+        synchronized (map) {
 
-        });
+            values = listCached(CoincheckTrade.class, key, () -> {
+
+                for (long i = 1; i <= TRADE_LIMIT; i++) {
+
+                    Map<String, String> parameters = new LinkedHashMap<>();
+                    parameters.put("pair", id);
+                    parameters.put("limit", "500");
+
+                    if (!map.isEmpty() && i != TRADE_LIMIT) {
+                        parameters.put("order", "asc");
+                        parameters.put("ending_before", map.lastEntry().getKey().toString());
+                    }
+
+                    String data = request(URL_TRADE + buildQueryParameter(parameters));
+
+                    if (StringUtils.isEmpty(data)) {
+                        break;
+                    }
+
+                    CoincheckTrade.Container container = gson.fromJson(data, CoincheckTrade.Container.class);
+
+                    List<CoincheckTrade> trades = trimToEmpty(container.getTrades()).stream()
+                            .filter(Objects::nonNull)
+                            .filter(trade -> trade.getId() != null)
+                            .filter(trade -> trade.getTimestamp() != null)
+                            .filter(trade -> trade.getTimestamp().isAfter(cutoff))
+                            .filter(trade -> trade.getTimestamp().isBefore(key.getTimestamp()))
+                            .collect(toList());
+
+                    if (trades.isEmpty()) {
+                        break;
+                    }
+
+                    trades.forEach(t -> map.put(t.getId(), t));
+
+                    while (!map.isEmpty()) {
+
+                        Map.Entry<Long, CoincheckTrade> entry = map.firstEntry();
+
+                        if (entry.getValue().getTimestamp().isAfter(cutoff)) {
+                            break;
+                        }
+
+                        map.remove(entry.getKey());
+
+                    }
+
+                }
+
+                return new ArrayList<>(map.values());
+
+            });
+
+        }
 
         if (fromTime == null) {
             return new ArrayList<>(values);
@@ -127,6 +242,283 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
                 .filter(e -> Objects.nonNull(e.getTimestamp()))
                 .filter(e -> !e.getTimestamp().isBefore(fromTime))
                 .collect(toList()));
+
+    }
+
+    @Override
+    public CurrencyType getInstrumentCurrency(Key key) {
+
+        if (!BTC_JPY.equals(key.getInstrument())) {
+            return null;
+        }
+
+        return CurrencyType.BTC;
+
+    }
+
+    @Override
+    public CurrencyType getFundingCurrency(Key key) {
+
+        if (!BTC_JPY.equals(key.getInstrument())) {
+            return null;
+        }
+
+        return CurrencyType.JPY;
+
+    }
+
+    @Override
+    public BigDecimal getConversionPrice(Key key, CurrencyType currency) {
+
+        if (!BTC_JPY.equals(key.getInstrument())) {
+            return null;
+        }
+
+        if (currency == CurrencyType.BTC) {
+            return ONE;
+        }
+
+        if (currency == CurrencyType.JPY) {
+            return getMidPrice(key);
+        }
+
+        return null;
+
+    }
+
+    @VisibleForTesting
+    String executePrivate(RequestType type, String url, Map<String, String> parameters, String data) throws Exception {
+
+        String apiKey = getStringProperty("api.id", null);
+        String secret = getStringProperty("api.secret", null);
+
+        if (StringUtils.isEmpty(apiKey) || StringUtils.isEmpty(secret)) {
+            return null;
+        }
+
+        String result;
+
+        synchronized (lastNonce) {
+
+            long currNonce = 0;
+
+            while (currNonce <= lastNonce.get()) {
+
+                TimeUnit.MILLISECONDS.sleep(1);
+
+                currNonce = getNow().toEpochMilli();
+
+            }
+
+            lastNonce.set(currNonce);
+
+            String path = url + buildQueryParameter(parameters);
+            String nonce = String.valueOf(currNonce);
+            String message = nonce + path + StringUtils.trimToEmpty(data);
+            String hash = computeHash("HmacSHA256", secret.getBytes(), message.getBytes());
+
+            Map<String, String> headers = new LinkedHashMap<>();
+            headers.put("Content-Type", "application/json");
+            headers.put("ACCESS-KEY", apiKey);
+            headers.put("ACCESS-NONCE", nonce);
+            headers.put("ACCESS-SIGNATURE", hash);
+
+            result = request(type, path, headers, data);
+
+
+        }
+
+        return result;
+
+    }
+
+    @VisibleForTesting
+    Optional<CoincheckBalance> queryBalance(Key key) {
+
+        Key newKey = Key.build(key).instrument(WILDCARD).build();
+
+        CoincheckBalance book = findCached(CoincheckBalance.class, newKey, () -> {
+
+            String data = executePrivate(GET, URL_BALANCE, null, null);
+
+            if (StringUtils.isEmpty(data)) {
+                return null;
+            }
+
+            CoincheckBalance balance = gson.fromJson(data, CoincheckBalance.class);
+
+            return Objects.equals(Boolean.TRUE, balance.getSuccess()) ? balance : null;
+
+        });
+
+        return Optional.ofNullable(book);
+
+    }
+
+    @Override
+    public BigDecimal getInstrumentPosition(Key key) {
+
+        if (!BTC_JPY.equals(key.getInstrument())) {
+            return null;
+        }
+
+        return queryBalance(key).map(CoincheckBalance::getBtc).orElse(null);
+
+    }
+
+    @Override
+    public BigDecimal getFundingPosition(Key key) {
+
+        if (!BTC_JPY.equals(key.getInstrument())) {
+            return null;
+        }
+
+        return queryBalance(key).map(CoincheckBalance::getJpy).orElse(null);
+
+    }
+
+    @Override
+    public BigDecimal roundLotSize(Key key, BigDecimal value, RoundingMode mode) {
+
+        if (!BTC_JPY.equals(key.getInstrument())) {
+            return null;
+        }
+
+        if (value == null || mode == null) {
+            return null;
+        }
+
+        BigDecimal lotSize = getDecimalProperty("size.lot", LOT_SIZE);
+
+        if (lotSize.signum() == 0) {
+            return null;
+        }
+
+        return value.divide(lotSize, 0, mode).multiply(lotSize);
+
+    }
+
+    @Override
+    public BigDecimal roundTickSize(Key key, BigDecimal value, RoundingMode mode) {
+
+        if (!BTC_JPY.equals(key.getInstrument())) {
+            return null;
+        }
+
+        if (value == null || mode == null) {
+            return null;
+        }
+
+        BigDecimal tickSize = getDecimalProperty("size.tick", TICK_SIZE);
+
+        if (tickSize.signum() == 0) {
+            return null;
+        }
+
+        return value.divide(tickSize, 0, mode).multiply(tickSize);
+
+    }
+
+    @Override
+    public BigDecimal getCommissionRate(Key key) {
+
+        if (!BTC_JPY.equals(key.getInstrument())) {
+            return null;
+        }
+
+        return getDecimalProperty("commission.rate", COMMISSION);
+
+    }
+
+    @VisibleForTesting
+    List<CoincheckOrder> fetchOrders(Key key) {
+
+        Key newKey = Key.build(key).instrument(WILDCARD).build();
+
+        return listCached(CoincheckOrder.class, newKey, () -> {
+
+            String data = executePrivate(GET, URL_ORDER_LIST, null, null);
+
+            if (StringUtils.isEmpty(data)) {
+                return null;
+            }
+
+            CoincheckOrder.Container c = gson.fromJson(data, CoincheckOrder.Container.class);
+
+            return Objects.equals(Boolean.TRUE, c.getSuccess()) ? c.getOrders() : null;
+
+        });
+
+    }
+
+    @Override
+    public Order findOrder(Key key, String id) {
+        return trimToEmpty(fetchOrders(key)).stream()
+                .filter(Objects::nonNull)
+                .filter(o -> o.getProduct() != null)
+                .filter(o -> StringUtils.equals(o.getProduct(), key.getInstrument()))
+                .filter(o -> o.getId() != null)
+                .filter(o -> StringUtils.equals(o.getId(), id))
+                .findAny().orElse(null);
+    }
+
+    @Override
+    public List<Order> listActiveOrders(Key key) {
+        return trimToEmpty(fetchOrders(key)).stream()
+                .filter(Objects::nonNull)
+                .filter(o -> o.getProduct() != null)
+                .filter(o -> StringUtils.equals(o.getProduct(), key.getInstrument()))
+                .filter(o -> o.getActive() != null)
+                .filter(CoincheckOrder::getActive)
+                .collect(toList());
+    }
+
+    @Override
+    public List<Order.Execution> listExecutions(Key key) {
+
+        Key newKey = Key.build(key).instrument(WILDCARD).build();
+
+        List<CoincheckTransaction> values = listCached(CoincheckTransaction.class, newKey, () -> {
+
+            String data = executePrivate(GET, URL_EXECUTION, null, null);
+
+            if (StringUtils.isEmpty(data)) {
+                return null;
+            }
+
+            CoincheckTransaction.Container c = gson.fromJson(data, CoincheckTransaction.Container.class);
+
+            return Objects.equals(Boolean.TRUE, c.getSuccess()) ? c.getTransactions() : null;
+
+        });
+
+        return trimToEmpty(values).stream()
+                .filter(Objects::nonNull)
+                .filter(t -> t.getProduct() != null)
+                .filter(t -> t.getProduct().equals(key.getInstrument()))
+                .collect(toList());
+
+    }
+
+    @Override
+    public Map<Instruction.CreateInstruction, String> createOrders(Key key, Set<Instruction.CreateInstruction> instructions) {
+
+        if (!BTC_JPY.equals(key.getInstrument())) {
+            return null;
+        }
+
+        return null;
+
+    }
+
+    @Override
+    public Map<Instruction.CancelInstruction, String> cancelOrders(Key key, Set<Instruction.CancelInstruction> instructions) {
+
+        if (!BTC_JPY.equals(key.getInstrument())) {
+            return null;
+        }
+
+        return null;
 
     }
 
