@@ -145,10 +145,10 @@ public class TemplateInstructorTest {
         results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         assertEquals(results.get(0).getPrice(), new BigDecimal("0.999"));
-        assertEquals(results.get(1).getPrice(), new BigDecimal("0.984"));
-        assertEquals(results.get(2).getPrice(), new BigDecimal("0.954"));
-        assertEquals(results.get(3).getPrice(), new BigDecimal("0.909"));
-        assertEquals(results.get(4).getPrice(), new BigDecimal("0.849"));
+        assertEquals(results.get(1).getPrice(), new BigDecimal("0.969"));
+        assertEquals(results.get(2).getPrice(), new BigDecimal("0.924"));
+        assertEquals(results.get(3).getPrice(), new BigDecimal("0.864"));
+        assertEquals(results.get(4).getPrice(), new BigDecimal("0.789"));
 
         assertEquals(results.get(0).getSize(), new BigDecimal("1.8"));
         assertEquals(results.get(1).getSize(), new BigDecimal("1.8"));
@@ -160,8 +160,8 @@ public class TemplateInstructorTest {
         results = target.createBuys(context, request, builder.buyLimitSize(ONE).build());
         assertEquals(results.size(), 3, results.toString());
         assertEquals(results.get(0).getPrice(), new BigDecimal("0.999"));
-        assertEquals(results.get(1).getPrice(), new BigDecimal("0.969"));
-        assertEquals(results.get(2).getPrice(), new BigDecimal("0.909"));
+        assertEquals(results.get(1).getPrice(), new BigDecimal("0.939"));
+        assertEquals(results.get(2).getPrice(), new BigDecimal("0.849"));
         assertEquals(results.get(0).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(1).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("0.3"));
@@ -220,10 +220,10 @@ public class TemplateInstructorTest {
         results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         assertEquals(results.get(0).getPrice(), new BigDecimal("1.002"));
-        assertEquals(results.get(1).getPrice(), new BigDecimal("1.017"));
-        assertEquals(results.get(2).getPrice(), new BigDecimal("1.047"));
-        assertEquals(results.get(3).getPrice(), new BigDecimal("1.092"));
-        assertEquals(results.get(4).getPrice(), new BigDecimal("1.152"));
+        assertEquals(results.get(1).getPrice(), new BigDecimal("1.032"));
+        assertEquals(results.get(2).getPrice(), new BigDecimal("1.077"));
+        assertEquals(results.get(3).getPrice(), new BigDecimal("1.137"));
+        assertEquals(results.get(4).getPrice(), new BigDecimal("1.212"));
 
         assertEquals(results.get(0).getSize(), new BigDecimal("-1.8"));
         assertEquals(results.get(1).getSize(), new BigDecimal("-1.8"));
@@ -235,8 +235,8 @@ public class TemplateInstructorTest {
         results = target.createSells(context, request, builder.sellLimitSize(ONE).build());
         assertEquals(results.size(), 3, results.toString());
         assertEquals(results.get(0).getPrice(), new BigDecimal("1.002"));
-        assertEquals(results.get(1).getPrice(), new BigDecimal("1.032"));
-        assertEquals(results.get(2).getPrice(), new BigDecimal("1.092"));
+        assertEquals(results.get(1).getPrice(), new BigDecimal("1.062"));
+        assertEquals(results.get(2).getPrice(), new BigDecimal("1.152"));
         assertEquals(results.get(0).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(1).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("-0.3"));

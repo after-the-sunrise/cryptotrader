@@ -227,9 +227,9 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         values.add(c.roundTickSize(key, base, mode));
 
-        for (int i = 1; i < splits; i++) {
+        for (int i = 2; i <= splits; i++) {
 
-            BigDecimal previous = values.get(i - 1);
+            BigDecimal previous = values.get(i - 2);
 
             BigDecimal adjusted = null;
 
@@ -238,6 +238,10 @@ public class TemplateInstructor extends AbstractService implements Instructor {
                 BigDecimal delta = deltaAmount.multiply(valueOf(i));
 
                 adjusted = previous.add(delta);
+
+                if (previous.signum() != adjusted.signum()) {
+                    adjusted = previous;
+                }
 
             }
 
