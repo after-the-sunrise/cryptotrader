@@ -31,6 +31,8 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
     static final int SIGNUM_SELL = -1;
 
+    static final int SAMPLES = 5;
+
     private final String id;
 
     public TemplateAdviser(String id) {
@@ -146,38 +148,44 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal sigma = request.getTradingSigma();
 
-        if (sigma.signum() == 0) {
+        if (sigma.signum() <= 0) {
             return ZERO;
         }
 
-        Integer samples = request.getTradingSamples();
+        Integer samples = trim(request.getTradingSamples(), 0);
 
-        if (samples == null || samples <= TEN.intValue()) {
-            return ZERO;
+        double highest = 0.0;
+
+        while (samples >= SAMPLES) {
+
+            Duration interval = Duration.between(request.getCurrentTime(), request.getTargetTime());
+
+            Instant to = request.getCurrentTime();
+
+            Instant from = to.minus(interval.toMillis() * samples, MILLIS);
+
+            List<Trade> trades = context.listTrades(Key.from(request), from.minus(interval));
+
+            NavigableMap<Instant, BigDecimal> prices = collapsePrices(trades, interval, from, to);
+
+            NavigableMap<Instant, BigDecimal> returns = calculateReturns(prices);
+
+            double[] doubles = returns.values().stream().filter(Objects::nonNull)
+                    .mapToDouble(BigDecimal::doubleValue).toArray();
+
+            double average = DoubleStream.of(doubles).average().orElse(Double.NaN);
+
+            double variance = DoubleStream.of(doubles).map(d -> Math.pow(d - average, 2)).sum() / (doubles.length - 1);
+
+            double deviation = Math.sqrt(variance) * sigma.doubleValue() + Math.abs(average);
+
+            highest = Double.isFinite(deviation) ? Math.max(highest, deviation) : highest;
+
+            samples = samples / 2;
+
         }
 
-        Duration interval = Duration.between(request.getCurrentTime(), request.getTargetTime());
-
-        Instant to = request.getCurrentTime();
-
-        Instant from = to.minus(interval.toMillis() * samples, MILLIS);
-
-        List<Trade> trades = context.listTrades(Key.from(request), from.minus(interval));
-
-        NavigableMap<Instant, BigDecimal> prices = collapsePrices(trades, interval, from, to);
-
-        NavigableMap<Instant, BigDecimal> returns = calculateReturns(prices);
-
-        double[] doubles = returns.values().stream().filter(Objects::nonNull)
-                .mapToDouble(BigDecimal::doubleValue).toArray();
-
-        double average = DoubleStream.of(doubles).average().orElse(Double.NaN);
-
-        double variance = DoubleStream.of(doubles).map(d -> Math.pow(d - average, 2)).sum() / (doubles.length - 1);
-
-        double deviation = Math.sqrt(variance) * sigma.doubleValue() + Math.abs(average);
-
-        return Double.isFinite(deviation) ? BigDecimal.valueOf(deviation).setScale(SCALE, HALF_UP) : null;
+        return BigDecimal.valueOf(highest).setScale(SCALE, HALF_UP);
 
     }
 

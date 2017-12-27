@@ -31,6 +31,7 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.Tem
 import static java.math.BigDecimal.*;
 import static java.math.BigDecimal.valueOf;
 import static java.time.Instant.now;
+import static java.time.Instant.ofEpochMilli;
 import static java.util.Collections.*;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 import static org.mockito.Mockito.*;
@@ -172,53 +173,61 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateDeviation() {
 
-        Instant t0 = Instant.ofEpochMilli(10000);
-        Instant t1 = Instant.ofEpochMilli(10100);
-        Request request = Request.builder().currentTime(t0).targetTime(t1)
-                .tradingSigma(TEN).tradingSamples(60).build();
+        Instant t0 = ofEpochMilli(10000);
+        Instant t1 = ofEpochMilli(10100);
+        Request.RequestBuilder b = Request.builder().currentTime(t0).targetTime(t1)
+                .tradingSigma(TEN).tradingSamples(60);
 
         List<Trade> trades = singletonList(mock(Trade.class));
-        when(context.listTrades(any(), eq(Instant.ofEpochMilli(3900)))).thenReturn(trades);
+        when(context.listTrades(any(), eq(ofEpochMilli(3900)))).thenReturn(trades);
+        when(context.listTrades(any(), eq(ofEpochMilli(6900)))).thenReturn(trades);
+        when(context.listTrades(any(), eq(ofEpochMilli(8400)))).thenReturn(trades);
+        when(context.listTrades(any(), eq(ofEpochMilli(9200)))).thenReturn(trades);
 
         Duration interval = Duration.ofMillis(100);
-        NavigableMap<Instant, BigDecimal> prices = new TreeMap<>(singletonMap(t0, TEN));
-        doReturn(prices).when(target).collapsePrices(trades, interval, Instant.ofEpochMilli(4000), t0);
+        NavigableMap<Instant, BigDecimal> prices60 = new TreeMap<>(singletonMap(t0, valueOf(600)));
+        NavigableMap<Instant, BigDecimal> prices30 = new TreeMap<>(singletonMap(t0, valueOf(300)));
+        NavigableMap<Instant, BigDecimal> prices15 = new TreeMap<>(singletonMap(t0, valueOf(150)));
+        NavigableMap<Instant, BigDecimal> prices07 = new TreeMap<>(singletonMap(t0, valueOf(70)));
+        doReturn(prices60).when(target).collapsePrices(trades, interval, ofEpochMilli(4000), t0);
+        doReturn(prices30).when(target).collapsePrices(trades, interval, ofEpochMilli(7000), t0);
+        doReturn(prices15).when(target).collapsePrices(trades, interval, ofEpochMilli(8500), t0);
+        doReturn(prices07).when(target).collapsePrices(trades, interval, ofEpochMilli(9300), t0);
 
         NavigableMap<Instant, BigDecimal> returns = new TreeMap<>();
-        returns.put(Instant.ofEpochMilli(10), null);
-        returns.put(Instant.ofEpochMilli(11), new BigDecimal("-0.0092"));
-        returns.put(Instant.ofEpochMilli(12), new BigDecimal("+0.0027"));
-        returns.put(Instant.ofEpochMilli(13), new BigDecimal("-0.0141"));
-        returns.put(Instant.ofEpochMilli(14), new BigDecimal("+0.0036"));
-        returns.put(Instant.ofEpochMilli(15), new BigDecimal("+0.0071"));
-        returns.put(Instant.ofEpochMilli(16), new BigDecimal("-0.0027"));
-        returns.put(Instant.ofEpochMilli(17), new BigDecimal("-0.0105"));
-        returns.put(Instant.ofEpochMilli(18), new BigDecimal("-0.0068"));
-        returns.put(Instant.ofEpochMilli(19), new BigDecimal("-0.0050"));
-        returns.put(Instant.ofEpochMilli(20), new BigDecimal("+0.0011"));
-        returns.put(Instant.ofEpochMilli(21), new BigDecimal("+0.0034"));
-        returns.put(Instant.ofEpochMilli(22), new BigDecimal("+0.0007"));
-        returns.put(Instant.ofEpochMilli(23), new BigDecimal("-0.0001"));
-        returns.put(Instant.ofEpochMilli(24), new BigDecimal("+0.0103"));
-        returns.put(Instant.ofEpochMilli(25), new BigDecimal("+0.0136"));
-        returns.put(Instant.ofEpochMilli(26), new BigDecimal("+0.0107"));
-        returns.put(Instant.ofEpochMilli(27), new BigDecimal("+0.0110"));
-        returns.put(Instant.ofEpochMilli(28), new BigDecimal("-0.0019"));
-        returns.put(Instant.ofEpochMilli(29), new BigDecimal("-0.0029"));
-        returns.put(Instant.ofEpochMilli(30), new BigDecimal("+0.0059"));
-        returns.put(Instant.ofEpochMilli(31), null);
+        returns.put(ofEpochMilli(10), null);
+        returns.put(ofEpochMilli(11), new BigDecimal("-0.0092"));
+        returns.put(ofEpochMilli(12), new BigDecimal("+0.0027"));
+        returns.put(ofEpochMilli(13), new BigDecimal("-0.0141"));
+        returns.put(ofEpochMilli(14), new BigDecimal("+0.0036"));
+        returns.put(ofEpochMilli(15), new BigDecimal("+0.0071"));
+        returns.put(ofEpochMilli(16), new BigDecimal("-0.0027"));
+        returns.put(ofEpochMilli(17), new BigDecimal("-0.0105"));
+        returns.put(ofEpochMilli(18), new BigDecimal("-0.0068"));
+        returns.put(ofEpochMilli(19), new BigDecimal("-0.0050"));
+        returns.put(ofEpochMilli(20), new BigDecimal("+0.0011"));
+        returns.put(ofEpochMilli(21), new BigDecimal("+0.0034"));
+        returns.put(ofEpochMilli(22), new BigDecimal("+0.0007"));
+        returns.put(ofEpochMilli(23), new BigDecimal("-0.0001"));
+        returns.put(ofEpochMilli(24), new BigDecimal("+0.0103"));
+        returns.put(ofEpochMilli(25), new BigDecimal("+0.0136"));
+        returns.put(ofEpochMilli(26), new BigDecimal("+0.0107"));
+        returns.put(ofEpochMilli(27), new BigDecimal("+0.0110"));
+        returns.put(ofEpochMilli(28), new BigDecimal("-0.0019"));
+        returns.put(ofEpochMilli(29), new BigDecimal("-0.0029"));
+        returns.put(ofEpochMilli(30), new BigDecimal("+0.0059"));
+        returns.put(ofEpochMilli(31), null);
 
         // Valid
-        doReturn(returns).when(target).calculateReturns(prices);
-        assertEquals(target.calculateDeviation(context, request), new BigDecimal("0.0774591907"));
+        doReturn(returns).when(target).calculateReturns(prices60); // 0.0774591907
+        doReturn(new TreeMap<>()).when(target).calculateReturns(prices30); // NaN
+        doReturn(returns.tailMap(ofEpochMilli(20))).when(target).calculateReturns(prices15); // 0.0632504515
+        doReturn(returns.tailMap(ofEpochMilli(25))).when(target).calculateReturns(prices07); // 0.0762739787
+        assertEquals(target.calculateDeviation(context, b.build()), new BigDecimal("0.0774591907"));
 
-        // Zero variance
-        new ArrayList<>(returns.keySet()).forEach(k -> returns.put(k, new BigDecimal("-0.01")));
-        assertEquals(target.calculateDeviation(context, request), new BigDecimal("0.0100000000"));
-
-        // Empty
-        doReturn(new TreeMap<>()).when(target).calculateReturns(prices);
-        assertEquals(target.calculateDeviation(context, request), null);
+        // Skip
+        b.tradingSigma(ONE.negate());
+        assertEquals(target.calculateDeviation(context, b.build()), ZERO);
 
     }
 
@@ -464,7 +473,7 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateRecentPrice() {
 
-        Instant now = Instant.ofEpochMilli(150);
+        Instant now = ofEpochMilli(150);
         Duration duration = Duration.ofMillis(10);
         Request request = rBuilder.currentTime(now).tradingDuration(duration).build();
 
@@ -472,7 +481,7 @@ public class TemplateAdviserTest {
 
         for (int i = 0; i < 20; i++) {
             Execution exec = mock(Execution.class);
-            when(exec.getTime()).thenReturn(Instant.ofEpochMilli(135 + i)); // 6 <= i <= 19
+            when(exec.getTime()).thenReturn(ofEpochMilli(135 + i)); // 6 <= i <= 19
             when(exec.getPrice()).thenReturn(BigDecimal.valueOf(100 + i));
             when(exec.getSize()).thenReturn(BigDecimal.valueOf((10000 + i) * (i % 2 == 0 ? 1 : -1)));
             executions.add(exec);
@@ -482,7 +491,7 @@ public class TemplateAdviserTest {
 
         for (int i = 0; i < 20; i++) {
             Trade trade = mock(Trade.class);
-            when(trade.getTimestamp()).thenReturn(Instant.ofEpochMilli(135 + i)); // 6 <= i <= 19
+            when(trade.getTimestamp()).thenReturn(ofEpochMilli(135 + i)); // 6 <= i <= 19
             when(trade.getPrice()).thenReturn(BigDecimal.valueOf(10 + i));
             when(trade.getSize()).thenReturn(BigDecimal.valueOf((1000 + i)));
             trades.add(trade);
@@ -507,7 +516,7 @@ public class TemplateAdviserTest {
 
         // Invalid Time
         when(executions.get(14).getTime()).thenReturn(null);
-        when(executions.get(11).getTime()).thenReturn(Instant.ofEpochMilli(1));
+        when(executions.get(11).getTime()).thenReturn(ofEpochMilli(1));
         assertEquals(target.calculateRecentPrice(context, request, SIGNUM_BUY), new BigDecimal("112"));
         assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("113"));
 
