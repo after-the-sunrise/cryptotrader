@@ -9,6 +9,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Creat
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.mockito.invocation.InvocationOnMock;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -17,6 +18,7 @@ import org.testng.annotations.Test;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +72,7 @@ public class TemplateInstructorTest {
         when(context.roundTickSize(any(), any(), any())).thenAnswer(i -> f.apply(i, new BigDecimal("0.003")));
         when(context.roundLotSize(any(), any(), any())).thenAnswer(i -> f.apply(i, new BigDecimal("0.3")));
 
-        configuration = mock(Configuration.class);
+        configuration = spy(new MapConfiguration(new HashMap<>()));
 
         builder = Request.builder().site("s").instrument("i")
                 .currentTime(ofEpochMilli(123L)).targetTime(ofEpochMilli(456L))

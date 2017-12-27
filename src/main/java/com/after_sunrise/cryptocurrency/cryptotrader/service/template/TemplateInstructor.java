@@ -32,6 +32,8 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
     private static final String KEY_STRATEGY = "strategy";
 
+    private static final String KEY_EXPIRY = "expiry";
+
     private final String id;
 
     public TemplateInstructor(String id) {
@@ -92,14 +94,16 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         Duration ttl = Duration.between(request.getCurrentTime(), request.getTargetTime());
 
+        Duration expiry = Duration.ofMillis(ttl.toMillis() * getIntProperty(KEY_EXPIRY, 1));
+
         for (int i = 0; i < s.size(); i++) {
 
             BigDecimal price = p.get(i);
 
             BigDecimal size = s.get(i);
 
-            instructions.add(
-                    CreateInstruction.builder().price(price).size(size).strategy(strategy).timeToLive(ttl).build()
+            instructions.add(CreateInstruction.builder()
+                    .price(price).size(size).strategy(strategy).timeToLive(expiry).build()
             );
 
         }
@@ -125,14 +129,16 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         Duration ttl = Duration.between(request.getCurrentTime(), request.getTargetTime());
 
+        Duration expiry = Duration.ofMillis(ttl.toMillis() * getIntProperty(KEY_EXPIRY, 1));
+
         for (int i = 0; i < s.size(); i++) {
 
             BigDecimal price = p.get(i);
 
             BigDecimal size = s.get(i) == null ? null : s.get(i).negate();
 
-            instructions.add(
-                    CreateInstruction.builder().price(price).size(size).strategy(strategy).timeToLive(ttl).build()
+            instructions.add(CreateInstruction.builder()
+                    .price(price).size(size).strategy(strategy).timeToLive(expiry).build()
             );
 
         }
