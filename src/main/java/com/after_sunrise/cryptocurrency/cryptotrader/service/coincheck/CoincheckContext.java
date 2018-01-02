@@ -7,17 +7,27 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.*;
+import com.google.gson.stream.JsonReader;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.websocket.*;
+import java.io.IOException;
+import java.io.Reader;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -25,14 +35,17 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.Co
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.*;
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
+import static java.math.RoundingMode.HALF_UP;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.synchronizedMap;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 
 /**
  * @author takanori.takase
  * @version 0.0.1
  */
+@ClientEndpoint
 public class CoincheckContext extends TemplateContext implements CoincheckService {
 
     private static final String URL_TICK = "https://coincheck.com/api/ticker";
@@ -51,15 +64,21 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
     private static final String URL_ORDER_CANCEL = "https://coincheck.com/api/exchange/orders/";
 
-    private static final long TRADE_LIMIT = 64;
+    private static final URI WS_ENDPOINT = URI.create("wss://ws-api.coincheck.com/");
+
+    private static final Duration WS_INTERVAL = Duration.ofSeconds(5);
 
     private static final Duration TRADE_EXPIRY = Duration.ofHours(24);
 
+    private final Object annotatedEndpoint;
+
     private final Gson gson;
 
-    private final Map<String, NavigableMap<Long, CoincheckTrade>> trades;
+    private final Map<String, NavigableMap<Instant, CoincheckTrade>> trades;
 
     private final AtomicLong lastNonce;
+
+    private final ExecutorService executor;
 
     public CoincheckContext() {
 
@@ -82,11 +101,29 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
         });
 
+        annotatedEndpoint = this;
+
         gson = builder.create();
 
-        trades = Collections.synchronizedMap(new HashMap<>());
+        trades = synchronizedMap(new HashMap<>());
 
         lastNonce = new AtomicLong();
+
+        executor = Executors.newCachedThreadPool(r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            t.setName(getClass().getSimpleName());
+            return t;
+        });
+
+    }
+
+    @Override
+    public void close() throws Exception {
+
+        executor.shutdown();
+
+        super.close();
 
     }
 
@@ -168,86 +205,172 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     @Override
     public List<Trade> listTrades(Key key, Instant fromTime) {
 
-
         ProductType product = ProductType.find(key.getInstrument());
 
         if (product == null) {
             return Collections.emptyList();
         }
 
-        List<CoincheckTrade> values;
+        NavigableMap<Instant, CoincheckTrade> map;
 
-        String id = product.getId();
+        synchronized (executor) {
 
-        Instant cutoff = trim(key.getTimestamp(), getNow()).minus(TRADE_EXPIRY);
+            if (trades.isEmpty()) {
 
-        NavigableMap<Long, CoincheckTrade> map = trades.computeIfAbsent(id, i -> new TreeMap<>());
+                executor.submit(() -> scheduleSocket(WS_ENDPOINT, WS_INTERVAL));
 
-        synchronized (map) {
+            }
 
-            values = listCached(CoincheckTrade.class, key, () -> {
+            map = trades.computeIfAbsent(product.getId(), id -> new ConcurrentSkipListMap<>());
 
-                for (long i = 1; i <= TRADE_LIMIT; i++) {
+        }
 
-                    Map<String, String> parameters = new LinkedHashMap<>();
-                    parameters.put("pair", id);
-                    parameters.put("limit", "500");
+        return map.values().stream()
+                .filter(Objects::nonNull)
+                .filter(e -> Objects.nonNull(e.getTimestamp()))
+                .filter(e -> fromTime == null || !e.getTimestamp().isBefore(fromTime))
+                .collect(toList());
 
-                    if (!map.isEmpty() && i != TRADE_LIMIT) {
-                        parameters.put("order", "asc");
-                        parameters.put("ending_before", map.lastEntry().getKey().toString());
-                    }
+    }
 
-                    String data = request(URL_TRADE + buildQueryParameter(parameters));
+    @VisibleForTesting
+    void scheduleSocket(URI uri, Duration interval) {
 
-                    if (StringUtils.isEmpty(data)) {
-                        break;
-                    }
+        Session session = null;
 
-                    CoincheckTrade.Container container = gson.fromJson(data, CoincheckTrade.Container.class);
+        while (!executor.isShutdown()) {
 
-                    List<CoincheckTrade> trades = trimToEmpty(container.getTrades()).stream()
-                            .filter(Objects::nonNull)
-                            .filter(trade -> trade.getId() != null)
-                            .filter(trade -> trade.getTimestamp() != null)
-                            .filter(trade -> trade.getTimestamp().isAfter(cutoff))
-                            .filter(trade -> trade.getTimestamp().isBefore(key.getTimestamp()))
-                            .collect(toList());
+            try {
 
-                    if (trades.isEmpty()) {
-                        break;
-                    }
+                if (session == null || !session.isOpen()) {
 
-                    trades.forEach(t -> map.put(t.getId(), t));
+                    WebSocketContainer c = ContainerProvider.getWebSocketContainer();
 
-                    while (!map.isEmpty()) {
-
-                        Map.Entry<Long, CoincheckTrade> entry = map.firstEntry();
-
-                        if (entry.getValue().getTimestamp().isAfter(cutoff)) {
-                            break;
-                        }
-
-                        map.remove(entry.getKey());
-
-                    }
+                    session = c.connectToServer(annotatedEndpoint, uri);
 
                 }
 
-                return new ArrayList<>(map.values());
+            } catch (Exception e) {
+                // Ignore
+            }
 
-            });
+            try {
+                MILLISECONDS.sleep(interval.toMillis());
+            } catch (InterruptedException e) {
+                // Ignore
+            }
 
         }
 
-        if (fromTime == null) {
-            return new ArrayList<>(values);
+        IOUtils.closeQuietly(session);
+
+    }
+
+    @OnOpen
+    public void onWebSocketOpen(Session s) throws IOException {
+
+        Map<String, String> request = new HashMap<>();
+        request.put("type", "subscribe");
+        request.put("channel", "btc_jpy-trades");
+
+        String message = gson.toJson(request);
+        s.getBasicRemote().sendText(message);
+
+    }
+
+    @OnError
+    public void onWebSocketError(Session s, Throwable t) {
+
+        IOUtils.closeQuietly(s);
+
+    }
+
+    @OnClose
+    public void onWebSocketClose(Session s, CloseReason reason) {
+        // Do nothing
+    }
+
+    @OnMessage
+    public void onWebSocketMessage(Reader message) throws IOException {
+
+        // [id, pair, price, size, side]
+        JsonReader reader = gson.newJsonReader(message);
+        reader.beginArray();
+        reader.skipValue();
+        String pair = reader.nextString();
+        String price = reader.nextString();
+        String size = reader.nextString();
+        reader.skipValue();
+        reader.endArray();
+        reader.close();
+
+        appendCache(pair, CoincheckTrade.builder()
+                .timestamp(getNow())
+                .price(new BigDecimal(price))
+                .size(new BigDecimal(size))
+                .build());
+
+    }
+
+    @VisibleForTesting
+    boolean appendCache(String id, CoincheckTrade trade) {
+
+        if (trade == null || trade.getTimestamp() == null) {
+            return false;
         }
 
-        return unmodifiableList(values.stream()
-                .filter(e -> Objects.nonNull(e.getTimestamp()))
-                .filter(e -> !e.getTimestamp().isBefore(fromTime))
-                .collect(toList()));
+        if (trade.getPrice() == null || trade.getPrice().signum() <= 0) {
+            return false;
+        }
+
+        if (trade.getSize() == null || trade.getSize().signum() <= 0) {
+            return false;
+        }
+
+        NavigableMap<Instant, CoincheckTrade> map = trades.get(StringUtils.trimToEmpty(id));
+
+        if (map == null) {
+            return false;
+        }
+
+        Instant timestamp = trade.getTimestamp().truncatedTo(ChronoUnit.SECONDS);
+
+        CoincheckTrade truncated = CoincheckTrade.builder()
+                .id(timestamp.getEpochSecond())
+                .timestamp(timestamp)
+                .price(trade.getPrice())
+                .size(trade.getSize())
+                .build();
+
+        map.merge(timestamp, truncated, (t1, t2) -> {
+
+            BigDecimal n1 = t1.getPrice().multiply(t1.getSize());
+            BigDecimal n2 = t2.getPrice().multiply(t2.getSize());
+
+            BigDecimal n = n1.add(n2);
+            BigDecimal s = t1.getSize().add(t2.getSize());
+            BigDecimal p = n.divide(s, SCALE, HALF_UP);
+
+            return CoincheckTrade.builder().id(timestamp.getEpochSecond())
+                    .timestamp(timestamp).price(p).size(s).build();
+
+        });
+
+        Instant cutoff = timestamp.minus(TRADE_EXPIRY);
+
+        while (true) {
+
+            Map.Entry<Instant, ?> entry = map.firstEntry();
+
+            if (entry == null || entry.getKey().isAfter(cutoff)) {
+                break;
+            }
+
+            map.remove(entry.getKey());
+
+        }
+
+        return true;
 
     }
 
@@ -362,6 +485,21 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
         CurrencyType currency = getInstrumentCurrency(key);
 
+        return getPosition(key, currency);
+
+    }
+
+    @Override
+    public BigDecimal getFundingPosition(Key key) {
+
+        CurrencyType currency = getFundingCurrency(key);
+
+        return getPosition(key, currency);
+
+    }
+
+    private BigDecimal getPosition(Key key, CurrencyType currency) {
+
         if (currency == CurrencyType.BTC) {
             return queryBalance(key)
                     .filter(b -> b.getBtc() != null)
@@ -376,23 +514,6 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
                     .filter(b -> b.getJpyReserved() != null)
                     .map(b -> b.getJpy().add(b.getJpyReserved()))
                     .orElse(null);
-        }
-
-        return null;
-
-    }
-
-    @Override
-    public BigDecimal getFundingPosition(Key key) {
-
-        CurrencyType currency = getFundingCurrency(key);
-
-        if (currency == CurrencyType.BTC) {
-            return queryBalance(key).map(CoincheckBalance::getBtc).orElse(null);
-        }
-
-        if (currency == CurrencyType.JPY) {
-            return queryBalance(key).map(CoincheckBalance::getJpy).orElse(null);
         }
 
         return null;
