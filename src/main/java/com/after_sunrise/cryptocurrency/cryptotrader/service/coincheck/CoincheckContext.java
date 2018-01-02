@@ -248,16 +248,18 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
                     session = c.connectToServer(annotatedEndpoint, uri);
 
+                    log.debug("Initialized socket : {}", session.getId());
+
                 }
 
             } catch (Exception e) {
-                // Ignore
+                log.debug("Initialization failure.", e);
             }
 
             try {
                 MILLISECONDS.sleep(interval.toMillis());
             } catch (InterruptedException e) {
-                // Ignore
+                log.debug("Initialization interrupted.");
             }
 
         }
@@ -268,6 +270,8 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
     @OnOpen
     public void onWebSocketOpen(Session s) throws IOException {
+
+        log.debug("Socket opened : {}", s.getId());
 
         Map<String, String> request = new HashMap<>();
         request.put("type", "subscribe");
@@ -281,13 +285,17 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     @OnError
     public void onWebSocketError(Session s, Throwable t) {
 
+        log.debug("Socket error : " + s.getId(), t);
+
         IOUtils.closeQuietly(s);
 
     }
 
     @OnClose
     public void onWebSocketClose(Session s, CloseReason reason) {
-        // Do nothing
+
+        log.debug("Socket closed : {}", s.getId());
+
     }
 
     @OnMessage
