@@ -21,7 +21,13 @@ public class CoincheckBalance {
     @SerializedName("jpy")
     private BigDecimal jpy;
 
+    @SerializedName("jpy_reserved")
+    private BigDecimal jpyReserved;
+
     @SerializedName("btc")
     private BigDecimal btc;
+
+    @SerializedName("btc_reserved")
+    private BigDecimal btcReserved;
 
 }

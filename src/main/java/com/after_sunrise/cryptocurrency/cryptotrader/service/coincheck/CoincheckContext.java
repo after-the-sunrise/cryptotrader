@@ -363,11 +363,19 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
         CurrencyType currency = getInstrumentCurrency(key);
 
         if (currency == CurrencyType.BTC) {
-            return queryBalance(key).map(CoincheckBalance::getBtc).orElse(null);
+            return queryBalance(key)
+                    .filter(b -> b.getBtc() != null)
+                    .filter(b -> b.getBtcReserved() != null)
+                    .map(b -> b.getBtc().add(b.getBtcReserved()))
+                    .orElse(null);
         }
 
         if (currency == CurrencyType.JPY) {
-            return queryBalance(key).map(CoincheckBalance::getJpy).orElse(null);
+            return queryBalance(key)
+                    .filter(b -> b.getJpy() != null)
+                    .filter(b -> b.getJpyReserved() != null)
+                    .map(b -> b.getJpy().add(b.getJpyReserved()))
+                    .orElse(null);
         }
 
         return null;
