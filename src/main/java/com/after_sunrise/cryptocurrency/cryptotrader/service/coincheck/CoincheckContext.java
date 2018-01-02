@@ -253,13 +253,13 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
                 }
 
             } catch (Exception e) {
-                log.debug("Initialization failure.", e);
+                log.debug("Scheduling failure.", e);
             }
 
             try {
                 MILLISECONDS.sleep(interval.toMillis());
             } catch (InterruptedException e) {
-                log.debug("Initialization interrupted.");
+                log.debug("Scheduling interrupted.");
             }
 
         }
