@@ -403,8 +403,18 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     @Override
     public String findProduct(Key key, CurrencyType instrument, CurrencyType funding) {
 
-        if (instrument == CurrencyType.BTC && funding == CurrencyType.JPY) {
-            return ProductType.BTC_JPY.name();
+        for (ProductType type : ProductType.values()) {
+
+            if (instrument != type.getInstrumentCurrency()) {
+                continue;
+            }
+
+            if (funding != type.getFundingCurrency()) {
+                continue;
+            }
+
+            return type.name();
+
         }
 
         return null;
