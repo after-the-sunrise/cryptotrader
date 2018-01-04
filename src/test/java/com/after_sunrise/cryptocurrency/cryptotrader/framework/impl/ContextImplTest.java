@@ -225,6 +225,18 @@ public class ContextImplTest {
     }
 
     @Test
+    public void testFindProduct() {
+
+        CurrencyType value1 = CurrencyType.USD;
+        CurrencyType value2 = CurrencyType.JPY;
+
+        when(contexts.get("c1").findProduct(key, value1, value2)).thenReturn("foo");
+
+        assertEquals(target.findProduct(key, value1, value2), "foo");
+
+    }
+
+    @Test
     public void testGetInstrumentPosition() {
 
         BigDecimal value = new BigDecimal(Math.random());

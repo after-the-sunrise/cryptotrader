@@ -120,4 +120,26 @@ public class ZaifContext extends TemplateContext implements ZaifService {
 
     }
 
+    @Override
+    public String findProduct(Key key, CurrencyType instrument, CurrencyType funding) {
+
+        if (funding == CurrencyType.JPY) {
+            if (instrument == CurrencyType.BTC) {
+                return "btc_jpy";
+            }
+        }
+
+        if (funding == CurrencyType.BTC) {
+            if (instrument == CurrencyType.ETH) {
+                return "eth_btc";
+            }
+            if (instrument == CurrencyType.BCH) {
+                return "bch_btc";
+            }
+        }
+
+        return null;
+
+    }
+
 }

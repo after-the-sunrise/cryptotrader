@@ -408,6 +408,37 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     }
 
     @Override
+    public String findProduct(Key key, CurrencyType instrument, CurrencyType funding) {
+
+        if (funding == CurrencyType.USD) {
+            if (instrument == CurrencyType.BTC) {
+                return ProductType.BXBT.name();
+            }
+        }
+
+        if (funding == CurrencyType.JPY) {
+            if (instrument == CurrencyType.BTC) {
+                return ProductType.BXBTJPY.name();
+            }
+        }
+
+        if (funding == CurrencyType.BTC) {
+            if (instrument == CurrencyType.ETH) {
+                return ProductType.ETHXBT.name();
+            }
+            if (instrument == CurrencyType.ETC) {
+                return ProductType.ETCXBT.name();
+            }
+            if (instrument == CurrencyType.BCH) {
+                return ProductType.BCHXBT.name();
+            }
+        }
+
+        return null;
+
+    }
+
+    @Override
     public BigDecimal getConversionPrice(Key key, CurrencyType currency) {
 
         ProductType product = ProductType.findByName(key.getInstrument());

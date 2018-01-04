@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.JPY;
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.USD;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
 import static com.google.common.io.Resources.getResource;
 import static java.math.BigDecimal.ZERO;
@@ -194,6 +196,12 @@ public class OandaContextTest {
         doReturn(Optional.empty()).when(target).queryTick(key);
         assertEquals(target.listTrades(key, null).size(), 0);
 
+    }
+
+    @Test
+    public void testFindProduct() {
+        assertEquals(target.findProduct(null, USD, JPY), "USD_JPY");
+        assertEquals(target.findProduct(null, JPY, USD), null);
     }
 
 }

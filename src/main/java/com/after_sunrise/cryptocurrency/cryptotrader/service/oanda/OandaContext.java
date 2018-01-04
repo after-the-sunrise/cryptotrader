@@ -127,4 +127,15 @@ public class OandaContext extends TemplateContext implements OandaService {
                 .orElse(emptyList());
     }
 
+    @Override
+    public String findProduct(Key key, CurrencyType instrument, CurrencyType funding) {
+
+        if (instrument == CurrencyType.USD && funding == CurrencyType.JPY) {
+            return "USD_JPY";
+        }
+
+        return null;
+
+    }
+
 }

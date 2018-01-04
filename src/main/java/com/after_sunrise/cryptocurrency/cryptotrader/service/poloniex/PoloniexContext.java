@@ -130,4 +130,26 @@ public class PoloniexContext extends TemplateContext implements PoloniexService 
 
     }
 
+    @Override
+    public String findProduct(Key key, CurrencyType instrument, CurrencyType funding) {
+
+        if (funding == CurrencyType.USD) {
+            if (instrument == CurrencyType.BTC) {
+                return "USDT_BTC";
+            }
+        }
+
+        if (funding == CurrencyType.BTC) {
+            if (instrument == CurrencyType.ETH) {
+                return "BTC_ETH";
+            }
+            if (instrument == CurrencyType.BCH) {
+                return "BTC_BCH";
+            }
+        }
+
+        return null;
+
+    }
+
 }

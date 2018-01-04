@@ -2,7 +2,6 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
@@ -14,6 +13,8 @@ import org.testng.annotations.Test;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.BTC;
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.JPY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.BTC_JPY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.ETH_BTC;
 import static java.math.RoundingMode.*;
@@ -39,8 +40,10 @@ public class BitflyerServiceTest {
         context = mock(Context.class);
 
         request = Request.builder().site("s").instrument("i").currentTime(Instant.now()).build();
-        when(context.getInstrumentCurrency(Context.Key.from(request))).thenReturn(CurrencyType.BTC);
-        when(context.getFundingCurrency(Context.Key.from(request))).thenReturn(CurrencyType.JPY);
+        when(context.getInstrumentCurrency(Context.Key.from(request))).thenReturn(BTC);
+        when(context.getFundingCurrency(Context.Key.from(request))).thenReturn(JPY);
+        when(context.findProduct(Context.Key.builder().site("bitflyer").instrument("*")
+                .timestamp(request.getCurrentTime()).build(), BTC, JPY)).thenReturn("BTC_JPY");
 
         key = Context.Key.builder().site("bitflyer").instrument("BTC_JPY")
                 .timestamp(request.getCurrentTime()).build();

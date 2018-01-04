@@ -415,6 +415,11 @@ public abstract class TemplateContext extends AbstractService implements Context
     }
 
     @Override
+    public String findProduct(Key key, CurrencyType instrument, CurrencyType funding) {
+        return null;
+    }
+
+    @Override
     public BigDecimal getConversionPrice(Key key, CurrencyType currency) {
         return null;
     }

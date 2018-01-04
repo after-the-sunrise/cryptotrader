@@ -598,6 +598,16 @@ public class BitmexContextTest {
     }
 
     @Test
+    public void testFindProduct() {
+        assertEquals(target.findProduct(null, BTC, USD), "BXBT");
+        assertEquals(target.findProduct(null, BTC, JPY), "BXBTJPY");
+        assertEquals(target.findProduct(null, BCH, BTC), "BCHXBT");
+        assertEquals(target.findProduct(null, ETC, BTC), "ETCXBT");
+        assertEquals(target.findProduct(null, ETH, BTC), "ETHXBT");
+        assertEquals(target.findProduct(null, JPY, BTC), null);
+    }
+
+    @Test
     public void testGetConversionPrice() {
 
         Key key1 = Key.builder().instrument("XBTUSD").build();

@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.*;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex.PoloniexContext.URL_TICKER;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex.PoloniexContext.URL_TRADE;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
@@ -164,6 +165,14 @@ public class PoloniexContextTest {
         assertEquals(filtered.size(), 1);
         assertEquals(filtered.get(0), values.get(0));
 
+    }
+
+    @Test
+    public void testFindProduct() {
+        assertEquals(target.findProduct(null, BTC, USD), "USDT_BTC");
+        assertEquals(target.findProduct(null, BCH, BTC), "BTC_BCH");
+        assertEquals(target.findProduct(null, ETH, BTC), "BTC_ETH");
+        assertEquals(target.findProduct(null, JPY, BTC), null);
     }
 
 }

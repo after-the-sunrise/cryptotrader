@@ -3,7 +3,6 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.oanda;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
 import org.testng.annotations.BeforeMethod;
@@ -11,6 +10,8 @@ import org.testng.annotations.Test;
 
 import java.time.Instant;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.JPY;
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.USD;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -34,8 +35,10 @@ public class OandaServiceTest {
         context = mock(Context.class);
 
         request = Request.builder().site("s").instrument("i").currentTime(Instant.now()).build();
-        when(context.getInstrumentCurrency(Key.from(request))).thenReturn(CurrencyType.USD);
-        when(context.getFundingCurrency(Key.from(request))).thenReturn(CurrencyType.JPY);
+        when(context.getInstrumentCurrency(Key.from(request))).thenReturn(USD);
+        when(context.getFundingCurrency(Key.from(request))).thenReturn(JPY);
+        when(context.findProduct(Key.builder().site("oanda").instrument("*")
+                .timestamp(request.getCurrentTime()).build(), USD, JPY)).thenReturn("USD_JPY");
 
         key = Key.builder().site("oanda").instrument("USD_JPY")
                 .timestamp(request.getCurrentTime()).build();

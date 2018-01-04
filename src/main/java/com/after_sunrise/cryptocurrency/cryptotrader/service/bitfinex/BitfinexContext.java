@@ -120,4 +120,29 @@ public class BitfinexContext extends TemplateContext implements BitfinexService 
 
     }
 
+    @Override
+    public String findProduct(Key key, CurrencyType instrument, CurrencyType funding) {
+
+        if (instrument == CurrencyType.BTC) {
+            if (funding == CurrencyType.USD) {
+                return "btcusd";
+            }
+        }
+
+        if (instrument == CurrencyType.ETH) {
+            if (funding == CurrencyType.BTC) {
+                return "ethbtc";
+            }
+        }
+
+        if (instrument == CurrencyType.BCH) {
+            if (funding == CurrencyType.BTC) {
+                return "bchbtc";
+            }
+        }
+
+        return null;
+
+    }
+
 }

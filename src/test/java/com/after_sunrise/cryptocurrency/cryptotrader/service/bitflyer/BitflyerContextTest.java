@@ -29,6 +29,7 @@ import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.LIM
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.MARKET;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.SELL;
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.*;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.COLLATERAL;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.FUTURE_BTC1W;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ID;
@@ -454,6 +455,14 @@ public class BitflyerContextTest {
 
         assertNull(target.getFundingCurrency(null));
 
+    }
+
+    @Test
+    public void testFindProduct() {
+        assertEquals(target.findProduct(null, BTC, JPY), "BTC_JPY");
+        assertEquals(target.findProduct(null, ETH, BTC), "ETH_BTC");
+        assertEquals(target.findProduct(null, BCH, BTC), "BCH_BTC");
+        assertEquals(target.findProduct(null, JPY, BTC), null);
     }
 
     @Test

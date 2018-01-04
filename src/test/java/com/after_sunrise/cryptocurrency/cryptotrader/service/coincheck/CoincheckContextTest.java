@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.BTC;
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.JPY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckContext.CurrencyType;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckService.ProductType.BTC_JPY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
@@ -343,6 +345,12 @@ public class CoincheckContextTest {
         assertEquals(target.getFundingCurrency(b.instrument("foo").build()), null);
         assertEquals(target.getFundingCurrency(b.instrument(null).build()), null);
 
+    }
+
+    @Test
+    public void testFindProduct() {
+        assertEquals(target.findProduct(null, BTC, JPY), "BTC_JPY");
+        assertEquals(target.findProduct(null, JPY, BTC), null);
     }
 
     @Test

@@ -501,6 +501,31 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     }
 
     @Override
+    public String findProduct(Key key, CurrencyType instrument, CurrencyType funding) {
+
+        if (instrument == CurrencyType.BTC && funding == CurrencyType.JPY) {
+            return ProductType.BTC_JPY.name();
+        }
+
+        for (ProductType type : ProductType.values()) {
+
+            if (instrument != type.getStructure().getCurrency()) {
+                continue;
+            }
+
+            if (funding != type.getFunding().getCurrency()) {
+                continue;
+            }
+
+            return type.name();
+
+        }
+
+        return null;
+
+    }
+
+    @Override
     public BigDecimal getConversionPrice(Key key, CurrencyType currency) {
 
         ProductType product = ProductType.find(key.getInstrument());

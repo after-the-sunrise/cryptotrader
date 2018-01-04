@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.*;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifContext.URL_TICKER;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifContext.URL_TRADE;
@@ -168,6 +169,14 @@ public class ZaifContextTest {
         assertEquals(filtered.size(), 1);
         assertEquals(filtered.get(0), values.get(0));
 
+    }
+
+    @Test
+    public void testFindProduct() {
+        assertEquals(target.findProduct(null, BTC, JPY), "btc_jpy");
+        assertEquals(target.findProduct(null, ETH, BTC), "eth_btc");
+        assertEquals(target.findProduct(null, BCH, BTC), "bch_btc");
+        assertEquals(target.findProduct(null, JPY, BTC), null);
     }
 
 }

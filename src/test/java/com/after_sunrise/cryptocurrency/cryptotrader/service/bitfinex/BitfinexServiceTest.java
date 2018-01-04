@@ -3,7 +3,6 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitfinex;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MicroEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
@@ -12,6 +11,8 @@ import org.testng.annotations.Test;
 
 import java.time.Instant;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.BTC;
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.ETH;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -35,8 +36,10 @@ public class BitfinexServiceTest {
         context = mock(Context.class);
 
         request = Request.builder().site("s").instrument("i").currentTime(Instant.now()).build();
-        when(context.getInstrumentCurrency(Key.from(request))).thenReturn(CurrencyType.ETH);
-        when(context.getFundingCurrency(Key.from(request))).thenReturn(CurrencyType.BTC);
+        when(context.getInstrumentCurrency(Key.from(request))).thenReturn(ETH);
+        when(context.getFundingCurrency(Key.from(request))).thenReturn(BTC);
+        when(context.findProduct(Key.builder().site("bitfinex").instrument("*")
+                .timestamp(request.getCurrentTime()).build(), ETH, BTC)).thenReturn("ethbtc");
 
         key = Key.builder().site("bitfinex").instrument("ethbtc")
                 .timestamp(request.getCurrentTime()).build();
