@@ -23,7 +23,7 @@ nohup \
   -XX:+HeapDumpOnOutOfMemoryError \
   -jar winstone-*.jar \
   --warfile="`find . -name "cryptotrader-*.war"`" \
-  --prefix="cryptotrader" \
+  --prefix="/cryptotrader" \
   --httpListenAddress=127.0.0.1 \
   --httpPort=41480 \
   --httpsListenAddress=127.0.0.1 \
