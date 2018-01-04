@@ -38,7 +38,7 @@ public class CoincheckServiceTest {
         when(context.getInstrumentCurrency(Key.from(request))).thenReturn(CurrencyType.BTC);
         when(context.getFundingCurrency(Key.from(request))).thenReturn(CurrencyType.JPY);
 
-        key = Key.builder().site("coincheck").instrument("btc_jpy")
+        key = Key.builder().site("coincheck").instrument("BTC_JPY")
                 .timestamp(request.getCurrentTime()).build();
 
     }
