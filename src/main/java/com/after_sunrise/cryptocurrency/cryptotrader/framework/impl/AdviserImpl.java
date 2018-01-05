@@ -58,9 +58,9 @@ public class AdviserImpl extends AbstractService implements Adviser {
 
         BigDecimal s = calculateBasis(estimation, advice, Advice::getSellLimitPrice, ONE);
 
-        log.debug("Advice : [{} {}] bBasis=[{}] sBasis=[{}]", request.getSite(), request.getInstrument(), b, s);
+        log.debug("Advice : [{}.{}] bBasis=[{}] sBasis=[{}]", request.getSite(), request.getInstrument(), b, s);
 
-        log.info("Advice : [{} {}] {}", request.getSite(), request.getInstrument(), advice);
+        log.info("Advice : [{}.{}] {}", request.getSite(), request.getInstrument(), advice);
 
         return Optional.ofNullable(advice).orElse(BAIL);
 

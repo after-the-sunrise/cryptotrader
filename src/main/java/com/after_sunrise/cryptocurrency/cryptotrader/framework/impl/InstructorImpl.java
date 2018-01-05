@@ -52,7 +52,7 @@ public class InstructorImpl extends AbstractService implements Instructor {
 
         List<Instruction> values = ofNullable(instructions).orElse(EMPTY);
 
-        log.info("Instruction : [{} {}] {}", request.getSite(), request.getInstrument(), values.size());
+        log.info("Instruction : [{}.{}] {}", request.getSite(), request.getInstrument(), values.size());
 
         values.forEach(i -> log.debug("{}", i));
 

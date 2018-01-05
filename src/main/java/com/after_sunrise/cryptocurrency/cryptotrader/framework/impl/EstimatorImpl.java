@@ -59,9 +59,9 @@ public class EstimatorImpl extends AbstractService implements Estimator {
 
         Map<Estimator, Estimation> estimations = collect(context, request, ids);
 
-        Estimation collapsed = collapse(estimations, ids);
+        Estimation collapsed = collapse(request, estimations, ids);
 
-        log.info("Estimate : [{} {}] price=[{}] confidence=[{}]",
+        log.info("Estimate : [{}.{}] price=[{}] confidence=[{}]",
                 request.getSite(), request.getInstrument(), collapsed.getPrice(), collapsed.getConfidence());
 
         return collapsed;
@@ -121,7 +121,7 @@ public class EstimatorImpl extends AbstractService implements Estimator {
 
     }
 
-    private Estimation collapse(Map<Estimator, Estimation> estimations, Map<String, BigDecimal> ids) {
+    private Estimation collapse(Request r, Map<Estimator, Estimation> estimations, Map<String, BigDecimal> ids) {
 
         BigDecimal numerator = BigDecimal.ZERO;
 
@@ -137,7 +137,7 @@ public class EstimatorImpl extends AbstractService implements Estimator {
 
             if (estimation == null || estimation.getPrice() == null || estimation.getConfidence() == null) {
 
-                log.debug("Omitting estimate : {} ({})", estimation, id);
+                log.debug("Omitting estimate : [{}.{}] {} ({})", r.getSite(), r.getInstrument(), estimation, id);
 
                 continue;
 
@@ -145,7 +145,7 @@ public class EstimatorImpl extends AbstractService implements Estimator {
 
             BigDecimal multiplier = ofNullable(ids.get(id)).orElse(ONE);
 
-            log.debug("Including estimate : {} - {} (x{})", estimation, id, multiplier);
+            log.debug("Including estimate : [{}.{}] {} - {} (x{})", r.getSite(), r.getInstrument(), estimation, id, multiplier);
 
             BigDecimal confidence = estimation.getConfidence().multiply(multiplier).max(ZERO).min(ONE);
 
