@@ -152,11 +152,11 @@ public class TemplateInstructorTest {
         assertEquals(results.get(3).getPrice(), new BigDecimal("0.864"));
         assertEquals(results.get(4).getPrice(), new BigDecimal("0.789"));
 
-        assertEquals(results.get(0).getSize(), new BigDecimal("1.8"));
-        assertEquals(results.get(1).getSize(), new BigDecimal("1.8"));
-        assertEquals(results.get(2).getSize(), new BigDecimal("1.8"));
-        assertEquals(results.get(3).getSize(), new BigDecimal("1.8"));
-        assertEquals(results.get(4).getSize(), new BigDecimal("2.7"));
+        assertEquals(results.get(0).getSize(), new BigDecimal("2.1"));
+        assertEquals(results.get(1).getSize(), new BigDecimal("2.1"));
+        assertEquals(results.get(2).getSize(), new BigDecimal("2.1"));
+        assertEquals(results.get(3).getSize(), new BigDecimal("2.1"));
+        assertEquals(results.get(4).getSize(), new BigDecimal("1.5"));
 
         // Fraction size
         results = target.createBuys(context, request, builder.buyLimitSize(ONE).build());
@@ -227,11 +227,11 @@ public class TemplateInstructorTest {
         assertEquals(results.get(3).getPrice(), new BigDecimal("1.137"));
         assertEquals(results.get(4).getPrice(), new BigDecimal("1.212"));
 
-        assertEquals(results.get(0).getSize(), new BigDecimal("-1.8"));
-        assertEquals(results.get(1).getSize(), new BigDecimal("-1.8"));
-        assertEquals(results.get(2).getSize(), new BigDecimal("-1.8"));
-        assertEquals(results.get(3).getSize(), new BigDecimal("-1.8"));
-        assertEquals(results.get(4).getSize(), new BigDecimal("-2.7"));
+        assertEquals(results.get(0).getSize(), new BigDecimal("-2.1"));
+        assertEquals(results.get(1).getSize(), new BigDecimal("-2.1"));
+        assertEquals(results.get(2).getSize(), new BigDecimal("-2.1"));
+        assertEquals(results.get(3).getSize(), new BigDecimal("-2.1"));
+        assertEquals(results.get(4).getSize(), new BigDecimal("-1.5"));
 
         // Fraction size
         results = target.createSells(context, request, builder.sellLimitSize(ONE).build());

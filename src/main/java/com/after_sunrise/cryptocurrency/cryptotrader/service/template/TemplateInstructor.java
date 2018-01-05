@@ -166,7 +166,7 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         BigDecimal remainingUnits = total.divide(lotSize, 0, DOWN);
 
-        BigDecimal averageUnits = remainingUnits.divide(splits, 0, DOWN).max(ONE);
+        BigDecimal averageUnits = remainingUnits.divide(splits, 0, HALF_UP).max(ONE);
 
         int points = Math.max(averageUnits.precision() - 2, 0);
 
