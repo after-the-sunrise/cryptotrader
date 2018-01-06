@@ -66,6 +66,23 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
     }
 
     @Override
+    protected BigDecimal adjustBasis(Context context, Request request, BigDecimal basis) {
+
+        if (basis == null) {
+            return null;
+        }
+
+        BigDecimal adjustment = ZERO;
+
+        if (ProductType.find(request.getInstrument()) == ProductType.FX_BTC_JPY) {
+            adjustment = getDecimalProperty("swap.bfx", SWAP_RATE);
+        }
+
+        return basis.add(adjustment);
+
+    }
+
+    @Override
     protected BigDecimal adjustBuyBasis(Context context, Request request, BigDecimal basis) {
 
         if (basis == null) {

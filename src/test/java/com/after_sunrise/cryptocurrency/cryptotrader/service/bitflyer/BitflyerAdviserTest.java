@@ -132,6 +132,29 @@ public class BitflyerAdviserTest {
     }
 
     @Test
+    public void testAdjustBasis() {
+
+        BigDecimal basis = new BigDecimal("0.05");
+        BigDecimal swap = new BigDecimal("0.01");
+
+        configurations.put(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerAdviser.swap.bfx", swap
+        );
+
+        Request request = Request.builder().instrument(ProductType.FX_BTC_JPY.name()).build();
+        BigDecimal result = target.adjustBasis(context, request, basis);
+        assertEquals(result, basis.add(swap));
+
+        request = Request.builder().instrument("foo").build();
+        result = target.adjustBasis(context, request, basis);
+        assertEquals(result, basis);
+
+        result = target.adjustBasis(context, request, null);
+        assertNull(result);
+
+    }
+
+    @Test
     public void testAdjustBuyBasis() {
 
         Request request = Request.builder().build();
