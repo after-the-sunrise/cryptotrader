@@ -55,11 +55,11 @@ The framework is based on a periodic timer, to invoke the set of pipelined codes
 When the application is launched, the pipeline will be invoked periodically based on the preconfigured interval, until the application is terminated. 
 
 The pipeline consists of the following [SPI][ref-spi] interfaces:
- 0. Context : Adapter to capsulize each exchange's API calls.
- 1. Estimator : Estimate (predict) market price to use in the following 
- 2. Adviser : Calculate the ideal state of what the current position should ideally be.
- 3. Instructor : Figure out the differences between the as-is position and to-be position, and generate order instructions.
- 4. Agent : Execute the given order instructions, and reconcile the results to confirm all the orders were processed by the exchange.
+ 1. Context : Adapter to capsulize each exchange's API calls.
+ 2. Estimator : Estimate (predict) market price to use in the following 
+ 3. Adviser : Calculate the ideal state of what the current position should ideally be.
+ 4. Instructor : Figure out the differences between the as-is position and to-be position, and generate order instructions.
+ 5. Agent : Execute the given order instructions, and reconcile the results to confirm all the orders were processed by the exchange.
 
 
 [travis-page]:https://travis-ci.org/after-the-sunrise/cryptotrader
