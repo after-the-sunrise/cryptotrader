@@ -33,6 +33,8 @@ import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 @Slf4j
 public class TraderImpl implements Trader {
 
+    private final AtomicLong seed = new AtomicLong();
+
     private final AtomicReference<CountDownLatch> tradeLatch;
 
     private final PropertyManager propertyManager;
@@ -175,15 +177,14 @@ public class TraderImpl implements Trader {
 
             Map<String, AtomicLong> instruments = frequencies.computeIfAbsent(s, k -> new ConcurrentHashMap<>());
 
-            String i = trimToEmpty(instrument);
-
-            AtomicLong count = instruments.computeIfAbsent(i, k -> new AtomicLong());
+            Duration interval = propertyManager.getTradingInterval();
 
             Integer frequency = propertyManager.getTradingFrequency(site, instrument);
 
-            Duration interval = propertyManager.getTradingInterval();
+            AtomicLong count = instruments.computeIfAbsent(trimToEmpty(instrument),
+                    k -> new AtomicLong(seed.getAndIncrement()));
 
-            Instant time = now.plus(interval.toMillis() * frequency, ChronoUnit.MILLIS);
+            Instant time = now.plus(Math.abs(interval.toMillis() * frequency), ChronoUnit.MILLIS);
 
             if (count.getAndIncrement() % frequency == 0) {
 
