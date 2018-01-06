@@ -138,7 +138,7 @@ public class BitflyerAdviserTest {
         BigDecimal swap = new BigDecimal("0.01");
 
         configurations.put(
-                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerAdviser.swap.bfx", swap
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerAdviser.swap.fx", swap
         );
 
         Request request = Request.builder().instrument(ProductType.FX_BTC_JPY.name()).build();

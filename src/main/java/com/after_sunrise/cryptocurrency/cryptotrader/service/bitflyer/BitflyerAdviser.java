@@ -75,7 +75,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
         BigDecimal adjustment = ZERO;
 
         if (ProductType.find(request.getInstrument()) == ProductType.FX_BTC_JPY) {
-            adjustment = getDecimalProperty("swap.bfx", SWAP_RATE);
+            adjustment = getDecimalProperty("swap.fx", SWAP_RATE);
         }
 
         return basis.add(adjustment);
