@@ -11,7 +11,7 @@
 * HTTP REST interface for manual interventions.
 
 Cryptotrader is...
-* **NOT** fully automated. Even though the orders are handled automatically following the trading strategies, which exchanges/products/strategies/parameters to use, how much fund to utilize, and at which timing to deposit/withdraw are all discretional.
+* **NOT** fully automated. Even though the orders are handled automatically following the trading strategies, configurations such as which exchanges/products/strategies/parameters to use/trade, how much fund to utilize, and at which timing to deposit/withdraw are all discretional.
 * **NOT** a low-latency nor HFT trading application. The framework is based on a periodic timer, not event-driven.
 * **NOT** for non-programmers. No tutorials, user guides, nor support are available. Read the code to figure out how things work. Fork if things needs to be tweaked. Contributions are always welcome, but not required.
 * **NOT** stable nor backward compatible. The project intended for the author's quick & dirty playground implementations, therefore destructive changes could be made any time.
@@ -31,7 +31,7 @@ So why is this project made public?
 * [Gradle](https://gradle.org/)
 
 ### Installation & Launching
-Follow the below procedures to launch the application. The application will run in dry-mode by default.
+Follow the below procedures to launch the application. The application will run in dry-mode (read-only) by default.
 1. Download (checkout) the project files from GitHub.
 2. From the command line, build the module with `gradle clean war`.
 3. Change current working directory to `etc/home/cryptotrader/cryptotrader/etc/winstone/`.
