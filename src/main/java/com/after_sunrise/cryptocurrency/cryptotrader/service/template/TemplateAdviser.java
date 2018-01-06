@@ -113,31 +113,32 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         Key key = Key.from(request);
 
-        BigDecimal comm = context.getCommissionRate(key);
+        BigDecimal commission = context.getCommissionRate(key);
 
-        if (comm == null) {
+        if (commission == null) {
 
             log.trace("Basis not available. Null commission.");
 
             return null;
         }
 
-        BigDecimal spread = request.getTradingSpread();
+        BigDecimal staticBasis = request.getTradingSpread();
 
-        if (spread == null) {
+        if (staticBasis == null) {
 
             log.trace("Basis not available. Null spread.");
 
             return null;
         }
 
-        BigDecimal staticBasis = spread.add(comm);
-
         BigDecimal dynamicBasis = ofNullable(calculateDeviation(context, request)).orElse(staticBasis);
 
-        BigDecimal adjustedBasis = adjustBasis(context, request, staticBasis.max(dynamicBasis));
+        BigDecimal basis = staticBasis.max(dynamicBasis).add(commission);
 
-        log.trace("Basis : {} (static=[{}] dynamic=[{}])", adjustedBasis, staticBasis, dynamicBasis);
+        BigDecimal adjustedBasis = adjustBasis(context, request, basis);
+
+        log.trace("Basis : {} (static=[{}] dynamic=[{}] commission=[{}])",
+                adjustedBasis, staticBasis, dynamicBasis, commission);
 
         return adjustedBasis;
 

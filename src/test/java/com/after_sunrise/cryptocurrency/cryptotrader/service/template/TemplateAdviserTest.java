@@ -156,7 +156,7 @@ public class TemplateAdviserTest {
 
         // Dynamic
         doReturn(new BigDecimal("0.0090")).when(target).calculateDeviation(context, request);
-        assertEquals(target.calculateBasis(context, request), new BigDecimal("0.0090"));
+        assertEquals(target.calculateBasis(context, request), new BigDecimal("0.0110"));
 
         // Null spread
         request = Request.builder().tradingSpread(null).build();
