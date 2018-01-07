@@ -15,6 +15,7 @@ com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator$Vw
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.VwapEstimator$Vwap960Estimator
 
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.UnivariateEstimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.UnivariateEstimator$Univariate005Estimator
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.UnivariateEstimator$Univariate010Estimator
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.UnivariateEstimator$Univariate015Estimator
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.UnivariateEstimator$Univariate020Estimator
@@ -53,6 +54,7 @@ com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.SiteEstimator$Si
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.SiteEstimator$SiteVwap960Estimator
 
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.SiteEstimator$SiteUnivariateEstimator
+com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.SiteEstimator$SiteUnivariate005Estimator
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.SiteEstimator$SiteUnivariate010Estimator
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.SiteEstimator$SiteUnivariate015Estimator
 com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.SiteEstimator$SiteUnivariate020Estimator

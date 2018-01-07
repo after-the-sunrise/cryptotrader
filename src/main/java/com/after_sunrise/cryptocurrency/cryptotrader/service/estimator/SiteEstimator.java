@@ -52,6 +52,13 @@ public class SiteEstimator extends AbstractEstimator {
         }
     }
 
+    public static class SiteUnivariate005Estimator extends UnivariateEstimator.Univariate005Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
     public static class SiteUnivariate010Estimator extends UnivariateEstimator.Univariate010Estimator {
         @Override
         public Context.Key getKey(Context context, Request request) {

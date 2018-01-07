@@ -134,6 +134,13 @@ public class UnivariateEstimator extends AbstractEstimator {
         return getIntProperty(SAMPLES_KEY, SAMPLES_VAL);
     }
 
+    public static class Univariate005Estimator extends UnivariateEstimator {
+        @Override
+        protected int getSamples() {
+            return 05;
+        }
+    }
+
     public static class Univariate010Estimator extends UnivariateEstimator {
         @Override
         protected int getSamples() {
