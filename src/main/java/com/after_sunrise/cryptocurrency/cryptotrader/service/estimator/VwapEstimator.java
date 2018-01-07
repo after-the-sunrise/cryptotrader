@@ -32,8 +32,6 @@ public class VwapEstimator extends AbstractEstimator {
 
     private static final int DURATION_VAL = 60;
 
-    private static final double SIGMA = 1.96;
-
     @Override
     public Estimation estimate(Context context, Request request) {
 
@@ -74,16 +72,18 @@ public class VwapEstimator extends AbstractEstimator {
 
         double deviation = calculateDeviation(trades);
 
+        double sigma = getSigma(trades.size() - 1).doubleValue();
+
         double last = trades.get(trades.size() - 1).getPrice().doubleValue();
 
-        double drift = Math.min(1, Math.abs(Math.log(last / vwap) / (deviation * SIGMA)));
+        double drift = Math.min(1, Math.abs(Math.log(last / vwap)) / (deviation * sigma));
 
         BigDecimal p = BigDecimal.valueOf(vwap).setScale(SCALE, HALF_UP);
 
         BigDecimal c = Double.isNaN(drift) ? ZERO : BigDecimal.valueOf(1 - drift).setScale(SCALE, HALF_UP);
 
         log.debug("Estimated : {} (confidence=[{}] points=[{}] sigma=[{}] deviation=[{}])",
-                p, c, trades.size(), SIGMA, deviation);
+                p, c, trades.size(), sigma, deviation);
 
         return Estimation.builder().price(p).confidence(c).build();
 
