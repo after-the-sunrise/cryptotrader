@@ -63,8 +63,8 @@ public class UnivariateEstimator extends AbstractEstimator {
 
         BigDecimal confidence = BigDecimal.valueOf(analysis[I_DETERMINATION]).setScale(SCALE, HALF_UP);
 
-        log.debug("Estimated : {} (Confidence={}, Correlation={}, Samples={})",
-                price, confidence, analysis[I_CORRELATION], analysis[I_SAMPLES]
+        log.debug("Estimated : {} (Confidence={}, Correlation={}, Samples={}, Coefficient={}, Intercept={})",
+                price, confidence, analysis[I_CORRELATION], analysis[I_SAMPLES], analysis[I_COEFFICIENT], analysis[I_INTERCEPT]
         );
 
         return Estimation.builder().price(price).confidence(confidence).build();

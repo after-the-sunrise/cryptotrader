@@ -82,7 +82,8 @@ public class VwapEstimator extends AbstractEstimator {
 
         BigDecimal c = Double.isNaN(drift) ? ZERO : BigDecimal.valueOf(1 - drift).setScale(SCALE, HALF_UP);
 
-        log.debug("Estimated : {} (confidence=[{}] points=[{}])", p, c, trades.size());
+        log.debug("Estimated : {} (confidence=[{}] points=[{}] sigma=[{}] deviation=[{}])",
+                p, c, trades.size(), SIGMA, deviation);
 
         return Estimation.builder().price(p).confidence(c).build();
 
