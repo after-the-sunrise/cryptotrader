@@ -70,7 +70,7 @@ public class VwapEstimator extends AbstractEstimator {
 
         }
 
-        double vwap = calculateVwap(trades);
+        double vwap = calculateVwap(trades, now);
 
         double deviation = calculateDeviation(trades);
 
@@ -97,7 +97,7 @@ public class VwapEstimator extends AbstractEstimator {
 
     }
 
-    private double calculateVwap(List<Trade> trades) {
+    private double calculateVwap(List<Trade> trades, Instant currentTime) {
 
         double sumNotional = 0;
 
@@ -105,9 +105,13 @@ public class VwapEstimator extends AbstractEstimator {
 
         for (Trade t : trades) {
 
-            sumNotional += t.getSize().multiply(t.getPrice()).doubleValue();
+            long elapsed = currentTime.getEpochSecond() - t.getTimestamp().getEpochSecond();
 
-            sumQuantity += t.getSize().doubleValue();
+            double weight = 1.0 / Math.log10(Math.max(elapsed, 10));
+
+            sumNotional += t.getSize().doubleValue() * weight * t.getPrice().doubleValue();
+
+            sumQuantity += t.getSize().doubleValue() * weight;
 
         }
 
