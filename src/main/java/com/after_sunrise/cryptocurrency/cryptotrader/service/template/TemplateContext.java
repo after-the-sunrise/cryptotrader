@@ -42,8 +42,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
+import static java.util.Collections.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -397,6 +396,28 @@ public abstract class TemplateContext extends AbstractService implements Context
     @Override
     public BigDecimal getLastPrice(Key key) {
         return null;
+    }
+
+    @Override
+    public Map<BigDecimal, BigDecimal> getAskPrices(Key key) {
+
+        BigDecimal p = getBestAskPrice(key);
+
+        BigDecimal s = getBestAskSize(key);
+
+        return singletonMap(p, s);
+
+    }
+
+    @Override
+    public Map<BigDecimal, BigDecimal> getBidPrices(Key key) {
+
+        BigDecimal p = getBestBidPrice(key);
+
+        BigDecimal s = getBestBidSize(key);
+
+        return singletonMap(p, s);
+
     }
 
     @Override

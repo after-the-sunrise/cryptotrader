@@ -121,6 +121,16 @@ public class ContextImpl extends AbstractService implements Context {
     }
 
     @Override
+    public Map<BigDecimal, BigDecimal> getAskPrices(Key key) {
+        return forContext(key, c -> c.getAskPrices(key));
+    }
+
+    @Override
+    public Map<BigDecimal, BigDecimal> getBidPrices(Key key) {
+        return forContext(key, c -> c.getBidPrices(key));
+    }
+
+    @Override
     public List<Trade> listTrades(Key key, Instant fromTime) {
         return forContext(key, c -> c.listTrades(key, fromTime));
     }

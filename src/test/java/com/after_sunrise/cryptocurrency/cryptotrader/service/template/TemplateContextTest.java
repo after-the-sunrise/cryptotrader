@@ -19,10 +19,7 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
@@ -260,6 +257,32 @@ public class TemplateContextTest {
     }
 
     @Test
+    public void testGetAskPrices() {
+
+        Key key = Key.from(null);
+        doReturn(ONE).when(target).getBestAskPrice(key);
+        doReturn(TEN).when(target).getBestAskSize(key);
+
+        Map<BigDecimal, BigDecimal> result = target.getAskPrices(key);
+        assertEquals(result.size(), 1, result.toString());
+        assertEquals(result.get(ONE), TEN);
+
+    }
+
+    @Test
+    public void testGetBidPrices() {
+
+        Key key = Key.from(null);
+        doReturn(ONE).when(target).getBestBidPrice(key);
+        doReturn(TEN).when(target).getBestBidSize(key);
+
+        Map<BigDecimal, BigDecimal> result = target.getBidPrices(key);
+        assertEquals(result.size(), 1, result.toString());
+        assertEquals(result.get(ONE), TEN);
+
+    }
+
+    @Test
     public void testGetMidPrice() throws Exception {
 
         Key key = Key.builder().instrument("foo").build();
@@ -285,13 +308,17 @@ public class TemplateContextTest {
     @Test
     public void testInterfaceMethods() throws ReflectiveOperationException {
 
+        Set<String> ignores = new HashSet<>(Arrays.asList(
+                "getState", "getMidPrice", "getAskPrices", "getBidPrices"
+        ));
+
         for (Method m : Context.class.getMethods()) {
 
             if (m.getDeclaringClass() != Context.class) {
                 continue;
             }
 
-            if (m.getName().equals("getState")) {
+            if (ignores.contains(m.getName())) {
                 continue;
             }
 

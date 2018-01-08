@@ -89,6 +89,10 @@ public interface Context extends Service, AutoCloseable {
 
     BigDecimal getLastPrice(Key key);
 
+    Map<BigDecimal, BigDecimal> getAskPrices(Key key);
+
+    Map<BigDecimal, BigDecimal> getBidPrices(Key key);
+
     List<Trade> listTrades(Key key, Instant fromTime);
 
     CurrencyType getInstrumentCurrency(Key key);
