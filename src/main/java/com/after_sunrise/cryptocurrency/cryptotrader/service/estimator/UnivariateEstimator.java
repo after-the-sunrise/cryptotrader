@@ -59,9 +59,11 @@ public class UnivariateEstimator extends AbstractEstimator {
 
         double estimate = r * prices.lastEntry().getValue().doubleValue();
 
-        BigDecimal price = BigDecimal.valueOf(estimate).setScale(SCALE, HALF_UP);
+        BigDecimal price = Double.isFinite(estimate) ? BigDecimal.valueOf(estimate).setScale(SCALE, HALF_UP) : null;
 
-        BigDecimal confidence = BigDecimal.valueOf(analysis[I_DETERMINATION]).setScale(SCALE, HALF_UP);
+        double determination = analysis[I_DETERMINATION];
+
+        BigDecimal confidence = Double.isFinite(determination) ? BigDecimal.valueOf(determination).setScale(SCALE, HALF_UP) : null;
 
         log.debug("Estimated : {} (Confidence={}, Correlation={}, Samples={}, Coefficient={}, Intercept={})",
                 price, confidence, analysis[I_CORRELATION], analysis[I_SAMPLES], analysis[I_COEFFICIENT], analysis[I_INTERCEPT]
