@@ -220,4 +220,109 @@ public class SiteEstimator extends AbstractEstimator {
         }
     }
 
+    public static class SiteDepthEstimator extends DepthEstimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
+    public static class SiteDepth001Estimator extends DepthEstimator.Depth001Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
+    public static class SiteDepth003Estimator extends DepthEstimator.Depth003Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
+    public static class SiteDepth005Estimator extends DepthEstimator.Depth005Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
+    public static class SiteDepth010Estimator extends DepthEstimator.Depth010Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
+    public static class SiteDepth015Estimator extends DepthEstimator.Depth015Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
+    public static class SiteDepth020Estimator extends DepthEstimator.Depth020Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
+    public static class SiteDepth030Estimator extends DepthEstimator.Depth030Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
+    public static class SiteDepth045Estimator extends DepthEstimator.Depth045Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
+    public static class SiteDepth060Estimator extends DepthEstimator.Depth060Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
+    public static class SiteDepth120Estimator extends DepthEstimator.Depth120Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
+    public static class SiteDepth240Estimator extends DepthEstimator.Depth240Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
+    public static class SiteDepth360Estimator extends DepthEstimator.Depth360Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
+    public static class SiteDepth480Estimator extends DepthEstimator.Depth480Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
+    public static class SiteDepth720Estimator extends DepthEstimator.Depth720Estimator {
+        @Override
+        public Context.Key getKey(Context context, Request request) {
+            return INSTANCE.getKey(context, request);
+        }
+    }
+
 }
