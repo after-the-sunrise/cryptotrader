@@ -203,6 +203,16 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
     }
 
     @Override
+    public Map<BigDecimal, BigDecimal> getAskPrices(Key key) {
+        return queryBook(key).map(CoincheckBook::getAsks).orElseGet(() -> super.getAskPrices(key));
+    }
+
+    @Override
+    public Map<BigDecimal, BigDecimal> getBidPrices(Key key) {
+        return queryBook(key).map(CoincheckBook::getBids).orElseGet(() -> super.getBidPrices(key));
+    }
+
+    @Override
     public List<Trade> listTrades(Key key, Instant fromTime) {
 
         ProductType product = ProductType.find(key.getInstrument());

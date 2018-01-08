@@ -329,7 +329,7 @@ public class BitmexContextTest {
     public void testQueryBooks() throws Exception {
 
         doReturn(Resources.toString(getResource("json/bitmex_book.json"), UTF_8)).when(target)
-                .request(GET, "https://www.bitmex.com/api/v1/orderBook/L2?symbol=XBTUSD&depth=1", null, null);
+                .request(GET, "https://www.bitmex.com/api/v1/orderBook/L2?symbol=XBTUSD&depth=10", null, null);
 
         Key key = Key.builder().instrument("XBT???").build();
         doReturn("XBTUSD").when(target).convertAlias(key);

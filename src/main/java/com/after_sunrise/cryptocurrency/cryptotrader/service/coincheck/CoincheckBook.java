@@ -5,9 +5,7 @@ import lombok.*;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.math.BigDecimal;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.reverseOrder;
@@ -65,6 +63,40 @@ public class CoincheckBook {
 
     public BigDecimal getBestBidSize() {
         return extractBest(bids, false, I_SIZE);
+    }
+
+    public Map<BigDecimal, BigDecimal> getAsks() {
+
+        Map<BigDecimal, BigDecimal> values = new LinkedHashMap<>();
+
+        if (asks != null) {
+            asks.stream()
+                    .filter(Objects::nonNull)
+                    .filter(ps -> ps.length == 2)
+                    .filter(ps -> ps[I_PRICE] != null)
+                    .filter(ps -> ps[I_SIZE] != null)
+                    .forEach(ps -> values.put(ps[I_PRICE], ps[I_SIZE]));
+        }
+
+        return Collections.unmodifiableMap(values);
+
+    }
+
+    public Map<BigDecimal, BigDecimal> getBids() {
+
+        Map<BigDecimal, BigDecimal> values = new LinkedHashMap<>();
+
+        if (bids != null) {
+            bids.stream()
+                    .filter(Objects::nonNull)
+                    .filter(ps -> ps.length == 2)
+                    .filter(ps -> ps[I_PRICE] != null)
+                    .filter(ps -> ps[I_SIZE] != null)
+                    .forEach(ps -> values.put(ps[I_PRICE], ps[I_SIZE]));
+        }
+
+        return Collections.unmodifiableMap(values);
+
     }
 
 }

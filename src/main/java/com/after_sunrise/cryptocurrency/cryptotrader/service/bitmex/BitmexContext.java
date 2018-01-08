@@ -33,8 +33,7 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.Bitme
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.SideType.SELL;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexTick.UNLISTED;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
-import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.ZERO;
+import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.HALF_UP;
 import static java.util.Collections.*;
 import static java.util.Optional.ofNullable;
@@ -228,7 +227,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
             Map<String, String> parameters = new LinkedHashMap<>();
             parameters.put("symbol", convertAlias(key));
-            parameters.put("depth", ONE.toPlainString());
+            parameters.put("depth", TEN.toPlainString());
             String path = URL + URL_BOOK + buildQueryParameter(parameters);
 
             String data = request(GET, path, null, null);
@@ -301,6 +300,48 @@ public class BitmexContext extends TemplateContext implements BitmexService {
     @Override
     public BigDecimal getLastPrice(Key key) {
         return queryTick(key).map(BitmexTick::getLast).orElse(null);
+    }
+
+    @Override
+    public Map<BigDecimal, BigDecimal> getAskPrices(Key key) {
+
+        if (queryTick(key).filter(t -> UNLISTED.equals(t.getState())).isPresent()) {
+            return emptyMap();
+        }
+
+        Map<BigDecimal, BigDecimal> values = new LinkedHashMap<>();
+
+        queryBooks(key).stream()
+                .filter(Objects::nonNull)
+                .filter(b -> b.getSide() != null)
+                .filter(b -> b.getPrice() != null)
+                .filter(b -> b.getSize() != null)
+                .filter(b -> !BitmexBook.SIDE_BUY.equals(b.getSide()))
+                .forEach(b -> values.put(b.getPrice(), b.getSize()));
+
+        return values;
+
+    }
+
+    @Override
+    public Map<BigDecimal, BigDecimal> getBidPrices(Key key) {
+
+        if (queryTick(key).filter(t -> UNLISTED.equals(t.getState())).isPresent()) {
+            return emptyMap();
+        }
+
+        Map<BigDecimal, BigDecimal> values = new LinkedHashMap<>();
+
+        queryBooks(key).stream()
+                .filter(Objects::nonNull)
+                .filter(b -> b.getSide() != null)
+                .filter(b -> b.getPrice() != null)
+                .filter(b -> b.getSize() != null)
+                .filter(b -> BitmexBook.SIDE_BUY.equals(b.getSide()))
+                .forEach(b -> values.put(b.getPrice(), b.getSize()));
+
+        return values;
+
     }
 
     @Override

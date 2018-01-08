@@ -71,7 +71,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
     private static final Duration TIMEOUT = Duration.ofMinutes(3);
 
-    private static final Duration REALTIME_EXPIRY = Duration.ofMinutes(1);
+    private static final Duration REALTIME_EXPIRY = Duration.ofSeconds(5);
 
     private static final Duration REALTIME_TRADE = Duration.ofDays(3);
 
@@ -401,6 +401,50 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
         Tick tick = getTick(key);
 
         return tick == null ? null : tick.getTradePrice();
+
+    }
+
+    @Override
+    public Map<BigDecimal, BigDecimal> getAskPrices(Key key) {
+
+        BitflyerBoard b = getBoard(key);
+
+        if (b == null) {
+            return super.getAskPrices(key);
+        }
+
+        Map<BigDecimal, BigDecimal> values = new HashMap<>();
+
+        trimToEmpty(b.getDelegate().getAsk()).stream()
+                .filter(Objects::nonNull)
+                .filter(q -> q.getPrice() != null)
+                .filter(q -> q.getSize() != null)
+                .filter(q -> q.getSize().signum() != 0)
+                .forEach(q -> values.put(q.getPrice(), q.getSize()));
+
+        return values;
+
+    }
+
+    @Override
+    public Map<BigDecimal, BigDecimal> getBidPrices(Key key) {
+
+        BitflyerBoard b = getBoard(key);
+
+        if (b == null) {
+            return super.getBidPrices(key);
+        }
+
+        Map<BigDecimal, BigDecimal> values = new HashMap<>();
+
+        trimToEmpty(b.getDelegate().getBid()).stream()
+                .filter(Objects::nonNull)
+                .filter(q -> q.getPrice() != null)
+                .filter(q -> q.getSize() != null)
+                .filter(q -> q.getSize().signum() != 0)
+                .forEach(q -> values.put(q.getPrice(), q.getSize()));
+
+        return values;
 
     }
 
