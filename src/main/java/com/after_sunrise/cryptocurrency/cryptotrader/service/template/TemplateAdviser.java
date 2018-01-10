@@ -49,7 +49,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal weighedPrice = calculateWeighedPrice(context, request, estimation);
 
-        BigDecimal basis = calculateBasis(context, request);
+        BigDecimal basis = calculateBasis(context, request, estimation);
 
         BigDecimal bBasis = calculateBuyBasis(context, request, basis);
 
@@ -109,7 +109,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
     }
 
     @VisibleForTesting
-    BigDecimal calculateBasis(Context context, Request request) {
+    BigDecimal calculateBasis(Context context, Request request, Estimation estimation) {
 
         Key key = Key.from(request);
 
@@ -135,7 +135,11 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal basis = staticBasis.max(dynamicBasis).add(commission);
 
-        BigDecimal adjustedBasis = adjustBasis(context, request, basis);
+        BigDecimal confidence = trimToZero(estimation.getConfidence()).min(ONE).max(ZERO);
+
+        BigDecimal confidenceBasis = basis.multiply(ONE.add(ONE.subtract(confidence)));
+
+        BigDecimal adjustedBasis = adjustBasis(context, request, confidenceBasis);
 
         log.trace("Basis : {} (static=[{}] dynamic=[{}] commission=[{}])",
                 adjustedBasis, staticBasis, dynamicBasis, commission);
@@ -491,7 +495,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
     }
 
     @VisibleForTesting
-    BigDecimal calculateBuyBoundaryPrice(Context context, Request request) {
+    BigDecimal calculateBuyBoundaryPrice(Context context, Request request, BigDecimal basis) {
 
         Key key = Key.from(request);
 
@@ -503,10 +507,8 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal ask1 = ask0.subtract(EPSILON);
 
-        BigDecimal basis = ofNullable(calculateBasis(context, request)).orElse(ZERO);
-
         BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_SELL))
-                .map(r -> r.multiply(ONE.subtract(basis).subtract(basis))).orElse(ask0);
+                .map(r -> r.multiply(ONE.subtract(trimToZero(basis)).subtract(trimToZero(basis)))).orElse(ask0);
 
         BigDecimal bid0 = ofNullable(context.getBestBidPrice(key)).orElse(ask0);
 
@@ -535,7 +537,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
     }
 
     @VisibleForTesting
-    BigDecimal calculateSellBoundaryPrice(Context context, Request request) {
+    BigDecimal calculateSellBoundaryPrice(Context context, Request request, BigDecimal basis) {
 
         Key key = Key.from(request);
 
@@ -547,10 +549,8 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal bid1 = bid0.add(EPSILON);
 
-        BigDecimal basis = ofNullable(calculateBasis(context, request)).orElse(ZERO);
-
         BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_BUY))
-                .map(r -> r.multiply(ONE.add(basis).add(basis))).orElse(bid0);
+                .map(r -> r.multiply(ONE.add(trimToZero(basis)).add(trimToZero(basis)))).orElse(bid0);
 
         BigDecimal ask0 = ofNullable(context.getBestAskPrice(key)).orElse(bid0);
 
@@ -591,7 +591,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         Key key = Key.from(request);
 
-        BigDecimal bound = calculateBuyBoundaryPrice(context, request);
+        BigDecimal bound = calculateBuyBoundaryPrice(context, request, basis);
 
         if (bound == null) {
 
@@ -626,7 +626,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         Key key = Key.from(request);
 
-        BigDecimal bound = calculateSellBoundaryPrice(context, request);
+        BigDecimal bound = calculateSellBoundaryPrice(context, request, basis);
 
         if (bound == null) {
 
