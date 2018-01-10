@@ -148,6 +148,10 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
     }
 
+    protected BigDecimal adjustBasis(Context context, Request request, BigDecimal basis) {
+        return basis;
+    }
+
     @VisibleForTesting
     BigDecimal calculateDeviation(Context context, Request request) {
 
@@ -192,10 +196,6 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         return BigDecimal.valueOf(highest).setScale(SCALE, HALF_UP);
 
-    }
-
-    protected BigDecimal adjustBasis(Context context, Request request, BigDecimal basis) {
-        return basis;
     }
 
     @VisibleForTesting
