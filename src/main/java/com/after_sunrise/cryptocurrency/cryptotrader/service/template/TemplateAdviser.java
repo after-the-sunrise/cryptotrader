@@ -137,12 +137,16 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal confidence = trimToZero(estimation.getConfidence()).min(ONE).max(ZERO);
 
-        BigDecimal confidenceBasis = basis.multiply(ONE.add(ONE.subtract(confidence)));
+        BigDecimal factor = getDecimalProperty("confidence.factor", ZERO);
+
+        BigDecimal adjustment = ONE.subtract(confidence).multiply(factor);
+
+        BigDecimal confidenceBasis = basis.multiply(ONE.add(adjustment));
 
         BigDecimal adjustedBasis = adjustBasis(context, request, confidenceBasis);
 
-        log.trace("Basis : {} (static=[{}] dynamic=[{}] commission=[{}])",
-                adjustedBasis, staticBasis, dynamicBasis, commission);
+        log.trace("Basis : {} (static=[{}] dynamic=[{}] commission=[{}] confidence=[{}] factor=[{}])",
+                adjustedBasis, staticBasis, dynamicBasis, commission, confidence, factor);
 
         return adjustedBasis;
 

@@ -9,6 +9,8 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order.Execution;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.collect.Sets;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.mockito.invocation.InvocationOnMock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -52,6 +54,8 @@ public class TemplateAdviserTest {
 
     private Estimation.EstimationBuilder eBuilder;
 
+    private Configuration configuration;
+
     @BeforeMethod
     public void setUp() throws Exception {
 
@@ -79,7 +83,11 @@ public class TemplateAdviserTest {
 
         eBuilder = Estimation.builder().price(new BigDecimal("12345.6789")).confidence(new BigDecimal("0.5"));
 
+        configuration = spy(new MapConfiguration(new HashMap<>()));
+
         target = spy(new TemplateAdviser("test"));
+
+        target.setConfiguration(configuration);
 
     }
 
@@ -148,25 +156,30 @@ public class TemplateAdviserTest {
         when(context.getCommissionRate(Key.from(request))).thenReturn(new BigDecimal("0.0020"));
         Estimation estimation = Estimation.builder().confidence(ONE).build();
 
+        configuration.addProperty(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.confidence.factor",
+                new BigDecimal("0.50")
+        );
+
         // Static (null dynamic)
         doReturn(null).when(target).calculateDeviation(context, request);
-        assertEquals(target.calculateBasis(context, request, estimation), new BigDecimal("0.0080"));
+        assertEquals(target.calculateBasis(context, request, estimation), new BigDecimal("0.008000"));
 
         // Static (with dynamic)
         doReturn(new BigDecimal("0.0001")).when(target).calculateDeviation(context, request);
-        assertEquals(target.calculateBasis(context, request, estimation), new BigDecimal("0.0080"));
+        assertEquals(target.calculateBasis(context, request, estimation), new BigDecimal("0.008000"));
 
         // Dynamic
         doReturn(new BigDecimal("0.0090")).when(target).calculateDeviation(context, request);
-        assertEquals(target.calculateBasis(context, request, estimation), new BigDecimal("0.0110"));
+        assertEquals(target.calculateBasis(context, request, estimation), new BigDecimal("0.011000"));
 
         // With less confidence
         estimation = Estimation.builder().confidence(new BigDecimal("0.8")).build();
-        assertEquals(target.calculateBasis(context, request, estimation), new BigDecimal("0.01320"));
+        assertEquals(target.calculateBasis(context, request, estimation), new BigDecimal("0.0121000"));
 
         // Null spread
         request = Request.builder().tradingSpread(null).build();
-        when(context.getCommissionRate(Key.from(request))).thenReturn(new BigDecimal("0.0020"));
+        when(context.getCommissionRate(Key.from(request))).thenReturn(new BigDecimal("0.002000"));
         assertNull(target.calculateBasis(context, request, estimation));
 
         // Null commission
