@@ -54,28 +54,28 @@ public class MidEstimatorTest {
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("470100"));
         result = target.estimate(context, request);
         assertEquals(result.getPrice(), new BigDecimal("470150.0"));
-        assertEquals(result.getConfidence(), new BigDecimal("0.9997873019"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.49989365095"));
 
         // Valid (Wide)
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("470200"));
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("400000"));
         result = target.estimate(context, request);
         assertEquals(result.getPrice(), new BigDecimal("435100.0"));
-        assertEquals(result.getConfidence(), new BigDecimal("0.8386577798"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.41932888990"));
 
         // Inverse Price
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("470100"));
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("470200"));
         result = target.estimate(context, request);
         assertEquals(result.getPrice(), new BigDecimal("470150.0"));
-        assertEquals(result.getConfidence(), new BigDecimal("0.9997873019"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.49989365095"));
 
         // Equilibrium
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("470100"));
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("470100"));
         result = target.estimate(context, request);
         assertEquals(result.getPrice(), new BigDecimal("470100.0"));
-        assertEquals(result.getConfidence(), new BigDecimal("1.0000000000"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.50000000000"));
 
         // Zero Mid
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("+450000"));
@@ -89,7 +89,7 @@ public class MidEstimatorTest {
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("-450000"));
         result = target.estimate(context, request);
         assertEquals(result.getPrice(), new BigDecimal("0.05"));
-        assertEquals(result.getConfidence(), new BigDecimal("0.5"));
+        assertEquals(result.getConfidence(), new BigDecimal("0"));
 
     }
 

@@ -96,21 +96,21 @@ public class MicroEstimatorTest {
         initializer.run();
         result = target.estimate(context, request);
         assertEquals(result.getPrice(), new BigDecimal("420000.0000000000"));
-        assertEquals(result.getConfidence(), new BigDecimal("0.7619047619"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.38095238095"));
 
         // Inverse Price
         initializer.run();
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("300000"));
         result = target.estimate(context, request);
         assertEquals(result.getPrice(), new BigDecimal("380000.0000000000"));
-        assertEquals(result.getConfidence(), new BigDecimal("0.7368421053"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.36842105265"));
 
         // Equilibrium
         initializer.run();
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("400000"));
         result = target.estimate(context, request);
         assertEquals(result.getPrice(), new BigDecimal("400000.0000000000"));
-        assertEquals(result.getConfidence(), new BigDecimal("1.0000000000"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.50000000000"));
 
         // Zero Price
         initializer.run();

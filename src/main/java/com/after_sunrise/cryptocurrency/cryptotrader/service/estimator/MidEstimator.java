@@ -7,6 +7,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import java.math.BigDecimal;
 
 import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
 
 /**
@@ -46,7 +47,7 @@ public class MidEstimator extends AbstractEstimator {
 
             BigDecimal spread = ask.subtract(bid).divide(mid, SCALE, HALF_UP).abs();
 
-            confidence = ONE.subtract(spread).max(HALF);
+            confidence = ONE.subtract(spread).multiply(HALF).max(ZERO).min(ONE);
 
         }
 
