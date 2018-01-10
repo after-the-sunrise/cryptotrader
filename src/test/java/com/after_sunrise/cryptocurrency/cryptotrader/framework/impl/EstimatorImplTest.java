@@ -71,7 +71,9 @@ public class EstimatorImplTest {
     @Test
     public void testEstimate() throws Exception {
 
-        when(module.getMock(PropertyManager.class).getEstimators(request.getSite(), request.getInstrument()))
+        PropertyManager manager = module.getMock(PropertyManager.class);
+        when(manager.getEstimationThreshold(request.getSite(), request.getInstrument())).thenReturn(ZERO);
+        when(manager.getEstimators(request.getSite(), request.getInstrument()))
                 .thenReturn(Sets.newHashSet("id0", "id1", "id2", "id3", "id4", "id5:0.7", "id6"));
 
         // Valid Estimation (1st)

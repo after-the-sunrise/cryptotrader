@@ -954,4 +954,36 @@ public class PropertyManagerImplTest {
 
     }
 
+    @Test
+    public void testGetEstimationThreshold() throws Exception {
+
+        assertEquals(target.getEstimationThreshold(site, inst), new BigDecimal("0.00"));
+
+        // Specific
+        doReturn(new BigDecimal("0.3456")).when(conf).getBigDecimal(ESTIMATION_THRESHOLD.getKey());
+        assertEquals(target.getEstimationThreshold(site, inst), new BigDecimal("0.3456"));
+
+        // Ceiling
+        doReturn(valueOf(Integer.MAX_VALUE)).when(conf).getBigDecimal(ESTIMATION_THRESHOLD.getKey());
+        assertEquals(target.getEstimationThreshold(site, inst), ONE);
+
+        // Floor
+        doReturn(valueOf(Integer.MIN_VALUE)).when(conf).getBigDecimal(ESTIMATION_THRESHOLD.getKey());
+        assertEquals(target.getEstimationThreshold(site, inst), ZERO);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(ESTIMATION_THRESHOLD.getKey());
+        assertEquals(target.getEstimationThreshold(site, inst), ZERO);
+        reset(conf);
+
+        // Override
+        target.setEstimationThreshold(site, inst, new BigDecimal("0.12"));
+        assertEquals(target.getEstimationThreshold(site, inst), new BigDecimal("0.12"));
+
+        // Clear
+        target.setEstimationThreshold(site, inst, null);
+        assertEquals(target.getEstimationThreshold(site, inst), new BigDecimal("0.00"));
+
+    }
+
 }

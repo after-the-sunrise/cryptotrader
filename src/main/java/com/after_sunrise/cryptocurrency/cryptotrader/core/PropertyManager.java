@@ -64,4 +64,6 @@ public interface PropertyManager {
 
     Map<String, Set<String>> getEstimatorComposites(String site, String instrument);
 
+    BigDecimal getEstimationThreshold(String site, String instrument);
+
 }

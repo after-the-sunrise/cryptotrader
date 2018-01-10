@@ -558,4 +558,14 @@ public class PropertyManagerImpl implements PropertyController {
                 , SEPARATOR_ENTRY));
     }
 
+    @Override
+    public BigDecimal getEstimationThreshold(String site, String instrument) {
+        return getDecimal(site, instrument, ESTIMATION_THRESHOLD, ZERO, ONE, ZERO);
+    }
+
+    @Override
+    public void setEstimationThreshold(String site, String instrument, BigDecimal value) {
+        set(ESTIMATION_THRESHOLD, site, instrument, value, BigDecimal::toPlainString);
+    }
+
 }

@@ -59,4 +59,6 @@ public interface PropertyController extends PropertyManager {
 
     void setEstimatorComposites(String site, String instrument, Map<String, Set<String>> values);
 
+    void setEstimationThreshold(String site, String instrument, BigDecimal value);
+
 }

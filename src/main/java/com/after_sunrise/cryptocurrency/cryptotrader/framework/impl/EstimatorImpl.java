@@ -127,6 +127,8 @@ public class EstimatorImpl extends AbstractService implements Estimator {
 
         BigDecimal denominator = BigDecimal.ZERO;
 
+        BigDecimal threshold = manager.getEstimationThreshold(r.getSite(), r.getInstrument());
+
         AtomicLong total = new AtomicLong();
 
         for (Entry<Estimator, Estimation> entry : estimations.entrySet()) {
@@ -135,7 +137,8 @@ public class EstimatorImpl extends AbstractService implements Estimator {
 
             Estimation estimation = entry.getValue();
 
-            if (estimation == null || estimation.getPrice() == null || estimation.getConfidence() == null) {
+            if (estimation == null || estimation.getPrice() == null
+                    || estimation.getConfidence() == null || estimation.getConfidence().compareTo(threshold) < 0) {
 
                 log.debug("Omitting estimate : [{}.{}] {} ({})", r.getSite(), r.getInstrument(), estimation, id);
 
