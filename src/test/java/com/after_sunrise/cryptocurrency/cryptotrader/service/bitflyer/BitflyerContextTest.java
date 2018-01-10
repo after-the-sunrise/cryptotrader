@@ -1173,6 +1173,9 @@ public class BitflyerContextTest {
         CompletableFuture<OrderCreate> future = completedFuture(mock(OrderCreate.class));
         AtomicReference<OrderCreate.Request> reference = new AtomicReference<>();
 
+        BoardStatus status = mock(BoardStatus.class);
+        when(marketService.getBoardStatus(any(BoardStatus.Request.class))).thenReturn(completedFuture(status));
+
         when(future.get().getAcceptanceId()).thenReturn("aid");
         when(orderService.sendOrder(any())).thenAnswer(i -> {
 

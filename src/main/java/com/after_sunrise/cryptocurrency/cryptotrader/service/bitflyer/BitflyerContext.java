@@ -2,10 +2,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 
 import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4j;
 import com.after_sunrise.cryptocurrency.bitflyer4j.Bitflyer4jFactory;
-import com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType;
-import com.after_sunrise.cryptocurrency.bitflyer4j.core.ParentType;
-import com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType;
-import com.after_sunrise.cryptocurrency.bitflyer4j.core.TimeInForceType;
+import com.after_sunrise.cryptocurrency.bitflyer4j.core.*;
 import com.after_sunrise.cryptocurrency.bitflyer4j.entity.*;
 import com.after_sunrise.cryptocurrency.bitflyer4j.service.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
@@ -78,6 +75,14 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     private static final int REALTIME_COUNT = 1000;
 
     private static final int REALTIME_QUERIES = 32;
+
+    private static final Set<StatusType> HALTS = EnumSet.of(
+            StatusType.NO_ORDER, StatusType.STOP
+    );
+
+    private static final Set<BoardStatusType> SUSPENDS = EnumSet.of(
+            BoardStatusType.STARTING, BoardStatusType.CLOSED, BoardStatusType.AWAITING_SQ, BoardStatusType.MATURED
+    );
 
     private final Bitflyer4j bitflyer4j;
 
@@ -924,18 +929,21 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     @Override
     public Map<CreateInstruction, String> createOrders(Key key, Set<CreateInstruction> instructions) {
 
-        if (CollectionUtils.isEmpty(instructions)) {
+        if (key == null || StringUtils.isBlank(key.getInstrument()) || CollectionUtils.isEmpty(instructions)) {
+            return emptyMap();
+        }
+
+        BoardStatus status = findCached(BoardStatus.class, key, () -> extract(marketService.getBoardStatus(
+                BoardStatus.Request.builder().product(key.getInstrument()).build()
+        ), TIMEOUT));
+
+        if (status == null || HALTS.contains(status.getHealth()) || SUSPENDS.contains(status.getState())) {
             return emptyMap();
         }
 
         Map<CreateInstruction, CompletableFuture<String>> futures = new IdentityHashMap<>();
 
         for (CreateInstruction instruction : instructions) {
-
-            if (key == null || StringUtils.isBlank(key.getInstrument())) {
-                futures.put(instruction, CompletableFuture.completedFuture(null));
-                continue;
-            }
 
             if (instruction == null || instruction.getPrice() == null
                     || instruction.getSize() == null || instruction.getSize().signum() == 0) {
