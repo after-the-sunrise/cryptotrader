@@ -360,7 +360,7 @@ public class CoincheckContextTest {
         doReturn(TEN).when(target).getMidPrice(key);
 
         assertEquals(target.getConversionPrice(key, CurrencyType.BTC), ONE);
-        assertEquals(target.getConversionPrice(key, CurrencyType.JPY), TEN);
+        assertEquals(target.getConversionPrice(key, CurrencyType.JPY), TEN.negate());
         assertEquals(target.getConversionPrice(key, CurrencyType.ETH), null);
 
         key = Key.builder().instrument("FOO").build();

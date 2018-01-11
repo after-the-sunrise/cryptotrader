@@ -105,6 +105,8 @@ public interface BitflyerService extends Service {
 
         BTCJPY_MAT2WK(FUTURE_BTC2W, COLLATERAL, new BigDecimal("0.001"), ONE),
 
+        CASH_JPY(JPY, JPY, ONE, ONE),
+
         COLLATERAL_JPY(JPY, COLLATERAL, ONE, ONE),
 
         COLLATERAL_BTC(BTC, COLLATERAL, SATOSHI, SATOSHI);

@@ -441,7 +441,11 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
             }
 
             if (currency == getFundingCurrency(key)) {
-                return getMidPrice(key);
+
+                BigDecimal p = getMidPrice(key);
+
+                return p == null ? null : p.negate();
+
             }
 
         }

@@ -619,7 +619,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             BigDecimal price = getMidPrice(Key.build(key).instrument(p.name()).build());
 
-            return price == null || price.signum() == 0 ? null : price;
+            return price == null || price.signum() == 0 ? null : price.negate();
 
         }
 
@@ -635,7 +635,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             BigDecimal price = getMidPrice(Key.build(key).instrument(p.name()).build());
 
-            return price == null || price.signum() == 0 ? null : ONE.divide(price, SCALE, HALF_UP);
+            return price == null || price.signum() == 0 ? null : ONE.divide(price, SCALE, HALF_UP).negate();
 
         }
 
