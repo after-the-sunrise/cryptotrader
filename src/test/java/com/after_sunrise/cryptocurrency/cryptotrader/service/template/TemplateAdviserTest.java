@@ -743,7 +743,7 @@ public class TemplateAdviserTest {
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("16000.0000"));
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("15000.0000"));
         doReturn(valueOf(14500)).when(target).calculateRecentPrice(context, request, SIGNUM_SELL);
-        assertEquals(target.calculateBuyBoundaryPrice(context, request, basis), new BigDecimal("14497.1000"));
+        assertEquals(target.calculateBuyBoundaryPrice(context, request, basis), new BigDecimal("14498.5500"));
 
         // Already at BBO
         Order order = mock(Order.class);
@@ -798,7 +798,7 @@ public class TemplateAdviserTest {
         when(context.getBestAskPrice(key)).thenReturn(new BigDecimal("15000.0000"));
         when(context.getBestBidPrice(key)).thenReturn(new BigDecimal("14000.0000"));
         doReturn(valueOf(15500)).when(target).calculateRecentPrice(context, request, SIGNUM_BUY);
-        assertEquals(target.calculateSellBoundaryPrice(context, request, basis), new BigDecimal("15503.1000"));
+        assertEquals(target.calculateSellBoundaryPrice(context, request, basis), new BigDecimal("15501.5500"));
 
         // Already at BBO
         Order order = mock(Order.class);

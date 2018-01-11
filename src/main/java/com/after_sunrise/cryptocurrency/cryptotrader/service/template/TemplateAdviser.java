@@ -512,7 +512,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
         BigDecimal ask1 = ask0.subtract(EPSILON);
 
         BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_SELL))
-                .map(r -> r.multiply(ONE.subtract(trimToZero(basis)).subtract(trimToZero(basis)))).orElse(ask0);
+                .map(r -> r.multiply(ONE.subtract(trimToZero(basis)))).orElse(ask0);
 
         BigDecimal bid0 = ofNullable(context.getBestBidPrice(key)).orElse(ask0);
 
@@ -554,7 +554,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
         BigDecimal bid1 = bid0.add(EPSILON);
 
         BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_BUY))
-                .map(r -> r.multiply(ONE.add(trimToZero(basis)).add(trimToZero(basis)))).orElse(bid0);
+                .map(r -> r.multiply(ONE.add(trimToZero(basis)))).orElse(bid0);
 
         BigDecimal ask0 = ofNullable(context.getBestAskPrice(key)).orElse(bid0);
 
