@@ -13,8 +13,9 @@
 Cryptotrader is...
 * **NOT** fully automated. Even though the orders are handled automatically following the trading strategies, configurations such as which exchanges/products/strategies/parameters to use/trade, how much fund to utilize, and at which timing to deposit/withdraw are all discretional.
 * **NOT** a low-latency nor HFT trading application. The framework is based on a periodic timer, not event-driven.
+* **NOT** fault-tolerant nor highly-available. The single application process is the single-point-of-failure.
 * **NOT** for non-programmers. No tutorials, user guides, nor support are available. Read the code to figure out how things work. Fork if things needs to be tweaked. Contributions are always welcome, but not required.
-* **NOT** stable nor backward compatible. The project intended for the author's quick & dirty playground implementations, therefore destructive changes could be made any time.
+* **NOT** stable nor backward compatible. This project is for the author's quick & dirty playground implementations, therefore destructive changes could be made any time.
 
 So why is this project made public?
 * Not profitable by itself. Tuning is the key to the alpha, which is kept private.
