@@ -30,6 +30,8 @@ public enum PropertyType {
 
     TRADING_EXPOSURE,
 
+    TRADING_THRESHOLD,
+
     TRADING_MINIMUM,
 
     TRADING_AVERSION,

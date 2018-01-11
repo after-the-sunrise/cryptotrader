@@ -43,6 +43,8 @@ public class Request {
 
     private BigDecimal tradingExposure;
 
+    private BigDecimal tradingThreshold;
+
     private BigDecimal tradingMinimum;
 
     private BigDecimal tradingAversion;

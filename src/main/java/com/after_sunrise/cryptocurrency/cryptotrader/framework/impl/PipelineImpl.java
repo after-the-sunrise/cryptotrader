@@ -92,6 +92,7 @@ public class PipelineImpl implements Pipeline {
                 .tradingSigma(propertyManager.getTradingSigma(site, instrument))
                 .tradingSamples(propertyManager.getTradingSamples(site, instrument))
                 .tradingExposure(propertyManager.getTradingExposure(site, instrument))
+                .tradingThreshold(propertyManager.getTradingThreshold(site, instrument))
                 .tradingMinimum(propertyManager.getTradingMinimum(site, instrument))
                 .tradingAversion(propertyManager.getTradingAversion(site, instrument))
                 .tradingSplit(propertyManager.getTradingSplit(site, instrument))

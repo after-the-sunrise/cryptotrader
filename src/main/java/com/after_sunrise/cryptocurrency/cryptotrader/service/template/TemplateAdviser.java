@@ -811,7 +811,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal rounded = ofNullable(context.roundLotSize(Key.from(request), size, HALF_UP)).orElse(ZERO);
 
-        BigDecimal minimum = request.getTradingMinimum();
+        BigDecimal minimum = request.getTradingThreshold();
 
         if (minimum != null && rounded.compareTo(minimum) < 0) {
             rounded = ZERO;
@@ -846,7 +846,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal rounded = ofNullable(context.roundLotSize(Key.from(request), size, HALF_UP)).orElse(ZERO);
 
-        BigDecimal minimum = request.getTradingMinimum();
+        BigDecimal minimum = request.getTradingThreshold();
 
         if (minimum != null && rounded.compareTo(minimum) < 0) {
             rounded = ZERO;

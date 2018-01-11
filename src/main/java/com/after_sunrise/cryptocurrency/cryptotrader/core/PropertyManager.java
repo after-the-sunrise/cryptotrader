@@ -38,6 +38,8 @@ public interface PropertyManager {
 
     BigDecimal getTradingExposure(String site, String instrument);
 
+    BigDecimal getTradingThreshold(String site, String instrument);
+
     BigDecimal getTradingMinimum(String site, String instrument);
 
     BigDecimal getTradingAversion(String site, String instrument);

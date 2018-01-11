@@ -1056,7 +1056,7 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateBuyLimitSize_Margin() throws Exception {
 
-        Request request = rBuilder.tradingMinimum(ZERO).build();
+        Request request = rBuilder.tradingThreshold(ZERO).build();
         Key key = Key.from(request);
         BigDecimal price = new BigDecimal("123.45");
         when(context.isMarginable(key)).thenReturn(true);
@@ -1101,7 +1101,7 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateSellLimitSize_Cash() throws Exception {
 
-        Request request = rBuilder.tradingMinimum(ZERO).build();
+        Request request = rBuilder.tradingThreshold(ZERO).build();
         Key key = Key.from(request);
         BigDecimal price = new BigDecimal("123.45");
         when(context.isMarginable(key)).thenReturn(null);
