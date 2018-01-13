@@ -276,6 +276,59 @@ public class TemplateAdviser extends AbstractService implements Adviser {
     }
 
     @VisibleForTesting
+    BigDecimal calculateInstrumentPosition(Context context, Request request) {
+
+        Key key = Key.from(request);
+
+        CurrencyType currency = context.getInstrumentCurrency(key);
+
+        Map<String, Set<String>> hedgeProducts = ofNullable(request.getHedgeProducts())
+                .filter(MapUtils::isNotEmpty)
+                .orElseGet(() -> singletonMap(request.getSite(), singleton(request.getInstrument())));
+
+        BigDecimal position = ZERO;
+
+        for (Map.Entry<String, Set<String>> entry : hedgeProducts.entrySet()) {
+
+            String site = entry.getKey();
+
+            for (String instrument : entry.getValue()) {
+
+                Key instrumentKey = Key.build(key).site(site).instrument(instrument).build();
+
+                BigDecimal conversionPrice = context.getConversionPrice(instrumentKey, currency);
+
+                if (conversionPrice == null) {
+
+                    log.trace("No conversion price for {}:{}:{}", site, instrument, currency);
+
+                    return null;
+
+                }
+
+                BigDecimal conversionPosition = context.getInstrumentPosition(instrumentKey);
+
+                if (conversionPosition == null) {
+
+                    log.trace("No conversion position for {}:{}", site, instrument);
+
+                    return null;
+
+                }
+
+                BigDecimal basePosition = conversionPosition.divide(conversionPrice, SCALE, HALF_UP);
+
+                position = position.add(basePosition);
+
+            }
+
+        }
+
+        return position;
+
+    }
+
+    @VisibleForTesting
     BigDecimal calculateFundingOffset(Context context, Request request) {
 
         BigDecimal offset = request.getFundingOffset();
@@ -735,45 +788,13 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         }
 
-        Map<String, Set<String>> hedgeProducts = ofNullable(request.getHedgeProducts())
-                .filter(MapUtils::isNotEmpty)
-                .orElseGet(() -> singletonMap(request.getSite(), singleton(request.getInstrument())));
+        BigDecimal position = calculateInstrumentPosition(context, request);
 
-        BigDecimal position = ZERO;
+        if (position == null) {
 
-        for (Map.Entry<String, Set<String>> entry : hedgeProducts.entrySet()) {
+            log.trace("No instrument position for {}:{}", key.getSite(), key.getInstrument());
 
-            String site = entry.getKey();
-
-            for (String instrument : entry.getValue()) {
-
-                Key instrumentKey = Key.build(key).site(site).instrument(instrument).build();
-
-                BigDecimal conversionPrice = context.getConversionPrice(instrumentKey, currency);
-
-                if (conversionPrice == null) {
-
-                    log.trace("No conversion price for {}:{}:{}", site, instrument, currency);
-
-                    return ZERO;
-
-                }
-
-                BigDecimal conversionPosition = context.getInstrumentPosition(instrumentKey);
-
-                if (conversionPosition == null) {
-
-                    log.trace("No conversion position for {}:{}", site, instrument);
-
-                    return ZERO;
-
-                }
-
-                BigDecimal basePosition = conversionPosition.divide(conversionPrice, SCALE, HALF_UP);
-
-                position = position.add(basePosition);
-
-            }
+            return ZERO;
 
         }
 
