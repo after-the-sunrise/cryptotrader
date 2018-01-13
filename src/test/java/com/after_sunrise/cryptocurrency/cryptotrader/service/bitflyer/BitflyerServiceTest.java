@@ -1,25 +1,14 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer;
 
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.LastEstimator;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MicroEstimator;
-import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.MidEstimator;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.BTC;
-import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.JPY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.BTC_JPY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.ETH_BTC;
 import static java.math.RoundingMode.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.testng.Assert.*;
 
 /**
@@ -27,67 +16,6 @@ import static org.testng.Assert.*;
  * @version 0.0.1
  */
 public class BitflyerServiceTest {
-
-    private Context context;
-
-    private Request request;
-
-    private Context.Key key;
-
-    @BeforeMethod
-    public void setUp() {
-
-        context = mock(Context.class);
-
-        request = Request.builder().site("s").instrument("i").currentTime(Instant.now()).build();
-        when(context.getInstrumentCurrency(Context.Key.from(request))).thenReturn(BTC);
-        when(context.getFundingCurrency(Context.Key.from(request))).thenReturn(JPY);
-        when(context.findProduct(Context.Key.builder().site("bitflyer").instrument("*")
-                .timestamp(request.getCurrentTime()).build(), BTC, JPY)).thenReturn("BTC_JPY");
-
-        key = Context.Key.builder().site("bitflyer").instrument("BTC_JPY")
-                .timestamp(request.getCurrentTime()).build();
-
-    }
-
-    @Test
-    public void testBitflyerLastEstimator() {
-
-        BitflyerService.BitflyerLastEstimator target = new BitflyerService.BitflyerLastEstimator();
-
-        assertEquals(target.get(), "BitflyerLastEstimator");
-
-        assertTrue(LastEstimator.class.isInstance(target));
-
-        assertEquals(target.getKey(context, request), key);
-
-    }
-
-    @Test
-    public void testBitflyerMicroEstimator() {
-
-        BitflyerService.BitflyerMicroEstimator target = new BitflyerService.BitflyerMicroEstimator();
-
-        assertEquals(target.get(), "BitflyerMicroEstimator");
-
-        assertTrue(MicroEstimator.class.isInstance(target));
-
-        assertEquals(target.getKey(context, request), key);
-
-    }
-
-    @Test
-    public void testBitflyerMidEstimator() {
-
-        BitflyerService.BitflyerMidEstimator target = new BitflyerService.BitflyerMidEstimator();
-
-        assertEquals(target.get(), "BitflyerMidEstimator");
-
-        assertTrue(MidEstimator.class.isInstance(target));
-
-        assertEquals(target.getKey(context, request), key);
-
-    }
 
     @Test
     public void testAssetType() {
