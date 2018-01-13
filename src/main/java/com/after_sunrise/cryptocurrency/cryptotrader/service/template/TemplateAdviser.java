@@ -217,7 +217,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal funding = context.getFundingPosition(key);
 
-        BigDecimal structure = context.getInstrumentPosition(key);
+        BigDecimal structure = calculateInstrumentPosition(context, request);
 
         if (mid == null || funding == null || structure == null) {
 
@@ -254,13 +254,13 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             // = (X - Y) / [(X + Y) / 2]
             // = 2 * (X - Y) / (X + Y)
 
-            BigDecimal sum = equivalent.add(adjFunding);
+            BigDecimal sum = equivalent.max(ZERO).add(adjFunding);
 
             if (sum.signum() == 0) {
                 return ZERO;
             }
 
-            BigDecimal diff = equivalent.subtract(adjFunding);
+            BigDecimal diff = equivalent.max(ZERO).subtract(adjFunding);
 
             ratio = diff.add(diff).divide(sum, SCALE, HALF_UP);
 
