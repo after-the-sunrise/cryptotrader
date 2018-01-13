@@ -32,7 +32,7 @@ dependencies {
     runtime 'ch.qos.logback:logback-classic:1.2.3'
     runtime 'org.glassfish.tyrus:tyrus-container-jdk-client:1.12'
     runtime fileTree(dir: 'libs', include: '*.jar')
-    compileOnly "org.projectlombok:lombok:1.16.16"
+    compileOnly 'org.projectlombok:lombok:1.16.16'
     compileOnly 'javax.servlet:javax.servlet-api:3.1.0'
     testCompile 'org.testng:testng:6.10'
     testCompile 'org.mockito:mockito-all:1.10.19'
