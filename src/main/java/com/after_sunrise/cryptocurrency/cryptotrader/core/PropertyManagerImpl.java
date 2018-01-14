@@ -113,6 +113,29 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @VisibleForTesting
+    String getString(String site, String instrument, PropertyType type, String defaultValue) {
+
+        try {
+
+            String value = get(type, site, instrument, Configuration::getString);
+
+            String adjusted = Objects.toString(value, defaultValue);
+
+            log.trace("Fetched {} ({}.{}) : {} -> {}", type, site, instrument, value, adjusted);
+
+            return adjusted;
+
+        } catch (RuntimeException e) {
+
+            log.warn(format("Invalid %s (%s.%s)", type, site, instrument), e);
+
+            return defaultValue;
+
+        }
+
+    }
+
+    @VisibleForTesting
     BigDecimal getDecimal(String site, String instrument,
                           PropertyType type, BigDecimal min, BigDecimal max, BigDecimal defaultValue) {
 
@@ -403,6 +426,16 @@ public class PropertyManagerImpl implements PropertyController {
     @Override
     public void setTradingAversion(String site, String instrument, BigDecimal value) {
         set(TRADING_AVERSION, site, instrument, value, BigDecimal::toPlainString);
+    }
+
+    @Override
+    public String getTradingInstruction(String site, String instrument) {
+        return getString(site, instrument, TRADING_INSTRUCTION, StringUtils.EMPTY);
+    }
+
+    @Override
+    public void setTradingInstruction(String site, String instrument, String value) {
+        set(TRADING_INSTRUCTION, site, instrument, value, Function.identity());
     }
 
     @Override

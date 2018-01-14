@@ -36,6 +36,8 @@ public enum PropertyType {
 
     TRADING_AVERSION,
 
+    TRADING_INSTRUCTION,
+
     TRADING_SPLIT,
 
     TRADING_ACTIVE,

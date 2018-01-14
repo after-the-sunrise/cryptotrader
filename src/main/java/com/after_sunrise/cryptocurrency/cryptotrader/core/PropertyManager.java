@@ -44,6 +44,8 @@ public interface PropertyManager {
 
     BigDecimal getTradingAversion(String site, String instrument);
 
+    String getTradingInstruction(String site, String instrument);
+
     Integer getTradingSplit(String site, String instrument);
 
     Duration getTradingDuration(String site, String instrument);

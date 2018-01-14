@@ -49,6 +49,8 @@ public class Request {
 
     private BigDecimal tradingAversion;
 
+    private String tradingInstruction;
+
     private Integer tradingSplit;
 
     private Duration tradingDuration;

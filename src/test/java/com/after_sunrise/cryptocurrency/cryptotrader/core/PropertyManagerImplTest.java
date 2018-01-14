@@ -599,6 +599,34 @@ public class PropertyManagerImplTest {
     }
 
     @Test
+    public void testGetTradingInstruction() throws Exception {
+
+        assertEquals(target.getTradingInstruction(site, inst), "");
+
+        // Specific
+        doReturn("IOC").when(conf).getString(TRADING_INSTRUCTION.getKey());
+        assertEquals(target.getTradingInstruction(site, inst), "IOC");
+
+        // Empty
+        doReturn(null).when(conf).getString(TRADING_INSTRUCTION.getKey());
+        assertEquals(target.getTradingInstruction(site, inst), "");
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getString(TRADING_INSTRUCTION.getKey());
+        assertEquals(target.getTradingInstruction(site, inst), "");
+        reset(conf);
+
+        // Override
+        target.setTradingInstruction(site, inst, "FOK");
+        assertEquals(target.getTradingInstruction(site, inst), "FOK");
+
+        // Clear
+        target.setTradingInstruction(site, inst, null);
+        assertEquals(target.getTradingInstruction(site, inst), "");
+
+    }
+
+    @Test
     public void testGetTradingSplit() throws Exception {
 
         assertEquals(target.getTradingSplit(site, inst), (Integer) 1);

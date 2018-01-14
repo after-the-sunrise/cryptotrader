@@ -111,6 +111,7 @@ public class PipelineImplTest {
             when(manager.getTradingThreshold(any(), any())).thenReturn(valueOf(++count));
             when(manager.getTradingMinimum(any(), any())).thenReturn(valueOf(++count));
             when(manager.getTradingAversion(any(), any())).thenReturn(valueOf(++count));
+            when(manager.getTradingInstruction(any(), any())).thenReturn("IOC");
             when(manager.getTradingSplit(any(), any())).thenReturn(++count);
             when(manager.getTradingDuration(any(), any())).thenReturn(Duration.ofMillis(++count));
             when(manager.getFundingOffset(any(), any())).thenReturn(valueOf(++count));
@@ -138,6 +139,7 @@ public class PipelineImplTest {
         assertEquals(request.getTradingThreshold(), valueOf(7));
         assertEquals(request.getTradingMinimum(), valueOf(8));
         assertEquals(request.getTradingAversion(), valueOf(9));
+        assertEquals(request.getTradingInstruction(), "IOC");
         assertEquals(request.getTradingSplit(), (Integer) 10);
         assertEquals(request.getTradingDuration(), Duration.ofMillis(11));
         assertEquals(request.getFundingOffset(), valueOf(12));
@@ -191,6 +193,10 @@ public class PipelineImplTest {
 
         initializer.run();
         doReturn(null).when(manager).getTradingAversion(any(), any());
+        assertNull(target.createRequest(targetTime, site, instrument));
+
+        initializer.run();
+        doReturn(null).when(manager).getTradingInstruction(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();

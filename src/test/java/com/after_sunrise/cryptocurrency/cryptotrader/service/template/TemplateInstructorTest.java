@@ -76,7 +76,7 @@ public class TemplateInstructorTest {
 
         builder = Request.builder().site("s").instrument("i")
                 .currentTime(ofEpochMilli(123L)).targetTime(ofEpochMilli(456L))
-                .tradingExposure(ZERO).tradingSplit(5).tradingSpread(ZERO);
+                .tradingExposure(ZERO).tradingSplit(5).tradingSpread(ZERO).tradingInstruction("IOC");
 
         target = spy(new TemplateInstructor("test"));
 
@@ -143,7 +143,7 @@ public class TemplateInstructorTest {
 
         List<CreateInstruction> results = target.createBuys(context, request, builder.build());
         assertEquals(results.size(), 5, results.toString());
-        results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
+        results.forEach(r -> assertEquals(r.getStrategy(), "IOC"));
         results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         assertEquals(results.get(0).getPrice(), new BigDecimal("0.999"));
@@ -167,7 +167,7 @@ public class TemplateInstructorTest {
         assertEquals(results.get(0).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(1).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("0.3"));
-        results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
+        results.forEach(r -> assertEquals(r.getStrategy(), "IOC"));
         results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         // Null Price
@@ -179,16 +179,7 @@ public class TemplateInstructorTest {
         assertEquals(results.get(0).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(1).getSize(), new BigDecimal("0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("0.3"));
-        results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
-        results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
-
-        // With strategy
-        when(configuration.getString(
-                "com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateInstructor.strategy",
-                null)).thenReturn("foo");
-        results = target.createBuys(context, request, builder.build());
-        assertEquals(results.size(), 3, results.toString());
-        results.forEach(r -> assertEquals(r.getStrategy(), "foo"));
+        results.forEach(r -> assertEquals(r.getStrategy(), "IOC"));
         results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         // Too small
@@ -218,7 +209,7 @@ public class TemplateInstructorTest {
 
         List<CreateInstruction> results = target.createSells(context, request, builder.build());
         assertEquals(results.size(), 5, results.toString());
-        results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
+        results.forEach(r -> assertEquals(r.getStrategy(), "IOC"));
         results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         assertEquals(results.get(0).getPrice(), new BigDecimal("1.002"));
@@ -242,7 +233,7 @@ public class TemplateInstructorTest {
         assertEquals(results.get(0).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(1).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("-0.3"));
-        results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
+        results.forEach(r -> assertEquals(r.getStrategy(), "IOC"));
         results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         // Null Price
@@ -254,16 +245,7 @@ public class TemplateInstructorTest {
         assertEquals(results.get(0).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(1).getSize(), new BigDecimal("-0.3"));
         assertEquals(results.get(2).getSize(), new BigDecimal("-0.3"));
-        results.forEach(r -> assertNull(r.getStrategy(), r.toString()));
-        results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
-
-        // With strategy
-        when(configuration.getString(
-                "com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateInstructor.strategy",
-                null)).thenReturn("bar");
-        results = target.createSells(context, request, builder.build());
-        assertEquals(results.size(), 3, results.toString());
-        results.forEach(r -> assertEquals(r.getStrategy(), "bar"));
+        results.forEach(r -> assertEquals(r.getStrategy(), "IOC"));
         results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
 
         // Too small

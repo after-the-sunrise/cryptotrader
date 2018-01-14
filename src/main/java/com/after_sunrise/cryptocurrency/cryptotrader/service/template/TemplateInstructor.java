@@ -30,8 +30,6 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
  */
 public class TemplateInstructor extends AbstractService implements Instructor {
 
-    private static final String KEY_STRATEGY = "strategy";
-
     private static final String KEY_EXPIRY = "expiry";
 
     private final String id;
@@ -90,8 +88,6 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         List<CreateInstruction> instructions = new ArrayList<>(s.size());
 
-        String strategy = getStringProperty(KEY_STRATEGY, null);
-
         Duration ttl = Duration.between(request.getCurrentTime(), request.getTargetTime());
 
         Duration expiry = Duration.ofMillis(ttl.toMillis() * getIntProperty(KEY_EXPIRY, 1));
@@ -103,7 +99,8 @@ public class TemplateInstructor extends AbstractService implements Instructor {
             BigDecimal size = s.get(i);
 
             instructions.add(CreateInstruction.builder()
-                    .price(price).size(size).strategy(strategy).timeToLive(expiry).build()
+                    .price(price).size(size)
+                    .strategy(request.getTradingInstruction()).timeToLive(expiry).build()
             );
 
         }
@@ -125,8 +122,6 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         List<CreateInstruction> instructions = new ArrayList<>(s.size());
 
-        String strategy = getStringProperty(KEY_STRATEGY, null);
-
         Duration ttl = Duration.between(request.getCurrentTime(), request.getTargetTime());
 
         Duration expiry = Duration.ofMillis(ttl.toMillis() * getIntProperty(KEY_EXPIRY, 1));
@@ -138,7 +133,8 @@ public class TemplateInstructor extends AbstractService implements Instructor {
             BigDecimal size = s.get(i) == null ? null : s.get(i).negate();
 
             instructions.add(CreateInstruction.builder()
-                    .price(price).size(size).strategy(strategy).timeToLive(expiry).build()
+                    .price(price).size(size)
+                    .strategy(request.getTradingInstruction()).timeToLive(expiry).build()
             );
 
         }
