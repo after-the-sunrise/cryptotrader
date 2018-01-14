@@ -17,8 +17,7 @@ import java.util.Map;
 import static java.math.BigDecimal.valueOf;
 import static java.util.Collections.*;
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
+import static org.testng.Assert.*;
 
 /**
  * @author takanori.takase
@@ -150,6 +149,10 @@ public class PipelineImplTest {
         assertEquals(request.getFundingNegativeThreshold(), valueOf(16));
         assertEquals(request.getHedgeProducts(), singletonMap("hp", emptySet()));
         assertEquals(request.getEstimationAversion(), valueOf(17));
+
+        // Validate copy
+        Request copy = Request.build(request).build();
+        assertSame(target.validateRequest(copy), copy);
 
         // Null Argument
         assertNull(target.createRequest(null, site, instrument));

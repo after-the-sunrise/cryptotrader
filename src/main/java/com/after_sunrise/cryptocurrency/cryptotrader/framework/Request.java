@@ -73,4 +73,40 @@ public class Request {
 
     private BigDecimal estimationAversion;
 
+    public static Request.RequestBuilder build(Request request) {
+
+        Request.RequestBuilder b = builder();
+
+        if (request != null) {
+            b.site(request.getSite());
+            b.instrument(request.getInstrument());
+            b.currentTime(request.getCurrentTime());
+            b.targetTime(request.getTargetTime());
+            b.tradingSpread(request.getTradingSpread());
+            b.tradingSpreadAsk(request.getTradingSpreadAsk());
+            b.tradingSpreadBid(request.getTradingSpreadBid());
+            b.tradingSigma(request.getTradingSigma());
+            b.tradingSamples(request.getTradingSamples());
+            b.tradingExposure(request.getTradingExposure());
+            b.tradingThreshold(request.getTradingThreshold());
+            b.tradingMinimum(request.getTradingMinimum());
+            b.tradingAversion(request.getTradingAversion());
+            b.tradingInstruction(request.getTradingInstruction());
+            b.tradingSplit(request.getTradingSplit());
+            b.tradingDuration(request.getTradingDuration());
+            b.fundingOffset(request.getFundingOffset());
+            b.fundingMultiplierProducts(request.getFundingMultiplierProducts());
+            b.fundingPositiveMultiplier(request.getFundingPositiveMultiplier());
+            b.fundingNegativeMultiplier(request.getFundingNegativeMultiplier());
+            b.fundingPositiveThreshold(request.getFundingPositiveThreshold());
+            b.fundingNegativeThreshold(request.getFundingNegativeThreshold());
+            b.hedgeProducts(request.getHedgeProducts());
+            b.estimatorComposites(request.getEstimatorComposites());
+            b.estimationAversion(request.getEstimationAversion());
+        }
+
+        return b;
+
+    }
+
 }

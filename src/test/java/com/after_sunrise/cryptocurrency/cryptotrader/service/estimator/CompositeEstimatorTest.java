@@ -19,9 +19,11 @@ import java.util.function.BiFunction;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.same;
+import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 /**
  * @author takanori.takase
@@ -60,21 +62,37 @@ public class CompositeEstimatorTest {
         composites.put("*c", Sets.newHashSet("4"));
         Request request = Request.builder().currentTime(Instant.now()).estimatorComposites(composites).build();
 
-        Context.Key k1 = Context.Key.builder().site("a").instrument("1").timestamp(request.getCurrentTime()).build();
-        Context.Key k2 = Context.Key.builder().site("b").instrument("2").timestamp(request.getCurrentTime()).build();
-        Context.Key k3 = Context.Key.builder().site("b").instrument("3").timestamp(request.getCurrentTime()).build();
-        Context.Key k4 = Context.Key.builder().site("c").instrument("4").timestamp(request.getCurrentTime()).build();
+        BiFunction<Context, Request, Estimator.Estimation> function = mock(BiFunction.class);
 
-        Estimator.Estimation e1 = Estimator.Estimation.builder().price(new BigDecimal("0.1")).confidence(new BigDecimal("0.9")).build();
-        Estimator.Estimation e2 = Estimator.Estimation.builder().price(new BigDecimal("0.2")).confidence(new BigDecimal("0.8")).build();
-        Estimator.Estimation e3 = Estimator.Estimation.builder().price(new BigDecimal("0.3")).confidence(new BigDecimal("0.7")).build();
-        Estimator.Estimation e4 = Estimator.Estimation.builder().price(new BigDecimal("0.4")).confidence(new BigDecimal("0.6")).build();
+        doAnswer(i -> {
 
-        BiFunction<Context, Context.Key, Estimator.Estimation> function = mock(BiFunction.class);
-        when(function.apply(context, k1)).thenReturn(e1);
-        when(function.apply(context, k2)).thenReturn(e2);
-        when(function.apply(context, k3)).thenReturn(e3);
-        when(function.apply(context, k4)).thenReturn(e4);
+            Request r = i.getArgumentAt(1, Request.class);
+
+            if (!request.getCurrentTime().equals(r.getCurrentTime())) {
+                fail("Time does not match.");
+            }
+
+            Estimator.Estimation.EstimationBuilder b = Estimator.Estimation.builder();
+
+            if ("a".equals(r.getSite()) && "1".equals(r.getInstrument())) {
+                return b.price(new BigDecimal("0.1")).confidence(new BigDecimal("0.9")).build();
+            }
+
+            if ("b".equals(r.getSite()) && "2".equals(r.getInstrument())) {
+                return b.price(new BigDecimal("0.2")).confidence(new BigDecimal("0.8")).build();
+            }
+
+            if ("b".equals(r.getSite()) && "3".equals(r.getInstrument())) {
+                return b.price(new BigDecimal("0.3")).confidence(new BigDecimal("0.7")).build();
+            }
+
+            if ("c".equals(r.getSite()) && "4".equals(r.getInstrument())) {
+                return b.price(new BigDecimal("0.4")).confidence(new BigDecimal("0.6")).build();
+            }
+
+            return null;
+
+        }).when(function).apply(same(context), any());
 
         CompositeEstimator target = CompositeEstimator.INSTANCE;
 
@@ -113,19 +131,19 @@ public class CompositeEstimatorTest {
         assertEquals(result.getConfidence(), new BigDecimal("0"));
 
         // Null confidence
-        when(function.apply(context, k2)).thenReturn(Estimator.Estimation.builder().price(ONE).build());
+        when(function.apply(same(context), any())).thenReturn(Estimator.Estimation.builder().price(ONE).build());
         result = target.estimate(context, request, function);
         assertEquals(result.getPrice(), null);
         assertEquals(result.getConfidence(), new BigDecimal("0"));
 
         // Null price
-        when(function.apply(context, k2)).thenReturn(Estimator.Estimation.builder().confidence(ONE).build());
+        when(function.apply(same(context), any())).thenReturn(Estimator.Estimation.builder().confidence(ONE).build());
         result = target.estimate(context, request, function);
         assertEquals(result.getPrice(), null);
         assertEquals(result.getConfidence(), new BigDecimal("0"));
 
         // Null estimation
-        when(function.apply(context, k2)).thenReturn(null);
+        when(function.apply(same(context), any())).thenReturn(null);
         result = target.estimate(context, request, function);
         assertEquals(result.getPrice(), null);
         assertEquals(result.getConfidence(), new BigDecimal("0"));

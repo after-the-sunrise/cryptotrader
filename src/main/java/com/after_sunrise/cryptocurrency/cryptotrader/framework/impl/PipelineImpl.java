@@ -109,6 +109,13 @@ public class PipelineImpl implements Pipeline {
                 .estimationAversion(propertyManager.getEstimationAversion(site, instrument))
                 .build();
 
+        return validateRequest(request);
+
+    }
+
+    @VisibleForTesting
+    Request validateRequest(Request request) {
+
         for (Method m : Request.class.getMethods()) {
 
             if (!m.getName().startsWith("get")) {
