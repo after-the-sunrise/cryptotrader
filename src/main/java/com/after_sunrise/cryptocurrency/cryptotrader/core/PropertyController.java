@@ -65,4 +65,6 @@ public interface PropertyController extends PropertyManager {
 
     void setEstimationThreshold(String site, String instrument, BigDecimal value);
 
+    void setEstimationAversion(String site, String instrument, BigDecimal value);
+
 }

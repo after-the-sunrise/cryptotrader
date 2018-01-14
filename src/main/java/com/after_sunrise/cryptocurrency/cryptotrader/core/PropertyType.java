@@ -62,7 +62,9 @@ public enum PropertyType {
 
     ESTIMATOR_COMPOSITES,
 
-    ESTIMATION_THRESHOLD;
+    ESTIMATION_THRESHOLD,
+
+    ESTIMATION_AVERSION;
 
     private static final String PREFIX = "cryptotrader.";
 

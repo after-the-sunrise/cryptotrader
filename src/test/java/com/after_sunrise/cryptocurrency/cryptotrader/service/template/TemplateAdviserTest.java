@@ -152,14 +152,10 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateBasis() {
 
-        Request request = Request.builder().tradingSpread(new BigDecimal("0.0060")).build();
+        Request request = Request.builder().tradingSpread(new BigDecimal("0.0060"))
+                .estimationAversion(new BigDecimal("0.50")).build();
         when(context.getCommissionRate(Key.from(request))).thenReturn(new BigDecimal("0.0020"));
         Estimation estimation = Estimation.builder().confidence(ONE).build();
-
-        configuration.addProperty(
-                "com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.confidence.factor",
-                new BigDecimal("0.50")
-        );
 
         // Static (null dynamic)
         doReturn(null).when(target).calculateDeviation(context, request);

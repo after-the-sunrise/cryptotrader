@@ -70,4 +70,6 @@ public interface PropertyManager {
 
     BigDecimal getEstimationThreshold(String site, String instrument);
 
+    BigDecimal getEstimationAversion(String site, String instrument);
+
 }

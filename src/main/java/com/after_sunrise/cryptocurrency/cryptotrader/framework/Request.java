@@ -71,4 +71,6 @@ public class Request {
 
     private Map<String, Set<String>> estimatorComposites;
 
+    private BigDecimal estimationAversion;
+
 }

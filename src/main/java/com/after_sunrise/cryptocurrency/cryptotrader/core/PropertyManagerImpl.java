@@ -611,4 +611,14 @@ public class PropertyManagerImpl implements PropertyController {
         set(ESTIMATION_THRESHOLD, site, instrument, value, BigDecimal::toPlainString);
     }
 
+    @Override
+    public BigDecimal getEstimationAversion(String site, String instrument) {
+        return getDecimal(site, instrument, ESTIMATION_AVERSION, ZERO, null, ZERO);
+    }
+
+    @Override
+    public void setEstimationAversion(String site, String instrument, BigDecimal value) {
+        set(ESTIMATION_AVERSION, site, instrument, value, BigDecimal::toPlainString);
+    }
+
 }

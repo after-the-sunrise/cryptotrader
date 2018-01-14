@@ -1047,4 +1047,36 @@ public class PropertyManagerImplTest {
 
     }
 
+    @Test
+    public void testGetEstimationAversion() throws Exception {
+
+        assertEquals(target.getEstimationAversion(site, inst), new BigDecimal("0.00"));
+
+        // Specific
+        doReturn(new BigDecimal("0.3456")).when(conf).getBigDecimal(ESTIMATION_AVERSION.getKey());
+        assertEquals(target.getEstimationAversion(site, inst), new BigDecimal("0.3456"));
+
+        // Ceiling
+        doReturn(valueOf(Integer.MAX_VALUE)).when(conf).getBigDecimal(ESTIMATION_AVERSION.getKey());
+        assertEquals(target.getEstimationAversion(site, inst), valueOf(Integer.MAX_VALUE));
+
+        // Floor
+        doReturn(valueOf(Integer.MIN_VALUE)).when(conf).getBigDecimal(ESTIMATION_AVERSION.getKey());
+        assertEquals(target.getEstimationAversion(site, inst), ZERO);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(ESTIMATION_AVERSION.getKey());
+        assertEquals(target.getEstimationAversion(site, inst), ZERO);
+        reset(conf);
+
+        // Override
+        target.setEstimationAversion(site, inst, new BigDecimal("0.12"));
+        assertEquals(target.getEstimationAversion(site, inst), new BigDecimal("0.12"));
+
+        // Clear
+        target.setEstimationAversion(site, inst, null);
+        assertEquals(target.getEstimationAversion(site, inst), new BigDecimal("0.00"));
+
+    }
+
 }

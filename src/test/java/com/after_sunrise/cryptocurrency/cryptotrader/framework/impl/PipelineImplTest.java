@@ -121,7 +121,7 @@ public class PipelineImplTest {
             when(manager.getFundingPositiveThreshold(any(), any())).thenReturn(valueOf(++count));
             when(manager.getFundingNegativeThreshold(any(), any())).thenReturn(valueOf(++count));
             when(manager.getHedgeProducts(any(), any())).thenReturn(singletonMap("hp", emptySet()));
-
+            when(manager.getEstimationAversion(any(), any())).thenReturn(valueOf(++count));
         };
 
         initializer.run();
@@ -149,6 +149,7 @@ public class PipelineImplTest {
         assertEquals(request.getFundingPositiveThreshold(), valueOf(15));
         assertEquals(request.getFundingNegativeThreshold(), valueOf(16));
         assertEquals(request.getHedgeProducts(), singletonMap("hp", emptySet()));
+        assertEquals(request.getEstimationAversion(), valueOf(17));
 
         // Null Argument
         assertNull(target.createRequest(null, site, instrument));
@@ -233,6 +234,10 @@ public class PipelineImplTest {
 
         initializer.run();
         doReturn(null).when(manager).getHedgeProducts(any(), any());
+        assertNull(target.createRequest(targetTime, site, instrument));
+
+        initializer.run();
+        doReturn(null).when(manager).getEstimationAversion(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
     }
