@@ -192,13 +192,19 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
             double deviation = Math.sqrt(variance) * sigma.doubleValue() + Math.abs(average);
 
+            log.trace("Deviation Candidate : {} (Samples=[{}] Sigma=[{}])", deviation, samples, sigma);
+
             highest = Double.isFinite(deviation) ? Math.max(highest, deviation) : highest;
 
             samples = samples / 2;
 
         }
 
-        return BigDecimal.valueOf(highest).setScale(SCALE, HALF_UP);
+        BigDecimal result = BigDecimal.valueOf(highest).setScale(SCALE, HALF_UP);
+
+        log.trace("Deviation : {}", result);
+
+        return result;
 
     }
 
@@ -320,9 +326,13 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
                 position = position.add(basePosition);
 
+                log.trace("Instrument position element : [{}.{}] {}", site, instrument, basePosition);
+
             }
 
         }
+
+        log.trace("Instrument position : {}", position);
 
         return position;
 
@@ -380,6 +390,8 @@ public class TemplateAdviser extends AbstractService implements Adviser {
         if (min != null && min.signum() != 0) {
             result = result.max(min);
         }
+
+        log.trace("Funding offset : {} (basis=[{}])", result, basis);
 
         return result;
 
@@ -440,6 +452,8 @@ public class TemplateAdviser extends AbstractService implements Adviser {
                     .findFirst().orElse(null);
 
         }
+
+        log.trace("Recent price : {} (Duration=[{}] Signum=[{}])", price, duration, signum);
 
         return price;
 
@@ -585,7 +599,11 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal price = ask1.min(bid1).min(recent);
 
-        return adjustBuyBoundaryPrice(context, request, context.roundTickSize(key, price, DOWN));
+        BigDecimal result = adjustBuyBoundaryPrice(context, request, context.roundTickSize(key, price, DOWN));
+
+        log.trace("Buy boundary : {} (Ask=[{}] Bid=[{}] Recent=[{}])", result, ask0, bid1, recent);
+
+        return result;
 
     }
 
@@ -627,7 +645,11 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal price = bid1.max(ask1).max(recent);
 
-        return adjustSellBoundaryPrice(context, request, context.roundTickSize(key, price, UP));
+        BigDecimal result = adjustSellBoundaryPrice(context, request, context.roundTickSize(key, price, UP));
+
+        log.trace("Sell boundary : {} (Ask=[{}] Bid=[{}] Recent=[{}])", result, ask1, bid0, recent);
+
+        return result;
 
     }
 
@@ -724,7 +746,11 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal root = BigDecimal.valueOf(Math.sqrt(adjustment.doubleValue()));
 
-        return exposure.divide(root, SCALE, HALF_UP).min(ONE);
+        BigDecimal result = exposure.divide(root, SCALE, HALF_UP).min(ONE);
+
+        log.trace("Trading exposure : {} (Offset=[{}])", result, offset);
+
+        return result;
 
     }
 

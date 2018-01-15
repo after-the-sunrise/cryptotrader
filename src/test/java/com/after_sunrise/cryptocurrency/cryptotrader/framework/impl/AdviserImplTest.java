@@ -10,10 +10,8 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.math.BigDecimal;
 import java.util.Map;
 
-import static java.math.BigDecimal.ONE;
 import static java.util.Collections.singletonMap;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
@@ -77,29 +75,6 @@ public class AdviserImplTest {
         request = builder.site(null).build();
         assertNotNull(target.advise(context, request, estimation));
         verifyNoMoreInteractions(service);
-
-    }
-
-    @Test
-    public void testCalculateBasis() {
-
-        Estimation estimation = Estimation.builder().price(new BigDecimal("123")).build();
-        Advice advice = Advice.builder().buyLimitPrice(new BigDecimal("120"))
-                .sellLimitPrice(new BigDecimal("130")).build();
-
-        assertEquals(target.calculateBasis(estimation, advice, Advice::getBuyLimitPrice, ONE.negate())
-                , new BigDecimal("0.0243902439"));
-
-        assertEquals(target.calculateBasis(estimation, advice, Advice::getSellLimitPrice, ONE)
-                , new BigDecimal("0.0569105691"));
-
-        assertNull(target.calculateBasis(null, advice, Advice::getSellLimitPrice, ONE));
-        assertNull(target.calculateBasis(estimation, null, Advice::getSellLimitPrice, ONE));
-        assertNull(target.calculateBasis(estimation, advice, a -> null, ONE));
-        assertNull(target.calculateBasis(Estimation.builder().price(new BigDecimal("0.0")).build(),
-                advice, Advice::getSellLimitPrice, ONE));
-        assertNull(target.calculateBasis(Estimation.builder().price(null).build(),
-                advice, Advice::getSellLimitPrice, ONE));
 
     }
 
