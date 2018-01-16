@@ -348,6 +348,33 @@ public class TemplateInstructorTest {
         assertEquals(results.size(), 1, results.toString());
         assertEquals(results.get(0), new BigDecimal("543.0")); // 1810 lots
 
+        // With maximum
+        request = builder.tradingMinimum(null).tradingMaximum(new BigDecimal("12")).build();
+        results = target.splitSize(context, request, new BigDecimal("543.2"));
+        assertEquals(results.size(), 4, results.toString());
+        assertEquals(results.get(0), new BigDecimal("12.0"));
+        assertEquals(results.get(1), new BigDecimal("12.0"));
+        assertEquals(results.get(2), new BigDecimal("12.0"));
+        assertEquals(results.get(3), new BigDecimal("12.0"));
+
+        // With minimum + maximum
+        request = builder.tradingMinimum(new BigDecimal(12)).tradingMaximum(new BigDecimal("18")).build();
+        results = target.splitSize(context, request, new BigDecimal("543.2"));
+        assertEquals(results.size(), 4, results.toString());
+        assertEquals(results.get(0), new BigDecimal("18.0"));
+        assertEquals(results.get(1), new BigDecimal("18.0"));
+        assertEquals(results.get(2), new BigDecimal("18.0"));
+        assertEquals(results.get(3), new BigDecimal("18.0"));
+
+        // With minimum + maximum (reversed)
+        request = builder.tradingMinimum(new BigDecimal(18)).tradingMaximum(new BigDecimal("12")).build();
+        results = target.splitSize(context, request, new BigDecimal("543.2"));
+        assertEquals(results.size(), 4, results.toString());
+        assertEquals(results.get(0), new BigDecimal("12.0"));
+        assertEquals(results.get(1), new BigDecimal("12.0"));
+        assertEquals(results.get(2), new BigDecimal("12.0"));
+        assertEquals(results.get(3), new BigDecimal("12.0"));
+
     }
 
     @Test

@@ -409,6 +409,16 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
+    public BigDecimal getTradingMaximum(String site, String instrument) {
+        return getDecimal(site, instrument, TRADING_MAXIMUM, ZERO, null, ZERO);
+    }
+
+    @Override
+    public void setTradingMaximum(String site, String instrument, BigDecimal value) {
+        set(TRADING_MAXIMUM, site, instrument, value, BigDecimal::toPlainString);
+    }
+
+    @Override
     public BigDecimal getTradingMinimum(String site, String instrument) {
         return getDecimal(site, instrument, TRADING_MINIMUM, ZERO, null, ZERO);
     }

@@ -45,6 +45,8 @@ public class Request {
 
     private BigDecimal tradingThreshold;
 
+    private BigDecimal tradingMaximum;
+
     private BigDecimal tradingMinimum;
 
     private BigDecimal tradingAversion;
@@ -89,6 +91,7 @@ public class Request {
             b.tradingSamples(request.getTradingSamples());
             b.tradingExposure(request.getTradingExposure());
             b.tradingThreshold(request.getTradingThreshold());
+            b.tradingMaximum(request.getTradingMinimum());
             b.tradingMinimum(request.getTradingMinimum());
             b.tradingAversion(request.getTradingAversion());
             b.tradingInstruction(request.getTradingInstruction());

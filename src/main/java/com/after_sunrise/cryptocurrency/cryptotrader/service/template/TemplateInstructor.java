@@ -172,8 +172,11 @@ public class TemplateInstructor extends AbstractService implements Instructor {
                 .movePointRight(points);
 
         BigDecimal minimumQuantity = trimToZero(request.getTradingMinimum());
-
         BigDecimal minimumUnits = minimumQuantity.divide(lotSize, 0, UP);
+
+        BigDecimal maximumQuantity = trimToZero(request.getTradingMaximum());
+        BigDecimal maximumUnits = maximumQuantity.signum() <= 0 ?
+                valueOf(Long.MAX_VALUE) : maximumQuantity.divide(lotSize, 0, DOWN);
 
         List<BigDecimal> results = new ArrayList<>(splits.intValue());
 
@@ -185,7 +188,7 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
             if (i + 1 == splits.intValue() || adjustedUnits.signum() == 0) {
 
-                results.add(remainingUnits.multiply(lotSize));
+                results.add(remainingUnits.min(maximumUnits).multiply(lotSize));
 
                 break;
 
@@ -193,13 +196,13 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
             if (remainingUnits.subtract(minimumUnits).subtract(minimumUnits).signum() < 0) {
 
-                results.add(remainingUnits.multiply(lotSize));
+                results.add(remainingUnits.min(maximumUnits).multiply(lotSize));
 
                 break;
 
             }
 
-            BigDecimal currentUnits = adjustedUnits.max(minimumUnits).min(remainingUnits);
+            BigDecimal currentUnits = adjustedUnits.max(minimumUnits).min(remainingUnits).min(maximumUnits);
 
             results.add(currentUnits.multiply(lotSize));
 

@@ -533,6 +533,39 @@ public class PropertyManagerImplTest {
     }
 
     @Test
+    public void testGetTradingMaximum() throws Exception {
+
+        // Default
+        assertEquals(target.getTradingMaximum(site, inst), new BigDecimal("0.00000000"));
+
+        // Mocked
+        doReturn(new BigDecimal("0.1234")).when(conf).getBigDecimal(TRADING_MAXIMUM.getKey());
+        assertEquals(target.getTradingMaximum(site, inst), new BigDecimal("0.1234"));
+
+        // Ceiling
+        doReturn(valueOf(Integer.MAX_VALUE)).when(conf).getBigDecimal(TRADING_MAXIMUM.getKey());
+        assertEquals(target.getTradingMaximum(site, inst), valueOf(Integer.MAX_VALUE));
+
+        // Floor
+        doReturn(valueOf(Integer.MIN_VALUE)).when(conf).getBigDecimal(TRADING_MAXIMUM.getKey());
+        assertEquals(target.getTradingMaximum(site, inst), ZERO);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(TRADING_MAXIMUM.getKey());
+        assertEquals(target.getTradingMaximum(site, inst), ZERO);
+        reset(conf);
+
+        // Override
+        target.setTradingMaximum(site, inst, new BigDecimal("0.02"));
+        assertEquals(target.getTradingMaximum(site, inst), new BigDecimal("0.02"));
+
+        // Clear
+        target.setTradingMaximum(site, inst, null);
+        assertEquals(target.getTradingMaximum(site, inst), new BigDecimal("0.00000000"));
+
+    }
+
+    @Test
     public void testGetTradingMinimum() throws Exception {
 
         // Default

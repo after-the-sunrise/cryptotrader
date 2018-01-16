@@ -32,6 +32,8 @@ public enum PropertyType {
 
     TRADING_THRESHOLD,
 
+    TRADING_MAXIMUM,
+
     TRADING_MINIMUM,
 
     TRADING_AVERSION,
