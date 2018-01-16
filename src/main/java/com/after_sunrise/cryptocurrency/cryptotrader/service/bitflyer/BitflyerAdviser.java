@@ -11,10 +11,20 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.BTC_JPY;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.FX_BTC_JPY;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.HALF_UP;
 import static java.math.RoundingMode.UP;
+import static java.util.Collections.unmodifiableNavigableMap;
 
 /**
  * @author takanori.takase
@@ -23,6 +33,15 @@ import static java.math.RoundingMode.UP;
 public class BitflyerAdviser extends TemplateAdviser implements BitflyerService {
 
     private static final BigDecimal SWAP_RATE = new BigDecimal("0.0004");
+
+    private static final NavigableMap<BigDecimal, BigDecimal> SFD = unmodifiableNavigableMap(
+            new TreeMap<>(Stream.of(
+                    new SimpleEntry<>("0.00", "0.0000"),
+                    new SimpleEntry<>("0.10", "0.0050"),
+                    new SimpleEntry<>("0.15", "0.0100"),
+                    new SimpleEntry<>("0.20", "0.0300")
+            ).collect(Collectors.toMap(e -> new BigDecimal(e.getKey()), e -> new BigDecimal(e.getValue()))))
+    );
 
     public BitflyerAdviser() {
         super(ID);
@@ -65,20 +84,36 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     }
 
-    @Override
-    protected BigDecimal adjustBasis(Context context, Request request, BigDecimal basis) {
+    @VisibleForTesting
+    BigDecimal calculateSfdRate(Context context, Request request, boolean buy) {
 
-        if (basis == null) {
-            return null;
+        if (FX_BTC_JPY != ProductType.find(request.getInstrument())) {
+            return ZERO;
         }
 
-        BigDecimal adjustment = ZERO;
+        Key key = Key.from(request);
 
-        if (ProductType.find(request.getInstrument()) == ProductType.FX_BTC_JPY) {
-            adjustment = getDecimalProperty("swap.fx", SWAP_RATE);
+        BigDecimal fxPrice = buy ? context.getBestAskPrice(key) : context.getBestBidPrice(key);
+
+        if (fxPrice == null) {
+            return ZERO;
         }
 
-        return basis.add(adjustment);
+        BigDecimal cashPrice = context.getLastPrice(Key.build(key).instrument(BTC_JPY.name()).build());
+
+        if (cashPrice == null || cashPrice.signum() == 0) {
+            return ZERO;
+        }
+
+        BigDecimal pct = fxPrice.divide(cashPrice, SCALE, HALF_UP).subtract(ONE);
+
+        BigDecimal pad = getDecimalProperty("sfd.pad", ZERO);
+
+        BigDecimal adj = buy ? pct.add(pad) : pct.negate().add(pad);
+
+        Entry<BigDecimal, BigDecimal> tier = SFD.floorEntry(adj.max(SFD.firstKey()));
+
+        return tier.getValue();
 
     }
 
@@ -91,9 +126,11 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         BigDecimal dailyRate = getDecimalProperty("swap.buy", SWAP_RATE);
 
-        BigDecimal swapRate = calculateSwapRate(context, request, dailyRate);
+        BigDecimal swapRate = trimToZero(calculateSwapRate(context, request, dailyRate));
 
-        return basis.add(swapRate);
+        BigDecimal sfdRate = trimToZero(calculateSfdRate(context, request, true));
+
+        return basis.add(swapRate).add(sfdRate);
 
     }
 
@@ -106,9 +143,11 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         BigDecimal dailyRate = getDecimalProperty("swap.sell", SWAP_RATE);
 
-        BigDecimal swapRate = calculateSwapRate(context, request, dailyRate);
+        BigDecimal swapRate = trimToZero(calculateSwapRate(context, request, dailyRate));
 
-        return basis.add(swapRate);
+        BigDecimal sfdRate = trimToZero(calculateSfdRate(context, request, false));
+
+        return basis.add(swapRate).add(sfdRate);
 
     }
 

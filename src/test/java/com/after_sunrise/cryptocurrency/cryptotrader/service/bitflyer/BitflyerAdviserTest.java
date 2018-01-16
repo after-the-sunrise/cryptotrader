@@ -132,25 +132,61 @@ public class BitflyerAdviserTest {
     }
 
     @Test
-    public void testAdjustBasis() {
+    public void testCalculateSfdRate() {
 
-        BigDecimal basis = new BigDecimal("0.05");
-        BigDecimal swap = new BigDecimal("0.01");
+        Instant now = Instant.now();
+        Key cKey = Key.builder().site("bf").timestamp(now).instrument("BTC_JPY").build();
+        Key fKey = Key.builder().site("bf").timestamp(now).instrument("FX_BTC_JPY").build();
 
-        configurations.put(
-                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerAdviser.swap.fx", swap
-        );
+        Request r1 = Request.builder().site("bf").currentTime(now).instrument("FX_BTC_JPY").build();
+        Request r2 = Request.builder().site("bf").currentTime(now).instrument("ETH_BTC").build();
+        when(context.getLastPrice(cKey)).thenReturn(new BigDecimal("2000000"));
 
-        Request request = Request.builder().instrument(ProductType.FX_BTC_JPY.name()).build();
-        BigDecimal result = target.adjustBasis(context, request, basis);
-        assertEquals(result, basis.add(swap));
+        //
+        // Buy
+        //
 
-        request = Request.builder().instrument("foo").build();
-        result = target.adjustBasis(context, request, basis);
-        assertEquals(result, basis);
+        // Zero SFD
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("1900000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.0000"));
 
-        result = target.adjustBasis(context, request, null);
-        assertNull(result);
+        // Tier 2
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2300000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.0100"));
+
+        // Max Tier
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2600000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.0300"));
+
+        // Not FX
+        assertEquals(target.calculateSfdRate(context, r2, true), ZERO);
+
+        // Null Price
+        when(context.getBestAskPrice(fKey)).thenReturn(null);
+        assertEquals(target.calculateSfdRate(context, r1, true), ZERO);
+
+        //
+        // Sell
+        //
+
+        // Zero SFD
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("2100000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.0000"));
+
+        // Tier 2
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1700000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.0100"));
+
+        // Max Tier
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1400000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.0300"));
+
+        // Not FX
+        assertEquals(target.calculateSfdRate(context, r2, false), ZERO);
+
+        // Null Price
+        when(context.getBestBidPrice(fKey)).thenReturn(null);
+        assertEquals(target.calculateSfdRate(context, r1, false), ZERO);
 
     }
 
@@ -166,10 +202,10 @@ public class BitflyerAdviserTest {
         );
 
         doReturn(new BigDecimal("0.0005")).when(target).calculateSwapRate(context, request, swap);
+        doReturn(new BigDecimal("0.0001")).when(target).calculateSfdRate(context, request, true);
 
         BigDecimal result = target.adjustBuyBasis(context, request, new BigDecimal("0.002"));
-
-        assertEquals(result, new BigDecimal("0.0025"));
+        assertEquals(result, new BigDecimal("0.0026"));
 
         assertNull(target.adjustBuyBasis(context, request, null));
 
@@ -187,10 +223,10 @@ public class BitflyerAdviserTest {
         );
 
         doReturn(new BigDecimal("0.0005")).when(target).calculateSwapRate(context, request, swap);
+        doReturn(new BigDecimal("0.0001")).when(target).calculateSfdRate(context, request, false);
 
         BigDecimal result = target.adjustSellBasis(context, request, new BigDecimal("0.002"));
-
-        assertEquals(result, new BigDecimal("0.0025"));
+        assertEquals(result, new BigDecimal("0.0026"));
 
         assertNull(target.adjustSellBasis(context, request, null));
 
