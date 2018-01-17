@@ -37,6 +37,8 @@ import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ConditionType.*;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.ParentType.IFD;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.BUY;
 import static com.after_sunrise.cryptocurrency.bitflyer4j.core.SideType.SELL;
+import static com.after_sunrise.cryptocurrency.bitflyer4j.core.StatusType.SUPER_BUSY;
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType.*;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.COLLATERAL;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.*;
 import static java.lang.Boolean.TRUE;
@@ -77,11 +79,15 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     private static final int REALTIME_QUERIES = 32;
 
     private static final Set<StatusType> HALTS = EnumSet.of(
-            StatusType.NO_ORDER, StatusType.STOP
+            StatusType.NO_ORDER,
+            StatusType.STOP
     );
 
     private static final Set<BoardStatusType> SUSPENDS = EnumSet.of(
-            BoardStatusType.STARTING, BoardStatusType.CLOSED, BoardStatusType.AWAITING_SQ, BoardStatusType.MATURED
+            BoardStatusType.STARTING,
+            BoardStatusType.CLOSED,
+            BoardStatusType.AWAITING_SQ,
+            BoardStatusType.MATURED
     );
 
     private final Bitflyer4j bitflyer4j;
@@ -361,6 +367,45 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             return extract(marketService.getTick(request), TIMEOUT);
 
         });
+
+    }
+
+    @Override
+    public StateType getState(Key key) {
+
+        StateType state = super.getState(key);
+
+        if (state == ACTIVE) {
+
+            BoardStatus bs = findCached(BoardStatus.class, key, () -> {
+
+                String product = convertProductAlias(key);
+
+                BoardStatus.Request request = BoardStatus.Request.builder().product(product).build();
+
+                return extract(marketService.getBoardStatus(request), TIMEOUT);
+
+            });
+
+            if (bs != null) {
+
+                if (SUSPENDS.contains(bs.getState())) {
+                    return SUSPEND;
+                }
+
+                if (HALTS.contains(bs.getHealth())) {
+                    return SUSPEND;
+                }
+
+                if (SUPER_BUSY == bs.getHealth()) {
+                    return WARNING;
+                }
+
+            }
+
+        }
+
+        return state;
 
     }
 
@@ -933,11 +978,9 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             return emptyMap();
         }
 
-        BoardStatus status = findCached(BoardStatus.class, key, () -> extract(marketService.getBoardStatus(
-                BoardStatus.Request.builder().product(key.getInstrument()).build()
-        ), TIMEOUT));
+        StateType state = getState(key);
 
-        if (status == null || HALTS.contains(status.getHealth()) || SUSPENDS.contains(status.getState())) {
+        if (state == SUSPEND || state == TERMINATE) {
             return emptyMap();
         }
 

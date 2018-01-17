@@ -2,6 +2,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.AbstractService;
 import com.google.common.annotations.VisibleForTesting;
@@ -738,6 +739,12 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
     @VisibleForTesting
     BigDecimal calculateTradingExposure(Context context, Request request) {
+
+        StateType state = context.getState(Key.from(request));
+
+        if (state != StateType.ACTIVE) {
+            return ZERO;
+        }
 
         BigDecimal exposure = ofNullable(request.getTradingExposure()).orElse(ZERO);
 

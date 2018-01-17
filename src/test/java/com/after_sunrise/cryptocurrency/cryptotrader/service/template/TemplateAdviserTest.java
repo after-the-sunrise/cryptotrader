@@ -3,6 +3,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order.Execution;
@@ -901,9 +902,20 @@ public class TemplateAdviserTest {
                 new SimpleEntry<>(new BigDecimal("-2.00"), new BigDecimal("1")),
                 new SimpleEntry<>(null, null)
         ).forEach(entry -> {
+
+            when(context.getState(Key.from(request))).thenReturn(StateType.ACTIVE);
             doReturn(entry.getKey()).when(target).calculateFundingOffset(context, request);
             BigDecimal result = target.calculateTradingExposure(context, request);
             assertEquals(result, entry.getValue(), "Key : " + entry.getKey());
+
+            when(context.getState(Key.from(request))).thenReturn(StateType.TERMINATE);
+            result = target.calculateTradingExposure(context, request);
+            assertEquals(result, ZERO);
+
+            when(context.getState(Key.from(request))).thenReturn(null);
+            result = target.calculateTradingExposure(context, request);
+            assertEquals(result, ZERO);
+
         });
 
     }

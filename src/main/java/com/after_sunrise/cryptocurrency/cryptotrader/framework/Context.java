@@ -72,7 +72,27 @@ public interface Context extends Service, AutoCloseable {
     }
 
     enum StateType {
-        ACTIVE, TERMINATE;
+
+        /**
+         * Up & Running
+         */
+        ACTIVE,
+
+        /**
+         * Downgraded Service
+         */
+        WARNING,
+
+        /**
+         * Trading Suspension
+         */
+        SUSPEND,
+
+        /**
+         * Application Termination
+         */
+        TERMINATE
+
     }
 
     StateType getState(Key key);
