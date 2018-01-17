@@ -7,14 +7,25 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.configuration2.Configuration;
 import org.jboss.resteasy.plugins.guice.GuiceResteasyBootstrapServletContextListener;
 
 import javax.annotation.PreDestroy;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 
 /**
  * @author takanori.takase
@@ -96,6 +107,10 @@ public class ResteasyContextListener extends GuiceResteasyBootstrapServletContex
     @Path("/rest")
     public static class EndpointImpl {
 
+        private static final Instant LAUNCH_TIME = Instant.now();
+
+        private final AtomicReference<Instant> CONFIG_TIME = new AtomicReference<>(LAUNCH_TIME);
+
         private final Trader trader;
 
         private final ConfigurationProvider configurationProvider;
@@ -127,6 +142,46 @@ public class ResteasyContextListener extends GuiceResteasyBootstrapServletContex
 
             configurationProvider.clear();
 
+            CONFIG_TIME.set(Instant.now());
+
+        }
+
+        @GET
+        @Path("/configuration")
+        @Produces(MediaType.TEXT_PLAIN)
+        public String getConfiguration() {
+
+            Configuration c = configurationProvider.get();
+
+            Collection<String> keys = new TreeSet<>();
+
+            CollectionUtils.addAll(keys, c.getKeys());
+
+            StringBuilder sb = new StringBuilder();
+
+            for (String key : keys) {
+                sb.append(key);
+                sb.append('=');
+                sb.append(c.getString(key));
+                sb.append(System.lineSeparator());
+            }
+
+            return sb.toString();
+
+        }
+
+        @GET
+        @Path("/time/launch")
+        @Produces(MediaType.TEXT_PLAIN)
+        public String getLaunchTime() {
+            return ISO_DATE_TIME.format(LAUNCH_TIME);
+        }
+
+        @GET
+        @Path("/time/config")
+        @Produces(MediaType.TEXT_PLAIN)
+        public String getConfigTime() {
+            return ISO_DATE_TIME.format(CONFIG_TIME.get());
         }
 
     }
