@@ -165,38 +165,43 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             return ZERO;
         }
 
-        Integer samples = trim(request.getTradingSamples(), 0);
-
         double highest = 0.0;
 
-        while (samples >= SAMPLES) {
+        for (Key key : trimToEmpty(getDeviationProducts(context, request))) {
 
-            Duration interval = Duration.between(request.getCurrentTime(), request.getTargetTime());
+            Integer samples = trim(request.getTradingSamples(), 0);
 
-            Instant to = request.getCurrentTime();
+            while (samples >= SAMPLES) {
 
-            Instant from = to.minus(interval.toMillis() * samples, MILLIS);
+                Duration interval = Duration.between(request.getCurrentTime(), request.getTargetTime());
 
-            List<Trade> trades = context.listTrades(Key.from(request), from.minus(interval));
+                Instant to = request.getCurrentTime();
 
-            NavigableMap<Instant, BigDecimal> prices = collapsePrices(trades, interval, from, to);
+                Instant from = to.minus(interval.toMillis() * samples, MILLIS);
 
-            NavigableMap<Instant, BigDecimal> returns = calculateReturns(prices);
+                List<Trade> trades = context.listTrades(key, from.minus(interval));
 
-            double[] doubles = returns.values().stream().filter(Objects::nonNull)
-                    .mapToDouble(BigDecimal::doubleValue).toArray();
+                NavigableMap<Instant, BigDecimal> prices = collapsePrices(trades, interval, from, to);
 
-            double average = DoubleStream.of(doubles).average().orElse(Double.NaN);
+                NavigableMap<Instant, BigDecimal> returns = calculateReturns(prices);
 
-            double variance = DoubleStream.of(doubles).map(d -> Math.pow(d - average, 2)).sum() / (doubles.length - 1);
+                double[] doubles = returns.values().stream().filter(Objects::nonNull)
+                        .mapToDouble(BigDecimal::doubleValue).toArray();
 
-            double deviation = Math.sqrt(variance) * sigma.doubleValue() + Math.abs(average);
+                double average = DoubleStream.of(doubles).average().orElse(Double.NaN);
 
-            log.trace("Deviation Candidate : {} (Samples=[{}] Sigma=[{}])", deviation, samples, sigma);
+                double variance = DoubleStream.of(doubles).map(d -> Math.pow(d - average, 2)).sum() / (doubles.length - 1);
 
-            highest = Double.isFinite(deviation) ? Math.max(highest, deviation) : highest;
+                double deviation = Math.sqrt(variance) * sigma.doubleValue() + Math.abs(average);
 
-            samples = samples / 2;
+                log.trace("Deviation Candidate : [{}.{}] {} (Samples=[{}] Sigma=[{}])",
+                        key.getSite(), key.getInstrument(), deviation, samples, sigma);
+
+                highest = Double.isFinite(deviation) ? Math.max(highest, deviation) : highest;
+
+                samples = samples / 2;
+
+            }
 
         }
 
@@ -206,6 +211,10 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         return result;
 
+    }
+
+    protected Set<Key> getDeviationProducts(Context context, Request request) {
+        return singleton(Key.from(request));
     }
 
     @VisibleForTesting

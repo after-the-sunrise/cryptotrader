@@ -12,8 +12,10 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -24,6 +26,7 @@ import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
 import static java.math.RoundingMode.UP;
+import static java.util.Collections.singleton;
 import static java.util.Collections.unmodifiableNavigableMap;
 
 /**
@@ -45,6 +48,33 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     public BitflyerAdviser() {
         super(ID);
+    }
+
+    @Override
+    protected Set<Key> getDeviationProducts(Context context, Request request) {
+
+        Set<Key> keys;
+
+        ProductType product = ProductType.find(request.getInstrument());
+
+        if (product != null && product.getFunding() == AssetType.COLLATERAL) {
+
+            Key key = Key.from(request);
+
+            keys = new HashSet<>();
+
+            keys.add(key);
+
+            keys.add(Key.build(key).instrument(BTC_JPY.name()).build());
+
+        } else {
+
+            keys = singleton(Key.from(request));
+
+        }
+
+        return keys;
+
     }
 
     @VisibleForTesting
