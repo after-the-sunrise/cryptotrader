@@ -978,12 +978,6 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             return emptyMap();
         }
 
-        StateType state = getState(key);
-
-        if (state == SUSPEND || state == TERMINATE) {
-            return emptyMap();
-        }
-
         Map<CreateInstruction, CompletableFuture<String>> futures = new IdentityHashMap<>();
 
         for (CreateInstruction instruction : instructions) {

@@ -1041,6 +1041,7 @@ public class TemplateAdviserTest {
         Key key = Key.from(request);
         BigDecimal price = new BigDecimal("123.45");
         when(context.isMarginable(key)).thenReturn(null);
+        when(context.getState(key)).thenReturn(StateType.ACTIVE);
 
         // Net Short 1 (123.00 -> 123.00)
         doReturn(new BigDecimal("123")).when(target).calculateFundingExposureSize(context, request, price);
@@ -1076,6 +1077,7 @@ public class TemplateAdviserTest {
         Key key = Key.from(request);
         BigDecimal price = new BigDecimal("123.45");
         when(context.isMarginable(key)).thenReturn(true);
+        when(context.getState(key)).thenReturn(StateType.WARNING);
 
         // Net Short 1 (61.50 -> 61.50)
         doReturn(new BigDecimal("0")).when(target).calculateFundingExposureSize(context, request, price);
@@ -1121,6 +1123,7 @@ public class TemplateAdviserTest {
         Key key = Key.from(request);
         BigDecimal price = new BigDecimal("123.45");
         when(context.isMarginable(key)).thenReturn(null);
+        when(context.getState(key)).thenReturn(StateType.WARNING);
 
         // Net Short 1 (0.00 -> 0.00)
         doReturn(new BigDecimal("123")).when(target).calculateFundingExposureSize(context, request, price);
@@ -1156,6 +1159,7 @@ public class TemplateAdviserTest {
         Key key = Key.from(request);
         BigDecimal price = new BigDecimal("123.45");
         when(context.isMarginable(key)).thenReturn(true);
+        when(context.getState(key)).thenReturn(StateType.ACTIVE);
 
         // Net Short 1 (0.00 -> 0.00)
         doReturn(new BigDecimal("0")).when(target).calculateFundingExposureSize(context, request, price);

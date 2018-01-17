@@ -1171,7 +1171,6 @@ public class BitflyerContextTest {
     public void testCreateOrder() throws Exception {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
-        doReturn(Context.StateType.WARNING).when(target).getState(key);
         doReturn("prod").when(target).convertProductAlias(key);
         CreateInstruction.CreateInstructionBuilder builder = CreateInstruction.builder().price(TEN).size(ONE);
         CompletableFuture<OrderCreate> future = completedFuture(mock(OrderCreate.class));

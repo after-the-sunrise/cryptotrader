@@ -14,6 +14,8 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.DoubleStream;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType.ACTIVE;
+import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType.WARNING;
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.*;
@@ -27,6 +29,8 @@ import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
  * @version 0.0.1
  */
 public class TemplateAdviser extends AbstractService implements Adviser {
+
+    static final Set<StateType> TRADE_ALLOWED = EnumSet.of(ACTIVE, WARNING);
 
     static final int SIGNUM_BUY = 1;
 
@@ -742,7 +746,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         StateType state = context.getState(Key.from(request));
 
-        if (state != StateType.ACTIVE) {
+        if (state != ACTIVE) {
             return ZERO;
         }
 
@@ -880,9 +884,12 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             rounded = ZERO;
         }
 
-        log.trace("Buy size : {} (funding=[{}] instrument[{}])", rounded, fundingSize, instrumentSize);
+        StateType state = context.getState(Key.from(request));
 
-        return rounded;
+        log.trace("Buy size : {} (state=[{}] funding=[{}] instrument[{}])",
+                rounded, state, fundingSize, instrumentSize);
+
+        return TRADE_ALLOWED.contains(state) ? rounded : ZERO;
 
     }
 
@@ -915,9 +922,12 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             rounded = ZERO;
         }
 
-        log.trace("Sell size : {} (funding=[{}] instrument[{}])", rounded, fundingSize, instrumentSize);
+        StateType state = context.getState(Key.from(request));
 
-        return rounded;
+        log.trace("Sell size : {} (state=[{}] funding=[{}] instrument[{}])",
+                rounded, state, fundingSize, instrumentSize);
+
+        return TRADE_ALLOWED.contains(state) ? rounded : ZERO;
 
     }
 
