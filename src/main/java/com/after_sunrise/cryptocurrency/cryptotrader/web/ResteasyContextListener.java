@@ -4,9 +4,11 @@ import com.after_sunrise.cryptocurrency.cryptotrader.Cryptotrader;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ConfigurationProvider;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.CryptotraderImpl;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader;
+import com.google.gson.Gson;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration2.Configuration;
 import org.jboss.resteasy.plugins.guice.GuiceResteasyBootstrapServletContextListener;
@@ -18,14 +20,14 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.TreeSet;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
+import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 
 /**
  * @author takanori.takase
@@ -107,9 +109,13 @@ public class ResteasyContextListener extends GuiceResteasyBootstrapServletContex
     @Path("/rest")
     public static class EndpointImpl {
 
+        private static final DateTimeFormatter DTF = ISO_INSTANT;
+
         private static final Instant LAUNCH_TIME = Instant.now();
 
         private final AtomicReference<Instant> CONFIG_TIME = new AtomicReference<>(LAUNCH_TIME);
+
+        private final Gson gson;
 
         private final Trader trader;
 
@@ -117,6 +123,8 @@ public class ResteasyContextListener extends GuiceResteasyBootstrapServletContex
 
         @Inject
         public EndpointImpl(Injector injector) {
+
+            this.gson = new Gson();
 
             this.trader = injector.getInstance(Trader.class);
 
@@ -148,7 +156,7 @@ public class ResteasyContextListener extends GuiceResteasyBootstrapServletContex
 
         @GET
         @Path("/configuration")
-        @Produces(MediaType.TEXT_PLAIN)
+        @Produces(MediaType.APPLICATION_JSON)
         public String getConfiguration() {
 
             Configuration c = configurationProvider.get();
@@ -166,22 +174,28 @@ public class ResteasyContextListener extends GuiceResteasyBootstrapServletContex
                 sb.append(System.lineSeparator());
             }
 
-            return sb.toString();
+            String data = sb.toString();
+
+            Map<String, Object> map = new TreeMap<>();
+            map.put("data", data);
+            map.put("size", data.length());
+            map.put("hash", DigestUtils.md5Hex(data));
+            return gson.toJson(map);
 
         }
 
         @GET
         @Path("/time/launch")
-        @Produces(MediaType.TEXT_PLAIN)
+        @Produces(MediaType.APPLICATION_JSON)
         public String getLaunchTime() {
-            return ISO_DATE_TIME.format(LAUNCH_TIME);
+            return gson.toJson(Collections.singletonMap("time", DTF.format(LAUNCH_TIME)));
         }
 
         @GET
         @Path("/time/config")
-        @Produces(MediaType.TEXT_PLAIN)
+        @Produces(MediaType.APPLICATION_JSON)
         public String getConfigTime() {
-            return ISO_DATE_TIME.format(CONFIG_TIME.get());
+            return gson.toJson(Collections.singletonMap("time", DTF.format(CONFIG_TIME.get())));
         }
 
     }

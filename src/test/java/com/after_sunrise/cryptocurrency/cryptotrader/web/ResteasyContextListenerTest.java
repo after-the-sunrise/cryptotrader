@@ -1,20 +1,26 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.web;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.Cryptotrader;
+import com.after_sunrise.cryptocurrency.cryptotrader.core.ConfigurationProvider;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.CryptotraderImpl;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trader;
+import com.after_sunrise.cryptocurrency.cryptotrader.web.ResteasyContextListener.EndpointImpl;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.mockito.Mockito.*;
+import static org.testng.Assert.*;
 
 /**
  * @author takanori.takase
@@ -24,15 +30,35 @@ public class ResteasyContextListenerTest {
 
     private ResteasyContextListener target;
 
+    private EndpointImpl endpoint;
+
+    private ConfigurationProvider provider;
+
+    private Trader trader;
+
     @BeforeMethod
     public void setUp() {
+
         target = new ResteasyContextListener();
+
+        provider = mock(ConfigurationProvider.class);
+
+        trader = mock(Trader.class);
+
+        endpoint = new EndpointImpl(Guice.createInjector(new AbstractModule() {
+            @Override
+            protected void configure() {
+                bind(ConfigurationProvider.class).toInstance(provider);
+                bind(Trader.class).toInstance(trader);
+            }
+        }));
+
     }
 
     @Test(timeOut = 5000L)
     public void test() throws Exception {
 
-        Cryptotrader trader = Mockito.mock(Cryptotrader.class);
+        Cryptotrader trader = mock(Cryptotrader.class);
 
         CountDownLatch latch1 = new CountDownLatch(1);
         CountDownLatch latch2 = new CountDownLatch(1);
@@ -90,6 +116,47 @@ public class ResteasyContextListenerTest {
 
         }
 
+    }
+
+    @Test
+    public void testEndpointImpl_triggerTrader() {
+
+        endpoint.triggerTrader();
+
+        verify(trader).trigger();
+
+    }
+
+    @Test
+    public void testEndpointImpl_reloadConfiguration() {
+
+        endpoint.reloadConfiguration();
+
+        verify(provider).clear();
+
+    }
+
+    @Test
+    public void testEndpointImpl_getConfiguration() {
+
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("foo", "FOO");
+        map.put("bar", "BAR");
+
+        when(provider.get()).thenReturn(new MapConfiguration(map));
+
+        assertNotNull(endpoint.getConfiguration());
+
+    }
+
+    @Test
+    public void testEndpointImpl_getLaunchTime() {
+        assertNotNull(endpoint.getLaunchTime());
+    }
+
+    @Test
+    public void testEndpointImpl_getConfigTime() {
+        assertNotNull(endpoint.getConfigTime());
     }
 
 }
