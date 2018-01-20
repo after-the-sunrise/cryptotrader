@@ -147,13 +147,9 @@ public class ZaifContextTest {
         assertEquals(values.get(0).getTimestamp(), Instant.ofEpochMilli(1505657008000L));
         assertEquals(values.get(0).getPrice(), new BigDecimal("407470"));
         assertEquals(values.get(0).getSize(), new BigDecimal("0.1871"));
-        assertEquals(values.get(0).getBuyOrderId(), null);
-        assertEquals(values.get(0).getSellOrderId(), null);
         assertEquals(values.get(1).getTimestamp(), Instant.ofEpochMilli(1505657007000L));
         assertEquals(values.get(1).getPrice(), new BigDecimal("407505"));
         assertEquals(values.get(1).getSize(), new BigDecimal("0.0011"));
-        assertEquals(values.get(1).getBuyOrderId(), null);
-        assertEquals(values.get(1).getSellOrderId(), null);
 
         // Not found
         List<Trade> unknown = target.listTrades(Key.builder().instrument("FOO").build(), null);

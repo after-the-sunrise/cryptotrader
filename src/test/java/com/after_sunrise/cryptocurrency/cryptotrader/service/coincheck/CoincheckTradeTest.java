@@ -27,8 +27,6 @@ public class CoincheckTradeTest {
         assertEquals(target.getTimestamp(), Instant.ofEpochMilli(1));
         assertEquals(target.getPrice(), BigDecimal.valueOf(2));
         assertEquals(target.getSize(), BigDecimal.valueOf(3));
-        assertEquals(target.getBuyOrderId(), null);
-        assertEquals(target.getSellOrderId(), null);
 
         assertEquals(target.toString(),
                 "CoincheckTrade(id=0, timestamp=1970-01-01T00:00:00.001Z, price=2, size=3)"

@@ -15,6 +15,7 @@ targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
+    maven { url 'https://raw.github.com/bitbankinc/java-bitbankcc/mvn-repo/' }
 }
 
 configurations {
@@ -24,11 +25,12 @@ configurations {
 }
 
 dependencies {
-    compile 'com.after_sunrise.cryptocurrency:bitflyer4j:0.3.2'
     compile 'org.apache.httpcomponents:httpclient:4.5.3'
     compile 'org.jboss.resteasy:resteasy-jaxrs:3.1.4.Final'
     compile 'org.jboss.resteasy:resteasy-guice:3.1.4.Final'
     compile 'javax.websocket:javax.websocket-api:1.1'
+    compile 'com.after_sunrise.cryptocurrency:bitflyer4j:0.3.2'
+    compile 'cc.bitbank:java-bitbankcc:1.0.5'
     runtime 'ch.qos.logback:logback-classic:1.2.3'
     runtime 'org.glassfish.tyrus:tyrus-container-jdk-client:1.12'
     runtime fileTree(dir: 'libs', include: '*.jar')

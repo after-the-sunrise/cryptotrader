@@ -490,8 +490,6 @@ public class BitmexContextTest {
         assertEquals(trades.get(0).getPrice(), tick.getLast());
         assertEquals(trades.get(0).getSize(), ZERO);
         assertEquals(trades.get(0).getTimestamp(), tick.getTimestamp());
-        assertEquals(trades.get(0).getBuyOrderId(), null);
-        assertEquals(trades.get(0).getSellOrderId(), null);
 
         // Listed
         when(tick.getState()).thenReturn(null);
@@ -500,13 +498,9 @@ public class BitmexContextTest {
         assertEquals(trades.get(0).getPrice(), new BigDecimal("6601.7"));
         assertEquals(trades.get(0).getSize(), new BigDecimal("686"));
         assertEquals(trades.get(0).getTimestamp(), Instant.parse("2017-11-01T22:15:47.303Z"));
-        assertEquals(trades.get(0).getBuyOrderId(), "f391ff88-6731-f02d-46c2-b82471e762a9");
-        assertEquals(trades.get(0).getSellOrderId(), "f391ff88-6731-f02d-46c2-b82471e762a9");
         assertEquals(trades.get(1).getPrice(), new BigDecimal("6601.6"));
         assertEquals(trades.get(1).getSize(), new BigDecimal("5"));
         assertEquals(trades.get(1).getTimestamp(), Instant.parse("2017-11-01T22:15:47.000Z"));
-        assertEquals(trades.get(1).getBuyOrderId(), "bb1d629e-959c-298f-bab4-2921218193fa");
-        assertEquals(trades.get(1).getSellOrderId(), "bb1d629e-959c-298f-bab4-2921218193fa");
 
         // Filtered in (all)
         trades = target.listTrades(key, Instant.parse("2017-11-01T22:15:47.000Z"));
@@ -529,13 +523,9 @@ public class BitmexContextTest {
         assertEquals(trades.get(0).getPrice(), new BigDecimal("793399"));
         assertEquals(trades.get(0).getSize(), new BigDecimal("15000"));
         assertEquals(trades.get(0).getTimestamp(), Instant.parse("2017-11-05T06:50:00.000Z"));
-        assertEquals(trades.get(0).getBuyOrderId(), null);
-        assertEquals(trades.get(0).getSellOrderId(), null);
         assertEquals(trades.get(1).getPrice(), new BigDecimal("793399"));
         assertEquals(trades.get(1).getSize(), new BigDecimal("5000"));
         assertEquals(trades.get(1).getTimestamp(), Instant.parse("2017-11-05T06:48:00.000Z"));
-        assertEquals(trades.get(1).getBuyOrderId(), null);
-        assertEquals(trades.get(1).getSellOrderId(), null);
 
         // Filtered in (all)
         trades = target.listTrades(key, Instant.parse("2017-11-05T06:48:00.000Z"));

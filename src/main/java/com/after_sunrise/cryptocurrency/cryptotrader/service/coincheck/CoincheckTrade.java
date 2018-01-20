@@ -30,16 +30,6 @@ public class CoincheckTrade implements Trade {
     @SerializedName("amount")
     private BigDecimal size;
 
-    @Override
-    public String getBuyOrderId() {
-        return null;
-    }
-
-    @Override
-    public String getSellOrderId() {
-        return null;
-    }
-
     @Getter
     @Builder
     @ToString

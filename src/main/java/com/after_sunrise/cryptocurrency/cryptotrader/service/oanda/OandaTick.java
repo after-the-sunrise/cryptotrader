@@ -65,16 +65,6 @@ public class OandaTick {
             return ZERO;
         }
 
-        @Override
-        public String getBuyOrderId() {
-            return null;
-        }
-
-        @Override
-        public String getSellOrderId() {
-            return null;
-        }
-
     }
 
 }

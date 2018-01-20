@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
 
 /**
  * @author takanori.takase
@@ -39,8 +38,6 @@ public class BitflyerTradeTest {
     public void testAccumulate() throws Exception {
 
         assertEquals(target.getTimestamp(), Instant.ofEpochSecond(1234567890));
-        assertNull(target.getBuyOrderId());
-        assertNull(target.getSellOrderId());
 
         // Notional = 617, Volume = 0.5
         assertEquals(target.getPrice(), new BigDecimal("1234.00000000"));

@@ -15,8 +15,4 @@ public interface Trade {
 
     BigDecimal getSize();
 
-    String getBuyOrderId();
-
-    String getSellOrderId();
-
 }

@@ -147,13 +147,9 @@ public class PoloniexContextTest {
         assertEquals(values.get(0).getTimestamp(), Instant.ofEpochMilli(1505230796000L));
         assertEquals(values.get(0).getPrice(), new BigDecimal("0.07140271"));
         assertEquals(values.get(0).getSize(), new BigDecimal("0.20000000"));
-        assertEquals(values.get(0).getBuyOrderId(), null);
-        assertEquals(values.get(0).getSellOrderId(), null);
         assertEquals(values.get(1).getTimestamp(), Instant.ofEpochMilli(1505230180000L));
         assertEquals(values.get(1).getPrice(), new BigDecimal("0.07124940"));
         assertEquals(values.get(1).getSize(), new BigDecimal("0.10772398"));
-        assertEquals(values.get(1).getBuyOrderId(), null);
-        assertEquals(values.get(1).getSellOrderId(), null);
 
         // Cached
         doReturn(null).when(target).request(any(), any(), any(), any());

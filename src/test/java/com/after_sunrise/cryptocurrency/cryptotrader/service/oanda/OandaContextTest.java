@@ -180,8 +180,6 @@ public class OandaContextTest {
         assertEquals(results.get(0).getTimestamp(), tick.getTimestamp());
         assertEquals(results.get(0).getPrice(), new BigDecimal("5.5"));
         assertEquals(results.get(0).getSize(), ZERO);
-        assertEquals(results.get(0).getBuyOrderId(), null);
-        assertEquals(results.get(0).getSellOrderId(), null);
 
         // Filtered
         assertEquals(target.listTrades(key, Instant.ofEpochMilli(12344)).size(), 1);

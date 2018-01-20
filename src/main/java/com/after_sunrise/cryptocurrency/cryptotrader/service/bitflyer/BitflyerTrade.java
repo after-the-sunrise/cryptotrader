@@ -69,16 +69,6 @@ public class BitflyerTrade implements Trade {
         return volume.get();
     }
 
-    @Override
-    public String getBuyOrderId() {
-        return null;
-    }
-
-    @Override
-    public String getSellOrderId() {
-        return null;
-    }
-
     public void accumulate(BigDecimal price, BigDecimal size) {
 
         try {

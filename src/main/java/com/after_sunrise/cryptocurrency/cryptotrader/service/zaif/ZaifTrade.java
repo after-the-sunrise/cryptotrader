@@ -26,8 +26,4 @@ public class ZaifTrade implements Trade {
     @SerializedName("amount")
     private BigDecimal size;
 
-    private String buyOrderId;
-
-    private String sellOrderId;
-
 }

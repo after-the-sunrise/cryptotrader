@@ -147,13 +147,9 @@ public class BitfinexContextTest {
         assertEquals(values.get(0).getTimestamp(), Instant.ofEpochMilli(1505489261000L));
         assertEquals(values.get(0).getPrice(), new BigDecimal("0.11532"));
         assertEquals(values.get(0).getSize(), new BigDecimal("0.021299"));
-        assertEquals(values.get(0).getBuyOrderId(), null);
-        assertEquals(values.get(0).getSellOrderId(), null);
         assertEquals(values.get(1).getTimestamp(), Instant.ofEpochMilli(1505489259000L));
         assertEquals(values.get(1).getPrice(), new BigDecimal("0.11593"));
         assertEquals(values.get(1).getSize(), new BigDecimal("2.9992"));
-        assertEquals(values.get(1).getBuyOrderId(), null);
-        assertEquals(values.get(1).getSellOrderId(), null);
 
         // Cached
         doReturn(null).when(target).request(any(), any(), any(), any());
