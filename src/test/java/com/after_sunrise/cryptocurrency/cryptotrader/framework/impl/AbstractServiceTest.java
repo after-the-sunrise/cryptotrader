@@ -112,6 +112,12 @@ public class AbstractServiceTest {
         initializer.run();
         assertEquals(target.calculateComposite(products, f), new BigDecimal("4.5843137255"));
 
+        // Average Only
+        initializer.run();
+        products.clear();
+        products.put("@s2", Sets.newHashSet("p4", "p5"));
+        assertEquals(target.calculateComposite(products, f), new BigDecimal("5.0500000000"));
+
         // Empty products
         initializer.run();
         assertNull(target.calculateComposite(null, f));

@@ -174,7 +174,7 @@ public abstract class AbstractService implements Service {
             return null;
         }
 
-        BigDecimal[] results = {ONE};
+        BigDecimal[] results = {null};
 
         for (Map.Entry<String, Set<String>> entry : products.entrySet()) {
 
@@ -216,15 +216,20 @@ public abstract class AbstractService implements Service {
 
                 }
 
-                results[0] = operator.apply(results[0], value);
+                BigDecimal current = trim(results[0], ONE);
+
+                results[0] = operator.apply(current, value);
 
             }
 
         }
 
-        BigDecimal total = Stream.of(results).reduce(BigDecimal::add).orElse(null);
+        long count = Stream.of(results).filter(Objects::nonNull).count();
 
-        return total.divide(BigDecimal.valueOf(results.length), SCALE, HALF_UP);
+        BigDecimal total = Stream.of(results).filter(Objects::nonNull)
+                .reduce(BigDecimal::add).orElse(ZERO);
+
+        return total.divide(BigDecimal.valueOf(count), SCALE, HALF_UP);
 
     }
 
