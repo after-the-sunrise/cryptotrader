@@ -97,13 +97,20 @@ public class AbstractServiceTest {
             products.put("*s1", Sets.newHashSet("p1", "p2"));
             products.put("/s1", Sets.newHashSet("p3"));
             products.put("*s2", Sets.newHashSet("p4"));
+            products.put("@s2", Sets.newHashSet("p4", "p5"));
 
             reset(f);
             when(f.apply("s1", "p1")).thenReturn(new BigDecimal("1.2"));
             when(f.apply("s1", "p2")).thenReturn(new BigDecimal("2.3"));
             when(f.apply("s1", "p3")).thenReturn(new BigDecimal("3.4"));
             when(f.apply("s2", "p4")).thenReturn(new BigDecimal("4.5"));
+            when(f.apply("s2", "p5")).thenReturn(new BigDecimal("5.6"));
         };
+
+        // 1 * 1.2 * 2.3 / 3.4 * 4.5 = 3.652941176470588
+        // Average = (3.652941176470588 + 4.5 + 5.6) / 3 = 4.584313725490196
+        initializer.run();
+        assertEquals(target.calculateComposite(products, f), new BigDecimal("4.5843137255"));
 
         // Empty products
         initializer.run();
@@ -111,32 +118,28 @@ public class AbstractServiceTest {
 
         // Unknown Operator
         initializer.run();
-        products.put("+s", Sets.newHashSet("p0"));
-        assertNull(target.calculateComposite(null, f));
+        products.put("+s1", products.values().iterator().next());
+        assertNull(target.calculateComposite(products, f));
 
         // Invalid Site 1
         initializer.run();
-        products.put("s", Sets.newHashSet("p0"));
-        assertNull(target.calculateComposite(null, f));
+        products.put("s", products.values().iterator().next());
+        assertNull(target.calculateComposite(products, f));
 
         // Invalid Site 2
         initializer.run();
-        products.put(null, Sets.newHashSet("p0"));
-        assertNull(target.calculateComposite(null, f));
+        products.put(null, products.values().iterator().next());
+        assertNull(target.calculateComposite(products, f));
 
-        // Null Value
+        // Null Price
         initializer.run();
         when(f.apply("s2", "p4")).thenReturn(null);
-        assertNull(target.calculateComposite(null, f));
+        assertNull(target.calculateComposite(products, f));
 
-        // Zero Value
+        // Zero Price
         initializer.run();
-        when(f.apply("s2", "p4")).thenReturn(new BigDecimal("0.0"));
-        assertNull(target.calculateComposite(null, f));
-
-        // 1 * 1.2 * 2.3 / 3.4 * 4.5
-        initializer.run();
-        assertEquals(target.calculateComposite(products, f), new BigDecimal("3.65294117655"));
+        when(f.apply("s2", "p4")).thenReturn(new BigDecimal("0.00"));
+        assertNull(target.calculateComposite(products, f));
 
     }
 

@@ -5,6 +5,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration2.ImmutableConfiguration;
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +16,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
+import java.util.stream.Stream;
 
 import static java.lang.Long.MAX_VALUE;
 import static java.math.BigDecimal.ONE;
@@ -172,7 +174,7 @@ public abstract class AbstractService implements Service {
             return null;
         }
 
-        BigDecimal result = ONE;
+        BigDecimal[] results = {ONE};
 
         for (Map.Entry<String, Set<String>> entry : products.entrySet()) {
 
@@ -192,7 +194,7 @@ public abstract class AbstractService implements Service {
                 operator = (o1, o2) -> o1.divide(o2, SCALE, HALF_UP);
             }
 
-            if (operator == null) {
+            if (operation != '@' && operator == null) {
                 return null;
             }
 
@@ -206,13 +208,23 @@ public abstract class AbstractService implements Service {
                     return null;
                 }
 
-                result = operator.apply(result, value);
+                if (operator == null) {
+
+                    results = ArrayUtils.add(results, value);
+
+                    continue;
+
+                }
+
+                results[0] = operator.apply(results[0], value);
 
             }
 
         }
 
-        return result;
+        BigDecimal total = Stream.of(results).reduce(BigDecimal::add).orElse(null);
+
+        return total.divide(BigDecimal.valueOf(results.length), SCALE, HALF_UP);
 
     }
 
