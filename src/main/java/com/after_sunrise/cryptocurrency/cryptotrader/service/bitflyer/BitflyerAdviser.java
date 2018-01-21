@@ -37,6 +37,12 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     private static final BigDecimal SWAP_RATE = new BigDecimal("0.0004");
 
+    private static final String KEY_SFD = "sfd.pad";
+
+    private static final String KEY_SWAP_B = "swap.buy";
+
+    private static final String KEY_SWAP_S = "swap.sell";
+
     private static final NavigableMap<BigDecimal, BigDecimal> SFD = unmodifiableNavigableMap(
             new TreeMap<>(Stream.of(
                     new SimpleEntry<>("0.00", "0.0000"),
@@ -137,7 +143,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         BigDecimal pct = fxPrice.divide(cashPrice, SCALE, HALF_UP).subtract(ONE);
 
-        BigDecimal pad = getDecimalProperty("sfd.pad", ZERO);
+        BigDecimal pad = getDecimalProperty(KEY_SFD, ZERO);
 
         BigDecimal adj = buy ? pct.add(pad) : pct.negate().add(pad);
 
@@ -154,7 +160,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
             return null;
         }
 
-        BigDecimal dailyRate = getDecimalProperty("swap.buy", SWAP_RATE);
+        BigDecimal dailyRate = getDecimalProperty(KEY_SWAP_B, SWAP_RATE);
 
         BigDecimal swapRate = trimToZero(calculateSwapRate(context, request, dailyRate));
 
@@ -171,7 +177,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
             return null;
         }
 
-        BigDecimal dailyRate = getDecimalProperty("swap.sell", SWAP_RATE);
+        BigDecimal dailyRate = getDecimalProperty(KEY_SWAP_S, SWAP_RATE);
 
         BigDecimal swapRate = trimToZero(calculateSwapRate(context, request, dailyRate));
 
@@ -219,7 +225,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         BigDecimal spread = request.getTradingSpread();
 
-        BigDecimal dailyRate = getDecimalProperty("swap.buy", SWAP_RATE);
+        BigDecimal dailyRate = getDecimalProperty(KEY_SWAP_B, SWAP_RATE);
 
         BigDecimal swap = calculateSwapRate(context, request, dailyRate);
 
@@ -252,7 +258,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         BigDecimal spread = request.getTradingSpread();
 
-        BigDecimal dailyRate = getDecimalProperty("swap.sell", SWAP_RATE);
+        BigDecimal dailyRate = getDecimalProperty(KEY_SWAP_S, SWAP_RATE);
 
         BigDecimal swap = calculateSwapRate(context, request, dailyRate);
 
