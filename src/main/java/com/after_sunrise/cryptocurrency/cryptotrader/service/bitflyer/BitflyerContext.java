@@ -642,7 +642,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
                     return null;
                 }
 
-                BigDecimal ratio = getDecimalProperty("conversion.ratio", new BigDecimal("0.75"));
+                BigDecimal ratio = getDecimalProperty("conversion.ratio", ZERO);
 
                 return p1.multiply(ratio).add(p2.multiply(ONE.subtract(ratio))).divide(p1, SCALE, HALF_UP);
 

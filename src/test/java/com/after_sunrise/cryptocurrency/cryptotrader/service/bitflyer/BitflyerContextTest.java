@@ -13,6 +13,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Cance
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType;
 import com.google.common.collect.Sets;
+import org.apache.commons.configuration2.Configuration;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -78,7 +79,9 @@ public class BitflyerContextTest {
         when(module.getMock(Bitflyer4j.class).getOrderService()).thenReturn(orderService);
         when(module.getMock(Bitflyer4j.class).getRealtimeService()).thenReturn(realtimeService);
 
-        target = spy(new BitflyerContext(module.getMock(Bitflyer4j.class)));
+        target = new BitflyerContext(module.getMock(Bitflyer4j.class));
+        target.setConfiguration(module.getMock(Configuration.class));
+        target = spy(target);
 
     }
 
@@ -475,6 +478,10 @@ public class BitflyerContextTest {
         doReturn(valueOf(810000)).when(target).getMidPrice(Key.builder().instrument(BTCJPY_MAT2WK.name()).build());
         doReturn(valueOf(4, 1)).when(target).getMidPrice(Key.builder().instrument(ETH_BTC.name()).build());
         doReturn(valueOf(6, 1)).when(target).getMidPrice(Key.builder().instrument(BCH_BTC.name()).build());
+        doReturn(new BigDecimal("0.75")).when(module.getMock(Configuration.class)).getBigDecimal(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerContext.conversion.ratio",
+                ZERO
+        );
 
         for (Service.CurrencyType currency : Service.CurrencyType.values()) {
 
