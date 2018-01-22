@@ -4,13 +4,14 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.HALF_UP;
@@ -21,6 +22,10 @@ import static java.time.temporal.ChronoUnit.MILLIS;
  * @version 0.0.1
  */
 public class DepthEstimator extends AbstractEstimator {
+
+    private static final int I_NOTIONAL = 0;
+
+    private static final int I_QUANTITY = 1;
 
     private static final String SAMPLES_KEY = "samples";
 
@@ -45,33 +50,29 @@ public class DepthEstimator extends AbstractEstimator {
 
         double[] averages = {0.0, 0.0};
 
-        BigDecimal ceiling = mid.add(deviation);
+        BigDecimal ceiling = mid.multiply(ONE.add(deviation));
 
         trimToEmpty(context.getAskPrices(key)).entrySet().stream()
-                .filter(e -> e.getKey() != null)
-                .filter(e -> e.getKey().signum() > 0)
-                .filter(e -> e.getKey().compareTo(ceiling) <= 0)
                 .filter(e -> e.getValue() != null)
-                .filter(e -> e.getValue().signum() > 0)
+                .filter(e -> e.getKey() != null)
+                .filter(e -> e.getKey().compareTo(ceiling) <= 0)
                 .forEach(e -> {
-                    averages[0] = averages[0] + e.getValue().doubleValue() * e.getKey().doubleValue();
-                    averages[1] = averages[1] + e.getValue().doubleValue();
+                    averages[I_NOTIONAL] = averages[I_NOTIONAL] + e.getValue().doubleValue() * e.getKey().doubleValue();
+                    averages[I_QUANTITY] = averages[I_QUANTITY] + e.getValue().doubleValue();
                 });
 
-        BigDecimal floor = mid.subtract(deviation);
+        BigDecimal floor = mid.multiply(ONE.subtract(deviation));
 
         trimToEmpty(context.getBidPrices(key)).entrySet().stream()
-                .filter(e -> e.getKey() != null)
-                .filter(e -> e.getKey().signum() > 0)
-                .filter(e -> e.getKey().compareTo(floor) >= 0)
                 .filter(e -> e.getValue() != null)
-                .filter(e -> e.getValue().signum() > 0)
+                .filter(e -> e.getKey() != null)
+                .filter(e -> e.getKey().compareTo(floor) >= 0)
                 .forEach(e -> {
-                    averages[0] = averages[0] + e.getValue().doubleValue() * e.getKey().doubleValue();
-                    averages[1] = averages[1] + e.getValue().doubleValue();
+                    averages[I_NOTIONAL] = averages[I_NOTIONAL] + e.getValue().doubleValue() * e.getKey().doubleValue();
+                    averages[I_QUANTITY] = averages[I_QUANTITY] + e.getValue().doubleValue();
                 });
 
-        double average = averages[0] / averages[1];
+        double average = averages[I_NOTIONAL] / averages[I_QUANTITY];
 
         if (!Double.isFinite(average)) {
             return BAIL;
@@ -81,7 +82,7 @@ public class DepthEstimator extends AbstractEstimator {
 
         BigDecimal p = mid.subtract(d);
 
-        BigDecimal c = ONE.subtract(d.divide(deviation, SCALE, HALF_UP).abs()).max(ONE).min(ZERO);
+        BigDecimal c = ONE.subtract(deviation).min(ONE).max(ZERO);
 
         log.debug("Estimated : {} (confidence=[{}] mid=[{}] dev=[{}] avg=[{}])", p, c, mid, deviation, average);
 
@@ -92,37 +93,33 @@ public class DepthEstimator extends AbstractEstimator {
     @VisibleForTesting
     BigDecimal calculateDeviation(Context context, Request request) {
 
-        Instant now = request.getCurrentTime();
+        Instant to = request.getCurrentTime();
 
-        Duration interval = Duration.between(now, request.getTargetTime());
+        Duration interval = Duration.between(to, request.getTargetTime());
 
         Instant from = request.getCurrentTime().minus(interval.toMillis() * getSamples(), MILLIS);
 
         List<Trade> trades = context.listTrades(getKey(context, request), from.minus(interval));
 
-        List<BigDecimal> prices = trimToEmpty(trades).stream()
-                .filter(Objects::nonNull)
-                .filter(t -> t.getPrice() != null)
-                .filter(t -> t.getPrice().signum() != 0)
-                .filter(t -> t.getSize() != null)
-                .filter(t -> t.getSize().signum() != 0)
-                .map(Trade::getPrice)
-                .collect(Collectors.toList());
+        NavigableMap<Instant, BigDecimal> prices = collapsePrices(trades, interval, from, to, false);
 
-        if (prices.size() <= 1) {
+        NavigableMap<Instant, BigDecimal> returns = calculateReturns(prices);
+
+        SummaryStatistics stats = new SummaryStatistics();
+
+        returns.values().stream().filter(Objects::nonNull).forEach(r -> stats.addValue(r.doubleValue()));
+
+        if (stats.getN() <= 1) {
             return null;
         }
 
-        BigDecimal sum = prices.stream().reduce(ZERO, BigDecimal::add);
+        double avg = stats.getMean();
 
-        BigDecimal avg = sum.divide(valueOf(prices.size()), SCALE, HALF_UP);
+        double dev = stats.getStandardDeviation();
 
-        BigDecimal vrc = prices.stream().map(p -> p.subtract(avg).pow(2)).reduce(ZERO, BigDecimal::add)
-                .divide(valueOf(trades.size() - 1), SCALE, HALF_UP);
+        double sum = Math.abs(avg) + (dev * getSigma(stats.getN() - 1).doubleValue());
 
-        BigDecimal dev = valueOf(Math.sqrt(vrc.doubleValue())).setScale(SCALE, HALF_UP);
-
-        return dev.multiply(getSigma(trades.size() - 1));
+        return Double.isFinite(sum) ? BigDecimal.valueOf(sum).setScale(SCALE, HALF_UP) : null;
 
     }
 
