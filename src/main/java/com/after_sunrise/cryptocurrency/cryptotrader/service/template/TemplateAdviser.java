@@ -517,7 +517,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
         log.trace("Buy Basis : {} (additional=[{}] position=[{}] loss=[{}])",
                 adjusted, additional, positionRatio, lossBasis);
 
-        return adjusted;
+        return adjusted.setScale(SCALE, HALF_UP);
 
     }
 
@@ -570,7 +570,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
         log.trace("Sell Basis : {} (additional=[{}] position=[{}] loss=[{}])",
                 adjusted, additional, positionRatio, lossBasis);
 
-        return adjusted;
+        return adjusted.setScale(SCALE, HALF_UP);
 
     }
 

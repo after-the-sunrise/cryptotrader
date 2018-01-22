@@ -614,22 +614,22 @@ public class TemplateAdviserTest {
         // (0.0010 - 0.0005) * 1 + 0.012 = 0.0125
         doReturn(new BigDecimal("-0.987")).when(target).calculatePositionRatio(context, request);
         doReturn(new BigDecimal("+0.012")).when(target).calculateBuyLossBasis(context, request);
-        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0125"));
+        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0125000000"));
 
         // (0.0010 - 0.0005) * 1.987 + 0.012 = 0.0129935
         doReturn(new BigDecimal("+0.987")).when(target).calculatePositionRatio(context, request);
         doReturn(new BigDecimal("+0.012")).when(target).calculateBuyLossBasis(context, request);
-        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0129935"));
+        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0129935000"));
 
         // (0.0010 - 0.0005) * 1 + 0.012 = 0.0125
         doReturn(null).when(target).calculatePositionRatio(context, request);
         doReturn(new BigDecimal("+0.012")).when(target).calculateBuyLossBasis(context, request);
-        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0125"));
+        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0125000000"));
 
         // (0.0010 - 0.0005) * 1.987 + 0.000 = 0.0009935
         doReturn(new BigDecimal("+0.987")).when(target).calculatePositionRatio(context, request);
         doReturn(null).when(target).calculateBuyLossBasis(context, request);
-        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0009935"));
+        assertEquals(target.calculateBuyBasis(context, request, base), new BigDecimal("0.0009935000"));
 
         assertEquals(target.calculateBuyBasis(context, request, null), null);
 
@@ -686,22 +686,22 @@ public class TemplateAdviserTest {
         // (0.0010 - 0.0005) * 1 + 0.012 = 0.0125
         doReturn(new BigDecimal("+0.987")).when(target).calculatePositionRatio(context, request);
         doReturn(new BigDecimal("+0.012")).when(target).calculateSellLossBasis(context, request);
-        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0125"));
+        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0125000000"));
 
         // (0.0010 - 0.0005) * 1.987 + 0.012 = 0.0129935
         doReturn(new BigDecimal("-0.987")).when(target).calculatePositionRatio(context, request);
         doReturn(new BigDecimal("+0.012")).when(target).calculateSellLossBasis(context, request);
-        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0129935"));
+        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0129935000"));
 
         // (0.0010 - 0.0005) * 1 + 0.012 = 0.0125
         doReturn(null).when(target).calculatePositionRatio(context, request);
         doReturn(new BigDecimal("+0.012")).when(target).calculateSellLossBasis(context, request);
-        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0125"));
+        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0125000000"));
 
         // (0.0010 - 0.0005) * 1.987 + 0.000 = 0.0009935
         doReturn(new BigDecimal("-0.987")).when(target).calculatePositionRatio(context, request);
         doReturn(null).when(target).calculateSellLossBasis(context, request);
-        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0009935"));
+        assertEquals(target.calculateSellBasis(context, request, base), new BigDecimal("0.0009935000"));
 
         assertEquals(target.calculateSellBasis(context, request, null), null);
 
