@@ -24,8 +24,9 @@ import static java.time.temporal.ChronoUnit.MILLIS;
 public class DepthEstimator extends AbstractEstimator {
 
     private static final int I_NOTIONAL = 0;
-
     private static final int I_QUANTITY = 1;
+    private static final int I_SIZE_ASK = 2;
+    private static final int I_SIZE_BID = 3;
 
     private static final String SAMPLES_KEY = "samples";
 
@@ -48,7 +49,7 @@ public class DepthEstimator extends AbstractEstimator {
             return BAIL;
         }
 
-        double[] averages = {0.0, 0.0};
+        double[] averages = new double[4];
 
         BigDecimal ceiling = mid.multiply(ONE.add(deviation));
 
@@ -59,6 +60,7 @@ public class DepthEstimator extends AbstractEstimator {
                 .forEach(e -> {
                     averages[I_NOTIONAL] = averages[I_NOTIONAL] + e.getValue().doubleValue() * e.getKey().doubleValue();
                     averages[I_QUANTITY] = averages[I_QUANTITY] + e.getValue().doubleValue();
+                    averages[I_SIZE_ASK] = averages[I_SIZE_ASK] + e.getValue().doubleValue();
                 });
 
         BigDecimal floor = mid.multiply(ONE.subtract(deviation));
@@ -70,6 +72,7 @@ public class DepthEstimator extends AbstractEstimator {
                 .forEach(e -> {
                     averages[I_NOTIONAL] = averages[I_NOTIONAL] + e.getValue().doubleValue() * e.getKey().doubleValue();
                     averages[I_QUANTITY] = averages[I_QUANTITY] + e.getValue().doubleValue();
+                    averages[I_SIZE_BID] = averages[I_SIZE_BID] + e.getValue().doubleValue();
                 });
 
         double average = averages[I_NOTIONAL] / averages[I_QUANTITY];
@@ -84,7 +87,8 @@ public class DepthEstimator extends AbstractEstimator {
 
         BigDecimal c = ONE.subtract(deviation).min(ONE).max(ZERO);
 
-        log.debug("Estimated : {} (confidence=[{}] mid=[{}] dev=[{}] avg=[{}])", p, c, mid, deviation, average);
+        log.debug("Estimated : {} (confidence=[{}] mid=[{}] dev=[{}] avg=[{}] askVol=[{}] bidVol=[{}])",
+                p, c, mid, deviation, average, averages[I_SIZE_ASK], averages[I_SIZE_BID]);
 
         return Estimation.builder().price(p).confidence(c).build();
 
