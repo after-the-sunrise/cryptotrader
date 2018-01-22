@@ -165,7 +165,24 @@ public class AbstractServiceTest {
         Duration interval = Duration.ofMillis(4);
         Instant fromTime = Instant.ofEpochMilli(10990);
         Instant toTime = Instant.ofEpochMilli(11035);
-        NavigableMap<Instant, BigDecimal> result = target.collapsePrices(trades, interval, fromTime, toTime);
+        NavigableMap<Instant, BigDecimal> result = target.collapsePrices(trades, interval, fromTime, toTime, false);
+        assertEquals(result.size(), 12);
+        assertEquals(result.remove(Instant.ofEpochMilli(10990)), null);
+        assertEquals(result.remove(Instant.ofEpochMilli(10994)), null);
+        assertEquals(result.remove(Instant.ofEpochMilli(10998)), null);
+        assertEquals(result.remove(Instant.ofEpochMilli(11002)), new BigDecimal("1002.0000000000"));
+        assertEquals(result.remove(Instant.ofEpochMilli(11006)), new BigDecimal("1006.0000000000"));
+        assertEquals(result.remove(Instant.ofEpochMilli(11010)), new BigDecimal("1010.0000000000"));
+        assertEquals(result.remove(Instant.ofEpochMilli(11014)), new BigDecimal("1014.0000000000"));
+        assertEquals(result.remove(Instant.ofEpochMilli(11018)), new BigDecimal("1018.0000000000"));
+        assertEquals(result.remove(Instant.ofEpochMilli(11022)), new BigDecimal("1020.0000000000"));
+        assertEquals(result.remove(Instant.ofEpochMilli(11026)), new BigDecimal("1020.0000000000"));
+        assertEquals(result.remove(Instant.ofEpochMilli(11030)), new BigDecimal("1020.0000000000"));
+        assertEquals(result.remove(Instant.ofEpochMilli(11034)), new BigDecimal("1020.0000000000"));
+        assertEquals(result.size(), 0, result.toString());
+
+        // Sum Price Mode
+        result = target.collapsePrices(trades, interval, fromTime, toTime, true);
         assertEquals(result.size(), 12);
         assertEquals(result.remove(Instant.ofEpochMilli(10990)), null);
         assertEquals(result.remove(Instant.ofEpochMilli(10994)), null);
@@ -186,7 +203,7 @@ public class AbstractServiceTest {
         when(trades.get(7).getTimestamp()).thenReturn(Instant.ofEpochMilli(11035)); // After
         when(trades.get(8).getPrice()).thenReturn(null);
         when(trades.get(9).getSize()).thenReturn(null);
-        result = target.collapsePrices(trades, interval, fromTime, toTime);
+        result = target.collapsePrices(trades, interval, fromTime, toTime, true);
         assertEquals(result.size(), 12);
         assertEquals(result.remove(Instant.ofEpochMilli(10990)), null);
         assertEquals(result.remove(Instant.ofEpochMilli(10994)), null);
@@ -204,7 +221,7 @@ public class AbstractServiceTest {
 
         // Include previous interval.
         when(trades.get(6).getTimestamp()).thenReturn(Instant.ofEpochMilli(10987));
-        result = target.collapsePrices(trades, interval, fromTime, toTime);
+        result = target.collapsePrices(trades, interval, fromTime, toTime, true);
         assertEquals(result.size(), 12);
         assertEquals(result.remove(Instant.ofEpochMilli(10990)), new BigDecimal("1007.0000000000"));
         assertEquals(result.remove(Instant.ofEpochMilli(10994)), new BigDecimal("1007.0000000000"));
@@ -223,7 +240,7 @@ public class AbstractServiceTest {
         // Invalidate bucket
         when(trades.get(6).getTimestamp()).thenReturn(null);
         when(trades.get(9).getSize()).thenReturn(BigDecimal.ZERO);
-        result = target.collapsePrices(trades, interval, fromTime, toTime);
+        result = target.collapsePrices(trades, interval, fromTime, toTime, true);
         assertEquals(result.size(), 12);
         assertEquals(result.remove(Instant.ofEpochMilli(10990)), null);
         assertEquals(result.remove(Instant.ofEpochMilli(10994)), null);

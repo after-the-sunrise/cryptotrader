@@ -205,10 +205,10 @@ public class TemplateAdviserTest {
         NavigableMap<Instant, BigDecimal> prices30 = new TreeMap<>(singletonMap(t0, valueOf(300)));
         NavigableMap<Instant, BigDecimal> prices15 = new TreeMap<>(singletonMap(t0, valueOf(150)));
         NavigableMap<Instant, BigDecimal> prices07 = new TreeMap<>(singletonMap(t0, valueOf(70)));
-        doReturn(prices60).when(target).collapsePrices(trades, interval, ofEpochMilli(4000), t0);
-        doReturn(prices30).when(target).collapsePrices(trades, interval, ofEpochMilli(7000), t0);
-        doReturn(prices15).when(target).collapsePrices(trades, interval, ofEpochMilli(8500), t0);
-        doReturn(prices07).when(target).collapsePrices(trades, interval, ofEpochMilli(9300), t0);
+        doReturn(prices60).when(target).collapsePrices(trades, interval, ofEpochMilli(4000), t0, false);
+        doReturn(prices30).when(target).collapsePrices(trades, interval, ofEpochMilli(7000), t0, false);
+        doReturn(prices15).when(target).collapsePrices(trades, interval, ofEpochMilli(8500), t0, false);
+        doReturn(prices07).when(target).collapsePrices(trades, interval, ofEpochMilli(9300), t0, false);
 
         NavigableMap<Instant, BigDecimal> returns = new TreeMap<>();
         returns.put(ofEpochMilli(10), null);

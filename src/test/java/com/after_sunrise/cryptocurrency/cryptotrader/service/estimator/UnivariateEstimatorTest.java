@@ -110,7 +110,7 @@ public class UnivariateEstimatorTest {
 
         List<Trade> trades = Collections.singletonList(mock(Trade.class));
         when(context.listTrades(key, from.minus(interval))).thenReturn(trades);
-        doReturn(prices).when(target).collapsePrices(trades, interval, from, now);
+        doReturn(prices).when(target).collapsePrices(trades, interval, from, now, false);
 
         Estimation estimation = target.estimate(context, request);
         assertEquals(estimation.getPrice().toPlainString(), "19682.3911085423");

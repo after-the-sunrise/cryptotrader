@@ -235,7 +235,7 @@ public abstract class AbstractService implements Service {
 
     @VisibleForTesting
     public NavigableMap<Instant, BigDecimal> collapsePrices(List<Trade> values,
-                                                            Duration interval, Instant from, Instant to) {
+                                                            Duration interval, Instant from, Instant to, boolean sum) {
 
         NavigableMap<Instant, BigDecimal[]> collapsed = new TreeMap<>();
 
@@ -253,21 +253,31 @@ public abstract class AbstractService implements Service {
                 .filter(t -> t.getTimestamp().isAfter(from.minus(interval)))
                 .filter(t -> t.getTimestamp().isBefore(to))
                 .filter(t -> t.getPrice() != null)
-                .filter(t -> t.getSize() != null).forEach(t -> {
+                .filter(t -> t.getSize() != null)
+                .sorted(Comparator.comparing(Trade::getTimestamp))
+                .forEach(t -> {
 
-            Instant timestamp = t.getTimestamp();
+                    Instant timestamp = t.getTimestamp();
 
-            Map.Entry<Instant, BigDecimal[]> entry = collapsed.ceilingEntry(timestamp);
+                    Map.Entry<Instant, BigDecimal[]> entry = collapsed.ceilingEntry(timestamp);
 
-            if (entry == null) {
-                return;
-            }
+                    if (entry == null) {
+                        return;
+                    }
 
-            BigDecimal[] elements = entry.getValue();
-            elements[0] = (elements[0] == null ? ZERO : elements[0]).add(t.getSize());
-            elements[1] = (elements[1] == null ? ZERO : elements[1]).add(t.getSize().multiply(t.getPrice()));
+                    BigDecimal quantity = t.getSize();
+                    BigDecimal notional = t.getSize().multiply(t.getPrice());
+                    BigDecimal[] elements = entry.getValue();
 
-        });
+                    if (sum) {
+                        elements[0] = elements[0] == null ? quantity : quantity.add(elements[0]);
+                        elements[1] = elements[1] == null ? notional : notional.add(elements[1]);
+                    } else {
+                        elements[0] = quantity;
+                        elements[1] = notional;
+                    }
+
+                });
 
         NavigableMap<Instant, BigDecimal> prices = new TreeMap<>();
 

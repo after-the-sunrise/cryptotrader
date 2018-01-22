@@ -45,7 +45,7 @@ public class UnivariateEstimator extends AbstractEstimator {
 
         List<Trade> trades = context.listTrades(getKey(context, request), from.minus(interval));
 
-        NavigableMap<Instant, BigDecimal> prices = collapsePrices(trades, interval, from, now);
+        NavigableMap<Instant, BigDecimal> prices = collapsePrices(trades, interval, from, now, false);
 
         NavigableMap<Instant, BigDecimal> returns = calculateReturns(prices);
 

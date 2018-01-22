@@ -186,7 +186,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
                 List<Trade> trades = context.listTrades(key, from.minus(interval));
 
-                NavigableMap<Instant, BigDecimal> prices = collapsePrices(trades, interval, from, to);
+                NavigableMap<Instant, BigDecimal> prices = collapsePrices(trades, interval, from, to, false);
 
                 NavigableMap<Instant, BigDecimal> returns = calculateReturns(prices);
 
