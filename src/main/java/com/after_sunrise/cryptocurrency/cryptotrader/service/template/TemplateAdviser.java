@@ -7,12 +7,12 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimat
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.AbstractService;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.DoubleStream;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType.ACTIVE;
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType.WARNING;
@@ -190,14 +190,13 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
                 NavigableMap<Instant, BigDecimal> returns = calculateReturns(prices);
 
-                double[] doubles = returns.values().stream().filter(Objects::nonNull)
-                        .mapToDouble(BigDecimal::doubleValue).toArray();
+                SummaryStatistics stats = new SummaryStatistics();
 
-                double average = DoubleStream.of(doubles).average().orElse(Double.NaN);
+                returns.values().stream().filter(Objects::nonNull).forEach(r -> stats.addValue(r.doubleValue()));
 
-                double variance = DoubleStream.of(doubles).map(d -> Math.pow(d - average, 2)).sum() / (doubles.length - 1);
+                double average = stats.getMean();
 
-                double deviation = Math.sqrt(variance) * sigma.doubleValue() + Math.abs(average);
+                double deviation = stats.getStandardDeviation() * sigma.doubleValue() + Math.abs(average);
 
                 log.trace("Deviation Candidate : [{}.{}] {} (Samples=[{}] Sigma=[{}])",
                         key.getSite(), key.getInstrument(), deviation, samples, sigma);
