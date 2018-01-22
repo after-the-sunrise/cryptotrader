@@ -5,6 +5,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -76,58 +77,23 @@ public class UnivariateEstimator extends AbstractEstimator {
     @VisibleForTesting
     double[] calculate(Map<Instant, BigDecimal> values) {
 
-        Map<Long, Double> samples = new HashMap<>();
-
-        double[] sumX = new double[1];
-        double[] sumY = new double[1];
+        SimpleRegression regression = new SimpleRegression();
 
         Optional.ofNullable(values).orElse(Collections.emptyMap()).entrySet().stream()
                 .filter(e -> e.getKey() != null)
                 .filter(e -> e.getValue() != null)
-                .forEach(entry -> {
-                    Long x = entry.getKey().toEpochMilli();
-                    Double y = entry.getValue().doubleValue();
-                    sumX[0] += x;
-                    sumY[0] += y;
-                    samples.put(x, y);
-                });
+                .forEach(e -> regression.addData(e.getKey().toEpochMilli(), e.getValue().doubleValue()));
 
-
-        if (samples.size() < Math.max(2, getSamples() / 2)) {
+        if (regression.getN() <= 2) {
             return null;
         }
 
-        double averageX = sumX[0] / samples.size();
-        double averageY = sumY[0] / samples.size();
-
-        double[] varianceX = new double[1];
-        double[] varianceY = new double[1];
-        double[] varianceC = new double[1];
-
-        samples.forEach((key, val) -> {
-            varianceX[0] += (key - averageX) * (key - averageX);
-            varianceY[0] += (val - averageY) * (val - averageY);
-            varianceC[0] += (key - averageX) * (val - averageY);
-        });
-
-        varianceX[0] = varianceX[0] / (samples.size() - 1);
-        varianceY[0] = varianceY[0] / (samples.size() - 1);
-        varianceC[0] = varianceC[0] / (samples.size() - 1);
-
-        double deviationX = Math.sqrt(varianceX[0]);
-        double deviationY = Math.sqrt(varianceY[0]);
-
-        double coefficient = varianceC[0] / (deviationX * deviationX);
-        double intercept = averageY - coefficient * averageX;
-        double correlation = varianceC[0] / (deviationX * deviationY);
-        double determination = correlation * correlation;
-
         double[] results = new double[5];
-        results[I_SAMPLES] = samples.size();
-        results[I_COEFFICIENT] = coefficient;
-        results[I_INTERCEPT] = intercept;
-        results[I_CORRELATION] = correlation;
-        results[I_DETERMINATION] = determination;
+        results[I_SAMPLES] = regression.getN();
+        results[I_COEFFICIENT] = regression.getSlope();
+        results[I_INTERCEPT] = regression.getIntercept();
+        results[I_CORRELATION] = regression.getR();
+        results[I_DETERMINATION] = regression.getRSquare();
         return results;
 
     }

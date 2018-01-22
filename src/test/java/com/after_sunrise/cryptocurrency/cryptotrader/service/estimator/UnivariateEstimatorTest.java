@@ -136,9 +136,9 @@ public class UnivariateEstimatorTest {
         double[] results = target.calculate(prices);
         assertEquals(results.length, 5);
         assertEquals(results[UnivariateEstimator.I_COEFFICIENT], 0.0000002977698988, delta);
-        assertEquals(results[UnivariateEstimator.I_INTERCEPT], -425518.5240344088500000, delta);
-        assertEquals(results[UnivariateEstimator.I_CORRELATION], 0.8406209335624100, delta);
-        assertEquals(results[UnivariateEstimator.I_DETERMINATION], 0.7066435539433377, delta);
+        assertEquals(results[UnivariateEstimator.I_INTERCEPT], -425518.5240344312, delta);
+        assertEquals(results[UnivariateEstimator.I_CORRELATION], 0.8406209335624156, delta);
+        assertEquals(results[UnivariateEstimator.I_DETERMINATION], 0.7066435539433471, delta);
         assertEquals(results[UnivariateEstimator.I_SAMPLES], 40, delta);
 
         double c = results[UnivariateEstimator.I_COEFFICIENT];
@@ -149,7 +149,7 @@ public class UnivariateEstimatorTest {
         assertEquals(c * x + i, 18782.6317789757160000, delta);
 
         x = parseDate("2017-06-01").toEpochMilli();
-        assertEquals(c * x + i, 20017.5431032831550000, delta);
+        assertEquals(c * x + i, 20017.543103283213, delta);
 
         assertNull(target.calculate(null));
         assertNull(target.calculate(Collections.emptyNavigableMap()));
@@ -163,9 +163,9 @@ public class UnivariateEstimatorTest {
         double[] results = target.calculate(target.calculateReturns(prices));
         assertEquals(results.length, 5);
         assertEquals(results[UnivariateEstimator.I_COEFFICIENT], 0.0000000000002841579457946422, delta);
-        assertEquals(results[UnivariateEstimator.I_INTERCEPT], -0.4235512423247192, delta);
-        assertEquals(results[UnivariateEstimator.I_CORRELATION], 0.05964947873647785, delta);
-        assertEquals(results[UnivariateEstimator.I_DETERMINATION], 0.003558060313533523, delta);
+        assertEquals(results[UnivariateEstimator.I_INTERCEPT], -0.4235512423246938, delta);
+        assertEquals(results[UnivariateEstimator.I_CORRELATION], 0.05964947873647614, delta);
+        assertEquals(results[UnivariateEstimator.I_DETERMINATION], 0.003558060313533319, delta);
         assertEquals(results[UnivariateEstimator.I_SAMPLES], 39, delta);
 
         double c = results[UnivariateEstimator.I_COEFFICIENT];
