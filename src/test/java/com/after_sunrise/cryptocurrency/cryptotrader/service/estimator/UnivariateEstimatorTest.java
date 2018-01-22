@@ -14,9 +14,9 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static java.math.BigDecimal.ONE;
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertSame;
 
 /**
  * @author takanori.takase
@@ -126,62 +126,6 @@ public class UnivariateEstimatorTest {
         // No trades
         doReturn(null).when(context).listTrades(any(), any());
         assertSame(target.estimate(context, request), AbstractEstimator.BAIL);
-
-    }
-
-    @Test
-    public void testCalculate_Prices() throws Exception {
-
-        double delta = ONE.movePointLeft(16).doubleValue();
-        double[] results = target.calculate(prices);
-        assertEquals(results.length, 5);
-        assertEquals(results[UnivariateEstimator.I_COEFFICIENT], 0.0000002977698988, delta);
-        assertEquals(results[UnivariateEstimator.I_INTERCEPT], -425518.5240344312, delta);
-        assertEquals(results[UnivariateEstimator.I_CORRELATION], 0.8406209335624156, delta);
-        assertEquals(results[UnivariateEstimator.I_DETERMINATION], 0.7066435539433471, delta);
-        assertEquals(results[UnivariateEstimator.I_SAMPLES], 40, delta);
-
-        double c = results[UnivariateEstimator.I_COEFFICIENT];
-        double i = results[UnivariateEstimator.I_INTERCEPT];
-        double x;
-
-        x = parseDate("2017-04-14").toEpochMilli();
-        assertEquals(c * x + i, 18782.6317789757160000, delta);
-
-        x = parseDate("2017-06-01").toEpochMilli();
-        assertEquals(c * x + i, 20017.543103283213, delta);
-
-        assertNull(target.calculate(null));
-        assertNull(target.calculate(Collections.emptyNavigableMap()));
-
-    }
-
-    @Test
-    public void testCalculate_Returns() throws Exception {
-
-        double delta = ONE.movePointLeft(20).doubleValue();
-        double[] results = target.calculate(target.calculateReturns(prices));
-        assertEquals(results.length, 5);
-        assertEquals(results[UnivariateEstimator.I_COEFFICIENT], 0.0000000000002841579457946422, delta);
-        assertEquals(results[UnivariateEstimator.I_INTERCEPT], -0.4235512423246938, delta);
-        assertEquals(results[UnivariateEstimator.I_CORRELATION], 0.05964947873647614, delta);
-        assertEquals(results[UnivariateEstimator.I_DETERMINATION], 0.003558060313533319, delta);
-        assertEquals(results[UnivariateEstimator.I_SAMPLES], 39, delta);
-
-        double c = results[UnivariateEstimator.I_COEFFICIENT];
-        double i = results[UnivariateEstimator.I_INTERCEPT];
-        double x0, x1;
-
-        x0 = prices.get(parseDate("2017-04-13")).doubleValue();
-        x1 = parseDate("2017-04-14").toEpochMilli();
-        assertEquals(Math.exp(c * x1 + i) * x0, 18434.941819572457, delta);
-
-        x0 = prices.get(parseDate("2017-05-31")).doubleValue();
-        x1 = parseDate("2017-06-01").toEpochMilli();
-        assertEquals(Math.exp(c * x1 + i) * x0, 19682.39110854227, delta);
-
-        assertNull(target.calculate(null));
-        assertNull(target.calculate(Collections.emptyNavigableMap()));
 
     }
 

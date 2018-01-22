@@ -3,15 +3,15 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
-import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.NavigableMap;
 
+import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
 import static java.time.temporal.ChronoUnit.MILLIS;
 
@@ -24,16 +24,6 @@ public class UnivariateEstimator extends AbstractEstimator {
     private static final String SAMPLES_KEY = "samples";
 
     private static final int SAMPLES_VAL = 60;
-
-    static final int I_SAMPLES = 0;
-
-    static final int I_COEFFICIENT = 1;
-
-    static final int I_INTERCEPT = 2;
-
-    static final int I_CORRELATION = 3;
-
-    static final int I_DETERMINATION = 4;
 
     @Override
     public Estimation estimate(Context context, Request request) {
@@ -50,51 +40,32 @@ public class UnivariateEstimator extends AbstractEstimator {
 
         NavigableMap<Instant, BigDecimal> returns = calculateReturns(prices);
 
-        double[] analysis = calculate(returns);
-
-        if (ArrayUtils.isEmpty(analysis)) {
-            return BAIL;
-        }
-
-        double r = Math.exp(analysis[I_COEFFICIENT] * request.getTargetTime().toEpochMilli() + analysis[I_INTERCEPT]);
-
-        double estimate = r * prices.lastEntry().getValue().doubleValue();
-
-        BigDecimal price = Double.isFinite(estimate) ? BigDecimal.valueOf(estimate).setScale(SCALE, HALF_UP) : null;
-
-        double determination = analysis[I_DETERMINATION];
-
-        BigDecimal confidence = Double.isFinite(determination) ? BigDecimal.valueOf(determination).setScale(SCALE, HALF_UP) : null;
-
-        log.debug("Estimated : {} (Confidence={}, Correlation={}, Samples={}, Coefficient={}, Intercept={})",
-                price, confidence, analysis[I_CORRELATION], analysis[I_SAMPLES], analysis[I_COEFFICIENT], analysis[I_INTERCEPT]
-        );
-
-        return Estimation.builder().price(price).confidence(confidence).build();
-
-    }
-
-    @VisibleForTesting
-    double[] calculate(Map<Instant, BigDecimal> values) {
-
         SimpleRegression regression = new SimpleRegression();
 
-        Optional.ofNullable(values).orElse(Collections.emptyMap()).entrySet().stream()
+        trimToEmpty(returns).entrySet().stream()
                 .filter(e -> e.getKey() != null)
                 .filter(e -> e.getValue() != null)
                 .forEach(e -> regression.addData(e.getKey().toEpochMilli(), e.getValue().doubleValue()));
 
         if (regression.getN() <= 2) {
-            return null;
+            return BAIL;
         }
 
-        double[] results = new double[5];
-        results[I_SAMPLES] = regression.getN();
-        results[I_COEFFICIENT] = regression.getSlope();
-        results[I_INTERCEPT] = regression.getIntercept();
-        results[I_CORRELATION] = regression.getR();
-        results[I_DETERMINATION] = regression.getRSquare();
-        return results;
+        double r = Math.exp(regression.predict(request.getTargetTime().toEpochMilli()));
+
+        double p = r * prices.lastEntry().getValue().doubleValue();
+
+        BigDecimal price = Double.isFinite(p) ? BigDecimal.valueOf(p).setScale(SCALE, HALF_UP) : null;
+
+        double c = regression.getRSquare();
+
+        BigDecimal confidence = Double.isFinite(c) ? BigDecimal.valueOf(c).setScale(SCALE, HALF_UP) : ZERO;
+
+        log.debug("Estimated : {} (Confidence={}, Correlation={}, Samples={}, Slope={}, Intercept={})",
+                price, confidence, regression.getR(), regression.getN(), regression.getSlope(), regression.getIntercept()
+        );
+
+        return Estimation.builder().price(price).confidence(confidence).build();
 
     }
 
