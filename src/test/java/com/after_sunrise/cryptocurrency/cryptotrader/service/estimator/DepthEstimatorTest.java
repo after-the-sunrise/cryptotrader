@@ -70,7 +70,7 @@ public class DepthEstimatorTest {
         initializer.run();
         Estimation result = target.estimate(context, request);
         assertEquals(result.getPrice(), new BigDecimal("193.48837209302326"));
-        assertEquals(result.getConfidence(), new BigDecimal("0.9"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.45"));
 
     }
 

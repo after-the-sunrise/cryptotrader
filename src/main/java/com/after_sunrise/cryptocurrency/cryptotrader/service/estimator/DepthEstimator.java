@@ -85,7 +85,7 @@ public class DepthEstimator extends AbstractEstimator {
 
         BigDecimal p = mid.subtract(d);
 
-        BigDecimal c = ONE.subtract(deviation).min(ONE).max(ZERO);
+        BigDecimal c = ONE.subtract(deviation).min(ONE).max(ZERO).multiply(HALF);
 
         log.debug("Estimated : {} (confidence=[{}] mid=[{}] dev=[{}] avg=[{}] askVol=[{}] bidVol=[{}])",
                 p, c, mid, deviation, average, averages[I_SIZE_ASK], averages[I_SIZE_BID]);
