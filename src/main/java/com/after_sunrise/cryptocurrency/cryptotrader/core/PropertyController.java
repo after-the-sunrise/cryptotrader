@@ -39,6 +39,8 @@ public interface PropertyController extends PropertyManager {
 
     void setTradingMinimum(String site, String instrument, BigDecimal value);
 
+    void setTradingResistance(String site, String instrument, BigDecimal value);
+
     void setTradingAversion(String site, String instrument, BigDecimal value);
 
     void setTradingInstruction(String site, String instrument, String value);

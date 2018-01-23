@@ -44,6 +44,8 @@ public interface PropertyManager {
 
     BigDecimal getTradingMinimum(String site, String instrument);
 
+    BigDecimal getTradingResistance(String site, String instrument);
+
     BigDecimal getTradingAversion(String site, String instrument);
 
     String getTradingInstruction(String site, String instrument);

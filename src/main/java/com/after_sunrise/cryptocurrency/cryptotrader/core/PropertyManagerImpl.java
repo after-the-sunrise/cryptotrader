@@ -429,6 +429,16 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
+    public BigDecimal getTradingResistance(String site, String instrument) {
+        return getDecimal(site, instrument, TRADING_RESISTANCE, ZERO, null, ONE);
+    }
+
+    @Override
+    public void setTradingResistance(String site, String instrument, BigDecimal value) {
+        set(TRADING_RESISTANCE, site, instrument, value, BigDecimal::toPlainString);
+    }
+
+    @Override
     public BigDecimal getTradingAversion(String site, String instrument) {
         return getDecimal(site, instrument, TRADING_AVERSION, ZERO, null, ONE);
     }

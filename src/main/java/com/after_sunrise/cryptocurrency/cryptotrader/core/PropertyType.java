@@ -36,6 +36,8 @@ public enum PropertyType {
 
     TRADING_MINIMUM,
 
+    TRADING_RESISTANCE,
+
     TRADING_AVERSION,
 
     TRADING_INSTRUCTION,

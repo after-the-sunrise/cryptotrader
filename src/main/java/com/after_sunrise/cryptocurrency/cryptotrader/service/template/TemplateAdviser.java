@@ -224,9 +224,9 @@ public class TemplateAdviser extends AbstractService implements Adviser {
     @VisibleForTesting
     BigDecimal calculatePositionRatio(Context context, Request request) {
 
-        BigDecimal aversion = ofNullable(request.getTradingAversion()).orElse(ONE);
+        BigDecimal resistance = ofNullable(request.getTradingResistance()).orElse(ONE);
 
-        if (aversion.signum() == 0) {
+        if (resistance.signum() == 0) {
             return ZERO;
         }
 
@@ -285,12 +285,12 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         }
 
-        BigDecimal aversionRatio = ratio.multiply(aversion).setScale(SCALE, HALF_UP);
+        BigDecimal resistanceRatio = ratio.multiply(resistance).setScale(SCALE, HALF_UP);
 
         log.trace("Position ratio: {} (ratio=[{}], fund=[{}], structure=[{}] price=[{}])",
-                aversionRatio, ratio, adjFunding, structure, mid);
+                resistanceRatio, ratio, adjFunding, structure, mid);
 
-        return aversionRatio;
+        return resistanceRatio;
 
     }
 

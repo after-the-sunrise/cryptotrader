@@ -599,6 +599,39 @@ public class PropertyManagerImplTest {
     }
 
     @Test
+    public void testGetTradingResistance() throws Exception {
+
+        // Default
+        assertEquals(target.getTradingResistance(site, inst), new BigDecimal("0.0"));
+
+        // Mocked
+        doReturn(new BigDecimal("0.5")).when(conf).getBigDecimal(TRADING_RESISTANCE.getKey());
+        assertEquals(target.getTradingResistance(site, inst), new BigDecimal("0.5"));
+
+        // Ceiling
+        doReturn(valueOf(Integer.MAX_VALUE)).when(conf).getBigDecimal(TRADING_RESISTANCE.getKey());
+        assertEquals(target.getTradingResistance(site, inst), valueOf(Integer.MAX_VALUE));
+
+        // Floor
+        doReturn(valueOf(Integer.MIN_VALUE)).when(conf).getBigDecimal(TRADING_RESISTANCE.getKey());
+        assertEquals(target.getTradingResistance(site, inst), ZERO);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(TRADING_RESISTANCE.getKey());
+        assertEquals(target.getTradingResistance(site, inst), ONE);
+        reset(conf);
+
+        // Override
+        target.setTradingResistance(site, inst, new BigDecimal("2.5"));
+        assertEquals(target.getTradingResistance(site, inst), new BigDecimal("2.5"));
+
+        // Clear
+        target.setTradingResistance(site, inst, null);
+        assertEquals(target.getTradingResistance(site, inst), new BigDecimal("0.0"));
+
+    }
+
+    @Test
     public void testGetTradingAversion() throws Exception {
 
         // Default

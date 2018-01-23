@@ -251,8 +251,8 @@ public class TemplateAdviserTest {
     public void testCalculatePositionRatio_Cash() {
 
         Request request = rBuilder.fundingOffset(new BigDecimal("-0.50")).build();
-        Request aversion = rBuilder.tradingAversion(new BigDecimal("1.5")).build();
-        Request ignore = rBuilder.tradingAversion(new BigDecimal("0.0")).build();
+        Request aversion = rBuilder.tradingResistance(new BigDecimal("1.5")).build();
+        Request ignore = rBuilder.tradingResistance(new BigDecimal("0.0")).build();
         Key key = Key.from(request);
         when(context.isMarginable(key)).thenReturn(null);
 
@@ -346,8 +346,8 @@ public class TemplateAdviserTest {
     public void testCalculatePositionRatio_Margin() {
 
         Request request = rBuilder.fundingOffset(new BigDecimal("-0.50")).build();
-        Request aversion = rBuilder.tradingAversion(new BigDecimal("1.5")).build();
-        Request ignore = rBuilder.tradingAversion(new BigDecimal("0.0")).build();
+        Request aversion = rBuilder.tradingResistance(new BigDecimal("1.5")).build();
+        Request ignore = rBuilder.tradingResistance(new BigDecimal("0.0")).build();
         Key key = Key.from(request);
         when(context.isMarginable(key)).thenReturn(true);
 
