@@ -4,6 +4,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 import java.math.BigDecimal;
@@ -31,6 +32,8 @@ public class DepthEstimator extends AbstractEstimator {
     private static final String SAMPLES_KEY = "samples";
 
     private static final int SAMPLES_VAL = 60;
+
+    private static final double PROBABILITY = 0.975;
 
     @Override
     public Estimation estimate(Context context, Request request) {
@@ -121,7 +124,9 @@ public class DepthEstimator extends AbstractEstimator {
 
         double dev = stats.getStandardDeviation();
 
-        double sum = Math.abs(avg) + (dev * getSigma(stats.getN() - 1).doubleValue());
+        double sigma = new TDistribution(stats.getN() - 1).inverseCumulativeProbability(PROBABILITY);
+
+        double sum = Math.abs(avg) + (dev * sigma);
 
         return Double.isFinite(sum) ? BigDecimal.valueOf(sum).setScale(SCALE, HALF_UP) : null;
 

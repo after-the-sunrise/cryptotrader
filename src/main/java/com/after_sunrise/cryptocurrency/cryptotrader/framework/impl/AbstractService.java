@@ -156,18 +156,6 @@ public abstract class AbstractService implements Service {
         return values != null ? values : emptyMap();
     }
 
-    protected BigDecimal getSigma(long degree) {
-
-        if (degree <= 0) {
-            return null;
-        }
-
-        Map.Entry<Long, BigDecimal> entry = DEGREES.floorEntry(degree);
-
-        return (entry != null ? entry : DEGREES.ceilingEntry(degree)).getValue();
-
-    }
-
     @VisibleForTesting
     public BigDecimal calculateComposite(Map<String, Set<String>> products, BiFunction<String, String, BigDecimal> f) {
 

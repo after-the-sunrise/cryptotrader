@@ -4,6 +4,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
+import org.apache.commons.math3.distribution.TDistribution;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -29,6 +30,8 @@ public class VwapEstimator extends AbstractEstimator {
     private static final String DURATION_KEY = "duration";
 
     private static final int DURATION_VAL = 60;
+
+    private static final double PROBABILITY = 0.975;
 
     @Override
     public Estimation estimate(Context context, Request request) {
@@ -70,7 +73,7 @@ public class VwapEstimator extends AbstractEstimator {
 
         double deviation = calculateDeviation(trades);
 
-        double sigma = getSigma(trades.size() - 1).doubleValue();
+        double sigma = new TDistribution(trades.size() - 1).inverseCumulativeProbability(PROBABILITY);
 
         double last = trades.get(trades.size() - 1).getPrice().doubleValue();
 

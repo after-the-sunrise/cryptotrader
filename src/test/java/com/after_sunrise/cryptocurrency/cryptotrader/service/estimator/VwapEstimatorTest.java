@@ -90,7 +90,7 @@ public class VwapEstimatorTest {
         when(context.listTrades(key, from)).thenReturn(asList(t1, t3, t5, t7, null, t2, t4, t6, t8));
         Estimation estimation = target.estimate(context, request);
         assertEquals(estimation.getPrice(), new BigDecimal("49.9231910345"));
-        assertEquals(estimation.getConfidence(), new BigDecimal("0.9388333118"));
+        assertEquals(estimation.getConfidence(), new BigDecimal("0.9388342018"));
 
         // Two points
         when(context.listTrades(key, from)).thenReturn(asList(t1, null, t2));
