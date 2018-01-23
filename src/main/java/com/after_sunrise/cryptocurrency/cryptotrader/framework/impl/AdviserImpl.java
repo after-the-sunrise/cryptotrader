@@ -9,7 +9,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * @author takanori.takase
@@ -50,7 +49,7 @@ public class AdviserImpl extends AbstractService implements Adviser {
 
         log.info("Advice : [{}.{}] {}", request.getSite(), request.getInstrument(), advice);
 
-        return Optional.ofNullable(advice).orElse(BAIL);
+        return trim(advice, BAIL);
 
     }
 

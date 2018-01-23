@@ -20,7 +20,8 @@ import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.*;
 import static java.time.temporal.ChronoUnit.MILLIS;
-import static java.util.Collections.*;
+import static java.util.Collections.singleton;
+import static java.util.Collections.singletonMap;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
@@ -136,7 +137,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             return null;
         }
 
-        BigDecimal dynamicBasis = ofNullable(calculateDeviation(context, request)).orElse(staticBasis);
+        BigDecimal dynamicBasis = trim(calculateDeviation(context, request), staticBasis);
 
         BigDecimal basis = staticBasis.max(dynamicBasis).add(commission);
 
@@ -224,7 +225,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
     @VisibleForTesting
     BigDecimal calculatePositionRatio(Context context, Request request) {
 
-        BigDecimal resistance = ofNullable(request.getTradingResistance()).orElse(ONE);
+        BigDecimal resistance = trim(request.getTradingResistance(), ONE);
 
         if (resistance.signum() == 0) {
             return ZERO;
@@ -248,7 +249,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal offset = calculateFundingOffset(context, request);
 
-        BigDecimal adjFunding = funding.multiply(ONE.add(ofNullable(offset).orElse(ZERO))).max(ZERO);
+        BigDecimal adjFunding = funding.multiply(ONE.add(trimToZero(offset))).max(ZERO);
 
         BigDecimal equivalent = structure.multiply(mid);
 
@@ -451,8 +452,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
             Instant cutoff = request.getCurrentTime().minus(duration);
 
-            price = ofNullable(context.listExecutions(key))
-                    .orElse(emptyList()).stream()
+            price = trimToEmpty(context.listExecutions(key)).stream()
                     .filter(Objects::nonNull)
                     .filter(v -> v.getTime() != null)
                     .filter(v -> v.getTime().isAfter(cutoff))
@@ -491,7 +491,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal lossBasis = lossPrice.divide(latest, SCALE, ROUND_UP);
 
-        BigDecimal aversion = ofNullable(request.getTradingAversion()).orElse(ONE);
+        BigDecimal aversion = trim(request.getTradingAversion(), ONE);
 
         return lossBasis.multiply(aversion).max(ZERO);
 
@@ -504,13 +504,13 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             return null;
         }
 
-        BigDecimal additional = ofNullable(request.getTradingSpreadBid()).orElse(ZERO);
+        BigDecimal additional = trimToZero(request.getTradingSpreadBid());
 
-        BigDecimal positionRatio = ofNullable(calculatePositionRatio(context, request)).orElse(ZERO).max(ZERO);
+        BigDecimal positionRatio = trimToZero(calculatePositionRatio(context, request)).max(ZERO);
 
         BigDecimal positionBase = base.add(additional).multiply(ONE.add(positionRatio));
 
-        BigDecimal lossBasis = ofNullable(calculateBuyLossBasis(context, request)).orElse(ZERO);
+        BigDecimal lossBasis = trimToZero(calculateBuyLossBasis(context, request));
 
         BigDecimal adjusted = adjustBuyBasis(context, request, positionBase.add(lossBasis));
 
@@ -544,7 +544,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal lossBasis = lossPrice.divide(latest, SCALE, ROUND_UP);
 
-        BigDecimal aversion = ofNullable(request.getTradingAversion()).orElse(ONE);
+        BigDecimal aversion = trim(request.getTradingAversion(), ONE);
 
         return lossBasis.multiply(aversion).max(ZERO);
 
@@ -557,13 +557,13 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             return null;
         }
 
-        BigDecimal additional = ofNullable(request.getTradingSpreadAsk()).orElse(ZERO);
+        BigDecimal additional = trimToZero(request.getTradingSpreadAsk());
 
-        BigDecimal positionRatio = ofNullable(calculatePositionRatio(context, request)).orElse(ZERO).min(ZERO).abs();
+        BigDecimal positionRatio = trimToZero(calculatePositionRatio(context, request)).min(ZERO).abs();
 
         BigDecimal positionBase = base.add(additional).multiply(ONE.add(positionRatio));
 
-        BigDecimal lossBasis = ofNullable(calculateSellLossBasis(context, request)).orElse(ZERO);
+        BigDecimal lossBasis = trimToZero(calculateSellLossBasis(context, request));
 
         BigDecimal adjusted = adjustSellBasis(context, request, positionBase.add(lossBasis));
 
@@ -594,11 +594,11 @@ public class TemplateAdviser extends AbstractService implements Adviser {
         BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_SELL))
                 .map(r -> r.multiply(ONE.subtract(trimToZero(basis)))).orElse(ask0);
 
-        BigDecimal bid0 = ofNullable(context.getBestBidPrice(key)).orElse(ask0);
+        BigDecimal bid0 = trim(context.getBestBidPrice(key), ask0);
 
         BigDecimal bid1 = bid0;
 
-        if (ofNullable(context.listActiveOrders(key)).orElse(emptyList()).stream()
+        if (trimToEmpty(context.listActiveOrders(key)).stream()
                 .filter(Objects::nonNull)
                 .filter(o -> o.getOrderQuantity() != null)
                 .filter(o -> o.getOrderQuantity().signum() == SIGNUM_BUY)
@@ -640,11 +640,11 @@ public class TemplateAdviser extends AbstractService implements Adviser {
         BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_BUY))
                 .map(r -> r.multiply(ONE.add(trimToZero(basis)))).orElse(bid0);
 
-        BigDecimal ask0 = ofNullable(context.getBestAskPrice(key)).orElse(bid0);
+        BigDecimal ask0 = trim(context.getBestAskPrice(key), bid0);
 
         BigDecimal ask1 = ask0;
 
-        if (ofNullable(context.listActiveOrders(key)).orElse(emptyList()).stream()
+        if (trimToEmpty(context.listActiveOrders(key)).stream()
                 .filter(Objects::nonNull)
                 .filter(o -> o.getOrderQuantity() != null)
                 .filter(o -> o.getOrderQuantity().signum() == SIGNUM_SELL)
@@ -652,7 +652,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
                 .filter(o -> o.getOrderPrice().compareTo(ask0) == 0)
                 .count() == 0) {
 
-            ask1 = ofNullable(context.roundTickSize(key, ask0.subtract(EPSILON), DOWN)).orElse(ask0);
+            ask1 = trim(context.roundTickSize(key, ask0.subtract(EPSILON), DOWN), ask0);
 
         }
 
@@ -749,7 +749,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             return ZERO;
         }
 
-        BigDecimal exposure = ofNullable(request.getTradingExposure()).orElse(ZERO);
+        BigDecimal exposure = trimToZero(request.getTradingExposure());
 
         BigDecimal offset = calculateFundingOffset(context, request);
 
@@ -798,13 +798,13 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal offset = calculateFundingOffset(context, request);
 
-        BigDecimal adjFund = fund.multiply(ONE.add(ofNullable(offset).orElse(ZERO))).max(ZERO);
+        BigDecimal adjFund = fund.multiply(ONE.add(trimToZero(offset))).max(ZERO);
 
         BigDecimal product = adjFund.divide(price, SCALE, HALF_UP);
 
-        BigDecimal exposure = ofNullable(calculateTradingExposure(context, request)).orElse(ZERO);
+        BigDecimal exposure = trimToZero(calculateTradingExposure(context, request));
 
-        BigDecimal commission = ofNullable(context.getCommissionRate(key)).orElse(ZERO).max(ZERO).min(ONE);
+        BigDecimal commission = trimToZero(context.getCommissionRate(key)).max(ZERO).min(ONE);
 
         BigDecimal available = fund.multiply(ONE.subtract(commission)).divide(price, SCALE, DOWN);
 
@@ -844,7 +844,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
         }
 
         BigDecimal exposure = MapUtils.isNotEmpty(request.getHedgeProducts()) ? ONE :
-                ofNullable(calculateTradingExposure(context, request)).orElse(ZERO);
+                trimToZero(calculateTradingExposure(context, request));
 
         BigDecimal exposed = position.multiply(basePrice).multiply(exposure);
 
@@ -875,7 +875,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         }
 
-        BigDecimal rounded = ofNullable(context.roundLotSize(Key.from(request), size, HALF_UP)).orElse(ZERO);
+        BigDecimal rounded = trimToZero(context.roundLotSize(Key.from(request), size, HALF_UP));
 
         BigDecimal minimum = request.getTradingThreshold();
 
@@ -913,7 +913,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         }
 
-        BigDecimal rounded = ofNullable(context.roundLotSize(Key.from(request), size, HALF_UP)).orElse(ZERO);
+        BigDecimal rounded = trimToZero(context.roundLotSize(Key.from(request), size, HALF_UP));
 
         BigDecimal minimum = request.getTradingThreshold();
 

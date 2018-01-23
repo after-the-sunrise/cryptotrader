@@ -35,8 +35,8 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.Bitme
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.HALF_UP;
-import static java.util.Collections.*;
-import static java.util.Optional.ofNullable;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
@@ -390,7 +390,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         Instant cutoff = key.getTimestamp().minus(BUCKETED);
 
-        if (ofNullable(trades).orElse(emptyList()).stream()
+        if (trimToEmpty(trades).stream()
                 .filter(Objects::nonNull)
                 .filter(t -> t.getTimestamp() != null)
                 .noneMatch(t -> t.getTimestamp().isBefore(cutoff))) {
@@ -418,7 +418,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         }
 
-        return ofNullable(trades).orElse(emptyList()).stream()
+        return trimToEmpty(trades).stream()
                 .filter(Objects::nonNull)
                 .filter(t -> t.getPrice() != null)
                 .filter(t -> t.getPrice().signum() != 0)
@@ -847,7 +847,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         });
 
-        return ofNullable(values).orElse(emptyList());
+        return trimToEmpty(values);
 
     }
 
@@ -890,8 +890,7 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         });
 
-        return ofNullable(values).orElse(emptyList()).stream()
-                .filter(Objects::nonNull).collect(toList());
+        return trimToEmpty(values).stream().filter(Objects::nonNull).collect(toList());
 
     }
 

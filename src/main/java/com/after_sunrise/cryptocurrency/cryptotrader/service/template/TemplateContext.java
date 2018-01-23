@@ -296,7 +296,7 @@ public abstract class TemplateContext extends AbstractService implements Context
 
                 cached = cache.get(key, () -> {
 
-                    List<T> values = Optional.ofNullable(c.call()).orElse(emptyList());
+                    List<T> values = trimToEmpty(c.call());
 
                     log.trace("Cached list : {} ({})", key, values.size());
 

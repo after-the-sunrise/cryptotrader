@@ -22,6 +22,7 @@ import static java.lang.Long.MAX_VALUE;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
+import static java.util.Collections.*;
 
 /**
  * @author takanori.takase
@@ -144,15 +145,15 @@ public abstract class AbstractService implements Service {
     }
 
     protected <T> List<T> trimToEmpty(List<T> values) {
-        return trim(values, Collections.<T>emptyList());
+        return values != null ? values : emptyList();
     }
 
     protected <T> Set<T> trimToEmpty(Set<T> values) {
-        return trim(values, Collections.<T>emptySet());
+        return values != null ? values : emptySet();
     }
 
     protected <K, V> Map<K, V> trimToEmpty(Map<K, V> values) {
-        return trim(values, Collections.<K, V>emptyMap());
+        return values != null ? values : emptyMap();
     }
 
     protected BigDecimal getSigma(long degree) {
@@ -247,7 +248,7 @@ public abstract class AbstractService implements Service {
 
         }
 
-        Optional.ofNullable(values).orElse(Collections.emptyList()).stream()
+        trimToEmpty(values).stream()
                 .filter(Objects::nonNull)
                 .filter(t -> t.getTimestamp() != null)
                 .filter(t -> t.getTimestamp().isAfter(from.minus(interval)))

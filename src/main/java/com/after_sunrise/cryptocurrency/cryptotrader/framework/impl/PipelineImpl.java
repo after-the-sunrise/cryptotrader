@@ -11,12 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
-import static java.util.Collections.emptyMap;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -72,7 +68,7 @@ public class PipelineImpl implements Pipeline {
 
             Map<Instruction, Boolean> results = manager.reconcile(context, request, futures);
 
-            log.info("Processed : {}", ofNullable(results).orElse(emptyMap()).size());
+            log.info("Processed : {}", ofNullable(results).orElseGet(Collections::emptyMap).size());
 
         });
 

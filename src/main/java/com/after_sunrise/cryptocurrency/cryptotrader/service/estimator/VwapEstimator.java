@@ -16,8 +16,6 @@ import java.util.stream.Collectors;
 
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
-import static java.util.Collections.emptyList;
-import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
 /**
@@ -47,8 +45,8 @@ public class VwapEstimator extends AbstractEstimator {
 
         Instant from = now.minus(getDuration());
 
-        List<Trade> trades = ofNullable(context.listTrades(key, from)).orElse(emptyList())
-                .stream().filter(Objects::nonNull)
+        List<Trade> trades = trimToEmpty(context.listTrades(key, from)).stream()
+                .filter(Objects::nonNull)
                 .filter(t -> t.getTimestamp() != null)
                 .filter(t -> Objects.nonNull(t.getPrice()))
                 .filter(t -> Objects.nonNull(t.getSize()))

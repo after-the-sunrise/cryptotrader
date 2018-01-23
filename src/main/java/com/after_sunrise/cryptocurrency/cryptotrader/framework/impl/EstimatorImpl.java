@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.HALF_UP;
-import static java.util.Optional.ofNullable;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 
@@ -146,7 +145,7 @@ public class EstimatorImpl extends AbstractService implements Estimator {
 
             }
 
-            BigDecimal multiplier = ofNullable(ids.get(id)).orElse(ONE);
+            BigDecimal multiplier = trim(ids.get(id), ONE);
 
             log.debug("Including estimate : [{}.{}] {} - {} (x{})", r.getSite(), r.getInstrument(), estimation, id, multiplier);
 

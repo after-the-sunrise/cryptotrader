@@ -13,8 +13,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.Optional.ofNullable;
-
 /**
  * @author takanori.takase
  * @version 0.0.1
@@ -48,9 +46,7 @@ public class InstructorImpl extends AbstractService implements Instructor {
 
         }
 
-        List<Instruction> instructions = instructor.instruct(context, request, advice);
-
-        List<Instruction> values = ofNullable(instructions).orElse(EMPTY);
+        List<Instruction> values = trimToEmpty(instructor.instruct(context, request, advice));
 
         log.info("Instruction : [{}.{}] {}", request.getSite(), request.getInstrument(), values.size());
 

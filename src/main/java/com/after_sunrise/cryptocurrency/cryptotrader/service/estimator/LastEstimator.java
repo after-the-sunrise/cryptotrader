@@ -17,8 +17,6 @@ import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
 import static java.time.temporal.ChronoUnit.HOURS;
-import static java.util.Collections.emptyList;
-import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 
 /**
@@ -48,8 +46,7 @@ public class LastEstimator extends AbstractEstimator {
 
         Instant from = now.minus(LONG_ONE, HOURS);
 
-        Optional<Trade> value = ofNullable(context.listTrades(key, from))
-                .orElse(emptyList()).stream()
+        Optional<Trade> value = trimToEmpty(context.listTrades(key, from)).stream()
                 .filter(Objects::nonNull)
                 .filter(t -> Objects.nonNull(t.getTimestamp()))
                 .filter(t -> Objects.nonNull(t.getPrice()))

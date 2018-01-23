@@ -12,9 +12,7 @@ import com.google.inject.Injector;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static java.util.Optional.ofNullable;
 
 /**
  * @author takanori.takase
@@ -53,7 +51,7 @@ public class AgentImpl extends AbstractService implements Agent {
 
         }
 
-        List<Instruction> values = ofNullable(instructions).orElse(emptyList());
+        List<Instruction> values = trimToEmpty(instructions);
 
         if (!propertyManager.getTradingActive(req.getSite(), req.getInstrument())) {
 
@@ -63,7 +61,7 @@ public class AgentImpl extends AbstractService implements Agent {
 
         }
 
-        Map<Instruction, String> results = ofNullable(manager.manage(ctx, req, values)).orElse(emptyMap());
+        Map<Instruction, String> results = trimToEmpty(manager.manage(ctx, req, values));
 
         log.info("Manage : [{}.{}] {}", req.getSite(), req.getInstrument(), results.size());
 
@@ -86,7 +84,7 @@ public class AgentImpl extends AbstractService implements Agent {
 
         }
 
-        Map<Instruction, Boolean> results = ofNullable(manager.reconcile(ctx, req, instructions)).orElse(emptyMap());
+        Map<Instruction, Boolean> results = trimToEmpty(manager.reconcile(ctx, req, instructions));
 
         log.info("Reconcile : [{}.{}] {}", req.getSite(), req.getInstrument(), results.size());
 
