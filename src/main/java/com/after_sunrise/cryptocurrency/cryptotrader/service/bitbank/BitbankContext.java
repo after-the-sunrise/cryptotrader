@@ -27,7 +27,7 @@ public class BitbankContext extends TemplateContext implements BitbankService {
 
     private final ThreadLocal<Bitbankcc> localApi;
 
-    protected BitbankContext() {
+    public BitbankContext() {
 
         super(ID);
 
