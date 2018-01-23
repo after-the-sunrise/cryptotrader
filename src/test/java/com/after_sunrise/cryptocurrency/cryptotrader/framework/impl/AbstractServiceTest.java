@@ -127,7 +127,7 @@ public class AbstractServiceTest {
 
         // Unknown Operator
         initializer.run();
-        products.add(new Composite("+s1", "p1"));
+        products.add(new Composite("!s1", "p1"));
         assertNull(target.calculateComposite(products, f));
 
         // Invalid Site 1

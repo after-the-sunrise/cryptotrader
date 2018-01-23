@@ -176,6 +176,14 @@ public abstract class AbstractService implements Service {
 
             BinaryOperator<BigDecimal> operator = null;
 
+            if (operation == '+') {
+                operator = BigDecimal::add;
+            }
+
+            if (operation == '-') {
+                operator = BigDecimal::subtract;
+            }
+
             if (operation == '*') {
                 operator = BigDecimal::multiply;
             }
@@ -185,7 +193,7 @@ public abstract class AbstractService implements Service {
             }
 
             if (operation != '@' && operator == null) {
-                return null;
+                return null; // Average
             }
 
             String site = composite.getSite().substring(1);
