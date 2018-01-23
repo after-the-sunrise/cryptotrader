@@ -1,8 +1,9 @@
 com.after_sunrise.cryptocurrency.cryptotrader.service.bitbank.BitbankContext
-com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerContext
 com.after_sunrise.cryptocurrency.cryptotrader.service.bitfinex.BitfinexContext
+com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerContext
 com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexContext
-com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex.PoloniexContext
 com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckContext
-com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifContext
 com.after_sunrise.cryptocurrency.cryptotrader.service.oanda.OandaContext
+com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex.PoloniexContext
+com.after_sunrise.cryptocurrency.cryptotrader.service.template.ConstantContext
+com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifContext
