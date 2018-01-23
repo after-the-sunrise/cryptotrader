@@ -2,7 +2,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.core;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -15,7 +15,7 @@ public interface PropertyController extends PropertyManager {
 
     void setTradingThreads(Integer value);
 
-    void setTradingTargets(Map<String, Set<String>> values);
+    void setTradingTargets(List<Composite> values);
 
     void setTradingActive(String site, String instrument, Boolean value);
 
@@ -51,7 +51,7 @@ public interface PropertyController extends PropertyManager {
 
     void setFundingOffset(String site, String instrument, BigDecimal value);
 
-    void setFundingMultiplierProducts(String site, String instrument, Map<String, Set<String>> values);
+    void setFundingMultiplierProducts(String site, String instrument, List<Composite> values);
 
     void setFundingPositiveMultiplier(String site, String instrument, BigDecimal value);
 
@@ -61,11 +61,11 @@ public interface PropertyController extends PropertyManager {
 
     void setFundingNegativeThreshold(String site, String instrument, BigDecimal value);
 
-    void setHedgeProducts(String site, String instrument, Map<String, Set<String>> values);
+    void setHedgeProducts(String site, String instrument, List<Composite> values);
 
     void setEstimators(String site, String instrument, Set<String> values);
 
-    void setEstimatorComposites(String site, String instrument, Map<String, Set<String>> values);
+    void setEstimatorComposites(String site, String instrument, List<Composite> values);
 
     void setEstimationThreshold(String site, String instrument, BigDecimal value);
 

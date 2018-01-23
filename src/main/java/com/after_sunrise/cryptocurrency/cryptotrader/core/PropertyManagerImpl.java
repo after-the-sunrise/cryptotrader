@@ -3,7 +3,6 @@ package com.after_sunrise.cryptocurrency.cryptotrader.core;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.configuration2.BaseConfiguration;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -168,7 +167,7 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @VisibleForTesting
-    Map<String, Set<String>> getProducts(String site, String instrument, PropertyType type) {
+    List<Composite> getProducts(String site, String instrument, PropertyType type) {
 
         String raw = null;
 
@@ -176,7 +175,7 @@ public class PropertyManagerImpl implements PropertyController {
 
             raw = get(type, site, instrument, Configuration::getString);
 
-            Map<String, Set<String>> targets = new LinkedHashMap<>();
+            List<Composite> composites = new ArrayList<>();
 
             for (String entry : split(trimToEmpty(raw), SEPARATOR_ENTRY)) {
 
@@ -186,22 +185,32 @@ public class PropertyManagerImpl implements PropertyController {
                     continue;
                 }
 
-                targets.computeIfAbsent(kv[0], key -> new LinkedHashSet<>()).add(kv[1]);
+                composites.add(new Composite(kv[0], kv[1]));
 
             }
 
-            log.trace("Fetched {} : {}", type, targets);
+            log.trace("Fetched {} ({}.{}) : {}", type, site, instrument, composites);
 
-            return Collections.unmodifiableMap(targets);
+            return Collections.unmodifiableList(composites);
 
         } catch (RuntimeException e) {
 
             log.warn(format("Invalid %s : %s", type, raw), e);
 
-            return Collections.emptyMap();
+            return Collections.emptyList();
 
         }
 
+    }
+
+    @VisibleForTesting
+    void setProducts(PropertyType type, String site, String instrument, List<Composite> values) {
+        set(type, site, instrument, values, input -> StringUtils.join(input.stream()
+                        .filter(c -> StringUtils.isNotEmpty(c.getSite()))
+                        .filter(c -> StringUtils.isNotEmpty(c.getInstrument()))
+                        .map(c -> c.getSite() + SEPARATOR_KEYVAL + c.getInstrument())
+                        .toArray()
+                , SEPARATOR_ENTRY));
     }
 
     @Override
@@ -252,54 +261,13 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
-    public Map<String, Set<String>> getTradingTargets() {
-
-        String raw = null;
-
-        try {
-
-            raw = get(TRADING_TARGETS, null, null, Configuration::getString);
-
-            Map<String, Set<String>> targets = new LinkedHashMap<>();
-
-            for (String entry : split(trimToEmpty(raw), SEPARATOR_ENTRY)) {
-
-                String[] kv = split(entry, SEPARATOR_KEYVAL, 2);
-
-                if (kv.length != 2) {
-                    continue;
-                }
-
-                targets.computeIfAbsent(kv[0], key -> new LinkedHashSet<>()).add(kv[1]);
-
-            }
-
-            log.trace("Fetched {} : {}", TRADING_TARGETS, targets);
-
-            return Collections.unmodifiableMap(targets);
-
-        } catch (RuntimeException e) {
-
-            log.warn(format("Invalid %s : %s", TRADING_TARGETS, raw), e);
-
-            return Collections.emptyMap();
-
-        }
-
+    public List<Composite> getTradingTargets() {
+        return getProducts(null, null, TRADING_TARGETS);
     }
 
     @Override
-    public void setTradingTargets(Map<String, Set<String>> values) {
-        set(TRADING_TARGETS, null, null, values, input -> StringUtils.join(
-                input.entrySet().stream()
-                        .filter(e -> StringUtils.isNotEmpty(e.getKey()))
-                        .filter(e -> CollectionUtils.isNotEmpty(e.getValue()))
-                        .map(entry -> StringUtils.join(entry.getValue().stream()
-                                .filter(StringUtils::isNotEmpty)
-                                .map(v -> entry.getKey() + SEPARATOR_KEYVAL + v)
-                                .toArray(), SEPARATOR_ENTRY))
-                        .toArray()
-                , SEPARATOR_ENTRY));
+    public void setTradingTargets(List<Composite> values) {
+        setProducts(TRADING_TARGETS, null, null, values);
     }
 
     @Override
@@ -493,22 +461,13 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
-    public Map<String, Set<String>> getFundingMultiplierProducts(String site, String instrument) {
+    public List<Composite> getFundingMultiplierProducts(String site, String instrument) {
         return getProducts(site, instrument, FUNDING_MULTIPLIER_PRODUCTS);
     }
 
     @Override
-    public void setFundingMultiplierProducts(String site, String instrument, Map<String, Set<String>> values) {
-        set(FUNDING_MULTIPLIER_PRODUCTS, site, instrument, values, input -> StringUtils.join(
-                input.entrySet().stream()
-                        .filter(e -> StringUtils.isNotEmpty(e.getKey()))
-                        .filter(e -> CollectionUtils.isNotEmpty(e.getValue()))
-                        .map(entry -> StringUtils.join(entry.getValue().stream()
-                                .filter(StringUtils::isNotEmpty)
-                                .map(v -> entry.getKey() + SEPARATOR_KEYVAL + v)
-                                .toArray(), SEPARATOR_ENTRY))
-                        .toArray()
-                , SEPARATOR_ENTRY));
+    public void setFundingMultiplierProducts(String site, String instrument, List<Composite> values) {
+        setProducts(FUNDING_MULTIPLIER_PRODUCTS, site, instrument, values);
     }
 
     @Override
@@ -552,22 +511,13 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
-    public Map<String, Set<String>> getHedgeProducts(String site, String instrument) {
+    public List<Composite> getHedgeProducts(String site, String instrument) {
         return getProducts(site, instrument, HEDGE_PRODUCTS);
     }
 
     @Override
-    public void setHedgeProducts(String site, String instrument, Map<String, Set<String>> values) {
-        set(HEDGE_PRODUCTS, site, instrument, values, input -> StringUtils.join(
-                input.entrySet().stream()
-                        .filter(e -> StringUtils.isNotEmpty(e.getKey()))
-                        .filter(e -> CollectionUtils.isNotEmpty(e.getValue()))
-                        .map(entry -> StringUtils.join(entry.getValue().stream()
-                                .filter(StringUtils::isNotEmpty)
-                                .map(v -> entry.getKey() + SEPARATOR_KEYVAL + v)
-                                .toArray(), SEPARATOR_ENTRY))
-                        .toArray()
-                , SEPARATOR_ENTRY));
+    public void setHedgeProducts(String site, String instrument, List<Composite> values) {
+        setProducts(HEDGE_PRODUCTS, site, instrument, values);
     }
 
     @Override
@@ -603,22 +553,13 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
-    public Map<String, Set<String>> getEstimatorComposites(String site, String instrument) {
+    public List<Composite> getEstimatorComposites(String site, String instrument) {
         return getProducts(site, instrument, ESTIMATOR_COMPOSITES);
     }
 
     @Override
-    public void setEstimatorComposites(String site, String instrument, Map<String, Set<String>> values) {
-        set(ESTIMATOR_COMPOSITES, site, instrument, values, input -> StringUtils.join(
-                input.entrySet().stream()
-                        .filter(e -> StringUtils.isNotEmpty(e.getKey()))
-                        .filter(e -> CollectionUtils.isNotEmpty(e.getValue()))
-                        .map(entry -> StringUtils.join(entry.getValue().stream()
-                                .filter(StringUtils::isNotEmpty)
-                                .map(v -> entry.getKey() + SEPARATOR_KEYVAL + v)
-                                .toArray(), SEPARATOR_ENTRY))
-                        .toArray()
-                , SEPARATOR_ENTRY));
+    public void setEstimatorComposites(String site, String instrument, List<Composite> values) {
+        setProducts(ESTIMATOR_COMPOSITES, site, instrument, values);
     }
 
     @Override

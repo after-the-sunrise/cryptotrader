@@ -1,5 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.Composite;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
@@ -9,7 +10,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order.Execution;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
-import com.google.common.collect.Sets;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.MapConfiguration;
 import org.mockito.invocation.InvocationOnMock;
@@ -35,7 +35,8 @@ import static java.math.BigDecimal.*;
 import static java.math.BigDecimal.valueOf;
 import static java.time.Instant.now;
 import static java.time.Instant.ofEpochMilli;
-import static java.util.Collections.*;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
@@ -428,7 +429,7 @@ public class TemplateAdviserTest {
         BigDecimal offset = new BigDecimal("0.0000");
 
         Request.RequestBuilder builder = Request.builder().instrument(BTC_JPY.name()).fundingOffset(offset)
-                .fundingMultiplierProducts(singletonMap("*" + ID, singleton(BTCJPY_MAT1WK.name())))
+                .fundingMultiplierProducts(singletonList(new Composite("*" + ID, BTCJPY_MAT1WK.name())))
                 .fundingPositiveMultiplier(valueOf(100)).fundingNegativeMultiplier(valueOf(95));
 
         Request r1 = builder.build();
@@ -984,9 +985,10 @@ public class TemplateAdviserTest {
     @Test
     public void testCalculateInstrumentExposureSize_Hedge() {
 
-        Map<String, Set<String>> hedgeProducts = new HashMap<>();
-        hedgeProducts.put("a", Sets.newHashSet("XBTC", "XETH"));
-        hedgeProducts.put("b", Sets.newHashSet("XBCH"));
+        List<Composite> hedgeProducts = new ArrayList<>();
+        hedgeProducts.add(new Composite("a", "XBTC"));
+        hedgeProducts.add(new Composite("a", "XETH"));
+        hedgeProducts.add(new Composite("b", "XBCH"));
 
         Request request = rBuilder.hedgeProducts(hedgeProducts).build();
         Key keySen = Key.from(request);

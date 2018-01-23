@@ -1,9 +1,10 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.Composite;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
@@ -157,21 +158,21 @@ public abstract class AbstractService implements Service {
     }
 
     @VisibleForTesting
-    public BigDecimal calculateComposite(Map<String, Set<String>> products, BiFunction<String, String, BigDecimal> f) {
+    public BigDecimal calculateComposite(List<Composite> products, BiFunction<String, String, BigDecimal> f) {
 
-        if (MapUtils.isEmpty(products)) {
+        if (CollectionUtils.isEmpty(products)) {
             return null;
         }
 
         BigDecimal[] results = {null};
 
-        for (Map.Entry<String, Set<String>> entry : products.entrySet()) {
+        for (Composite composite : products) {
 
-            if (entry.getKey() == null || entry.getKey().length() < 2) {
+            if (composite == null || composite.getSite() == null || composite.getSite().length() < 2) {
                 return null;
             }
 
-            char operation = entry.getKey().charAt(0);
+            char operation = composite.getSite().charAt(0);
 
             BinaryOperator<BigDecimal> operator = null;
 
@@ -187,29 +188,27 @@ public abstract class AbstractService implements Service {
                 return null;
             }
 
-            String site = entry.getKey().substring(1);
+            String site = composite.getSite().substring(1);
 
-            for (String product : entry.getValue()) {
+            String product = composite.getInstrument();
 
-                BigDecimal value = f.apply(site, product);
+            BigDecimal value = f.apply(site, product);
 
-                if (value == null || value.signum() == 0) {
-                    return null;
-                }
+            if (value == null || value.signum() == 0) {
+                return null;
+            }
 
-                if (operator == null) {
+            if (operator == null) {
 
-                    results = ArrayUtils.add(results, value);
+                results = ArrayUtils.add(results, value);
 
-                    continue;
-
-                }
-
-                BigDecimal current = trim(results[0], ONE);
-
-                results[0] = operator.apply(current, value);
+                continue;
 
             }
+
+            BigDecimal current = trim(results[0], ONE);
+
+            results[0] = operator.apply(current, value);
 
         }
 

@@ -125,9 +125,10 @@ public class TraderImpl implements Trader {
                 List<CompletableFuture<?>> futures = new ArrayList<>();
 
                 propertyManager.getTradingTargets().forEach(
-                        (site, instruments) -> instruments.forEach(
-                                i -> futures.add(processPipeline(now, site, i))
-                        ));
+                        composite -> futures.add(
+                                processPipeline(now, composite.getSite(), composite.getInstrument())
+                        )
+                );
 
                 allOf(futures.toArray(new CompletableFuture[futures.size()])).get();
 

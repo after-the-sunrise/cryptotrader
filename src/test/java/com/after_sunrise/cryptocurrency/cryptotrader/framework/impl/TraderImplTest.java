@@ -1,6 +1,7 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
+import com.after_sunrise.cryptocurrency.cryptotrader.core.Composite;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Pipeline;
 import org.testng.annotations.BeforeMethod;
@@ -9,13 +10,11 @@ import org.testng.annotations.Test;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.time.Duration.ZERO;
-import static java.util.Collections.singleton;
-import static java.util.Collections.singletonMap;
+import static java.util.Collections.singletonList;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
 
@@ -73,7 +72,7 @@ public class TraderImplTest {
         Instant estimate = now.plus(interval.toMillis() * 3, ChronoUnit.MILLIS);
         String site = "s";
         String instrument = "i";
-        Map<String, Set<String>> targets = singletonMap(site, singleton(instrument));
+        List<Composite> targets = singletonList(new Composite(site, instrument));
         when(module.getMock(PropertyManager.class).getNow()).thenReturn(now);
         when(module.getMock(PropertyManager.class).getTradingInterval()).thenReturn(interval);
         when(module.getMock(PropertyManager.class).getTradingTargets()).thenReturn(targets);

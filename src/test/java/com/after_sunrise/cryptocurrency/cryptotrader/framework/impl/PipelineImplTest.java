@@ -1,6 +1,7 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
+import com.after_sunrise.cryptocurrency.cryptotrader.core.Composite;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Adviser.Advice;
@@ -15,7 +16,8 @@ import java.util.List;
 import java.util.Map;
 
 import static java.math.BigDecimal.valueOf;
-import static java.util.Collections.*;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
 
@@ -116,12 +118,12 @@ public class PipelineImplTest {
             when(manager.getTradingSplit(any(), any())).thenReturn(++count);
             when(manager.getTradingDuration(any(), any())).thenReturn(Duration.ofMillis(++count));
             when(manager.getFundingOffset(any(), any())).thenReturn(valueOf(++count));
-            when(manager.getFundingMultiplierProducts(any(), any())).thenReturn(singletonMap("mp", emptySet()));
+            when(manager.getFundingMultiplierProducts(any(), any())).thenReturn(singletonList(new Composite("ms", "mp")));
             when(manager.getFundingPositiveMultiplier(any(), any())).thenReturn(valueOf(++count));
             when(manager.getFundingNegativeMultiplier(any(), any())).thenReturn(valueOf(++count));
             when(manager.getFundingPositiveThreshold(any(), any())).thenReturn(valueOf(++count));
             when(manager.getFundingNegativeThreshold(any(), any())).thenReturn(valueOf(++count));
-            when(manager.getHedgeProducts(any(), any())).thenReturn(singletonMap("hp", emptySet()));
+            when(manager.getHedgeProducts(any(), any())).thenReturn(singletonList(new Composite("hs", "hp")));
             when(manager.getEstimationAversion(any(), any())).thenReturn(valueOf(++count));
         };
 
@@ -146,12 +148,12 @@ public class PipelineImplTest {
         assertEquals(request.getTradingSplit(), (Integer) 12);
         assertEquals(request.getTradingDuration(), Duration.ofMillis(13));
         assertEquals(request.getFundingOffset(), valueOf(14));
-        assertEquals(request.getFundingMultiplierProducts(), singletonMap("mp", emptySet()));
+        assertEquals(request.getFundingMultiplierProducts(), singletonList(new Composite("ms", "mp")));
         assertEquals(request.getFundingPositiveMultiplier(), valueOf(15));
         assertEquals(request.getFundingNegativeMultiplier(), valueOf(16));
         assertEquals(request.getFundingPositiveThreshold(), valueOf(17));
         assertEquals(request.getFundingNegativeThreshold(), valueOf(18));
-        assertEquals(request.getHedgeProducts(), singletonMap("hp", emptySet()));
+        assertEquals(request.getHedgeProducts(), singletonList(new Composite("hs", "hp")));
         assertEquals(request.getEstimationAversion(), valueOf(19));
 
         // Validate copy

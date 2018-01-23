@@ -1,7 +1,7 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.Composite;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
-import com.google.common.collect.Sets;
 import org.apache.commons.configuration2.MapConfiguration;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -90,14 +90,16 @@ public class AbstractServiceTest {
 
         BiFunction<String, String, BigDecimal> f = spy(new TestFunction());
 
-        Map<String, Set<String>> products = new LinkedHashMap<>();
+        List<Composite> products = new ArrayList<>();
 
         Runnable initializer = () -> {
             products.clear();
-            products.put("*s1", Sets.newHashSet("p1", "p2"));
-            products.put("/s1", Sets.newHashSet("p3"));
-            products.put("*s2", Sets.newHashSet("p4"));
-            products.put("@s2", Sets.newHashSet("p4", "p5"));
+            products.add(new Composite("*s1", "p1"));
+            products.add(new Composite("*s1", "p2"));
+            products.add(new Composite("/s1", "p3"));
+            products.add(new Composite("*s2", "p4"));
+            products.add(new Composite("@s2", "p4"));
+            products.add(new Composite("@s2", "p5"));
 
             reset(f);
             when(f.apply("s1", "p1")).thenReturn(new BigDecimal("1.2"));
@@ -115,7 +117,8 @@ public class AbstractServiceTest {
         // Average Only
         initializer.run();
         products.clear();
-        products.put("@s2", Sets.newHashSet("p4", "p5"));
+        products.add(new Composite("@s2", "p4"));
+        products.add(new Composite("@s2", "p5"));
         assertEquals(target.calculateComposite(products, f), new BigDecimal("5.0500000000"));
 
         // Empty products
@@ -124,17 +127,17 @@ public class AbstractServiceTest {
 
         // Unknown Operator
         initializer.run();
-        products.put("+s1", products.values().iterator().next());
+        products.add(new Composite("+s1", "p1"));
         assertNull(target.calculateComposite(products, f));
 
         // Invalid Site 1
         initializer.run();
-        products.put("s", products.values().iterator().next());
+        products.add(new Composite("s", "p1"));
         assertNull(target.calculateComposite(products, f));
 
         // Invalid Site 2
         initializer.run();
-        products.put(null, products.values().iterator().next());
+        products.add(new Composite(null, "p1"));
         assertNull(target.calculateComposite(products, f));
 
         // Null Price

@@ -1,15 +1,16 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.estimator;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.Composite;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.AbstractMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
@@ -42,9 +43,9 @@ public class CompositeEstimator extends AbstractEstimator {
     @VisibleForTesting
     Estimation estimate(Context context, Request request, BiFunction<Context, Request, Estimation> function) {
 
-        Map<String, Set<String>> composites = request.getEstimatorComposites();
+        List<Composite> composites = request.getEstimatorComposites();
 
-        if (MapUtils.isEmpty(composites)) {
+        if (CollectionUtils.isEmpty(composites)) {
             return BAIL;
         }
 
@@ -54,9 +55,9 @@ public class CompositeEstimator extends AbstractEstimator {
 
         BigDecimal confidence = ONE;
 
-        for (Map.Entry<String, Set<String>> entry : composites.entrySet()) {
+        for (Composite composite : composites) {
 
-            String site = StringUtils.trimToEmpty(entry.getKey());
+            String site = StringUtils.trimToEmpty(composite.getSite());
 
             if (site.length() <= 1) {
                 return BAIL;
@@ -68,21 +69,19 @@ public class CompositeEstimator extends AbstractEstimator {
                 return BAIL;
             }
 
-            for (String instrument : entry.getValue()) {
+            String instrument = composite.getInstrument();
 
-                Request elementRequest = builder.site(site.substring(1)).instrument(instrument).build();
+            Request elementRequest = builder.site(site.substring(1)).instrument(instrument).build();
 
-                Estimation estimation = function.apply(context, elementRequest);
+            Estimation estimation = function.apply(context, elementRequest);
 
-                if (estimation == null || estimation.getPrice() == null || estimation.getConfidence() == null) {
-                    return BAIL;
-                }
-
-                price = operator.apply(price, estimation.getPrice());
-
-                confidence = confidence.multiply(estimation.getConfidence());
-
+            if (estimation == null || estimation.getPrice() == null || estimation.getConfidence() == null) {
+                return BAIL;
             }
+
+            price = operator.apply(price, estimation.getPrice());
+
+            confidence = confidence.multiply(estimation.getConfidence());
 
         }
 

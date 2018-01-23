@@ -11,10 +11,8 @@ import java.math.BigDecimal;
 import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.*;
 import static java.lang.Boolean.FALSE;
@@ -201,23 +199,24 @@ public class PropertyManagerImplTest {
     public void testGetTradingTargets() throws Exception {
 
         // Default
-        Map<String, Set<String>> targets = target.getTradingTargets();
+        List<Composite> targets = target.getTradingTargets();
         assertEquals(targets.size(), 1);
-        assertEquals(targets.get("bitflyer").size(), 1);
-        assertTrue(targets.get("bitflyer").contains("BTC_JPY"));
+        assertEquals(targets.get(0).getSite(), "bitflyer");
+        assertEquals(targets.get(0).getInstrument(), "BTC_JPY");
 
         // Mocked
         String value = "exch1:ccy1|exch1:ccy2|exch2:ccy1||exch2:|:ccy2|exch3:ccy2:test|";
         doReturn(value).when(conf).getString(TRADING_TARGETS.getKey());
         targets = target.getTradingTargets();
-        assertEquals(targets.size(), 3);
-        assertEquals(targets.get("exch1").size(), 2);
-        assertTrue(targets.get("exch1").contains("ccy1"));
-        assertTrue(targets.get("exch1").contains("ccy2"));
-        assertEquals(targets.get("exch2").size(), 1);
-        assertTrue(targets.get("exch2").contains("ccy1"));
-        assertEquals(targets.get("exch3").size(), 1);
-        assertTrue(targets.get("exch3").contains("ccy2:test"));
+        assertEquals(targets.size(), 4);
+        assertEquals(targets.get(0).getSite(), "exch1");
+        assertEquals(targets.get(0).getInstrument(), "ccy1");
+        assertEquals(targets.get(1).getSite(), "exch1");
+        assertEquals(targets.get(1).getInstrument(), "ccy2");
+        assertEquals(targets.get(2).getSite(), "exch2");
+        assertEquals(targets.get(2).getInstrument(), "ccy1");
+        assertEquals(targets.get(3).getSite(), "exch3");
+        assertEquals(targets.get(3).getInstrument(), "ccy2:test");
 
         // Error
         doThrow(new RuntimeException("test")).when(conf).getString(TRADING_TARGETS.getKey());
@@ -226,25 +225,29 @@ public class PropertyManagerImplTest {
         reset(conf);
 
         // Overwrite
-        Map<String, Set<String>> newTargets = new TreeMap<>();
-        newTargets.put("s1", Sets.newTreeSet(Arrays.asList("i1", "i2")));
-        newTargets.put("s2", Sets.newTreeSet(Arrays.asList("i2", "i3")));
+        List<Composite> newTargets = new ArrayList<>();
+        newTargets.add(new Composite("s1", "i1"));
+        newTargets.add(new Composite("s1", "i2"));
+        newTargets.add(new Composite("s2", "i2"));
+        newTargets.add(new Composite("s2", "i3"));
         target.setTradingTargets(newTargets);
         targets = target.getTradingTargets();
-        assertEquals(targets.size(), 2);
-        assertEquals(targets.get("s1").size(), 2, target.toString());
-        assertTrue(targets.get("s1").contains("i2"));
-        assertTrue(targets.get("s1").contains("i2"));
-        assertEquals(targets.get("s2").size(), 2);
-        assertTrue(targets.get("s2").contains("i2"));
-        assertTrue(targets.get("s2").contains("i3"));
+        assertEquals(targets.size(), 4);
+        assertEquals(targets.get(0).getSite(), "s1");
+        assertEquals(targets.get(0).getInstrument(), "i1");
+        assertEquals(targets.get(1).getSite(), "s1");
+        assertEquals(targets.get(1).getInstrument(), "i2");
+        assertEquals(targets.get(2).getSite(), "s2");
+        assertEquals(targets.get(2).getInstrument(), "i2");
+        assertEquals(targets.get(3).getSite(), "s2");
+        assertEquals(targets.get(3).getInstrument(), "i3");
 
         // Clear
         target.setTradingTargets(null);
         targets = target.getTradingTargets();
         assertEquals(targets.size(), 1);
-        assertEquals(targets.get("bitflyer").size(), 1);
-        assertTrue(targets.get("bitflyer").contains("BTC_JPY"));
+        assertEquals(targets.get(0).getSite(), "bitflyer");
+        assertEquals(targets.get(0).getInstrument(), "BTC_JPY");
 
     }
 
@@ -792,21 +795,22 @@ public class PropertyManagerImplTest {
     public void testGetFundingMultiplierProducts() throws Exception {
 
         // Default
-        Map<String, Set<String>> targets = target.getFundingMultiplierProducts(site, inst);
+        List<Composite> targets = target.getFundingMultiplierProducts(site, inst);
         assertEquals(targets.size(), 0);
 
         // Mocked
         String value = "exch1:ccy1|exch1:ccy2|exch2:ccy1||exch2:|:ccy2|exch3:ccy2:test|";
         doReturn(value).when(conf).getString(FUNDING_MULTIPLIER_PRODUCTS.getKey());
         targets = target.getFundingMultiplierProducts(site, inst);
-        assertEquals(targets.size(), 3);
-        assertEquals(targets.get("exch1").size(), 2);
-        assertTrue(targets.get("exch1").contains("ccy1"));
-        assertTrue(targets.get("exch1").contains("ccy2"));
-        assertEquals(targets.get("exch2").size(), 1);
-        assertTrue(targets.get("exch2").contains("ccy1"));
-        assertEquals(targets.get("exch3").size(), 1);
-        assertTrue(targets.get("exch3").contains("ccy2:test"));
+        assertEquals(targets.size(), 4);
+        assertEquals(targets.get(0).getSite(), "exch1");
+        assertEquals(targets.get(0).getInstrument(), "ccy1");
+        assertEquals(targets.get(1).getSite(), "exch1");
+        assertEquals(targets.get(1).getInstrument(), "ccy2");
+        assertEquals(targets.get(2).getSite(), "exch2");
+        assertEquals(targets.get(2).getInstrument(), "ccy1");
+        assertEquals(targets.get(3).getSite(), "exch3");
+        assertEquals(targets.get(3).getInstrument(), "ccy2:test");
 
         // Error
         doThrow(new RuntimeException("test")).when(conf).getString(FUNDING_MULTIPLIER_PRODUCTS.getKey());
@@ -815,18 +819,22 @@ public class PropertyManagerImplTest {
         reset(conf);
 
         // Overwrite
-        Map<String, Set<String>> newTargets = new TreeMap<>();
-        newTargets.put("s1", Sets.newTreeSet(Arrays.asList("i1", "i2")));
-        newTargets.put("s2", Sets.newTreeSet(Arrays.asList("i2", "i3")));
+        List<Composite> newTargets = new ArrayList<>();
+        newTargets.add(new Composite("s1", "i1"));
+        newTargets.add(new Composite("s1", "i2"));
+        newTargets.add(new Composite("s2", "i2"));
+        newTargets.add(new Composite("s2", "i3"));
         target.setFundingMultiplierProducts(site, inst, newTargets);
         targets = target.getFundingMultiplierProducts(site, inst);
-        assertEquals(targets.size(), 2);
-        assertEquals(targets.get("s1").size(), 2, target.toString());
-        assertTrue(targets.get("s1").contains("i2"));
-        assertTrue(targets.get("s1").contains("i2"));
-        assertEquals(targets.get("s2").size(), 2);
-        assertTrue(targets.get("s2").contains("i2"));
-        assertTrue(targets.get("s2").contains("i3"));
+        assertEquals(targets.size(), 4);
+        assertEquals(targets.get(0).getSite(), "s1");
+        assertEquals(targets.get(0).getInstrument(), "i1");
+        assertEquals(targets.get(1).getSite(), "s1");
+        assertEquals(targets.get(1).getInstrument(), "i2");
+        assertEquals(targets.get(2).getSite(), "s2");
+        assertEquals(targets.get(2).getInstrument(), "i2");
+        assertEquals(targets.get(3).getSite(), "s2");
+        assertEquals(targets.get(3).getInstrument(), "i3");
 
         // Clear
         target.setFundingMultiplierProducts(site, inst, null);
@@ -967,21 +975,22 @@ public class PropertyManagerImplTest {
     public void testGetHedgeProducts() throws Exception {
 
         // Default
-        Map<String, Set<String>> targets = target.getHedgeProducts(site, inst);
+        List<Composite> targets = target.getHedgeProducts(site, inst);
         assertEquals(targets.size(), 0);
 
         // Mocked
         String value = "exch1:ccy1|exch1:ccy2|exch2:ccy1||exch2:|:ccy2|exch3:ccy2:test|";
         doReturn(value).when(conf).getString(HEDGE_PRODUCTS.getKey());
         targets = target.getHedgeProducts(site, inst);
-        assertEquals(targets.size(), 3);
-        assertEquals(targets.get("exch1").size(), 2);
-        assertTrue(targets.get("exch1").contains("ccy1"));
-        assertTrue(targets.get("exch1").contains("ccy2"));
-        assertEquals(targets.get("exch2").size(), 1);
-        assertTrue(targets.get("exch2").contains("ccy1"));
-        assertEquals(targets.get("exch3").size(), 1);
-        assertTrue(targets.get("exch3").contains("ccy2:test"));
+        assertEquals(targets.size(), 4);
+        assertEquals(targets.get(0).getSite(), "exch1");
+        assertEquals(targets.get(0).getInstrument(), "ccy1");
+        assertEquals(targets.get(1).getSite(), "exch1");
+        assertEquals(targets.get(1).getInstrument(), "ccy2");
+        assertEquals(targets.get(2).getSite(), "exch2");
+        assertEquals(targets.get(2).getInstrument(), "ccy1");
+        assertEquals(targets.get(3).getSite(), "exch3");
+        assertEquals(targets.get(3).getInstrument(), "ccy2:test");
 
         // Error
         doThrow(new RuntimeException("test")).when(conf).getString(HEDGE_PRODUCTS.getKey());
@@ -990,18 +999,23 @@ public class PropertyManagerImplTest {
         reset(conf);
 
         // Overwrite
-        Map<String, Set<String>> newTargets = new TreeMap<>();
-        newTargets.put("s1", Sets.newTreeSet(Arrays.asList("i1", "i2")));
-        newTargets.put("s2", Sets.newTreeSet(Arrays.asList("i2", "i3")));
+        List<Composite> newTargets = new ArrayList<>();
+        newTargets.add(new Composite("s1", "i1"));
+        newTargets.add(new Composite("s1", "i2"));
+        newTargets.add(new Composite("s2", "i2"));
+        newTargets.add(new Composite("s2", "i3"));
         target.setHedgeProducts(site, inst, newTargets);
         targets = target.getHedgeProducts(site, inst);
-        assertEquals(targets.size(), 2);
-        assertEquals(targets.get("s1").size(), 2, target.toString());
-        assertTrue(targets.get("s1").contains("i2"));
-        assertTrue(targets.get("s1").contains("i2"));
-        assertEquals(targets.get("s2").size(), 2);
-        assertTrue(targets.get("s2").contains("i2"));
-        assertTrue(targets.get("s2").contains("i3"));
+        assertEquals(targets.size(), 4);
+        assertEquals(targets.get(0).getSite(), "s1");
+        assertEquals(targets.get(0).getInstrument(), "i1");
+        assertEquals(targets.get(1).getSite(), "s1");
+        assertEquals(targets.get(1).getInstrument(), "i2");
+        assertEquals(targets.get(2).getSite(), "s2");
+        assertEquals(targets.get(2).getInstrument(), "i2");
+        assertEquals(targets.get(3).getSite(), "s2");
+        assertEquals(targets.get(3).getInstrument(), "i3");
+
 
         // Clear
         target.setHedgeProducts(site, inst, null);
@@ -1038,21 +1052,22 @@ public class PropertyManagerImplTest {
     public void testGetEstimatorComposites() throws Exception {
 
         // Default
-        Map<String, Set<String>> targets = target.getEstimatorComposites(site, inst);
+        List<Composite> targets = target.getEstimatorComposites(site, inst);
         assertEquals(targets.size(), 0);
 
         // Mocked
         String value = "exch1:ccy1|exch1:ccy2|exch2:ccy1||exch2:|:ccy2|exch3:ccy2:test|";
         doReturn(value).when(conf).getString(ESTIMATOR_COMPOSITES.getKey());
         targets = target.getEstimatorComposites(site, inst);
-        assertEquals(targets.size(), 3);
-        assertEquals(targets.get("exch1").size(), 2);
-        assertTrue(targets.get("exch1").contains("ccy1"));
-        assertTrue(targets.get("exch1").contains("ccy2"));
-        assertEquals(targets.get("exch2").size(), 1);
-        assertTrue(targets.get("exch2").contains("ccy1"));
-        assertEquals(targets.get("exch3").size(), 1);
-        assertTrue(targets.get("exch3").contains("ccy2:test"));
+        assertEquals(targets.size(), 4);
+        assertEquals(targets.get(0).getSite(), "exch1");
+        assertEquals(targets.get(0).getInstrument(), "ccy1");
+        assertEquals(targets.get(1).getSite(), "exch1");
+        assertEquals(targets.get(1).getInstrument(), "ccy2");
+        assertEquals(targets.get(2).getSite(), "exch2");
+        assertEquals(targets.get(2).getInstrument(), "ccy1");
+        assertEquals(targets.get(3).getSite(), "exch3");
+        assertEquals(targets.get(3).getInstrument(), "ccy2:test");
 
         // Error
         doThrow(new RuntimeException("test")).when(conf).getString(ESTIMATOR_COMPOSITES.getKey());
@@ -1061,18 +1076,22 @@ public class PropertyManagerImplTest {
         reset(conf);
 
         // Overwrite
-        Map<String, Set<String>> newTargets = new TreeMap<>();
-        newTargets.put("s1", Sets.newTreeSet(Arrays.asList("i1", "i2")));
-        newTargets.put("s2", Sets.newTreeSet(Arrays.asList("i2", "i3")));
+        List<Composite> newTargets = new ArrayList<>();
+        newTargets.add(new Composite("s1", "i1"));
+        newTargets.add(new Composite("s1", "i2"));
+        newTargets.add(new Composite("s2", "i2"));
+        newTargets.add(new Composite("s2", "i3"));
         target.setEstimatorComposites(site, inst, newTargets);
         targets = target.getEstimatorComposites(site, inst);
-        assertEquals(targets.size(), 2);
-        assertEquals(targets.get("s1").size(), 2, target.toString());
-        assertTrue(targets.get("s1").contains("i2"));
-        assertTrue(targets.get("s1").contains("i2"));
-        assertEquals(targets.get("s2").size(), 2);
-        assertTrue(targets.get("s2").contains("i2"));
-        assertTrue(targets.get("s2").contains("i3"));
+        assertEquals(targets.size(), 4);
+        assertEquals(targets.get(0).getSite(), "s1");
+        assertEquals(targets.get(0).getInstrument(), "i1");
+        assertEquals(targets.get(1).getSite(), "s1");
+        assertEquals(targets.get(1).getInstrument(), "i2");
+        assertEquals(targets.get(2).getSite(), "s2");
+        assertEquals(targets.get(2).getInstrument(), "i2");
+        assertEquals(targets.get(3).getSite(), "s2");
+        assertEquals(targets.get(3).getInstrument(), "i3");
 
         // Clear
         target.setEstimatorComposites(site, inst, null);

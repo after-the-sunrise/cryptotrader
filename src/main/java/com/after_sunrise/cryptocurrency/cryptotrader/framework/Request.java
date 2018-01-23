@@ -1,5 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.Composite;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -8,8 +9,7 @@ import lombok.ToString;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -61,7 +61,7 @@ public class Request {
 
     private BigDecimal fundingOffset;
 
-    private Map<String, Set<String>> fundingMultiplierProducts;
+    private List<Composite> fundingMultiplierProducts;
 
     private BigDecimal fundingPositiveMultiplier;
 
@@ -71,9 +71,9 @@ public class Request {
 
     private BigDecimal fundingNegativeThreshold;
 
-    private Map<String, Set<String>> hedgeProducts;
+    private List<Composite> hedgeProducts;
 
-    private Map<String, Set<String>> estimatorComposites;
+    private List<Composite> estimatorComposites;
 
     private BigDecimal estimationAversion;
 

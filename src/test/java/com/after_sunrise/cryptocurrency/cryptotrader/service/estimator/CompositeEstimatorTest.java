@@ -1,20 +1,18 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.estimator;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.Composite;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.CompositeEstimator.CompositeLastEstimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.estimator.CompositeEstimator.CompositeMidEstimator;
-import com.google.common.collect.Sets;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiFunction;
 
 import static java.math.BigDecimal.ONE;
@@ -56,10 +54,11 @@ public class CompositeEstimatorTest {
     @Test
     public void testCompositeEstimator_EstimateComposite() {
 
-        Map<String, Set<String>> composites = new LinkedHashMap<>();
-        composites.put("*a", Sets.newHashSet("1"));
-        composites.put("/b", Sets.newHashSet("2", "3"));
-        composites.put("*c", Sets.newHashSet("4"));
+        List<Composite> composites = new ArrayList<>();
+        composites.add(new Composite("*a", "1"));
+        composites.add(new Composite("/b", "2"));
+        composites.add(new Composite("/b", "3"));
+        composites.add(new Composite("*c", "4"));
         Request request = Request.builder().currentTime(Instant.now()).estimatorComposites(composites).build();
 
         BiFunction<Context, Request, Estimator.Estimation> function = mock(BiFunction.class);
@@ -104,28 +103,28 @@ public class CompositeEstimatorTest {
 
         // Unknown Operator ('@')
         composites.clear();
-        composites.put("@a", Collections.singleton("1"));
+        composites.add(new Composite("@a", "1"));
         result = target.estimate(context, request, function);
         assertEquals(result.getPrice(), null);
         assertEquals(result.getConfidence(), new BigDecimal("0"));
 
         // Missing Operator
         composites.clear();
-        composites.put("a", Collections.singleton("1"));
+        composites.add(new Composite("a", "1"));
         result = target.estimate(context, request, function);
         assertEquals(result.getPrice(), null);
         assertEquals(result.getConfidence(), new BigDecimal("0"));
 
         // Missing site
         composites.clear();
-        composites.put(null, Collections.singleton("1"));
+        composites.add(new Composite(null, "1"));
         result = target.estimate(context, request, function);
         assertEquals(result.getPrice(), null);
         assertEquals(result.getConfidence(), new BigDecimal("0"));
 
         // Missing instrument
         composites.clear();
-        composites.put("*a", Collections.singleton(null));
+        composites.add(new Composite("*a", null));
         result = target.estimate(context, request, function);
         assertEquals(result.getPrice(), null);
         assertEquals(result.getConfidence(), new BigDecimal("0"));

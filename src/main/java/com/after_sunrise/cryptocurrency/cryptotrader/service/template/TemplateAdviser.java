@@ -1,12 +1,13 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.Composite;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.*;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.AbstractService;
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 import java.math.BigDecimal;
@@ -21,7 +22,7 @@ import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.*;
 import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.util.Collections.singleton;
-import static java.util.Collections.singletonMap;
+import static java.util.Collections.singletonList;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
@@ -302,47 +303,45 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         CurrencyType currency = context.getInstrumentCurrency(key);
 
-        Map<String, Set<String>> hedgeProducts = ofNullable(request.getHedgeProducts())
-                .filter(MapUtils::isNotEmpty)
-                .orElseGet(() -> singletonMap(request.getSite(), singleton(request.getInstrument())));
+        List<Composite> hedgeProducts = ofNullable(request.getHedgeProducts())
+                .filter(CollectionUtils::isNotEmpty)
+                .orElseGet(() -> singletonList(new Composite(request.getSite(), request.getInstrument())));
 
         BigDecimal position = ZERO;
 
-        for (Map.Entry<String, Set<String>> entry : hedgeProducts.entrySet()) {
+        for (Composite composite : hedgeProducts) {
 
-            String site = entry.getKey();
+            String site = composite.getSite();
 
-            for (String instrument : entry.getValue()) {
+            String instrument = composite.getInstrument();
 
-                Key instrumentKey = Key.build(key).site(site).instrument(instrument).build();
+            Key instrumentKey = Key.build(key).site(site).instrument(instrument).build();
 
-                BigDecimal conversionPrice = context.getConversionPrice(instrumentKey, currency);
+            BigDecimal conversionPrice = context.getConversionPrice(instrumentKey, currency);
 
-                if (conversionPrice == null) {
+            if (conversionPrice == null) {
 
-                    log.trace("No conversion price for {}:{}:{}", site, instrument, currency);
+                log.trace("No conversion price for {}:{}:{}", site, instrument, currency);
 
-                    return null;
-
-                }
-
-                BigDecimal conversionPosition = context.getInstrumentPosition(instrumentKey);
-
-                if (conversionPosition == null) {
-
-                    log.trace("No conversion position for {}:{}", site, instrument);
-
-                    return null;
-
-                }
-
-                BigDecimal basePosition = conversionPosition.divide(conversionPrice, SCALE, HALF_UP);
-
-                position = position.add(basePosition);
-
-                log.trace("Instrument position element : [{}.{}] {}", site, instrument, basePosition);
+                return null;
 
             }
+
+            BigDecimal conversionPosition = context.getInstrumentPosition(instrumentKey);
+
+            if (conversionPosition == null) {
+
+                log.trace("No conversion position for {}:{}", site, instrument);
+
+                return null;
+
+            }
+
+            BigDecimal basePosition = conversionPosition.divide(conversionPrice, SCALE, HALF_UP);
+
+            position = position.add(basePosition);
+
+            log.trace("Instrument position element : [{}.{}] {}", site, instrument, basePosition);
 
         }
 
@@ -365,7 +364,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             return offset;
         }
 
-        Map<String, Set<String>> offsetProducts = request.getFundingMultiplierProducts();
+        List<Composite> offsetProducts = request.getFundingMultiplierProducts();
 
         BigDecimal compositePrice = calculateComposite(offsetProducts, (site, product) -> {
 
@@ -843,7 +842,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         }
 
-        BigDecimal exposure = MapUtils.isNotEmpty(request.getHedgeProducts()) ? ONE :
+        BigDecimal exposure = CollectionUtils.isNotEmpty(request.getHedgeProducts()) ? ONE :
                 trimToZero(calculateTradingExposure(context, request));
 
         BigDecimal exposed = position.multiply(basePrice).multiply(exposure);
