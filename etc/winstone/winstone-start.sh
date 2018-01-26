@@ -6,6 +6,11 @@ if [ ! -d "logs" ]; then
   mkdir "logs" || exit $?
 fi
 
+# Clean interrupted logs
+if [ "`ls logs | egrep '.tmp$' | wc -l`" -ne 0 ]; then
+  rm -v logs/*.tmp
+fi
+
 nohup \
   java \
   -server \
