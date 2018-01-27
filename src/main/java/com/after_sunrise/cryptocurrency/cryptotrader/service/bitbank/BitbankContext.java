@@ -11,7 +11,9 @@ import cc.bitbank.entity.enums.OrderType;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order.Execution;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
+import com.after_sunrise.cryptocurrency.cryptotrader.service.bitbank.BitbankOrder.BitbankExecution;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.ArrayUtils;
@@ -22,6 +24,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -41,13 +44,19 @@ public class BitbankContext extends TemplateContext implements BitbankService {
 
     private static final Pattern NUMERIC = Pattern.compile("^[0-9]+$");
 
+    private static final int MAX = 1024;
+
     private final ThreadLocal<Bitbankcc> localApi;
+
+    private final NavigableMap<String, BitbankOrder> cachedOrders;
 
     public BitbankContext() {
 
         super(ID);
 
         localApi = ThreadLocal.withInitial(Bitbankcc::new);
+
+        cachedOrders = new ConcurrentSkipListMap<>();
 
     }
 
@@ -312,7 +321,7 @@ public class BitbankContext extends TemplateContext implements BitbankService {
     }
 
     @Override
-    public Order findOrder(Key key, String id) {
+    public BitbankOrder findOrder(Key key, String id) {
 
         ProductType product = ProductType.find(key.getInstrument());
 
@@ -374,9 +383,42 @@ public class BitbankContext extends TemplateContext implements BitbankService {
     }
 
     @Override
-    public List<Order.Execution> listExecutions(Key key) {
-        // TODO Temporary out-of-service : https://bitbank.cc/blog/20171227trade-history/
-        return emptyList();
+    public List<Execution> listExecutions(Key key) {
+
+        // TODO : API not available : https://bitbank.cc/blog/20171227trade-history/
+
+        List<Execution> executions = new ArrayList<>();
+
+        for (Map.Entry<String, BitbankOrder> entry : cachedOrders.entrySet()) {
+
+            String id = entry.getKey();
+
+            BitbankOrder order = findOrder(key, id);
+
+            if (order != null) {
+
+                if (order.getFilledQuantity() != null && order.getFilledQuantity().signum() != 0) {
+
+                    BitbankExecution execution = new BitbankExecution(order.getDelegate());
+
+                    executions.add(execution);
+
+                    continue;
+
+                }
+
+                if (Objects.equals(TRUE, order.getActive())) {
+                    continue;
+                }
+
+            }
+
+            cachedOrders.remove(id);
+
+        }
+
+        return executions;
+
     }
 
     @Override
@@ -414,8 +456,23 @@ public class BitbankContext extends TemplateContext implements BitbankService {
 
                 cc.bitbank.entity.Order order = getLocalApi().sendOrder(pair, price, amount, side, type);
 
-                // Failed orders have empty fields
-                results.put(i, order != null && order.status != null ? String.valueOf(order.orderId) : null);
+                if (order != null && order.status != null) {
+
+                    results.put(i, String.valueOf(order.orderId));
+
+                    if (cachedOrders.size() >= MAX) {
+                        cachedOrders.pollFirstEntry();
+                    }
+
+                    cachedOrders.put(String.valueOf(order.orderId), new BitbankOrder(order));
+
+                } else {
+
+                    // Failed orders have empty fields
+                    results.put(i, null);
+
+                }
+
 
             } catch (Exception e) {
 

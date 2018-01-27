@@ -7,6 +7,7 @@ import com.google.common.collect.Sets;
 import lombok.ToString;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Set;
 
 /**
@@ -30,6 +31,10 @@ public class BitbankOrder implements Order {
 
     public BitbankOrder(cc.bitbank.entity.Order delegate) {
         this.delegate = delegate;
+    }
+
+    public cc.bitbank.entity.Order getDelegate() {
+        return delegate;
     }
 
     @Override
@@ -80,6 +85,42 @@ public class BitbankOrder implements Order {
     @Override
     public BigDecimal getRemainingQuantity() {
         return convertSideQuantity(delegate.remainingAmount);
+    }
+
+    @ToString
+    public static class BitbankExecution implements Execution {
+
+        private final cc.bitbank.entity.Order delegate;
+
+        public BitbankExecution(cc.bitbank.entity.Order delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public String getId() {
+            return String.valueOf(delegate.orderId);
+        }
+
+        @Override
+        public String getOrderId() {
+            return String.valueOf(delegate.orderId);
+        }
+
+        @Override
+        public Instant getTime() {
+            return delegate.executedAt == null ? null : Instant.ofEpochMilli(delegate.executedAt.getTime());
+        }
+
+        @Override
+        public BigDecimal getPrice() {
+            return delegate.averagePrice;
+        }
+
+        @Override
+        public BigDecimal getSize() {
+            return delegate.executedAmount;
+        }
+
     }
 
 }
