@@ -102,6 +102,7 @@ public class PipelineImpl implements Pipeline {
                 .fundingNegativeMultiplier(propertyManager.getFundingNegativeMultiplier(site, instrument))
                 .fundingPositiveThreshold(propertyManager.getFundingPositiveThreshold(site, instrument))
                 .fundingNegativeThreshold(propertyManager.getFundingNegativeThreshold(site, instrument))
+                .deviationProducts(propertyManager.getDeviationProducts(site, instrument))
                 .hedgeProducts(propertyManager.getHedgeProducts(site, instrument))
                 .estimatorComposites(propertyManager.getEstimatorComposites(site, instrument))
                 .estimationAversion(propertyManager.getEstimationAversion(site, instrument))

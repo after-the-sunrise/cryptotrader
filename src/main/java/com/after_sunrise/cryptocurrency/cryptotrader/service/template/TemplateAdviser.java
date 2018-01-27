@@ -8,12 +8,14 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimat
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.AbstractService;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType.ACTIVE;
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType.WARNING;
@@ -174,7 +176,14 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         double highest = 0.0;
 
-        for (Key key : trimToEmpty(getDeviationProducts(context, request))) {
+        Set<Key> keys = trimToEmpty(request.getDeviationProducts()).stream()
+                .filter(Objects::nonNull)
+                .filter(c -> StringUtils.isNotEmpty(c.getSite()))
+                .filter(c -> StringUtils.isNotEmpty(c.getInstrument()))
+                .map(c -> Key.build(Key.from(request)).site(c.getSite()).instrument(c.getInstrument()).build())
+                .collect(Collectors.toSet());
+
+        for (Key key : keys.isEmpty() ? singleton(Key.from(request)) : keys) {
 
             Integer samples = trim(request.getTradingSamples(), 0);
 
@@ -217,10 +226,6 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         return result;
 
-    }
-
-    protected Set<Key> getDeviationProducts(Context context, Request request) {
-        return singleton(Key.from(request));
     }
 
     @VisibleForTesting

@@ -60,6 +60,8 @@ public enum PropertyType {
 
     FUNDING_NEGATIVE_THRESHOLD,
 
+    DEVIATION_PRODUCTS,
+
     HEDGE_PRODUCTS,
 
     ESTIMATORS,

@@ -123,6 +123,7 @@ public class PipelineImplTest {
             when(manager.getFundingNegativeMultiplier(any(), any())).thenReturn(valueOf(++count));
             when(manager.getFundingPositiveThreshold(any(), any())).thenReturn(valueOf(++count));
             when(manager.getFundingNegativeThreshold(any(), any())).thenReturn(valueOf(++count));
+            when(manager.getDeviationProducts(any(), any())).thenReturn(singletonList(new Composite("ds", "dp")));
             when(manager.getHedgeProducts(any(), any())).thenReturn(singletonList(new Composite("hs", "hp")));
             when(manager.getEstimationAversion(any(), any())).thenReturn(valueOf(++count));
         };
@@ -153,6 +154,7 @@ public class PipelineImplTest {
         assertEquals(request.getFundingNegativeMultiplier(), valueOf(16));
         assertEquals(request.getFundingPositiveThreshold(), valueOf(17));
         assertEquals(request.getFundingNegativeThreshold(), valueOf(18));
+        assertEquals(request.getDeviationProducts(), singletonList(new Composite("ds", "dp")));
         assertEquals(request.getHedgeProducts(), singletonList(new Composite("hs", "hp")));
         assertEquals(request.getEstimationAversion(), valueOf(19));
 
@@ -247,6 +249,10 @@ public class PipelineImplTest {
 
         initializer.run();
         doReturn(null).when(manager).getFundingNegativeThreshold(any(), any());
+        assertNull(target.createRequest(targetTime, site, instrument));
+
+        initializer.run();
+        doReturn(null).when(manager).getDeviationProducts(any(), any());
         assertNull(target.createRequest(targetTime, site, instrument));
 
         initializer.run();

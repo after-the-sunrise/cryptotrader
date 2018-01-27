@@ -71,6 +71,8 @@ public class Request {
 
     private BigDecimal fundingNegativeThreshold;
 
+    private List<Composite> deviationProducts;
+
     private List<Composite> hedgeProducts;
 
     private List<Composite> estimatorComposites;
@@ -106,6 +108,7 @@ public class Request {
             b.fundingNegativeMultiplier(request.getFundingNegativeMultiplier());
             b.fundingPositiveThreshold(request.getFundingPositiveThreshold());
             b.fundingNegativeThreshold(request.getFundingNegativeThreshold());
+            b.deviationProducts(request.getDeviationProducts());
             b.hedgeProducts(request.getHedgeProducts());
             b.estimatorComposites(request.getEstimatorComposites());
             b.estimationAversion(request.getEstimationAversion());

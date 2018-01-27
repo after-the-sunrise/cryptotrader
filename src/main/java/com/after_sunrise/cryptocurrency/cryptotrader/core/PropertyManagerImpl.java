@@ -511,6 +511,16 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
+    public List<Composite> getDeviationProducts(String site, String instrument) {
+        return getProducts(site, instrument, DEVIATION_PRODUCTS);
+    }
+
+    @Override
+    public void setDeviationProducts(String site, String instrument, List<Composite> values) {
+        setProducts(DEVIATION_PRODUCTS, site, instrument, values);
+    }
+
+    @Override
     public List<Composite> getHedgeProducts(String site, String instrument) {
         return getProducts(site, instrument, HEDGE_PRODUCTS);
     }

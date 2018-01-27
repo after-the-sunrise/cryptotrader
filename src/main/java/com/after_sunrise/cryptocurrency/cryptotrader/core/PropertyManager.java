@@ -66,6 +66,8 @@ public interface PropertyManager {
 
     BigDecimal getFundingNegativeThreshold(String site, String instrument);
 
+    List<Composite> getDeviationProducts(String site, String instrument);
+
     List<Composite> getHedgeProducts(String site, String instrument);
 
     Set<String> getEstimators(String site, String instrument);

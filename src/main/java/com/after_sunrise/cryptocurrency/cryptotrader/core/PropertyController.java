@@ -61,6 +61,8 @@ public interface PropertyController extends PropertyManager {
 
     void setFundingNegativeThreshold(String site, String instrument, BigDecimal value);
 
+    void setDeviationProducts(String site, String instrument, List<Composite> values);
+
     void setHedgeProducts(String site, String instrument, List<Composite> values);
 
     void setEstimators(String site, String instrument, Set<String> values);
