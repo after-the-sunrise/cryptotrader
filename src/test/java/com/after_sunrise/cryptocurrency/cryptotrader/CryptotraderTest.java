@@ -134,7 +134,7 @@ public class CryptotraderTest {
 
         System.setProperty(TRADING_THREADS.getKey(), "1");
 
-        System.setProperty(TRADING_TARGETS.getKey(), "bitbank:BTC_JPY");
+        System.setProperty(TRADING_TARGETS.getKey(), "site:product");
 
         CryptotraderImpl.Module module = new CryptotraderImpl.Module();
 
