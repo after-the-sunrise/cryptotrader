@@ -230,7 +230,7 @@ public class TemplateContextTest {
         assertEquals(target.round(value, UP, unit), new BigDecimal("0.0021"));
         assertEquals(target.round(value, HALF_UP, unit), new BigDecimal("0.0021"));
         assertEquals(target.round(value, DOWN, unit), new BigDecimal("0.0018"));
-        assertEquals(target.round(value, HALF_DOWN, unit), new BigDecimal("0.018"));
+        assertEquals(target.round(value, HALF_DOWN, unit), new BigDecimal("0.0021"));
 
         assertNull(target.round(null, DOWN, unit));
         assertNull(target.round(value, null, unit));
