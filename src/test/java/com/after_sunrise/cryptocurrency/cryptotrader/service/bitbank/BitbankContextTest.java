@@ -1,19 +1,28 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.bitbank;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
+import com.google.common.collect.Sets;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.BTC;
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.JPY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitbank.BitbankService.ID;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitbank.BitbankService.ProductType.BTC_JPY;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * @author takanori.takase
@@ -55,6 +64,30 @@ public class BitbankContextTest {
 
         System.out.println("IP:" + target.getInstrumentPosition(key));
         System.out.println("FP:" + target.getFundingPosition(key));
+
+    }
+
+    @Test(enabled = false)
+    public void testOrder() throws ConfigurationException, InterruptedException {
+
+        Path path = Paths.get(System.getProperty("user.home"), ".cryptotrader");
+        target.setConfiguration(new Configurations().properties(path.toAbsolutePath().toFile()));
+        Key key = Key.builder().site(ID).instrument(BTC_JPY.name()).timestamp(Instant.now()).build();
+
+        Set<CreateInstruction> creates = Sets.newHashSet(
+                CreateInstruction.builder().price(new BigDecimal("1000000")).size(new BigDecimal("+0.0001")).build(),
+                CreateInstruction.builder().price(new BigDecimal("1500000")).size(new BigDecimal("-0.0001")).build()
+        );
+
+        Map<CreateInstruction, String> created = target.createOrders(key, creates);
+        System.out.println("Created : " + created);
+
+        TimeUnit.SECONDS.sleep(10L);
+
+        Set<CancelInstruction> cancels = created.values().stream().filter(StringUtils::isNotEmpty)
+                .map(id -> CancelInstruction.builder().id(id).build()).collect(toSet());
+        Map<CancelInstruction, String> cancelled = target.cancelOrders(key, cancels);
+        System.out.println("Cancelled : " + cancelled);
 
     }
 

@@ -23,8 +23,8 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
-import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.TEN;
+import static java.math.BigDecimal.*;
+import static java.math.RoundingMode.*;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.mockito.Mockito.*;
@@ -218,6 +218,25 @@ public class TemplateContextTest {
         assertEquals(target.listCached(null, key, callable), emptyList());
         assertEquals(target.listCached(BigDecimal.class, null, callable), emptyList());
         verifyNoMoreInteractions(callable);
+
+    }
+
+    @Test
+    public void testRound() {
+
+        BigDecimal value = new BigDecimal("0.0020");
+        BigDecimal unit = new BigDecimal("0.0003");
+
+        assertEquals(target.round(value, UP, unit), new BigDecimal("0.0021"));
+        assertEquals(target.round(value, HALF_UP, unit), new BigDecimal("0.0021"));
+        assertEquals(target.round(value, DOWN, unit), new BigDecimal("0.0018"));
+        assertEquals(target.round(value, HALF_DOWN, unit), new BigDecimal("0.018"));
+
+        assertNull(target.round(null, DOWN, unit));
+        assertNull(target.round(value, null, unit));
+        assertNull(target.round(null, null, unit));
+        assertNull(target.round(value, DOWN, null));
+        assertNull(target.round(value, DOWN, ZERO));
 
     }
 

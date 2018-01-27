@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
 /**
  * @author takanori.takase
@@ -323,6 +324,18 @@ public abstract class TemplateContext extends AbstractService implements Context
                 .maximumSize(CACHE_SIZE)
                 .expireAfterWrite(CACHE_DURATION.toMillis(), MILLISECONDS)
                 .build();
+    }
+
+    protected BigDecimal round(BigDecimal value, RoundingMode mode, BigDecimal unit) {
+
+        if (value == null || mode == null || unit == null || unit.signum() == 0) {
+            return null;
+        }
+
+        BigDecimal units = value.divide(unit, INTEGER_ZERO, mode);
+
+        return units.multiply(unit);
+
     }
 
     protected <V> V extract(Future<V> future, Duration timeout) throws Exception {

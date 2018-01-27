@@ -3,7 +3,14 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitbank;
 import cc.bitbank.Bitbankcc;
 import cc.bitbank.entity.Assets;
 import cc.bitbank.entity.Depth;
+import cc.bitbank.entity.Orders;
 import cc.bitbank.entity.Transactions;
+import cc.bitbank.entity.enums.CurrencyPair;
+import cc.bitbank.entity.enums.OrderSide;
+import cc.bitbank.entity.enums.OrderType;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
 import com.google.common.annotations.VisibleForTesting;
@@ -11,12 +18,19 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -24,6 +38,8 @@ import static java.util.stream.Collectors.toList;
  * @version 0.0.1
  */
 public class BitbankContext extends TemplateContext implements BitbankService {
+
+    private static final Pattern NUMERIC = Pattern.compile("^[0-9]+$");
 
     private final ThreadLocal<Bitbankcc> localApi;
 
@@ -255,6 +271,213 @@ public class BitbankContext extends TemplateContext implements BitbankService {
         ProductType product = ProductType.find(key.getInstrument());
 
         return product == null ? null : fetchBalance(key, product.getFundingCurrency());
+
+    }
+
+    @Override
+    public BigDecimal roundLotSize(Key key, BigDecimal value, RoundingMode mode) {
+
+        ProductType product = ProductType.find(key.getInstrument());
+
+        return product == null ? null : super.round(value, mode, product.getLotSize());
+
+    }
+
+    @Override
+    public BigDecimal roundTickSize(Key key, BigDecimal value, RoundingMode mode) {
+
+        ProductType product = ProductType.find(key.getInstrument());
+
+        return product == null ? null : super.round(value, mode, product.getTickSize());
+
+    }
+
+    @Override
+    public BigDecimal getCommissionRate(Key key) {
+
+        String k = "commission." + key.getInstrument();
+
+        return getDecimalProperty(k, ZERO);
+
+    }
+
+    @Override
+    public Boolean isMarginable(Key key) {
+        return FALSE;
+    }
+
+    @Override
+    public ZonedDateTime getExpiry(Key key) {
+        return null;
+    }
+
+    @Override
+    public Order findOrder(Key key, String id) {
+
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null || StringUtils.isEmpty(id)) {
+            return null;
+        }
+
+        if (!NUMERIC.matcher(id).matches()) {
+            return null;
+        }
+
+        return findCached(BitbankOrder.class, key, () -> {
+
+            cc.bitbank.entity.Order o = getLocalApi().getOrder(product.getPair(), Long.valueOf(id));
+
+            return o == null ? null : new BitbankOrder(o);
+
+        });
+
+    }
+
+    @VisibleForTesting
+    List<BitbankOrder> fetchActiveOrders(Key key) {
+
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product == null) {
+            return emptyList();
+        }
+
+        List<BitbankOrder> orders = listCached(BitbankOrder.class, key, () -> {
+
+            Map<String, Long> options = singletonMap("count", 100L);
+
+            Orders result = getLocalApi().getActiveOrders(product.getPair(), options);
+
+            if (result == null || ArrayUtils.isEmpty(result.orders)) {
+                return emptyList();
+            }
+
+            return Collections.unmodifiableList(
+                    Stream.of(result.orders).filter(Objects::nonNull).map(BitbankOrder::new).collect(toList())
+            );
+
+        });
+
+        return orders;
+
+    }
+
+
+    @Override
+    public List<Order> listActiveOrders(Key key) {
+
+        List<BitbankOrder> orders = fetchActiveOrders(key);
+
+        return orders.stream().filter(Objects::nonNull).collect(toList());
+
+    }
+
+    @Override
+    public List<Order.Execution> listExecutions(Key key) {
+        // TODO Temporary out-of-service : https://bitbank.cc/blog/20171227trade-history/
+        return emptyList();
+    }
+
+    @Override
+    public Map<CreateInstruction, String> createOrders(Key key, Set<CreateInstruction> instructions) {
+
+        Map<CreateInstruction, String> results = new IdentityHashMap<>();
+
+        for (CreateInstruction i : trimToEmpty(instructions)) {
+
+            if (i == null || i.getPrice() == null || i.getSize() == null || i.getSize().signum() == 0) {
+
+                results.put(i, null);
+
+                continue;
+
+            }
+
+            ProductType product = ProductType.find(key.getInstrument());
+
+            if (product == null) {
+
+                results.put(i, null);
+
+                continue;
+
+            }
+
+            try {
+
+                CurrencyPair pair = product.getPair();
+                BigDecimal price = i.getPrice().signum() != 0 ? i.getPrice() : null;
+                OrderType type = i.getPrice().signum() != 0 ? OrderType.LIMIT : OrderType.MARKET;
+                BigDecimal amount = i.getSize().abs();
+                OrderSide side = i.getSize().signum() >= 0 ? OrderSide.BUY : OrderSide.SELL;
+
+                cc.bitbank.entity.Order order = getLocalApi().sendOrder(pair, price, amount, side, type);
+
+                // Failed orders have empty fields
+                results.put(i, order != null && order.status != null ? String.valueOf(order.orderId) : null);
+
+            } catch (Exception e) {
+
+                results.put(i, null);
+
+            }
+
+        }
+
+        return results;
+
+    }
+
+    @Override
+    public Map<CancelInstruction, String> cancelOrders(Key key, Set<CancelInstruction> instructions) {
+
+        Set<String> cancelled = new HashSet<>();
+
+        ProductType product = ProductType.find(key.getInstrument());
+
+        if (product != null) {
+
+            long[] targets = trimToEmpty(instructions).stream()
+                    .filter(Objects::nonNull)
+                    .map(CancelInstruction::getId)
+                    .filter(StringUtils::isNotEmpty)
+                    .filter(id -> NUMERIC.matcher(id).matches())
+                    .mapToLong(Long::valueOf)
+                    .toArray();
+
+            if (ArrayUtils.isNotEmpty(targets)) {
+
+                try {
+
+                    Orders orders = getLocalApi().cancelOrders(product.getPair(), targets);
+
+                    Stream.of(orders.orders)
+                            .filter(Objects::nonNull)
+                            .map(BitbankOrder::new)
+                            .filter(o -> Objects.equals(TRUE, o.getCancelled()))
+                            .map(BitbankOrder::getId)
+                            .forEach(cancelled::add);
+
+                } catch (Exception e) {
+                    // Do nothing
+                }
+
+            }
+
+        }
+
+        Map<CancelInstruction, String> results = new IdentityHashMap<>();
+
+        trimToEmpty(instructions).stream().filter(Objects::nonNull).forEach(i -> {
+
+            boolean success = cancelled.contains(i.getId());
+
+            results.put(i, success ? i.getId() : null);
+
+        });
+
+        return results;
 
     }
 
