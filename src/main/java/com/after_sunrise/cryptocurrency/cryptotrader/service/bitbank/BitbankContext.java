@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -44,7 +45,7 @@ public class BitbankContext extends TemplateContext implements BitbankService {
 
     private static final Pattern NUMERIC = Pattern.compile("^[0-9]+$");
 
-    private static final int MAX = 1024;
+    private static final long MAX = TimeUnit.HOURS.toMinutes(6) * 16;
 
     private final ThreadLocal<Bitbankcc> localApi;
 
@@ -385,7 +386,7 @@ public class BitbankContext extends TemplateContext implements BitbankService {
     @Override
     public List<Execution> listExecutions(Key key) {
 
-        // TODO : API not available : https://bitbank.cc/blog/20171227trade-history/
+        // API not available : https://bitbank.cc/blog/20171227trade-history/
 
         List<Execution> executions = new ArrayList<>();
 
