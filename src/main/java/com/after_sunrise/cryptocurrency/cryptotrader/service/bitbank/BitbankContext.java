@@ -25,7 +25,6 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -44,8 +43,6 @@ import static java.util.stream.Collectors.toList;
 public class BitbankContext extends TemplateContext implements BitbankService {
 
     private static final Pattern NUMERIC = Pattern.compile("^[0-9]+$");
-
-    private static final long MAX = TimeUnit.HOURS.toMinutes(6) * 16;
 
     private final ThreadLocal<Bitbankcc> localApi;
 
@@ -394,6 +391,7 @@ public class BitbankContext extends TemplateContext implements BitbankService {
 
             String id = entry.getKey();
 
+            // TODO Skip completed orders.
             BitbankOrder order = findOrder(key, id);
 
             if (order != null) {
@@ -461,7 +459,7 @@ public class BitbankContext extends TemplateContext implements BitbankService {
 
                     results.put(i, String.valueOf(order.orderId));
 
-                    if (cachedOrders.size() >= MAX) {
+                    if (cachedOrders.size() >= getIntProperty("cache.order", 16)) {
                         cachedOrders.pollFirstEntry();
                     }
 
