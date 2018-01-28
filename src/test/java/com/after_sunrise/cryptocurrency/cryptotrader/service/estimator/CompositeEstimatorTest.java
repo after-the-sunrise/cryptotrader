@@ -59,6 +59,7 @@ public class CompositeEstimatorTest {
         composites.add(new Composite("/b", "2"));
         composites.add(new Composite("/b", "3"));
         composites.add(new Composite("*c", "4"));
+        composites.add(new Composite("@d", "5"));
         Request request = Request.builder().currentTime(Instant.now()).estimatorComposites(composites).build();
 
         BiFunction<Context, Request, Estimator.Estimation> function = mock(BiFunction.class);
@@ -89,21 +90,42 @@ public class CompositeEstimatorTest {
                 return b.price(new BigDecimal("0.4")).confidence(new BigDecimal("0.6")).build();
             }
 
+            if ("d".equals(r.getSite()) && "5".equals(r.getInstrument())) {
+                return b.price(new BigDecimal("0.5")).confidence(new BigDecimal("0.5")).build();
+            }
+
             return null;
 
         }).when(function).apply(same(context), any());
 
         CompositeEstimator target = CompositeEstimator.INSTANCE;
 
-        // Price = 1 * 0.1 / 0.2 / 0.3 * 0.4 = 0.66666666666...
-        // Confidence = 0.9 * 0.8 * 0.7 * 0.6 = 0.3024
+        // Multiplied Price = 1 * 0.1 / 0.2 / 0.3 * 0.4 = 0.66666666666...
+        // Average Price = (0.666666 + 0.5) / 2
+        // Confidence = [(0.9 * 0.8 * 0.7 * 0.6) + 0.5] / 2 = 0.7
         Estimator.Estimation result = target.estimate(context, request, function);
-        assertEquals(result.getPrice(), new BigDecimal("0.66666666668"));
-        assertEquals(result.getConfidence(), new BigDecimal("0.3024"));
+        assertEquals(result.getPrice(), new BigDecimal("0.5833333333"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.4012000000"));
+
+        // Composite Only
+        composites.clear();
+        composites.add(new Composite("*a", "1"));
+        composites.add(new Composite("/b", "2"));
+        result = target.estimate(context, request, function);
+        assertEquals(result.getPrice(), new BigDecimal("0.5000000000"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.7200000000"));
+
+        // Average Only
+        composites.clear();
+        composites.add(new Composite("@c", "4"));
+        composites.add(new Composite("@d", "5"));
+        result = target.estimate(context, request, function);
+        assertEquals(result.getPrice(), new BigDecimal("0.4500000000"));
+        assertEquals(result.getConfidence(), new BigDecimal("0.5500000000"));
 
         // Unknown Operator ('@')
         composites.clear();
-        composites.add(new Composite("@a", "1"));
+        composites.add(new Composite("%a", "1"));
         result = target.estimate(context, request, function);
         assertEquals(result.getPrice(), null);
         assertEquals(result.getConfidence(), new BigDecimal("0"));

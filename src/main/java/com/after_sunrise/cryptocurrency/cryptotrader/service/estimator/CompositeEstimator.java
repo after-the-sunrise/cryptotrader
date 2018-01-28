@@ -5,18 +5,17 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
-import java.util.AbstractMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.HALF_UP;
 
 /**
@@ -24,11 +23,6 @@ import static java.math.RoundingMode.HALF_UP;
  * @version 0.0.1
  */
 public class CompositeEstimator extends AbstractEstimator {
-
-    private static final Map<Character, BinaryOperator<BigDecimal>> OPERATORS = Stream.of(
-            new AbstractMap.SimpleEntry<>('*', (BinaryOperator<BigDecimal>) BigDecimal::multiply),
-            new AbstractMap.SimpleEntry<>('/', (BinaryOperator<BigDecimal>) (o1, o2) -> o1.divide(o2, SCALE, HALF_UP))
-    ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     static final CompositeEstimator INSTANCE = new CompositeEstimator();
 
@@ -51,9 +45,9 @@ public class CompositeEstimator extends AbstractEstimator {
 
         Request.RequestBuilder builder = Request.build(request);
 
-        BigDecimal price = ONE;
+        BigDecimal[] prices = new BigDecimal[1];
 
-        BigDecimal confidence = ONE;
+        BigDecimal[] confidences = new BigDecimal[1];
 
         for (Composite composite : composites) {
 
@@ -63,9 +57,27 @@ public class CompositeEstimator extends AbstractEstimator {
                 return BAIL;
             }
 
-            BinaryOperator<BigDecimal> operator = OPERATORS.get(site.charAt(0));
+            char operation = site.charAt(0);
 
-            if (operator == null) {
+            BinaryOperator<BigDecimal> operator = null;
+
+            if ('+' == operation) {
+                operator = BigDecimal::add;
+            }
+
+            if ('-' == operation) {
+                operator = BigDecimal::subtract;
+            }
+
+            if ('*' == operation) {
+                operator = BigDecimal::multiply;
+            }
+
+            if ('/' == operation) {
+                operator = (o1, o2) -> o1.divide(o2, SCALE, HALF_UP);
+            }
+
+            if ('@' != operation && operator == null) {
                 return BAIL;
             }
 
@@ -79,13 +91,31 @@ public class CompositeEstimator extends AbstractEstimator {
                 return BAIL;
             }
 
-            price = operator.apply(price, estimation.getPrice());
+            if (operator != null) {
 
-            confidence = confidence.multiply(estimation.getConfidence());
+                prices[0] = operator.apply(trim(prices[0], ONE), estimation.getPrice());
+
+                confidences[0] = trim(confidences[0], ONE).multiply(estimation.getConfidence());
+
+            } else {
+
+                prices = ArrayUtils.add(prices, estimation.getPrice());
+
+                confidences = ArrayUtils.add(confidences, estimation.getConfidence());
+
+            }
 
         }
 
-        return Estimation.builder().price(price).confidence(confidence).build();
+        long countPrice = Stream.of(prices).filter(Objects::nonNull).count();
+        BigDecimal totalPrice = Stream.of(prices).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(ZERO);
+        BigDecimal averagePrice = totalPrice.divide(valueOf(countPrice), SCALE, HALF_UP);
+
+        long countConfidence = Stream.of(confidences).filter(Objects::nonNull).count();
+        BigDecimal totalConfidence = Stream.of(confidences).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(ONE);
+        BigDecimal averageConfidence = totalConfidence.divide(valueOf(countConfidence), SCALE, HALF_UP);
+
+        return Estimation.builder().price(averagePrice).confidence(averageConfidence).build();
 
     }
 
