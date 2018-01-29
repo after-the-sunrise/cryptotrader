@@ -1,4 +1,5 @@
 com.after_sunrise.cryptocurrency.cryptotrader.service.bitbank.BitbankInstructor
 com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerInstructor
 com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexInstructor
+com.after_sunrise.cryptocurrency.cryptotrader.service.btcbox.BtcboxInstructor
 com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckInstructor
