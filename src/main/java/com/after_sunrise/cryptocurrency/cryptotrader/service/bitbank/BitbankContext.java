@@ -59,6 +59,11 @@ public class BitbankContext extends TemplateContext implements BitbankService {
     }
 
     @VisibleForTesting
+    NavigableMap<String, BitbankOrder> getCachedOrders() {
+        return cachedOrders;
+    }
+
+    @VisibleForTesting
     Bitbankcc getLocalApi() {
 
         String apiKey = getStringProperty("api.id", null);
@@ -391,22 +396,29 @@ public class BitbankContext extends TemplateContext implements BitbankService {
 
             String id = entry.getKey();
 
-            // TODO Skip completed orders.
-            BitbankOrder order = findOrder(key, id);
+            BitbankOrder order = entry.getValue();
+
+            if (order == null || !Objects.equals(FALSE, order.getActive())) {
+
+                order = findOrder(key, id);
+
+                if (order != null) {
+                    cachedOrders.put(id, order);
+                }
+
+            }
 
             if (order != null) {
 
                 if (order.getFilledQuantity() != null && order.getFilledQuantity().signum() != 0) {
 
-                    BitbankExecution execution = new BitbankExecution(order.getDelegate());
-
-                    executions.add(execution);
+                    executions.add(new BitbankExecution(order.getDelegate()));
 
                     continue;
 
                 }
 
-                if (Objects.equals(TRUE, order.getActive())) {
+                if (!Objects.equals(FALSE, order.getActive())) {
                     continue;
                 }
 
@@ -459,7 +471,7 @@ public class BitbankContext extends TemplateContext implements BitbankService {
 
                     results.put(i, String.valueOf(order.orderId));
 
-                    if (cachedOrders.size() >= getIntProperty("cache.order", 16)) {
+                    if (cachedOrders.size() >= getIntProperty("cache.order", 32)) {
                         cachedOrders.pollFirstEntry();
                     }
 

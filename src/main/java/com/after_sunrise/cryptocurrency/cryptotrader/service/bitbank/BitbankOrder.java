@@ -18,6 +18,7 @@ import java.util.Set;
 public class BitbankOrder implements Order {
 
     private static final Set<String> ACTIVES = Sets.newHashSet(
+            null, // Order Ack
             "UNFILLED",
             "PARTIALLY_FILLED"
     );
