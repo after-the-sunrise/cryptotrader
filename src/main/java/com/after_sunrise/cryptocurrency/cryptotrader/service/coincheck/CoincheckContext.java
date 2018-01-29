@@ -758,6 +758,8 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
 
             } catch (Exception e) {
 
+                log.warn("Order create failure : " + i, e);
+
                 results.put(i, null);
 
             }
@@ -792,6 +794,8 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
                 }
 
             } catch (Exception e) {
+
+                log.warn("Order cancel failure : " + i, e);
 
                 results.put(i, null);
 

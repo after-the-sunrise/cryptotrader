@@ -487,6 +487,8 @@ public class BitbankContext extends TemplateContext implements BitbankService {
 
             } catch (Exception e) {
 
+                log.warn("Order create failure : " + i, e);
+
                 results.put(i, null);
 
             }
@@ -528,7 +530,9 @@ public class BitbankContext extends TemplateContext implements BitbankService {
                             .forEach(cancelled::add);
 
                 } catch (Exception e) {
-                    // Do nothing
+
+                    log.warn("Order cancel failure : " + Arrays.asList(targets), e);
+
                 }
 
             }

@@ -466,6 +466,8 @@ public class BtcboxContext extends TemplateContext implements BtcboxService {
 
             } catch (Exception e) {
 
+                log.warn("Order create failure : " + i, e);
+
                 results.put(i, null);
 
             }
@@ -508,6 +510,8 @@ public class BtcboxContext extends TemplateContext implements BtcboxService {
                 results.put(i, response == null || !response.isResult() ? null : response.getId());
 
             } catch (Exception e) {
+
+                log.warn("Order cancel failure : " + i, e);
 
                 results.put(i, null);
 

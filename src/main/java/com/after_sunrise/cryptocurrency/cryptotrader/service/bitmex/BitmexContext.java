@@ -942,6 +942,8 @@ public class BitmexContext extends TemplateContext implements BitmexService {
 
         } catch (Exception e) {
 
+            log.warn("Order create failure : " + instructions, e);
+
             instructions.stream().filter(Objects::nonNull).forEach(i -> map.put(i, null));
 
         }
@@ -985,6 +987,8 @@ public class BitmexContext extends TemplateContext implements BitmexService {
             });
 
         } catch (Exception e) {
+
+            log.warn("Order cancel failure : " + instructions, e);
 
             instructions.stream().filter(Objects::nonNull).forEach(i -> map.put(i, null));
 
