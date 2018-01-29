@@ -407,23 +407,25 @@ public class BtcboxContext extends TemplateContext implements BtcboxService {
             return emptyList();
         }
 
-        List<BtcboxOrder> values = listCached(BtcboxOrder.class, key, () -> {
+        return listCached(BtcboxOrder.Execution.class, key, () -> {
 
             String data = post("/api/v1/trade_list", singletonMap("type", "all"));
 
             if (StringUtils.isEmpty(data)) {
-                return null;
+                return emptyList();
             }
 
-            return gson.fromJson(data, TYPE_ORDER);
+            List<BtcboxOrder> orders = gson.fromJson(data, TYPE_ORDER);
+
+            return Collections.unmodifiableList(
+                    trimToEmpty(orders).stream().filter(Objects::nonNull)
+                            .filter(v -> v.getFilledQuantity() != null)
+                            .filter(v -> v.getFilledQuantity().signum() != 0)
+                            .map(v -> v.new BtcboxExecution())
+                            .collect(Collectors.toList())
+            );
 
         });
-
-        return trimToEmpty(values).stream().filter(Objects::nonNull)
-                .filter(v -> v.getFilledQuantity() != null)
-                .filter(v -> v.getFilledQuantity().signum() != 0)
-                .map(v -> v.new BtcboxExecution())
-                .collect(Collectors.toList());
 
     }
 
