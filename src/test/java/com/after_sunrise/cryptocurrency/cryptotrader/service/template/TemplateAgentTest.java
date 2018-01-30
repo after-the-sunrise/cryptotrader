@@ -120,7 +120,10 @@ public class TemplateAgentTest {
         values.put(cancel2, null);
         values.put(cancel3, "i7");
 
-        Request request = Request.builder().site("s").instrument("i").currentTime(Instant.now()).build();
+        Instant now = Instant.now();
+        Request request = Request.builder().site("s").instrument("i")
+                .currentTime(now).targetTime(now.plusSeconds(1)).build();
+        doReturn(Duration.ofMillis(123)).when(target).getInterval();
         doReturn(Key.from(request)).when(target).nextKey(any(), any());
         doReturn(null).when(context).getState(any());
         doReturn(null).when(context).findOrder(any(), anyString());
@@ -132,9 +135,9 @@ public class TemplateAgentTest {
         assertEquals(results.get(create2), FALSE);
         assertEquals(results.get(cancel1), TRUE);
         assertEquals(results.get(cancel3), TRUE);
-        verify(context, times(26)).findOrder(any(), anyString());
-        verify(context, times(12)).findOrder(any(), eq("i1"));
-        verify(context, times(12)).findOrder(any(), eq("i2"));
+        verify(context, times(18)).findOrder(any(), anyString());
+        verify(context, times(8)).findOrder(any(), eq("i1"));
+        verify(context, times(8)).findOrder(any(), eq("i2"));
         verify(context, times(1)).findOrder(any(), eq("i5"));
         verify(context, times(1)).findOrder(any(), eq("i7"));
 
@@ -153,11 +156,11 @@ public class TemplateAgentTest {
         assertEquals(results.get(create2), TRUE);
         assertEquals(results.get(cancel1), TRUE);
         assertEquals(results.get(cancel3), FALSE);
-        verify(context, times(26 + 15)).findOrder(any(), anyString());
-        verify(context, times(12 + 1)).findOrder(any(), eq("i1"));
-        verify(context, times(12 + 1)).findOrder(any(), eq("i2"));
+        verify(context, times(18 + 11)).findOrder(any(), anyString());
+        verify(context, times(8 + 1)).findOrder(any(), eq("i1"));
+        verify(context, times(8 + 1)).findOrder(any(), eq("i2"));
         verify(context, times(1 + 1)).findOrder(any(), eq("i5"));
-        verify(context, times(1 + 12)).findOrder(any(), eq("i7"));
+        verify(context, times(1 + 8)).findOrder(any(), eq("i7"));
 
         // All success
         when(context.findOrder(any(), eq("i1"))).thenReturn(o1);
@@ -170,11 +173,11 @@ public class TemplateAgentTest {
         assertEquals(results.get(create2), TRUE);
         assertEquals(results.get(cancel1), TRUE);
         assertEquals(results.get(cancel3), TRUE);
-        verify(context, times(26 + 15 + 4)).findOrder(any(), anyString());
-        verify(context, times(12 + 1 + 1)).findOrder(any(), eq("i1"));
-        verify(context, times(12 + 1 + 1)).findOrder(any(), eq("i2"));
+        verify(context, times(18 + 11 + 4)).findOrder(any(), anyString());
+        verify(context, times(8 + 1 + 1)).findOrder(any(), eq("i1"));
+        verify(context, times(8 + 1 + 1)).findOrder(any(), eq("i2"));
         verify(context, times(1 + 1 + 1)).findOrder(any(), eq("i5"));
-        verify(context, times(1 + 12 + 1)).findOrder(any(), eq("i7"));
+        verify(context, times(1 + 8 + 1)).findOrder(any(), eq("i7"));
 
         // No input
         assertEquals(target.reconcile(context, request, null).size(), 0);

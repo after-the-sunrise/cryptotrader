@@ -19,8 +19,6 @@ import java.util.Map.Entry;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 
 /**
  * @author takanori.takase
@@ -29,8 +27,6 @@ import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 public class TemplateAgent extends AbstractService implements Agent {
 
     private static final Duration INTERVAL = Duration.ofSeconds(5);
-
-    private static final long RETRY = MINUTES.toMillis(LONG_ONE) / INTERVAL.toMillis();
 
     private final String id;
 
@@ -129,7 +125,11 @@ public class TemplateAgent extends AbstractService implements Agent {
 
         Key key = Key.from(request);
 
-        for (int i = 0; i < RETRY; i++) {
+        long retry = Math.max(Duration.between(
+                request.getCurrentTime(), request.getTargetTime()
+        ).toMillis() / getInterval().toMillis(), 1);
+
+        for (long i = 0; i < retry; i++) {
 
             if (remaining.isEmpty()) {
                 break;
@@ -139,7 +139,7 @@ public class TemplateAgent extends AbstractService implements Agent {
                 break;
             }
 
-            key = nextKey(key, INTERVAL);
+            key = nextKey(key, getInterval());
 
             if (key == null) {
                 break;
@@ -199,6 +199,11 @@ public class TemplateAgent extends AbstractService implements Agent {
 
         return results;
 
+    }
+
+    @VisibleForTesting
+    Duration getInterval() {
+        return INTERVAL;
     }
 
     @VisibleForTesting
