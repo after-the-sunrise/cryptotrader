@@ -136,7 +136,9 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
             return Optional.empty();
         }
 
-        CoincheckTick tick = findCached(CoincheckTick.class, key, () -> {
+        Key newKey = Key.build(key).instrument(WILDCARD).build();
+
+        CoincheckTick tick = findCached(CoincheckTick.class, newKey, () -> {
 
             String data = request(URL_TICK);
 
@@ -161,7 +163,9 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
             return Optional.empty();
         }
 
-        CoincheckBook book = findCached(CoincheckBook.class, key, () -> {
+        Key newKey = Key.build(key).instrument(WILDCARD).build();
+
+        CoincheckBook book = findCached(CoincheckBook.class, newKey, () -> {
 
             String data = request(URL_BOOK);
 

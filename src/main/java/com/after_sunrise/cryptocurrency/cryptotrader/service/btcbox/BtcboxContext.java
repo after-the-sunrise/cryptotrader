@@ -162,7 +162,13 @@ public class BtcboxContext extends TemplateContext implements BtcboxService {
                 return null;
             }
 
-            return gson.fromJson(data, TYPE_TRADE);
+            return unmodifiableList(trimToEmpty(gson.<List<BtcboxTrade>>fromJson(data, TYPE_TRADE))
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .filter(t -> t.getId() != null)
+                    .filter(t -> t.getTimestamp() != null)
+                    .collect(Collectors.toList())
+            );
 
         });
 
@@ -353,15 +359,17 @@ public class BtcboxContext extends TemplateContext implements BtcboxService {
     @Override
     public BtcboxOrder findOrder(Key key, String id) {
 
-        if (ProductType.BTC_JPY != ProductType.find(key.getInstrument())) {
-            return null;
-        }
-
         if (StringUtils.isEmpty(id)) {
             return null;
         }
 
-        BtcboxOrder value = findCached(BtcboxOrder.class, key, () -> {
+        if (ProductType.BTC_JPY != ProductType.find(key.getInstrument())) {
+            return null;
+        }
+
+        Key idKey = Key.build(key).instrument(key.getInstrument() + "@" + id).build();
+
+        BtcboxOrder value = findCached(BtcboxOrder.class, idKey, () -> {
 
             String data = post("/api/v1/trade_view", singletonMap("id", id));
 

@@ -17,6 +17,9 @@ import java.time.Instant;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class BtcboxTrade implements Trade {
 
+    @SerializedName("tid")
+    private String id;
+
     @SerializedName("date")
     private Instant timestamp;
 

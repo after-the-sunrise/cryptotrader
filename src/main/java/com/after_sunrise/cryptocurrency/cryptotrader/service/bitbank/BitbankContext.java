@@ -31,8 +31,7 @@ import java.util.stream.Stream;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonMap;
+import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -45,7 +44,7 @@ public class BitbankContext extends TemplateContext implements BitbankService {
 
     private final ThreadLocal<Bitbankcc> localApi;
 
-    private final NavigableMap<String, BitbankOrder> cachedOrders;
+    private final NavigableMap<Long, BitbankOrder> cachedOrders;
 
     public BitbankContext() {
 
@@ -58,7 +57,7 @@ public class BitbankContext extends TemplateContext implements BitbankService {
     }
 
     @VisibleForTesting
-    NavigableMap<String, BitbankOrder> getCachedOrders() {
+    NavigableMap<Long, BitbankOrder> getCachedOrders() {
         return cachedOrders;
     }
 
@@ -151,8 +150,11 @@ public class BitbankContext extends TemplateContext implements BitbankService {
                 return emptyList();
             }
 
-            return Collections.unmodifiableList(Stream.of(t.transactions)
-                    .filter(Objects::nonNull).map(BitbankTransaction::new).collect(toList()));
+            return unmodifiableList(Stream.of(t.transactions)
+                    .filter(Objects::nonNull)
+                    .map(BitbankTransaction::new)
+                    .collect(toList())
+            );
 
         });
 
@@ -171,7 +173,10 @@ public class BitbankContext extends TemplateContext implements BitbankService {
     @Override
     public List<Trade> listTrades(Key key, Instant fromTime) {
         return trimToEmpty(fetchTransactions(key)).stream()
-                .filter(Objects::nonNull).collect(toList());
+                .filter(Objects::nonNull)
+                .filter(t -> t.getTimestamp() != null)
+                .filter(t -> fromTime == null || !t.getTimestamp().isBefore(fromTime))
+                .collect(toList());
     }
 
     @Override
@@ -243,8 +248,6 @@ public class BitbankContext extends TemplateContext implements BitbankService {
             return null;
         }
 
-        String id = StringUtils.trimToEmpty(currency.name());
-
         Key k = Key.build(key).instrument(WILDCARD).build();
 
         List<BitbankAsset> assets = trimToEmpty(listCached(BitbankAsset.class, k, () -> {
@@ -259,6 +262,8 @@ public class BitbankContext extends TemplateContext implements BitbankService {
                     .map(BitbankAsset::new).collect(toList());
 
         }));
+
+        String id = StringUtils.trimToEmpty(currency.name());
 
         return trimToEmpty(assets).stream()
                 .filter(Objects::nonNull)
@@ -325,17 +330,19 @@ public class BitbankContext extends TemplateContext implements BitbankService {
     @Override
     public BitbankOrder findOrder(Key key, String id) {
 
+        if (StringUtils.isEmpty(id) || !NUMERIC.matcher(id).matches()) {
+            return null;
+        }
+
         ProductType product = ProductType.find(key.getInstrument());
 
-        if (product == null || StringUtils.isEmpty(id)) {
+        if (product == null) {
             return null;
         }
 
-        if (!NUMERIC.matcher(id).matches()) {
-            return null;
-        }
+        Key idKey = Key.build(key).instrument(key.getInstrument() + "@" + id).build();
 
-        return findCached(BitbankOrder.class, key, () -> {
+        return findCached(BitbankOrder.class, idKey, () -> {
 
             cc.bitbank.entity.Order o = getLocalApi().getOrder(product.getPair(), Long.valueOf(id));
 
@@ -391,15 +398,15 @@ public class BitbankContext extends TemplateContext implements BitbankService {
 
         List<Execution> executions = new ArrayList<>();
 
-        for (Map.Entry<String, BitbankOrder> entry : cachedOrders.entrySet()) {
+        for (Map.Entry<Long, BitbankOrder> entry : cachedOrders.entrySet()) {
 
-            String id = entry.getKey();
+            Long id = entry.getKey();
 
             BitbankOrder order = entry.getValue();
 
             if (order == null || !Objects.equals(FALSE, order.getActive())) {
 
-                order = findOrder(key, id);
+                order = findOrder(key, id.toString());
 
                 if (order != null) {
                     cachedOrders.put(id, order);
@@ -470,11 +477,23 @@ public class BitbankContext extends TemplateContext implements BitbankService {
 
                     results.put(i, String.valueOf(order.orderId));
 
-                    if (cachedOrders.size() >= getIntProperty("cache.order", 32)) {
+                    int capacity = getIntProperty("cache.order", 32);
+
+                    while (true) {
+
+                        if (cachedOrders.isEmpty()) {
+                            break;
+                        }
+
+                        if (cachedOrders.size() < capacity) {
+                            break;
+                        }
+
                         cachedOrders.pollFirstEntry();
+
                     }
 
-                    cachedOrders.put(String.valueOf(order.orderId), new BitbankOrder(order));
+                    cachedOrders.put(order.orderId, new BitbankOrder(order));
 
                 } else {
 

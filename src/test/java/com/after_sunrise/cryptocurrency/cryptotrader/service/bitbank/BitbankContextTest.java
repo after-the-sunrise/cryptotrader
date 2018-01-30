@@ -114,25 +114,25 @@ public class BitbankContextTest {
             o.executedAmount = valueOf(i);
             return new BitbankOrder(o);
         }).forEach(o -> {
-            target.getCachedOrders().put(o.getId(), o);
+            target.getCachedOrders().put(o.getDelegate().orderId, o);
             doReturn(o).when(target).findOrder(key, o.getId());
         });
 
         // Finished
-        target.getCachedOrders().get("0").getDelegate().status = "CANCELED_UNFILLED";
-        target.getCachedOrders().get("1").getDelegate().status = "FULLY_FILLED";
-        target.getCachedOrders().get("2").getDelegate().status = "CANCELED_PARTIALLY_FILLED";
-        target.getCachedOrders().get("7").getDelegate().status = "CANCELED_PARTIALLY_FILLED";
+        target.getCachedOrders().get(0L).getDelegate().status = "CANCELED_UNFILLED";
+        target.getCachedOrders().get(1L).getDelegate().status = "FULLY_FILLED";
+        target.getCachedOrders().get(2L).getDelegate().status = "CANCELED_PARTIALLY_FILLED";
+        target.getCachedOrders().get(7L).getDelegate().status = "CANCELED_PARTIALLY_FILLED";
 
         // Pending
-        target.getCachedOrders().get("3").getDelegate().status = null;
-        target.getCachedOrders().get("4").getDelegate().status = null;
-        target.getCachedOrders().get("5").getDelegate().status = "UNFILLED";
-        target.getCachedOrders().get("6").getDelegate().status = "UNFILLED";
+        target.getCachedOrders().get(3L).getDelegate().status = null;
+        target.getCachedOrders().get(4L).getDelegate().status = null;
+        target.getCachedOrders().get(5L).getDelegate().status = "UNFILLED";
+        target.getCachedOrders().get(6L).getDelegate().status = "UNFILLED";
 
         // No Fill
-        target.getCachedOrders().get("3").getDelegate().executedAmount = null;
-        target.getCachedOrders().get("7").getDelegate().executedAmount = ZERO;
+        target.getCachedOrders().get(3L).getDelegate().executedAmount = null;
+        target.getCachedOrders().get(7L).getDelegate().executedAmount = ZERO;
 
         // Active orders are queried
         doReturn(null).when(target).findOrder(key, "5");
@@ -154,11 +154,11 @@ public class BitbankContextTest {
 
         // Terminated orders without fills are cleared.
         assertEquals(target.getCachedOrders().size(), 5);
-        assertTrue(target.getCachedOrders().containsKey("1"));
-        assertTrue(target.getCachedOrders().containsKey("2"));
-        assertTrue(target.getCachedOrders().containsKey("3"));
-        assertTrue(target.getCachedOrders().containsKey("4"));
-        assertTrue(target.getCachedOrders().containsKey("6"));
+        assertTrue(target.getCachedOrders().containsKey(1L));
+        assertTrue(target.getCachedOrders().containsKey(2L));
+        assertTrue(target.getCachedOrders().containsKey(3L));
+        assertTrue(target.getCachedOrders().containsKey(4L));
+        assertTrue(target.getCachedOrders().containsKey(6L));
 
     }
 

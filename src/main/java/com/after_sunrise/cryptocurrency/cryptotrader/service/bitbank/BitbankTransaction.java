@@ -20,6 +20,10 @@ public class BitbankTransaction implements Trade {
         this.delegate = delegate;
     }
 
+    public String getId() {
+        return String.valueOf(delegate.transactionId);
+    }
+
     @Override
     public Instant getTimestamp() {
         return delegate == null || delegate.executedAt == null ? null
