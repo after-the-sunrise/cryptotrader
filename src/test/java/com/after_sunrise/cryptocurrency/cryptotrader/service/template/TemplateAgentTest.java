@@ -2,7 +2,6 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
-import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
@@ -10,7 +9,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.common.collect.Sets;
 import org.mockito.InOrder;
-import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -20,16 +18,15 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 /**
  * @author takanori.takase
@@ -107,20 +104,77 @@ public class TemplateAgentTest {
     @Test
     public void testReconcile() throws Exception {
 
-        Map<Instruction, String> values = new IdentityHashMap<>();
-        values.put(CreateInstruction.builder().build(), "i1");
-        values.put(CancelInstruction.builder().build(), "i2");
-        values.put(null, "i3");
-        values.put(CancelInstruction.builder().build(), null);
-        Request request = Request.builder().build();
-        doReturn(TRUE).when(target).checkCreated(same(context), any(), eq("i1"), any(), any());
-        doReturn(TRUE).when(target).checkCancelled(same(context), any(), eq("i2"), any(), any());
+        CreateInstruction create1 = CreateInstruction.builder().build();
+        CreateInstruction create2 = CreateInstruction.builder().build();
+        CreateInstruction create3 = CreateInstruction.builder().build();
+        CancelInstruction cancel1 = CancelInstruction.builder().build();
+        CancelInstruction cancel2 = CancelInstruction.builder().build();
+        CancelInstruction cancel3 = CancelInstruction.builder().build();
 
+        Map<Instruction, String> values = new IdentityHashMap<>();
+        values.put(create1, "i1");
+        values.put(create2, "i2");
+        values.put(create3, null);
+        values.put(null, "i4");
+        values.put(cancel1, "i5");
+        values.put(cancel2, null);
+        values.put(cancel3, "i7");
+
+        Request request = Request.builder().site("s").instrument("i").currentTime(Instant.now()).build();
+        doReturn(Key.from(request)).when(target).nextKey(any(), any());
+        doReturn(null).when(context).getState(any());
+        doReturn(null).when(context).findOrder(any(), anyString());
+
+        // No orders
         Map<Instruction, Boolean> results = target.reconcile(context, request, values);
-        assertEquals(results.size(), 2);
-        results.values().forEach(Assert::assertTrue);
-        verify(target).checkCreated(same(context), any(), eq("i1"), any(), any());
-        verify(target).checkCancelled(same(context), any(), eq("i2"), any(), any());
+        assertEquals(results.size(), 4);
+        assertEquals(results.get(create1), FALSE);
+        assertEquals(results.get(create2), FALSE);
+        assertEquals(results.get(cancel1), TRUE);
+        assertEquals(results.get(cancel3), TRUE);
+        verify(context, times(26)).findOrder(any(), anyString());
+        verify(context, times(12)).findOrder(any(), eq("i1"));
+        verify(context, times(12)).findOrder(any(), eq("i2"));
+        verify(context, times(1)).findOrder(any(), eq("i5"));
+        verify(context, times(1)).findOrder(any(), eq("i7"));
+
+        // With orders
+        Order o1 = mock(Order.class);
+        Order o2 = mock(Order.class);
+        when(o1.getActive()).thenReturn(null);
+        when(o2.getActive()).thenReturn(TRUE);
+        when(context.findOrder(any(), eq("i1"))).thenReturn(o1);
+        when(context.findOrder(any(), eq("i2"))).thenReturn(o2);
+        when(context.findOrder(any(), eq("i5"))).thenReturn(o1);
+        when(context.findOrder(any(), eq("i7"))).thenReturn(o2);
+        results = target.reconcile(context, request, values);
+        assertEquals(results.size(), 4);
+        assertEquals(results.get(create1), TRUE);
+        assertEquals(results.get(create2), TRUE);
+        assertEquals(results.get(cancel1), TRUE);
+        assertEquals(results.get(cancel3), FALSE);
+        verify(context, times(26 + 15)).findOrder(any(), anyString());
+        verify(context, times(12 + 1)).findOrder(any(), eq("i1"));
+        verify(context, times(12 + 1)).findOrder(any(), eq("i2"));
+        verify(context, times(1 + 1)).findOrder(any(), eq("i5"));
+        verify(context, times(1 + 12)).findOrder(any(), eq("i7"));
+
+        // All success
+        when(context.findOrder(any(), eq("i1"))).thenReturn(o1);
+        when(context.findOrder(any(), eq("i2"))).thenReturn(o1);
+        when(context.findOrder(any(), eq("i5"))).thenReturn(o1);
+        when(context.findOrder(any(), eq("i7"))).thenReturn(o1);
+        results = target.reconcile(context, request, values);
+        assertEquals(results.size(), 4);
+        assertEquals(results.get(create1), TRUE);
+        assertEquals(results.get(create2), TRUE);
+        assertEquals(results.get(cancel1), TRUE);
+        assertEquals(results.get(cancel3), TRUE);
+        verify(context, times(26 + 15 + 4)).findOrder(any(), anyString());
+        verify(context, times(12 + 1 + 1)).findOrder(any(), eq("i1"));
+        verify(context, times(12 + 1 + 1)).findOrder(any(), eq("i2"));
+        verify(context, times(1 + 1 + 1)).findOrder(any(), eq("i5"));
+        verify(context, times(1 + 12 + 1)).findOrder(any(), eq("i7"));
 
         // No input
         assertEquals(target.reconcile(context, request, null).size(), 0);
@@ -128,59 +182,17 @@ public class TemplateAgentTest {
     }
 
     @Test
-    public void testCheckCreated() throws Exception {
+    public void testNextKey() {
 
-        Key key = Key.builder().timestamp(Instant.ofEpochMilli(1000)).build();
-        String id = "id";
-        Duration interval = Duration.ofMillis(1L);
+        Key original = Key.builder().site("s").instrument("i").timestamp(Instant.now()).build();
 
-        // Not found
-        when(context.findOrder(any(), eq(id))).thenReturn(null);
-        assertFalse(target.checkCreated(context, key, id, new AtomicLong(10), interval));
+        Key result = target.nextKey(original, Duration.ofMillis(100));
+        assertEquals(result.getSite(), original.getSite());
+        assertEquals(result.getInstrument(), original.getInstrument());
+        assertEquals(result.getTimestamp(), original.getTimestamp().plusMillis(100));
 
-        // Interrupted
         Thread.currentThread().interrupt();
-        assertFalse(target.checkCreated(context, key, id, new AtomicLong(10), interval));
-
-        // Terminated
-        when(context.getState(any())).thenReturn(StateType.TERMINATE, null, null);
-        assertFalse(target.checkCreated(context, key, id, new AtomicLong(10), interval));
-
-        // Found
-        when(context.findOrder(any(), eq(id))).thenReturn(null, null, mock(Order.class), null);
-        assertTrue(target.checkCreated(context, key, id, new AtomicLong(10), interval));
-
-    }
-
-    @Test
-    public void testCheckCancelled() throws Exception {
-
-        Key key = Key.builder().timestamp(Instant.ofEpochMilli(1000)).build();
-        String id = "id";
-        Duration interval = Duration.ofMillis(1L);
-
-        // Found but Active
-        Order order = mock(Order.class);
-        when(order.getActive()).thenReturn(TRUE);
-        when(context.findOrder(any(), eq(id))).thenReturn(order);
-        assertFalse(target.checkCancelled(context, key, id, new AtomicLong(10), interval));
-
-        // Interrupted
-        Thread.currentThread().interrupt();
-        assertFalse(target.checkCancelled(context, key, id, new AtomicLong(10), interval));
-
-        // Terminated
-        when(context.getState(any())).thenReturn(StateType.TERMINATE, null, null);
-        assertFalse(target.checkCancelled(context, key, id, new AtomicLong(10), interval));
-
-        // Found and inactive
-        when(order.getActive()).thenReturn(FALSE);
-        when(context.findOrder(any(), eq(id))).thenReturn(order);
-        assertTrue(target.checkCancelled(context, key, id, new AtomicLong(10), interval));
-
-        // Not found
-        when(context.findOrder(any(), eq(id))).thenReturn(null);
-        assertTrue(target.checkCancelled(context, key, id, new AtomicLong(10), interval));
+        assertNull(target.nextKey(original, Duration.ofMillis(100)));
 
     }
 

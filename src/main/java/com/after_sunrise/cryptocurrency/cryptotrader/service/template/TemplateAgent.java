@@ -14,10 +14,11 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Map.Entry;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.math.NumberUtils.LONG_ONE;
 
@@ -80,11 +81,11 @@ public class TemplateAgent extends AbstractService implements Agent {
 
             log.trace("Skipping create instructions : {}", creates.size());
 
-            return results;
+        } else {
+
+            results.putAll(context.createOrders(key, creates));
 
         }
-
-        results.putAll(context.createOrders(key, creates));
 
         return results;
 
@@ -101,144 +102,123 @@ public class TemplateAgent extends AbstractService implements Agent {
 
         }
 
-        Key key = Key.from(request);
+        Map<String, CreateInstruction> creates = new HashMap<>();
+        Map<String, CancelInstruction> cancels = new HashMap<>();
+
+        trimToEmpty(instructions).entrySet().stream()
+                .filter(entry -> Objects.nonNull(entry.getKey()))
+                .filter(entry -> Objects.nonNull(entry.getValue()))
+                .forEach(entry -> entry.getKey().accept(new Visitor<Instruction>() {
+                            @Override
+                            public Instruction visit(CreateInstruction instruction) {
+                                return creates.put(entry.getValue(), instruction);
+                            }
+
+                            @Override
+                            public Instruction visit(CancelInstruction instruction) {
+                                return cancels.put(entry.getValue(), instruction);
+                            }
+                        })
+                );
+
+        Map<String, Instruction> remaining = new HashMap<>();
+        remaining.putAll(creates);
+        remaining.putAll(cancels);
 
         Map<Instruction, Boolean> results = new IdentityHashMap<>();
 
-        AtomicLong retry = new AtomicLong(RETRY);
+        Key key = Key.from(request);
 
-        instructions.entrySet().stream()
-                .filter(entry -> Objects.nonNull(entry.getKey()))
-                .filter(entry -> Objects.nonNull(entry.getValue()))
-                .forEach(entry -> {
+        for (int i = 0; i < RETRY; i++) {
 
-                    Instruction instruction = entry.getKey();
+            if (remaining.isEmpty()) {
+                break;
+            }
 
-                    Boolean matched = instruction.accept(new Visitor<Boolean>() {
-                        @Override
-                        public Boolean visit(CreateInstruction instruction) {
-                            return checkCreated(context, key, entry.getValue(), retry, INTERVAL);
+            if (context.getState(key) == StateType.TERMINATE) {
+                break;
+            }
+
+            key = nextKey(key, INTERVAL);
+
+            if (key == null) {
+                break;
+            }
+
+            for (Entry<String, Instruction> entry : new HashMap<>(remaining).entrySet()) {
+
+                if (context.getState(key) != StateType.TERMINATE) {
+
+                    Order order = context.findOrder(key, entry.getKey());
+
+                    if (creates.containsKey(entry.getKey())) {
+
+                        if (order != null) {
+
+                            remaining.remove(entry.getKey());
+
+                            results.put(entry.getValue(), TRUE);
+
+                        } else {
+
+                            results.put(entry.getValue(), FALSE);
+
                         }
 
-                        @Override
-                        public Boolean visit(CancelInstruction instruction) {
-                            return checkCancelled(context, key, entry.getValue(), retry, INTERVAL);
+                        continue;
+
+                    }
+
+                    if (cancels.containsKey(entry.getKey())) {
+
+                        if (order == null || !TRUE.equals(order.getActive())) {
+
+                            remaining.remove(entry.getKey());
+
+                            results.put(entry.getValue(), TRUE);
+
+                        } else {
+
+                            results.put(entry.getValue(), FALSE);
+
                         }
-                    });
 
-                    log.trace("Reconciled : {} - {}", matched, instruction);
+                        continue;
 
-                    results.put(instruction, matched);
+                    }
 
-                });
+                }
+
+                remaining.remove(entry.getKey());
+
+                results.put(entry.getValue(), FALSE);
+
+            }
+
+        }
 
         return results;
 
     }
 
     @VisibleForTesting
-    Boolean checkCreated(Context context, Key key, String id, AtomicLong retry, Duration interval) {
+    Key nextKey(Key current, Duration interval) {
 
-        Key.KeyBuilder builder = Key.build(key);
+        Key next = null;
 
-        while (true) {
+        try {
 
-            Key current = builder.build();
+            MILLISECONDS.sleep(interval.toMillis());
 
-            if (context.getState(current) == StateType.TERMINATE) {
+            next = Key.build(current).timestamp(current.getTimestamp().plus(interval)).build();
 
-                log.trace("Reconciling create terminated : {}", id);
+        } catch (InterruptedException e) {
 
-                return FALSE;
-
-            }
-
-            Order order = context.findOrder(current, id);
-
-            if (order != null) {
-
-                log.trace("Reconcile create succeeded : {}", id);
-
-                return TRUE;
-
-            }
-
-            if (retry.decrementAndGet() < 0) {
-                break;
-            }
-
-            try {
-
-                Thread.sleep(interval.toMillis());
-
-                builder.timestamp(current.getTimestamp().plus(interval));
-
-            } catch (InterruptedException e) {
-
-                log.trace("Reconciling create interrupted : {}", id);
-
-                return FALSE;
-
-            }
+            log.trace("Reconciling cancel interrupted.");
 
         }
 
-        log.trace("Reconcile create failed : {}", id);
-
-        return FALSE;
-
-    }
-
-    @VisibleForTesting
-    Boolean checkCancelled(Context context, Key key, String id, AtomicLong retry, Duration interval) {
-
-        Key.KeyBuilder builder = Key.build(key);
-
-        while (true) {
-
-            Key current = builder.build();
-
-            if (context.getState(current) == StateType.TERMINATE) {
-
-                log.trace("Reconciling cancel terminated : {}", id);
-
-                return FALSE;
-
-            }
-
-            Order order = context.findOrder(current, id);
-
-            if (order == null || !TRUE.equals(order.getActive())) {
-
-                log.trace("Reconcile cancel succeeded : {}", id);
-
-                return TRUE;
-
-            }
-
-            if (retry.decrementAndGet() < 0) {
-                break;
-            }
-
-            try {
-
-                Thread.sleep(interval.toMillis());
-
-                builder.timestamp(current.getTimestamp().plus(interval));
-
-            } catch (InterruptedException e) {
-
-                log.trace("Reconciling cancel interrupted : {}", id);
-
-                return FALSE;
-
-            }
-
-        }
-
-        log.trace("Reconcile cancel failed : {}", id);
-
-        return FALSE;
+        return next;
 
     }
 
