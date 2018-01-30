@@ -187,22 +187,11 @@ public class TraderImpl implements Trader {
 
             Instant time = now.plus(Math.abs(interval.toMillis() * frequency), ChronoUnit.MILLIS);
 
-            if (count.getAndIncrement() % frequency == 0) {
-
-                Instant t1 = propertyManager.getNow();
-
-                pipeline.process(time, site, instrument);
-
-                Instant t2 = propertyManager.getNow();
-
-                log.debug("Processed : [{}.{}] {}", site, instrument, Duration.between(t1, t2));
-
-            } else {
-
-                log.debug("Skipping : [{}.{}]", site, instrument);
-
+            if (count.getAndIncrement() % frequency != 0) {
+                return;
             }
 
+            pipeline.process(time, site, instrument);
 
         }, executor);
 

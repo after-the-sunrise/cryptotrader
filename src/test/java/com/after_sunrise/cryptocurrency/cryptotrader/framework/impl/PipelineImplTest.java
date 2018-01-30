@@ -42,6 +42,8 @@ public class PipelineImplTest {
 
         target = spy(new PipelineImpl(module.createInjector()));
 
+        when(module.getMock(PropertyManager.class).getNow()).thenAnswer(i -> Instant.now());
+
     }
 
     @Test

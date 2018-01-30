@@ -8,12 +8,15 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
-
-import static java.util.Optional.ofNullable;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * @author takanori.takase
@@ -58,19 +61,46 @@ public class PipelineImpl implements Pipeline {
 
             log.info("Processing : {}", request);
 
+            Instant s = propertyManager.getNow();
+
+            Instant i = s;
+
             Estimation estimation = estimator.estimate(context, request);
+            i = logElapsed(i, request, "Estimate");
 
             Advice advice = adviser.advise(context, request, estimation);
+            i = logElapsed(i, request, "Advise");
 
             List<Instruction> instructions = instructor.instruct(context, request, advice);
+            i = logElapsed(i, request, "Instruct");
 
             Map<Instruction, String> futures = manager.manage(context, request, instructions);
+            i = logElapsed(i, request, "Manage");
 
             Map<Instruction, Boolean> results = manager.reconcile(context, request, futures);
+            i = logElapsed(i, request, "Reconcile");
 
-            log.info("Processed : {}", ofNullable(results).orElseGet(Collections::emptyMap).size());
+            logElapsed(s, request, "Total");
 
         });
+
+    }
+
+    @VisibleForTesting
+    Instant logElapsed(Instant start, Request request, String label) {
+
+        Instant now = propertyManager.getNow();
+
+        String elapsed = String.valueOf(Duration.between(start, now).getSeconds());
+
+        log.debug("[{}.{}] {} seconds : {}",
+                request.getSite(),
+                request.getInstrument(),
+                StringUtils.leftPad(elapsed, 3, ' '),
+                label
+        );
+
+        return now;
 
     }
 
