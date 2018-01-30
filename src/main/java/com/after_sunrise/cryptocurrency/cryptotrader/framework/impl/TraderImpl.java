@@ -132,11 +132,16 @@ public class TraderImpl implements Trader {
 
                 allOf(futures.toArray(new CompletableFuture[futures.size()])).get();
 
+                Instant finish = propertyManager.getNow();
+
                 Duration interval = propertyManager.getTradingInterval();
 
                 Duration sleep = calculateInterval(now.plus(interval));
 
-                log.debug("Sleeping for interval : {}", sleep);
+                log.debug("Sleeping for interval : {} (Elapsed {} seconds)",
+                        sleep,
+                        Duration.between(now, finish).getSeconds()
+                );
 
                 latch.await(sleep.toMillis(), MILLISECONDS);
 
