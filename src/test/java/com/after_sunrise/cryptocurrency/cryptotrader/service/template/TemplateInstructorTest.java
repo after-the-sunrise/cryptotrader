@@ -10,6 +10,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.MapConfiguration;
+import org.apache.commons.lang3.StringUtils;
 import org.mockito.invocation.InvocationOnMock;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -172,15 +173,7 @@ public class TemplateInstructorTest {
 
         // Null Price
         results = target.createBuys(context, request, builder.buyLimitPrice(null).build());
-        assertEquals(results.size(), 3, results.toString());
-        assertEquals(results.get(0).getPrice(), null);
-        assertEquals(results.get(1).getPrice(), null);
-        assertEquals(results.get(2).getPrice(), null);
-        assertEquals(results.get(0).getSize(), new BigDecimal("0.3"));
-        assertEquals(results.get(1).getSize(), new BigDecimal("0.3"));
-        assertEquals(results.get(2).getSize(), new BigDecimal("0.3"));
-        results.forEach(r -> assertEquals(r.getStrategy(), "IOC"));
-        results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
+        assertEquals(results.size(), 0, results.toString());
 
         // Too small
         results = target.createBuys(context, request, builder.buyLimitSize(ONE.movePointLeft(1)).build());
@@ -238,15 +231,7 @@ public class TemplateInstructorTest {
 
         // Null Price
         results = target.createSells(context, request, builder.sellLimitPrice(null).build());
-        assertEquals(results.size(), 3, results.toString());
-        assertEquals(results.get(0).getPrice(), null);
-        assertEquals(results.get(1).getPrice(), null);
-        assertEquals(results.get(2).getPrice(), null);
-        assertEquals(results.get(0).getSize(), new BigDecimal("-0.3"));
-        assertEquals(results.get(1).getSize(), new BigDecimal("-0.3"));
-        assertEquals(results.get(2).getSize(), new BigDecimal("-0.3"));
-        results.forEach(r -> assertEquals(r.getStrategy(), "IOC"));
-        results.forEach(r -> assertEquals(r.getTimeToLive(), Duration.ofMillis(456 - 123)));
+        assertEquals(results.size(), 0, results.toString());
 
         // Too small
         results = target.createSells(context, request, builder.sellLimitSize(ONE.movePointLeft(1)).build());
@@ -388,33 +373,163 @@ public class TemplateInstructorTest {
         CreateInstruction new6 = CreateInstruction.builder().price(null).size(valueOf(26)).build();
         CreateInstruction new7 = CreateInstruction.builder().price(valueOf(17)).size(null).build();
         CreateInstruction new8 = CreateInstruction.builder().price(valueOf(18)).size(valueOf(0)).build();
-        List<CreateInstruction> creates = asList(new4, new8, new2, new7, new3, new6, new5, new1); // Shuffled
+        CreateInstruction new9 = CreateInstruction.builder().price(valueOf(0)).size(valueOf(29)).build();
+        List<CreateInstruction> creates = asList(new4, new8, new2, new9, new7, new3, new6, new5, new1); // Shuffled
 
-        CancelInstruction cancel1 = CancelInstruction.builder().build();
-        CancelInstruction cancel2 = CancelInstruction.builder().build();
-        CancelInstruction cancel3 = CancelInstruction.builder().build();
-        CancelInstruction cancel4 = CancelInstruction.builder().build();
+        CancelInstruction cancel1 = CancelInstruction.builder().id("c1").build();
+        CancelInstruction cancel2 = CancelInstruction.builder().id("c2").build();
+        CancelInstruction cancel3 = CancelInstruction.builder().id("c3").build();
+        CancelInstruction cancel4 = CancelInstruction.builder().id("c4").build();
+        CancelInstruction cancel5 = CancelInstruction.builder().id("c5").build();
+        CancelInstruction cancel6 = CancelInstruction.builder().id("c6").build();
+        CancelInstruction cancel7 = CancelInstruction.builder().id("c7").build();
+        CancelInstruction cancel8 = CancelInstruction.builder().id("c8").build();
+        CancelInstruction cancel9 = CancelInstruction.builder().id("c9").build();
+
         Map<CancelInstruction, Order> cancels = new IdentityHashMap<>();
-        cancels.put(cancel1, mock(Order.class)); // Net
-        cancels.put(cancel2, mock(Order.class)); // Cancel - no price
-        cancels.put(cancel3, mock(Order.class)); // Cancel - no size
-        cancels.put(cancel4, mock(Order.class)); // Net
-        when(cancels.get(cancel1).getOrderPrice()).thenReturn(new1.getPrice());
-        when(cancels.get(cancel1).getRemainingQuantity()).thenReturn(new1.getSize());
-        when(cancels.get(cancel2).getOrderPrice()).thenReturn(null);
-        when(cancels.get(cancel2).getRemainingQuantity()).thenReturn(new2.getSize());
-        when(cancels.get(cancel3).getOrderPrice()).thenReturn(new3.getPrice());
-        when(cancels.get(cancel3).getRemainingQuantity()).thenReturn(null);
-        when(cancels.get(cancel4).getOrderPrice()).thenReturn(new4.getPrice());
-        when(cancels.get(cancel4).getRemainingQuantity()).thenReturn(new4.getSize());
 
+        Runnable initializer = () -> {
+            cancels.put(cancel1, mock(Order.class));
+            cancels.put(cancel2, mock(Order.class));
+            cancels.put(cancel3, mock(Order.class));
+            cancels.put(cancel4, mock(Order.class));
+            cancels.put(cancel5, mock(Order.class));
+            cancels.put(cancel6, mock(Order.class));
+            cancels.put(cancel7, mock(Order.class));
+            cancels.put(cancel8, mock(Order.class));
+            cancels.put(cancel9, mock(Order.class));
+            when(cancels.get(cancel1).getOrderPrice()).thenReturn(new1.getPrice());
+            when(cancels.get(cancel1).getRemainingQuantity()).thenReturn(new1.getSize());
+            when(cancels.get(cancel2).getOrderPrice()).thenReturn(new2.getPrice());
+            when(cancels.get(cancel2).getRemainingQuantity()).thenReturn(new2.getSize());
+            when(cancels.get(cancel3).getOrderPrice()).thenReturn(new3.getPrice());
+            when(cancels.get(cancel3).getRemainingQuantity()).thenReturn(new3.getSize());
+            when(cancels.get(cancel4).getOrderPrice()).thenReturn(new4.getPrice());
+            when(cancels.get(cancel4).getRemainingQuantity()).thenReturn(new4.getSize());
+            when(cancels.get(cancel5).getOrderPrice()).thenReturn(new5.getPrice());
+            when(cancels.get(cancel5).getRemainingQuantity()).thenReturn(new5.getSize());
+            when(cancels.get(cancel6).getOrderPrice()).thenReturn(new6.getPrice());
+            when(cancels.get(cancel6).getRemainingQuantity()).thenReturn(new6.getSize());
+            when(cancels.get(cancel7).getOrderPrice()).thenReturn(new7.getPrice());
+            when(cancels.get(cancel7).getRemainingQuantity()).thenReturn(new7.getSize());
+            when(cancels.get(cancel8).getOrderPrice()).thenReturn(new8.getPrice());
+            when(cancels.get(cancel8).getRemainingQuantity()).thenReturn(new8.getSize());
+            when(cancels.get(cancel9).getOrderPrice()).thenReturn(new9.getPrice());
+            when(cancels.get(cancel9).getRemainingQuantity()).thenReturn(new9.getSize());
+        };
+
+        initializer.run();
         List<Instruction> results = target.merge(creates, cancels);
-        assertEquals(results.size(), 5); // cancel(o2, o3) + create(c2, c4, c5)
+        assertEquals(results.size(), 8, StringUtils.join(results, '\n'));
+        assertTrue(results.contains(cancel6));
+        assertTrue(results.contains(cancel7));
+        assertTrue(results.contains(cancel8));
+        assertTrue(results.contains(cancel9));
+        assertTrue(results.contains(new6));
+        assertTrue(results.contains(new7));
+        assertTrue(results.contains(new8));
+        assertTrue(results.contains(new9));
+
+        // Zero Price/Size
+        initializer.run();
+        when(cancels.get(cancel2).getOrderPrice()).thenReturn(valueOf(0.0));
+        when(cancels.get(cancel3).getRemainingQuantity()).thenReturn(valueOf(0.0));
+        results = target.merge(creates, cancels);
+        assertEquals(results.size(), 12, StringUtils.join(results, '\n'));
         assertTrue(results.contains(cancel2));
         assertTrue(results.contains(cancel3));
+        assertTrue(results.contains(cancel6));
+        assertTrue(results.contains(cancel7));
+        assertTrue(results.contains(cancel8));
+        assertTrue(results.contains(cancel9));
         assertTrue(results.contains(new2));
         assertTrue(results.contains(new3));
-        assertTrue(results.contains(new5));
+        assertTrue(results.contains(new6));
+        assertTrue(results.contains(new7));
+        assertTrue(results.contains(new8));
+        assertTrue(results.contains(new9));
+
+        // Null Price/Size
+        initializer.run();
+        when(cancels.get(cancel2).getOrderPrice()).thenReturn(null);
+        when(cancels.get(cancel3).getRemainingQuantity()).thenReturn(null);
+        results = target.merge(creates, cancels);
+        assertEquals(results.size(), 12, StringUtils.join(results, '\n'));
+        assertTrue(results.contains(cancel2));
+        assertTrue(results.contains(cancel3));
+        assertTrue(results.contains(cancel6));
+        assertTrue(results.contains(cancel7));
+        assertTrue(results.contains(cancel8));
+        assertTrue(results.contains(cancel9));
+        assertTrue(results.contains(new2));
+        assertTrue(results.contains(new3));
+        assertTrue(results.contains(new6));
+        assertTrue(results.contains(new7));
+        assertTrue(results.contains(new8));
+        assertTrue(results.contains(new9));
+
+        for (BigDecimal delta : new BigDecimal[]{new BigDecimal("+0.0001"), new BigDecimal("-0.0001")}) {
+
+            // Different Price/Size
+            initializer.run();
+            when(cancels.get(cancel2).getOrderPrice()).thenReturn(new2.getPrice().add(delta));
+            when(cancels.get(cancel3).getRemainingQuantity()).thenReturn(new3.getSize().add(delta));
+            results = target.merge(creates, cancels);
+            assertEquals(results.size(), 12, StringUtils.join(results, '\n'));
+            assertTrue(results.contains(cancel2));
+            assertTrue(results.contains(cancel3));
+            assertTrue(results.contains(cancel6));
+            assertTrue(results.contains(cancel7));
+            assertTrue(results.contains(cancel8));
+            assertTrue(results.contains(cancel9));
+            assertTrue(results.contains(new2));
+            assertTrue(results.contains(new3));
+            assertTrue(results.contains(new6));
+            assertTrue(results.contains(new7));
+            assertTrue(results.contains(new8));
+            assertTrue(results.contains(new9));
+
+            // Price Threshold
+            configuration.addProperty(
+                    "com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateInstructor.threshold.price",
+                    new BigDecimal("0.01")
+            );
+            results = target.merge(creates, cancels);
+            assertEquals(results.size(), 10, StringUtils.join(results, '\n'));
+            assertTrue(results.contains(cancel3));
+            assertTrue(results.contains(cancel6));
+            assertTrue(results.contains(cancel7));
+            assertTrue(results.contains(cancel8));
+            assertTrue(results.contains(cancel9));
+            assertTrue(results.contains(new3));
+            assertTrue(results.contains(new6));
+            assertTrue(results.contains(new7));
+            assertTrue(results.contains(new8));
+            assertTrue(results.contains(new9));
+
+            configuration.clear();
+
+            // Size Threshold
+            configuration.addProperty(
+                    "com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateInstructor.threshold.size",
+                    new BigDecimal("0.01")
+            );
+            results = target.merge(creates, cancels);
+            assertEquals(results.size(), 10, StringUtils.join(results, '\n'));
+            assertTrue(results.contains(cancel2));
+            assertTrue(results.contains(cancel6));
+            assertTrue(results.contains(cancel7));
+            assertTrue(results.contains(cancel8));
+            assertTrue(results.contains(cancel9));
+            assertTrue(results.contains(new2));
+            assertTrue(results.contains(new6));
+            assertTrue(results.contains(new7));
+            assertTrue(results.contains(new8));
+            assertTrue(results.contains(new9));
+
+            configuration.clear();
+
+        }
 
     }
 

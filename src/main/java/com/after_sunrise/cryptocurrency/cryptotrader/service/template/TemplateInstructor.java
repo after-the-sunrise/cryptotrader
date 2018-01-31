@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 import static java.lang.Boolean.TRUE;
-import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.*;
 import static java.math.BigDecimal.valueOf;
 import static java.math.RoundingMode.*;
 import static java.util.Collections.emptyList;
@@ -98,6 +98,10 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
             BigDecimal size = s.get(i);
 
+            if (price == null || size == null || size.signum() == 0) {
+                continue;
+            }
+
             instructions.add(CreateInstruction.builder()
                     .price(price).size(size)
                     .strategy(request.getTradingInstruction()).timeToLive(expiry).build()
@@ -130,10 +134,14 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
             BigDecimal price = p.get(i);
 
-            BigDecimal size = s.get(i) == null ? null : s.get(i).negate();
+            BigDecimal size = s.get(i);
+
+            if (price == null || size == null || size.signum() == 0) {
+                continue;
+            }
 
             instructions.add(CreateInstruction.builder()
-                    .price(price).size(size)
+                    .price(price).size(size.negate())
                     .strategy(request.getTradingInstruction()).timeToLive(expiry).build()
             );
 
@@ -269,9 +277,21 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         Iterator<CreateInstruction> createItr = remainingCreates.iterator();
 
+        BigDecimal priceThreshold = getDecimalProperty("threshold.price", ZERO);
+
+        BigDecimal sizeThreshold = getDecimalProperty("threshold.size", ZERO);
+
         while (createItr.hasNext()) {
 
             CreateInstruction create = createItr.next();
+
+            if (create.getPrice() == null || create.getSize() == null || create.getSize().signum() == 0) {
+                continue; // Skip invalid.
+            }
+
+            if (create.getPrice().signum() == 0) {
+                continue; // Skip market orders.
+            }
 
             Iterator<Map.Entry<CancelInstruction, Order>> cancelItr = remainingCancels.entrySet().iterator();
 
@@ -279,11 +299,37 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
                 Map.Entry<CancelInstruction, Order> entry = cancelItr.next();
 
-                if (isDifferent(entry.getValue().getOrderPrice(), create.getPrice())) {
+                Order order = entry.getValue();
+
+                if (order == null) {
                     continue;
                 }
 
-                if (isDifferent(entry.getValue().getRemainingQuantity(), create.getSize())) {
+                if (order.getOrderPrice() == null || order.getOrderPrice().signum() == 0) {
+                    continue; // Skip market.
+                }
+
+                if (order.getRemainingQuantity() == null || order.getRemainingQuantity().signum() == 0) {
+                    continue; // Skip invalid.
+                }
+
+                if (order.getRemainingQuantity().signum() != create.getSize().signum()) {
+                    continue; // Different side.
+                }
+
+                BigDecimal sizeDiff = order.getRemainingQuantity().subtract(create.getSize());
+
+                BigDecimal sizePcnt = sizeDiff.divide(create.getSize(), SCALE, ROUND_CEILING).abs();
+
+                if (sizePcnt.compareTo(sizeThreshold) > 0) {
+                    continue;
+                }
+
+                BigDecimal priceDiff = order.getOrderPrice().subtract(create.getPrice());
+
+                BigDecimal pricePcnt = priceDiff.divide(create.getPrice(), SCALE, ROUND_CEILING).abs();
+
+                if (pricePcnt.compareTo(priceThreshold) > 0) {
                     continue;
                 }
 
@@ -303,20 +349,12 @@ public class TemplateInstructor extends AbstractService implements Instructor {
 
         instructions.addAll(remainingCancels.keySet());
 
-        instructions.addAll(remainingCreates.stream().filter(this::isValidInstruction).collect(toList()));
+        instructions.addAll(remainingCreates);
 
         instructions.forEach(v -> log.trace("Merged candidate : {}", v));
 
         return instructions;
 
-    }
-
-    private boolean isDifferent(BigDecimal v1, BigDecimal v2) {
-        return v1 == null || v2 == null || v1.compareTo(v2) != 0;
-    }
-
-    private boolean isValidInstruction(CreateInstruction i) {
-        return i != null && i.getPrice() != null && i.getSize() != null && i.getSize().signum() != 0;
     }
 
 }
