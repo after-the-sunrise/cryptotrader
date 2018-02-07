@@ -26,6 +26,7 @@ import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.ofNullable;
+import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
 
 /**
@@ -318,7 +319,11 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
             String site = composite.getSite();
 
-            String instrument = composite.getInstrument();
+            String[] instruments = trimToEmpty(split(composite.getInstrument(), ":", 2));
+
+            String instrument = instruments.length == 0 ? null : instruments[0];
+
+            BigDecimal multiplier = instruments.length != 2 ? ONE : parseDecimal(instruments[1], ONE);
 
             Key instrumentKey = Key.build(key).site(site).instrument(instrument).build();
 
@@ -342,7 +347,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
             }
 
-            BigDecimal basePosition = conversionPosition.divide(conversionPrice, SCALE, HALF_UP);
+            BigDecimal basePosition = conversionPosition.multiply(multiplier).divide(conversionPrice, SCALE, HALF_UP);
 
             position = position.add(basePosition);
 

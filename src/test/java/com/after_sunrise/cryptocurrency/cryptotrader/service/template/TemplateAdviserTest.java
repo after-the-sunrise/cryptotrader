@@ -988,7 +988,7 @@ public class TemplateAdviserTest {
         List<Composite> hedgeProducts = new ArrayList<>();
         hedgeProducts.add(new Composite("a", "XBTC"));
         hedgeProducts.add(new Composite("a", "XETH"));
-        hedgeProducts.add(new Composite("b", "XBCH"));
+        hedgeProducts.add(new Composite("b", "XBCH:+2.0"));
 
         Request request = rBuilder.hedgeProducts(hedgeProducts).build();
         Key keySen = Key.from(request);
@@ -1019,10 +1019,10 @@ public class TemplateAdviserTest {
 
         };
 
-        // = (400 + 200 + 100) = JPY 700 = 70000 SEN
+        // = (400 + 200 + 100 * 2) = JPY 800 = 80000 SEN
         // Hedge -> 100% Exposure
         initializer.run();
-        assertEquals(target.calculateInstrumentExposureSize(context, request), new BigDecimal("70000.0000000000"));
+        assertEquals(target.calculateInstrumentExposureSize(context, request), new BigDecimal("80000.0000000000"));
 
         // No price
         initializer.run();

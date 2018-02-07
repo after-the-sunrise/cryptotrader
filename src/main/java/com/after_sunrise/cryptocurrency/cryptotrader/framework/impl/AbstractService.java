@@ -19,7 +19,6 @@ import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.stream.Stream;
 
-import static java.lang.Long.MAX_VALUE;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
@@ -38,36 +37,6 @@ public abstract class AbstractService implements Service {
     protected static final BigDecimal EPSILON = ONE.movePointLeft(SCALE);
 
     protected static final BigDecimal HALF = new BigDecimal("0.5");
-
-    protected static final NavigableMap<Long, BigDecimal> DEGREES;
-
-    static {
-        NavigableMap<Long, BigDecimal> degrees = new TreeMap<>();
-        degrees.put(1L, new BigDecimal("12.7062"));
-        degrees.put(2L, new BigDecimal("4.3027"));
-        degrees.put(3L, new BigDecimal("3.1824"));
-        degrees.put(4L, new BigDecimal("2.7764"));
-        degrees.put(5L, new BigDecimal("2.5706"));
-        degrees.put(6L, new BigDecimal("2.4469"));
-        degrees.put(7L, new BigDecimal("2.3646"));
-        degrees.put(8L, new BigDecimal("2.3060"));
-        degrees.put(9L, new BigDecimal("2.2622"));
-        degrees.put(10L, new BigDecimal("2.2281"));
-        degrees.put(15L, new BigDecimal("2.1314"));
-        degrees.put(20L, new BigDecimal("2.0860"));
-        degrees.put(30L, new BigDecimal("2.0423"));
-        degrees.put(45L, new BigDecimal("2.0141"));
-        degrees.put(60L, new BigDecimal("2.0003"));
-        degrees.put(90L, new BigDecimal("1.9867"));
-        degrees.put(120L, new BigDecimal("1.9799"));
-        degrees.put(180L, new BigDecimal("1.9732"));
-        degrees.put(360L, new BigDecimal("1.9666"));
-        degrees.put(720L, new BigDecimal("1.9633"));
-        degrees.put(1440L, new BigDecimal("1.9616"));
-        degrees.put(2880L, new BigDecimal("1.9608"));
-        degrees.put(MAX_VALUE, new BigDecimal("1.9600"));
-        DEGREES = Collections.unmodifiableNavigableMap(degrees);
-    }
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -145,6 +114,10 @@ public abstract class AbstractService implements Service {
         return trim(value, ZERO);
     }
 
+    protected String[] trimToEmpty(String[] values) {
+        return trim(values, new String[0]);
+    }
+
     protected <T> List<T> trimToEmpty(List<T> values) {
         return values != null ? values : emptyList();
     }
@@ -155,6 +128,24 @@ public abstract class AbstractService implements Service {
 
     protected <K, V> Map<K, V> trimToEmpty(Map<K, V> values) {
         return values != null ? values : emptyMap();
+    }
+
+    protected BigDecimal parseDecimal(String value, BigDecimal defaultValue) {
+
+        BigDecimal result;
+
+        try {
+
+            result = new BigDecimal(value);
+
+        } catch (Exception e) {
+
+            result = defaultValue;
+
+        }
+
+        return result;
+
     }
 
     @VisibleForTesting
