@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.*;
 import static java.lang.String.format;
 import static java.math.BigDecimal.*;
+import static java.math.BigDecimal.valueOf;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptySet;
 import static java.util.Optional.ofNullable;
@@ -304,6 +305,16 @@ public class PropertyManagerImpl implements PropertyController {
     @Override
     public void setTradingFrequency(String site, String instrument, Integer value) {
         set(TRADING_FREQUENCY, site, instrument, value, input -> input);
+    }
+
+    @Override
+    public Integer getTradingSeed(String site, String instrument) {
+        return getDecimal(site, instrument, TRADING_SEED, ZERO, valueOf(Integer.MAX_VALUE), ZERO).intValue();
+    }
+
+    @Override
+    public void setTradingSeed(String site, String instrument, Integer value) {
+        set(TRADING_SEED, site, instrument, value, input -> input);
     }
 
     @Override

@@ -26,6 +26,8 @@ public interface PropertyManager {
 
     Integer getTradingFrequency(String site, String instrument);
 
+    Integer getTradingSeed(String site, String instrument);
+
     BigDecimal getTradingSpread(String site, String instrument);
 
     BigDecimal getTradingSpreadAsk(String site, String instrument);

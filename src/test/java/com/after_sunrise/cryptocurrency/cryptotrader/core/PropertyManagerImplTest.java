@@ -309,6 +309,38 @@ public class PropertyManagerImplTest {
     }
 
     @Test
+    public void testGetTradingSeed() throws Exception {
+
+        assertEquals(target.getTradingSeed(site, inst), (Integer) 0);
+
+        // Specific
+        doReturn(valueOf(8)).when(conf).getBigDecimal(TRADING_SEED.getKey());
+        assertEquals(target.getTradingSeed(site, inst), (Integer) 8);
+
+        // Ceiling
+        doReturn(valueOf(Long.MAX_VALUE)).when(conf).getBigDecimal(TRADING_SEED.getKey());
+        assertEquals(target.getTradingSeed(site, inst), (Integer) Integer.MAX_VALUE);
+
+        // Floor
+        doReturn(valueOf(Integer.MIN_VALUE)).when(conf).getBigDecimal(TRADING_SEED.getKey());
+        assertEquals(target.getTradingSeed(site, inst), (Integer) 0);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(TRADING_SEED.getKey());
+        assertEquals(target.getTradingSeed(site, inst), (Integer) 0);
+        reset(conf);
+
+        // Override
+        target.setTradingSeed(site, inst, 3);
+        assertEquals(target.getTradingSeed(site, inst), (Integer) 3);
+
+        // Clear
+        target.setTradingSeed(site, inst, null);
+        assertEquals(target.getTradingSeed(site, inst), (Integer) 0);
+
+    }
+
+    @Test
     public void testGetTradingSpread() throws Exception {
 
         assertEquals(target.getTradingSpread(site, inst), new BigDecimal("0.0100"));

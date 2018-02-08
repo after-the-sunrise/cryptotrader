@@ -14,6 +14,8 @@ public enum PropertyType {
 
     TRADING_FREQUENCY,
 
+    TRADING_SEED,
+
     TRADING_INTERVAL,
 
     TRADING_THREADS,
