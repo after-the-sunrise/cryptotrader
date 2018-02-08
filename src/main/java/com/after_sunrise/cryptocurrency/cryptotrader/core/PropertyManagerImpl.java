@@ -521,6 +521,16 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
+    public List<Composite> getAversionProducts(String site, String instrument) {
+        return getProducts(site, instrument, AVERSION_PRODUCTS);
+    }
+
+    @Override
+    public void setAversionProducts(String site, String instrument, List<Composite> values) {
+        setProducts(AVERSION_PRODUCTS, site, instrument, values);
+    }
+
+    @Override
     public List<Composite> getHedgeProducts(String site, String instrument) {
         return getProducts(site, instrument, HEDGE_PRODUCTS);
     }

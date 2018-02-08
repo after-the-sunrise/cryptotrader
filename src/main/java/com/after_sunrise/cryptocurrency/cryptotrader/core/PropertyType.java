@@ -62,6 +62,8 @@ public enum PropertyType {
 
     DEVIATION_PRODUCTS,
 
+    AVERSION_PRODUCTS,
+
     HEDGE_PRODUCTS,
 
     ESTIMATORS,

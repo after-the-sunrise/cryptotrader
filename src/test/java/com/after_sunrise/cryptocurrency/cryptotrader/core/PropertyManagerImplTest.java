@@ -1025,6 +1025,59 @@ public class PropertyManagerImplTest {
     }
 
     @Test
+    public void testGetAversionProducts() throws Exception {
+
+        // Default
+        List<Composite> targets = target.getAversionProducts(site, inst);
+        assertEquals(targets.size(), 0);
+
+        // Mocked
+        String value = "exch1:ccy1|exch1:ccy2|exch2:ccy1||exch2:|:ccy2|exch3:ccy2:test|";
+        doReturn(value).when(conf).getString(AVERSION_PRODUCTS.getKey());
+        targets = target.getAversionProducts(site, inst);
+        assertEquals(targets.size(), 4);
+        assertEquals(targets.get(0).getSite(), "exch1");
+        assertEquals(targets.get(0).getInstrument(), "ccy1");
+        assertEquals(targets.get(1).getSite(), "exch1");
+        assertEquals(targets.get(1).getInstrument(), "ccy2");
+        assertEquals(targets.get(2).getSite(), "exch2");
+        assertEquals(targets.get(2).getInstrument(), "ccy1");
+        assertEquals(targets.get(3).getSite(), "exch3");
+        assertEquals(targets.get(3).getInstrument(), "ccy2:test");
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getString(AVERSION_PRODUCTS.getKey());
+        targets = target.getAversionProducts(site, inst);
+        assertTrue(targets.isEmpty());
+        reset(conf);
+
+        // Overwrite
+        List<Composite> newTargets = new ArrayList<>();
+        newTargets.add(new Composite("s1", "i1"));
+        newTargets.add(new Composite("s1", "i2"));
+        newTargets.add(new Composite("s2", "i2"));
+        newTargets.add(new Composite("s2", "i3"));
+        target.setAversionProducts(site, inst, newTargets);
+        targets = target.getAversionProducts(site, inst);
+        assertEquals(targets.size(), 4);
+        assertEquals(targets.get(0).getSite(), "s1");
+        assertEquals(targets.get(0).getInstrument(), "i1");
+        assertEquals(targets.get(1).getSite(), "s1");
+        assertEquals(targets.get(1).getInstrument(), "i2");
+        assertEquals(targets.get(2).getSite(), "s2");
+        assertEquals(targets.get(2).getInstrument(), "i2");
+        assertEquals(targets.get(3).getSite(), "s2");
+        assertEquals(targets.get(3).getInstrument(), "i3");
+
+
+        // Clear
+        target.setAversionProducts(site, inst, null);
+        targets = target.getAversionProducts(site, inst);
+        assertEquals(targets.size(), 0);
+
+    }
+
+    @Test
     public void testGetHedgeProducts() throws Exception {
 
         // Default

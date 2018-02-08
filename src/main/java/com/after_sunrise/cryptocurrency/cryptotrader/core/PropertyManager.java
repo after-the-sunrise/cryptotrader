@@ -68,6 +68,8 @@ public interface PropertyManager {
 
     List<Composite> getDeviationProducts(String site, String instrument);
 
+    List<Composite> getAversionProducts(String site, String instrument);
+
     List<Composite> getHedgeProducts(String site, String instrument);
 
     Set<String> getEstimators(String site, String instrument);

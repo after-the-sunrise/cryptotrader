@@ -25,6 +25,8 @@ import static java.math.RoundingMode.*;
 import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
+import static java.util.Comparator.naturalOrder;
+import static java.util.Comparator.reverseOrder;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ONE;
@@ -429,49 +431,53 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             return null;
         }
 
+        List<Order.Execution> executions = new ArrayList<>();
+
         Key key = Key.from(request);
 
-        Comparator<BigDecimal> comparator = signum == SIGNUM_BUY ? Comparator.reverseOrder() : Comparator.naturalOrder();
+        ofNullable(request.getAversionProducts())
+                .filter(CollectionUtils::isNotEmpty)
+                .orElseGet(() -> singletonList(new Composite(request.getSite(), request.getInstrument())))
+                .forEach(c -> {
+
+                    Key k = Key.build(key).site(c.getSite()).instrument(c.getInstrument()).build();
+
+                    Instant cutoff = request.getCurrentTime().minus(duration.abs());
+
+                    List<Order.Execution> values = context.listExecutions(k);
+
+                    trimToEmpty(values).stream()
+                            .filter(Objects::nonNull)
+                            .filter(t -> t.getTime() != null)
+                            .filter(t -> t.getTime().isAfter(cutoff))
+                            .filter(t -> t.getPrice() != null)
+                            .filter(t -> t.getPrice().signum() != 0)
+                            .filter(t -> t.getSize() != null)
+                            .filter(t -> t.getSize().signum() == signum)
+                            .forEach(executions::add);
+
+                });
 
         BigDecimal price;
 
         if (duration.isNegative()) {
 
-            Instant cutoff = request.getCurrentTime().plus(duration);
-
             double[] average = {0.0, 0.0, 0.0};
 
-            trimToEmpty(context.listTrades(key, cutoff)).stream()
-                    .filter(Objects::nonNull)
-                    .filter(t -> t.getTimestamp() != null)
-                    .filter(t -> t.getTimestamp().isAfter(cutoff))
-                    .filter(t -> t.getPrice() != null)
-                    .filter(t -> t.getPrice().signum() != 0)
-                    .filter(t -> t.getSize() != null)
-                    .filter(t -> t.getSize().signum() != 0)
-                    .forEach(t -> {
-                        average[0] += t.getSize().multiply(t.getPrice()).doubleValue();
-                        average[1] += t.getSize().doubleValue();
-                        average[2] += 1;
-                    });
+            executions.forEach(t -> {
+                average[0] += t.getSize().multiply(t.getPrice()).doubleValue();
+                average[1] += t.getSize().doubleValue();
+                average[2] += 1;
+            });
 
             price = average[2] > 0 ? BigDecimal.valueOf(average[0] / average[1]).setScale(SCALE, HALF_UP) : null;
 
         } else {
 
-            Instant cutoff = request.getCurrentTime().minus(duration);
+            Comparator<BigDecimal> comparator = signum == SIGNUM_BUY ? reverseOrder() : naturalOrder();
 
-            price = trimToEmpty(context.listExecutions(key)).stream()
-                    .filter(Objects::nonNull)
-                    .filter(v -> v.getTime() != null)
-                    .filter(v -> v.getTime().isAfter(cutoff))
-                    .filter(v -> v.getPrice() != null)
-                    .filter(v -> v.getPrice().signum() != 0)
-                    .filter(v -> v.getSize() != null)
-                    .filter(v -> v.getSize().signum() == signum)
-                    .map(Order.Execution::getPrice)
-                    .sorted(comparator)
-                    .findFirst().orElse(null);
+            price = executions.stream().map(Order.Execution::getPrice)
+                    .sorted(comparator).findFirst().orElse(null);
 
         }
 

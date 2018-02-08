@@ -73,6 +73,8 @@ public class Request {
 
     private List<Composite> deviationProducts;
 
+    private List<Composite> aversionProducts;
+
     private List<Composite> hedgeProducts;
 
     private List<Composite> estimatorComposites;
@@ -109,6 +111,7 @@ public class Request {
             b.fundingPositiveThreshold(request.getFundingPositiveThreshold());
             b.fundingNegativeThreshold(request.getFundingNegativeThreshold());
             b.deviationProducts(request.getDeviationProducts());
+            b.aversionProducts(request.getAversionProducts());
             b.hedgeProducts(request.getHedgeProducts());
             b.estimatorComposites(request.getEstimatorComposites());
             b.estimationAversion(request.getEstimationAversion());

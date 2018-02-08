@@ -512,17 +512,6 @@ public class TemplateAdviserTest {
             executions.add(exec);
         }
 
-        List<Trade> trades = new ArrayList<>();
-
-        for (int i = 0; i < 20; i++) {
-            Trade trade = mock(Trade.class);
-            when(trade.getTimestamp()).thenReturn(ofEpochMilli(135 + i)); // 6 <= i <= 19
-            when(trade.getPrice()).thenReturn(BigDecimal.valueOf(10 + i));
-            when(trade.getSize()).thenReturn(BigDecimal.valueOf((1000 + i)));
-            trades.add(trade);
-        }
-
-        when(context.listTrades(Key.from(request), now.minus(duration))).thenReturn(trades);
         when(context.listExecutions(Key.from(request))).thenReturn(executions);
         assertEquals(target.calculateRecentPrice(context, request, SIGNUM_BUY), new BigDecimal("118"));
         assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("107"));
@@ -545,15 +534,15 @@ public class TemplateAdviserTest {
         assertEquals(target.calculateRecentPrice(context, request, SIGNUM_BUY), new BigDecimal("112"));
         assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("113"));
 
+        // Negative Duration (Average)
+        request = rBuilder.tradingDuration(duration.negated()).build();
+        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_BUY), new BigDecimal("109.0004995504"));
+        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("116.0004992013"));
+
         // No Execution
         when(context.listExecutions(Key.from(request))).thenReturn(null);
         assertNull(target.calculateRecentPrice(context, request, SIGNUM_BUY));
         assertNull(target.calculateRecentPrice(context, request, SIGNUM_SELL));
-
-        // Negative Duration (Average)
-        request = rBuilder.tradingDuration(duration.negated()).build();
-        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_BUY), new BigDecimal("22.5160493827"));
-        assertEquals(target.calculateRecentPrice(context, request, SIGNUM_SELL), new BigDecimal("22.5160493827"));
 
         // Zero Duration
         reset(context);
