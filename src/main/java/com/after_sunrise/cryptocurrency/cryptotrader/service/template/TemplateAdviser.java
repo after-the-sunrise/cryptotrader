@@ -424,6 +424,11 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
     @VisibleForTesting
     BigDecimal calculateRecentPrice(Context context, Request request, int signum) {
+        return calculateRecentPrice(context, request, signum, null);
+    }
+
+    @VisibleForTesting
+    BigDecimal calculateRecentPrice(Context context, Request request, int signum, List<Composite> products) {
 
         Duration duration = request.getTradingDuration();
 
@@ -435,14 +440,14 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         Key key = Key.from(request);
 
-        ofNullable(request.getAversionProducts())
+        ofNullable(products)
                 .filter(CollectionUtils::isNotEmpty)
-                .orElseGet(() -> singletonList(new Composite(request.getSite(), request.getInstrument())))
+                .orElseGet(() -> singletonList(new Composite(key.getSite(), key.getInstrument())))
                 .forEach(c -> {
 
                     Key k = Key.build(key).site(c.getSite()).instrument(c.getInstrument()).build();
 
-                    Instant cutoff = request.getCurrentTime().minus(duration.abs());
+                    Instant cutoff = key.getTimestamp().minus(duration.abs());
 
                     List<Order.Execution> values = context.listExecutions(k);
 
@@ -476,8 +481,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
             Comparator<BigDecimal> comparator = signum == SIGNUM_BUY ? reverseOrder() : naturalOrder();
 
-            price = executions.stream().map(Order.Execution::getPrice)
-                    .sorted(comparator).findFirst().orElse(null);
+            price = executions.stream().map(Order.Execution::getPrice).min(comparator).orElse(null);
 
         }
 
@@ -606,7 +610,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal ask1 = ask0.subtract(EPSILON);
 
-        BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_SELL))
+        BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_SELL, request.getAversionProducts()))
                 .map(r -> r.multiply(ONE.subtract(trimToZero(basis)))).orElse(ask0);
 
         BigDecimal bid0 = trim(context.getBestBidPrice(key), ask0);
@@ -652,7 +656,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         BigDecimal bid1 = bid0.add(EPSILON);
 
-        BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_BUY))
+        BigDecimal recent = ofNullable(calculateRecentPrice(context, request, SIGNUM_BUY, request.getAversionProducts()))
                 .map(r -> r.multiply(ONE.add(trimToZero(basis)))).orElse(bid0);
 
         BigDecimal ask0 = trim(context.getBestAskPrice(key), bid0);
