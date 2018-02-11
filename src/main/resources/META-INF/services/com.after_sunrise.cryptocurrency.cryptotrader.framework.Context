@@ -6,5 +6,6 @@ com.after_sunrise.cryptocurrency.cryptotrader.service.btcbox.BtcboxContext
 com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckContext
 com.after_sunrise.cryptocurrency.cryptotrader.service.oanda.OandaContext
 com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex.PoloniexContext
+com.after_sunrise.cryptocurrency.cryptotrader.service.quoinex.QuoinexContext
 com.after_sunrise.cryptocurrency.cryptotrader.service.template.ConstantContext
 com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifContext

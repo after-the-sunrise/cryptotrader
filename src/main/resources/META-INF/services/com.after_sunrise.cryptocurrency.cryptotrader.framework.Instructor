@@ -3,3 +3,4 @@ com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerInstructo
 com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexInstructor
 com.after_sunrise.cryptocurrency.cryptotrader.service.btcbox.BtcboxInstructor
 com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckInstructor
+com.after_sunrise.cryptocurrency.cryptotrader.service.quoinex.QuoinexInstructor
