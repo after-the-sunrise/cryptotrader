@@ -15,13 +15,10 @@ import java.math.BigDecimal;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class QuoinexAccount {
 
-    @SerializedName("product_id")
-    private String productId;
+    @SerializedName("currency")
+    private String currency;
 
-    @SerializedName("position")
-    private BigDecimal position;
-
-    @SerializedName("free_margin")
-    private BigDecimal margin;
+    @SerializedName("balance")
+    private BigDecimal balance;
 
 }

@@ -22,11 +22,12 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.*;
-import static java.lang.Boolean.TRUE;
+import static java.lang.Boolean.FALSE;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.util.stream.Collectors.toList;
@@ -304,42 +305,51 @@ public class QuoinexContext extends TemplateContext implements QuoinexService {
     }
 
     @VisibleForTesting
-    Optional<QuoinexAccount> fetchAccount(Key key) {
+    BigDecimal fetchBalance(Key key, Function<ProductType, CurrencyType> f) {
 
-        return fetchProduct(key).map(product -> {
+        ProductType product = ProductType.find(key.getInstrument());
 
-            Key newKey = Key.build(key).instrument(WILDCARD).build();
+        if (product == null) {
+            return null;
+        }
 
-            List<QuoinexAccount> values = listCached(QuoinexAccount.class, newKey, () -> {
+        CurrencyType currency = f.apply(product);
 
-                String data = fetchPrivate(GET, "/trading_accounts", null, null);
+        if (currency == null) {
+            return null;
+        }
 
-                if (StringUtils.isEmpty(data)) {
-                    return null;
-                }
+        Key newKey = Key.build(key).instrument(WILDCARD).build();
 
-                return gson.fromJson(data, TYPE_ACCOUNT);
+        List<QuoinexAccount> values = listCached(QuoinexAccount.class, newKey, () -> {
 
-            });
+            String data = fetchPrivate(GET, "/accounts/balance", null, null);
 
-            return trimToEmpty(values).stream()
-                    .filter(Objects::nonNull)
-                    .filter(a -> StringUtils.isNotEmpty(a.getProductId()))
-                    .filter(a -> StringUtils.equals(a.getProductId(), product.getId()))
-                    .findFirst().orElse(null);
+            if (StringUtils.isEmpty(data)) {
+                return null;
+            }
+
+            return gson.fromJson(data, TYPE_ACCOUNT);
 
         });
+
+        return trimToEmpty(values).stream()
+                .filter(Objects::nonNull)
+                .filter(v -> StringUtils.isNotEmpty(v.getCurrency()))
+                .filter(v -> StringUtils.equals(v.getCurrency(), currency.name()))
+                .map(QuoinexAccount::getBalance)
+                .findFirst().orElse(null);
 
     }
 
     @Override
     public BigDecimal getInstrumentPosition(Key key) {
-        return fetchAccount(key).map(QuoinexAccount::getPosition).orElse(null);
+        return fetchBalance(key, ProductType::getInstrumentCurrency);
     }
 
     @Override
     public BigDecimal getFundingPosition(Key key) {
-        return fetchAccount(key).map(QuoinexAccount::getMargin).orElse(null);
+        return fetchBalance(key, ProductType::getFundingCurrency);
     }
 
     @Override
@@ -377,7 +387,7 @@ public class QuoinexContext extends TemplateContext implements QuoinexService {
 
     @Override
     public Boolean isMarginable(Key key) {
-        return TRUE;
+        return FALSE;
     }
 
     @Override
@@ -476,8 +486,6 @@ public class QuoinexContext extends TemplateContext implements QuoinexService {
                 parameters.put("price", i.getPrice().signum() == 0 ? null : i.getPrice().toPlainString());
                 parameters.put("side", i.getSize().signum() > 0 ? "buy" : "sell");
                 parameters.put("quantity", i.getSize().abs().toPlainString());
-                parameters.put("order_direction", "netout");
-                parameters.put("leverage_level", getStringProperty("leverage", "2"));
 
                 String data = fetchPrivate(POST, "/orders", null, parameters);
 
