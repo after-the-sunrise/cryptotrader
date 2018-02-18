@@ -34,7 +34,9 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     private static final BigDecimal SWAP_RATE = new BigDecimal("0.0004");
 
-    private static final String KEY_SFD = "sfd.pad";
+    private static final String KEY_SFD_PAD = "sfd.pad";
+
+    private static final String KEY_SFD_PCT = "sfd.pct";
 
     private static final String KEY_SWAP_B = "swap.buy";
 
@@ -113,13 +115,15 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         BigDecimal pct = fxPrice.divide(cashPrice, SCALE, HALF_UP).subtract(ONE);
 
-        BigDecimal pad = getDecimalProperty(KEY_SFD, ZERO);
+        BigDecimal pad = getDecimalProperty(KEY_SFD_PAD, ZERO);
 
         BigDecimal adj = buy ? pct.add(pad) : pct.negate().add(pad);
 
         Entry<BigDecimal, BigDecimal> tier = SFD.floorEntry(adj.max(SFD.firstKey()));
 
-        return tier.getValue();
+        BigDecimal sfdPct = getDecimalProperty(KEY_SFD_PCT, ONE);
+
+        return tier.getValue().multiply(sfdPct);
 
     }
 
