@@ -44,10 +44,50 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     private static final NavigableMap<BigDecimal, BigDecimal> SFD = unmodifiableNavigableMap(
             new TreeMap<>(Stream.of(
-                    new SimpleEntry<>("0.00", "0.0000"),
-                    new SimpleEntry<>("0.10", "0.0050"),
-                    new SimpleEntry<>("0.15", "0.0100"),
-                    new SimpleEntry<>("0.20", "0.0300")
+                    new SimpleEntry<>("0.0000", "0.0000"),
+                    // Tier 1 (10% ~ 15% -> 50 bps)
+                    new SimpleEntry<>("0.0955", "0.0005"),
+                    new SimpleEntry<>("0.0960", "0.0010"),
+                    new SimpleEntry<>("0.0965", "0.0015"),
+                    new SimpleEntry<>("0.0970", "0.0020"),
+                    new SimpleEntry<>("0.0975", "0.0025"),
+                    new SimpleEntry<>("0.0980", "0.0030"),
+                    new SimpleEntry<>("0.0985", "0.0035"),
+                    new SimpleEntry<>("0.0990", "0.0040"),
+                    new SimpleEntry<>("0.0995", "0.0045"),
+                    new SimpleEntry<>("0.1000", "0.0050"),
+                    // Tier 2 (15% ~ 20% -> 100 bps)
+                    new SimpleEntry<>("0.1455", "0.0055"),
+                    new SimpleEntry<>("0.1460", "0.0060"),
+                    new SimpleEntry<>("0.1465", "0.0065"),
+                    new SimpleEntry<>("0.1470", "0.0070"),
+                    new SimpleEntry<>("0.1475", "0.0075"),
+                    new SimpleEntry<>("0.1480", "0.0080"),
+                    new SimpleEntry<>("0.1485", "0.0085"),
+                    new SimpleEntry<>("0.1490", "0.0090"),
+                    new SimpleEntry<>("0.1495", "0.0095"),
+                    new SimpleEntry<>("0.1500", "0.0100"),
+                    // Tier 3 (20% ~ **% -> 300 bps)
+                    new SimpleEntry<>("0.1905", "0.0110"),
+                    new SimpleEntry<>("0.1910", "0.0120"),
+                    new SimpleEntry<>("0.1915", "0.0130"),
+                    new SimpleEntry<>("0.1920", "0.0140"),
+                    new SimpleEntry<>("0.1925", "0.0150"),
+                    new SimpleEntry<>("0.1930", "0.0160"),
+                    new SimpleEntry<>("0.1935", "0.0170"),
+                    new SimpleEntry<>("0.1940", "0.0180"),
+                    new SimpleEntry<>("0.1945", "0.0190"),
+                    new SimpleEntry<>("0.1950", "0.0200"),
+                    new SimpleEntry<>("0.1955", "0.0210"),
+                    new SimpleEntry<>("0.1960", "0.0220"),
+                    new SimpleEntry<>("0.1965", "0.0230"),
+                    new SimpleEntry<>("0.1970", "0.0240"),
+                    new SimpleEntry<>("0.1975", "0.0250"),
+                    new SimpleEntry<>("0.1980", "0.0260"),
+                    new SimpleEntry<>("0.1985", "0.0270"),
+                    new SimpleEntry<>("0.1990", "0.0280"),
+                    new SimpleEntry<>("0.1995", "0.0290"),
+                    new SimpleEntry<>("0.2000", "0.0300")
             ).collect(Collectors.toMap(e -> new BigDecimal(e.getKey()), e -> new BigDecimal(e.getValue()))))
     );
 
