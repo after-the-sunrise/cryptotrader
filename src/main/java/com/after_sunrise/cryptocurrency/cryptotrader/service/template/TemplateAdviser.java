@@ -800,7 +800,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
             log.trace("No funding exposure size. Price : {}", price);
 
-            return ZERO;
+            return null;
 
         }
 
@@ -812,7 +812,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
             log.trace("No funding exposure size. Null funding position.");
 
-            return ZERO;
+            return null;
 
         }
 
@@ -849,7 +849,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
             log.trace("No base price for {}:{}:{}", key.getSite(), key.getInstrument(), currency);
 
-            return ZERO;
+            return null;
 
         }
 
@@ -859,7 +859,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
             log.trace("No instrument position for {}:{}", key.getSite(), key.getInstrument());
 
-            return ZERO;
+            return null;
 
         }
 
@@ -880,6 +880,10 @@ public class TemplateAdviser extends AbstractService implements Adviser {
         BigDecimal fundingSize = calculateFundingExposureSize(context, request, price);
 
         BigDecimal instrumentSize = calculateInstrumentExposureSize(context, request);
+
+        if (instrumentSize == null || fundingSize == null) {
+            return ZERO;
+        }
 
         BigDecimal size;
 
@@ -918,6 +922,10 @@ public class TemplateAdviser extends AbstractService implements Adviser {
         BigDecimal instrumentSize = calculateInstrumentExposureSize(context, request);
 
         BigDecimal fundingSize = calculateFundingExposureSize(context, request, price);
+
+        if (instrumentSize == null || fundingSize == null) {
+            return ZERO;
+        }
 
         BigDecimal size;
 

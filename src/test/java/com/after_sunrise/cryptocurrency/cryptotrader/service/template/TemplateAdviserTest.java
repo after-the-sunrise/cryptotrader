@@ -943,12 +943,12 @@ public class TemplateAdviserTest {
         assertEquals(target.calculateFundingExposureSize(context, builder.build(), price), expect);
 
         // Invalid price
-        assertEquals(target.calculateFundingExposureSize(context, builder.build(), null), ZERO);
-        assertEquals(target.calculateFundingExposureSize(context, builder.build(), ZERO), ZERO);
+        assertEquals(target.calculateFundingExposureSize(context, builder.build(), null), null);
+        assertEquals(target.calculateFundingExposureSize(context, builder.build(), ZERO), null);
 
         // Invalid Fund
         when(context.getFundingPosition(any())).thenReturn(null);
-        assertEquals(target.calculateFundingExposureSize(context, builder.build(), price), ZERO);
+        assertEquals(target.calculateFundingExposureSize(context, builder.build(), price), null);
         when(context.getFundingPosition(any())).thenReturn(new BigDecimal("18000"));
 
     }
@@ -969,7 +969,7 @@ public class TemplateAdviserTest {
 
         // Invalid Fund
         when(context.getInstrumentPosition(key)).thenReturn(null);
-        assertEquals(target.calculateInstrumentExposureSize(context, request), ZERO);
+        assertEquals(target.calculateInstrumentExposureSize(context, request), null);
 
     }
 
@@ -1018,12 +1018,12 @@ public class TemplateAdviserTest {
         // No price
         initializer.run();
         when(context.getConversionPrice(any(), any())).thenReturn(null);
-        assertEquals(target.calculateInstrumentExposureSize(context, request), new BigDecimal("0"));
+        assertEquals(target.calculateInstrumentExposureSize(context, request), null);
 
         // No position
         initializer.run();
         when(context.getInstrumentCurrency(any())).thenReturn(null);
-        assertEquals(target.calculateInstrumentExposureSize(context, request), new BigDecimal("0"));
+        assertEquals(target.calculateInstrumentExposureSize(context, request), null);
 
     }
 
