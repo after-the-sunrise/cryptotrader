@@ -17,13 +17,13 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NavigableMap;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ID;
 import static java.math.BigDecimal.ZERO;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
+import static org.testng.Assert.*;
 
 /**
  * @author takanori.takase
@@ -132,6 +132,37 @@ public class BitflyerAdviserTest {
     }
 
     @Test
+    public void testGetSfdTable() {
+
+        // Default
+        NavigableMap<BigDecimal, BigDecimal> result = target.getSfdTable();
+        assertEquals(result.size(), 3, result.toString());
+        assertEquals(result.get(new BigDecimal("0.1000")), new BigDecimal("0.0050"));
+        assertEquals(result.get(new BigDecimal("0.1500")), new BigDecimal("0.0100"));
+        assertEquals(result.get(new BigDecimal("0.2000")), new BigDecimal("0.0300"));
+
+        // Cached
+        assertSame(target.getSfdTable(), result);
+        assertSame(target.getSfdTable(), result);
+        assertSame(target.getSfdTable(), result);
+
+        // Override
+        configurations.put(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerAdviser.sfd.tbl",
+                "0.01:0.02|0.03:0.04|"
+        );
+        result = target.getSfdTable();
+        assertEquals(result.size(), 2, result.toString());
+        assertEquals(result.get(new BigDecimal("0.01")), new BigDecimal("0.02"));
+        assertEquals(result.get(new BigDecimal("0.03")), new BigDecimal("0.04"));
+
+        // Cached
+        assertSame(target.getSfdTable(), result);
+        assertSame(target.getSfdTable(), result);
+
+    }
+
+    @Test
     public void testCalculateSfdRate() {
 
         Instant now = Instant.now();
@@ -148,14 +179,30 @@ public class BitflyerAdviserTest {
 
         // Zero SFD
         when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("1900000"));
-        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.0000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0"));
+
+        // Tier 1
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2200000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.0050"));
+
+        // Tier 1+
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2240000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.0050"));
 
         // Tier 2
         when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2300000"));
         assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.0100"));
 
-        // Max Tier
-        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2600000"));
+        // Tier 2+
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2360000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.0100"));
+
+        // Tier 3
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2400000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.0300"));
+
+        // Tier 3+
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2440000"));
         assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.0300"));
 
         // Not FX
@@ -171,15 +218,127 @@ public class BitflyerAdviserTest {
 
         // Zero SFD
         when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("2100000"));
-        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.0000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0"));
+
+        // Tier 1
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1800000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.0050"));
+
+        // Tier 1+
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1740000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.0050"));
 
         // Tier 2
         when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1700000"));
         assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.0100"));
 
-        // Max Tier
-        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1400000"));
+        // Tier 2+
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1660000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.0100"));
+
+        // Tier 3
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1600000"));
         assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.0300"));
+
+        // Tier 3
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1540000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.0300"));
+
+        // Not FX
+        assertEquals(target.calculateSfdRate(context, r2, false), ZERO);
+
+        // Null Price
+        when(context.getBestBidPrice(fKey)).thenReturn(null);
+        assertEquals(target.calculateSfdRate(context, r1, false), ZERO);
+
+    }
+
+    @Test
+    public void testCalculateSfdRate_Interpolated() {
+
+        Instant now = Instant.now();
+        Key cKey = Key.builder().site("bf").timestamp(now).instrument("BTC_JPY").build();
+        Key fKey = Key.builder().site("bf").timestamp(now).instrument("FX_BTC_JPY").build();
+
+        Request r1 = Request.builder().site("bf").currentTime(now).instrument("FX_BTC_JPY").build();
+        Request r2 = Request.builder().site("bf").currentTime(now).instrument("ETH_BTC").build();
+        when(context.getLastPrice(cKey)).thenReturn(new BigDecimal("2000000"));
+
+        configurations.put(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerAdviser.sfd.pct",
+                new BigDecimal("-1.01")
+        );
+
+        //
+        // Buy
+        //
+
+        // Zero SFD
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("1900000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0"));
+
+        // Tier 1
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2200000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.005050000000"));
+
+        // Tier 1+
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2240000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.007070000000"));
+
+        // Tier 2
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2300000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.010100000000"));
+
+        // Tier 2+
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2360000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.022220000000"));
+
+        // Tier 3
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2400000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.030300"));
+
+        // Tier 3+
+        when(context.getBestAskPrice(fKey)).thenReturn(new BigDecimal("2440000"));
+        assertEquals(target.calculateSfdRate(context, r1, true), new BigDecimal("0.030300"));
+
+        // Not FX
+        assertEquals(target.calculateSfdRate(context, r2, true), ZERO);
+
+        // Null Price
+        when(context.getBestAskPrice(fKey)).thenReturn(null);
+        assertEquals(target.calculateSfdRate(context, r1, true), ZERO);
+
+        //
+        // Sell
+        //
+
+        // Zero SFD
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("2100000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0"));
+
+        // Tier 1
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1800000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.005050000000"));
+
+        // Tier 1+
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1740000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.008080000000"));
+
+        // Tier 2
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1700000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.010100000000"));
+
+        // Tier 2+
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1660000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.018180000000"));
+
+        // Tier 3
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1600000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.030300"));
+
+        // Tier 3
+        when(context.getBestBidPrice(fKey)).thenReturn(new BigDecimal("1540000"));
+        assertEquals(target.calculateSfdRate(context, r1, false), new BigDecimal("0.030300"));
 
         // Not FX
         assertEquals(target.calculateSfdRate(context, r2, false), ZERO);
