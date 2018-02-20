@@ -21,23 +21,23 @@ public class BitbankTransaction implements Trade {
     }
 
     public String getId() {
-        return String.valueOf(delegate.transactionId);
+        return String.valueOf(delegate.getTransactionId());
     }
 
     @Override
     public Instant getTimestamp() {
-        return delegate == null || delegate.executedAt == null ? null
-                : Instant.ofEpochMilli(delegate.executedAt.getTime());
+        return delegate == null || delegate.getExecutedAt() == null ? null
+                : Instant.ofEpochMilli(delegate.getExecutedAt().getTime());
     }
 
     @Override
     public BigDecimal getPrice() {
-        return delegate == null ? null : BigDecimal.valueOf(delegate.price);
+        return delegate == null ? null : delegate.getPrice();
     }
 
     @Override
     public BigDecimal getSize() {
-        return delegate == null ? null : delegate.amount;
+        return delegate == null ? null : delegate.getAmount();
     }
 
 }

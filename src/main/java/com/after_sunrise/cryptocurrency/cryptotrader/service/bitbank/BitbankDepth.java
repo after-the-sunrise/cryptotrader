@@ -33,11 +33,11 @@ public class BitbankDepth {
 
     public BitbankDepth(Depth depth) {
 
-        timestamp = depth.timestamp == null ? null : Instant.ofEpochMilli(depth.timestamp.getTime());
+        timestamp = depth.getTimestamp() == null ? null : Instant.ofEpochMilli(depth.getTimestamp().getTime());
 
-        asks = convert(depth.asks, NATURAL);
+        asks = convert(depth.getAsks(), NATURAL);
 
-        bids = convert(depth.bids, REVERSE);
+        bids = convert(depth.getBids(), REVERSE);
 
     }
 
