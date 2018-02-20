@@ -353,7 +353,8 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
             position = position.add(basePosition);
 
-            log.trace("Instrument position element : [{}.{}] {}", site, instrument, basePosition);
+            log.debug("Instrument position element : [{}.{}] {} (position=[{}] price=[{}])",
+                    site, instrument, basePosition, conversionPosition, conversionPrice);
 
         }
 
