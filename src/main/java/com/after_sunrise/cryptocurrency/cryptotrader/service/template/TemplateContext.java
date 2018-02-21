@@ -224,7 +224,7 @@ public abstract class TemplateContext extends AbstractService implements Context
 
             StatusLine statusLine = response.getStatusLine();
 
-            LOG.trace("[RECV][{}][{}] {}", statusLine, response.getAllHeaders(), body);
+            LOG.trace("[RECV][{}][{}][{}] {}", path, statusLine, response.getAllHeaders(), body);
 
             if (HttpStatus.SC_OK == statusLine.getStatusCode()) {
                 return body;
