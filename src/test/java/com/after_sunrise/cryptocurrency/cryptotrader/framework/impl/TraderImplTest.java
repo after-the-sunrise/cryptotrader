@@ -91,12 +91,12 @@ public class TraderImplTest {
 
             return null;
 
-        }).when(pipeline).process(any(), any(), any());
+        }).when(pipeline).process(any(), any(), any(), any());
 
         target.trade();
 
         verify(target, times(3 + 3 + 1)).processPipeline(any(), any(), any());
-        verify(pipeline, times(3)).process(estimate, site, instrument);
+        verify(pipeline, times(3)).process(now, estimate, site, instrument);
 
     }
 

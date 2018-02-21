@@ -55,9 +55,9 @@ public class PipelineImpl implements Pipeline {
     }
 
     @Override
-    public void process(Instant time, String site, String instrument) {
+    public void process(Instant current, Instant target, String site, String instrument) {
 
-        Optional.ofNullable(createRequest(time, site, instrument)).ifPresent(request -> {
+        Optional.ofNullable(createRequest(current, target, site, instrument)).ifPresent(request -> {
 
             log.info("Processing : {}", request);
 
@@ -105,13 +105,13 @@ public class PipelineImpl implements Pipeline {
     }
 
     @VisibleForTesting
-    Request createRequest(Instant time, String site, String instrument) {
+    Request createRequest(Instant current, Instant target, String site, String instrument) {
 
         Request request = Request.builder()
                 .site(site)
                 .instrument(instrument)
-                .currentTime(propertyManager.getNow())
-                .targetTime(time)
+                .currentTime(current)
+                .targetTime(target)
                 .tradingSpread(propertyManager.getTradingSpread(site, instrument))
                 .tradingSpreadAsk(propertyManager.getTradingSpreadAsk(site, instrument))
                 .tradingSpreadBid(propertyManager.getTradingSpreadBid(site, instrument))

@@ -53,20 +53,21 @@ public class PipelineImplTest {
         String site = request.getSite();
         String instrument = request.getInstrument();
         Instant now = request.getCurrentTime();
+        Instant future = now.plusSeconds(30);
         Estimation estimation = Estimation.builder().build();
         Advice advice = Advice.builder().build();
         List<Instruction> instructions = Collections.emptyList();
         Map<Instruction, String> results = emptyMap();
         Map<Instruction, Boolean> reconcile = emptyMap();
 
-        doReturn(request).when(target).createRequest(now, site, instrument);
+        doReturn(request).when(target).createRequest(now, future, site, instrument);
         when(module.getMock(Estimator.class).estimate(context, request)).thenReturn(estimation);
         when(module.getMock(Adviser.class).advise(context, request, estimation)).thenReturn(advice);
         when(module.getMock(Instructor.class).instruct(context, request, advice)).thenReturn(instructions);
         when(module.getMock(Agent.class).manage(context, request, instructions)).thenReturn(results);
         when(module.getMock(Agent.class).reconcile(context, request, results)).thenReturn(reconcile);
 
-        target.process(now, site, instrument);
+        target.process(now, future, site, instrument);
 
         verify(module.getMock(Estimator.class)).estimate(context, request);
         verify(module.getMock(Adviser.class)).advise(context, request, estimation);
@@ -79,9 +80,9 @@ public class PipelineImplTest {
     @Test
     public void testProcess_NullParameters() throws Exception {
 
-        doReturn(null).when(target).createRequest(any(), any(), any());
+        doReturn(null).when(target).createRequest(any(), any(), any(), any());
 
-        target.process(null, null, null);
+        target.process(null, null, null, null);
 
         verifyZeroInteractions(
                 module.getMock(Estimator.class),
@@ -104,7 +105,6 @@ public class PipelineImplTest {
 
         Runnable initializer = () -> {
             int count = 0;
-            when(manager.getNow()).thenReturn(currentTime);
             when(manager.getTradingSpread(any(), any())).thenReturn(valueOf(++count));
             when(manager.getTradingSpreadAsk(any(), any())).thenReturn(valueOf(++count));
             when(manager.getTradingSpreadBid(any(), any())).thenReturn(valueOf(++count));
@@ -132,7 +132,7 @@ public class PipelineImplTest {
         };
 
         initializer.run();
-        Request request = target.createRequest(targetTime, site, instrument);
+        Request request = target.createRequest(currentTime, targetTime, site, instrument);
         assertEquals(request.getSite(), site);
         assertEquals(request.getInstrument(), instrument);
         assertEquals(request.getCurrentTime(), currentTime);
@@ -167,109 +167,106 @@ public class PipelineImplTest {
         assertSame(target.validateRequest(copy), copy);
 
         // Null Argument
-        assertNull(target.createRequest(null, site, instrument));
-        assertNull(target.createRequest(targetTime, null, instrument));
-        assertNull(target.createRequest(targetTime, site, null));
-
-        initializer.run();
-        doReturn(null).when(manager).getNow();
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(null, targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, null, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, null, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, null));
 
         initializer.run();
         doReturn(null).when(manager).getTradingSpread(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getTradingSpreadAsk(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getTradingSpreadBid(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getTradingSigma(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getTradingSamples(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getTradingExposure(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getTradingThreshold(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getTradingMaximum(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getTradingMinimum(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getTradingResistance(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getTradingAversion(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getTradingInstruction(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getTradingSplit(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getTradingDuration(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getFundingOffset(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getFundingMultiplierProducts(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getFundingPositiveMultiplier(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getFundingNegativeMultiplier(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getFundingPositiveThreshold(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getFundingNegativeThreshold(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getDeviationProducts(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getAversionProducts(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getHedgeProducts(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
         initializer.run();
         doReturn(null).when(manager).getEstimationAversion(any(), any());
-        assertNull(target.createRequest(targetTime, site, instrument));
+        assertNull(target.createRequest(currentTime, targetTime, site, instrument));
 
     }
 

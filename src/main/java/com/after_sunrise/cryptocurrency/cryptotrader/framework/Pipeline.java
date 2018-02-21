@@ -8,6 +8,6 @@ import java.time.Instant;
  */
 public interface Pipeline {
 
-    void process(Instant time, String site, String instrument);
+    void process(Instant currentTime, Instant targetTime, String site, String instrument);
 
 }

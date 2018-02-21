@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -188,13 +187,13 @@ public class TraderImpl implements Trader {
             AtomicLong count = instruments.computeIfAbsent(trimToEmpty(instrument),
                     k -> new AtomicLong(propertyManager.getTradingSeed(site, instrument)));
 
-            Instant time = now.plus(Math.abs(interval.toMillis() * frequency), ChronoUnit.MILLIS);
-
             if (count.getAndIncrement() % frequency != 0) {
                 return;
             }
 
-            pipeline.process(time, site, instrument);
+            Instant target = now.plusMillis(Math.abs(interval.toMillis() * frequency));
+
+            pipeline.process(now, target, site, instrument);
 
         }, executor);
 
