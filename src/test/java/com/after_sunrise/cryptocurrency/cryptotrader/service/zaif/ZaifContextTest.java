@@ -153,7 +153,7 @@ public class ZaifContextTest {
 
         // Not found
         List<Trade> unknown = target.listTrades(Key.builder().instrument("FOO").build(), null);
-        assertEquals(unknown.size(), 0);
+        assertEquals(unknown, null);
 
         // Cached
         doReturn(null).when(target).request(any(), any(), any(), any());

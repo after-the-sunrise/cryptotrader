@@ -967,7 +967,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         });
 
-        return new ArrayList<>(execs);
+        return execs == null ? null : new ArrayList<>(execs);
 
     }
 

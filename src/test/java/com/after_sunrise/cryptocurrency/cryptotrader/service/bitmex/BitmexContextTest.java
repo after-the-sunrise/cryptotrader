@@ -745,7 +745,7 @@ public class BitmexContextTest {
         doThrow(new IOException("test")).when(target).executePrivate(any(), any(), any(), any());
         target.clear();
         assertEquals(target.getInstrumentPosition(key2), null);
-        verify(target, times(3)).executePrivate(any(), any(), any(), any());
+        verify(target, times(2 + 3)).executePrivate(any(), any(), any(), any());
 
     }
 
@@ -776,21 +776,21 @@ public class BitmexContextTest {
         target.clear();
         assertEquals(target.getFundingPosition(key1), null);
         assertEquals(target.getFundingPosition(key2), null);
-        verify(target, times(2)).executePrivate(any(), any(), any(), any());
+        verify(target, times(1 + 1)).executePrivate(any(), any(), any(), any());
 
         // Error
         doThrow(new IOException("test")).when(target).executePrivate(any(), any(), any(), any());
         target.clear();
         assertEquals(target.getFundingPosition(key1), null);
         assertEquals(target.getFundingPosition(key2), null);
-        verify(target, times(4)).executePrivate(any(), any(), any(), any());
+        verify(target, times(1 + 1 + 3 + 3)).executePrivate(any(), any(), any(), any());
 
         // No rate
         doReturn(null).when(target).getFundingConversionRate(any(), any());
         target.clear();
         assertEquals(target.getFundingPosition(key1), null);
         assertEquals(target.getFundingPosition(key2), null);
-        verify(target, times(4)).executePrivate(any(), any(), any(), any());
+        verify(target, times(1 + 1 + 3 + 3)).executePrivate(any(), any(), any(), any());
 
     }
 

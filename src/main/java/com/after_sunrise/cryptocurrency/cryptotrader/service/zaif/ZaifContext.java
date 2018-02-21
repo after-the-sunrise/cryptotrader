@@ -109,6 +109,10 @@ public class ZaifContext extends TemplateContext implements ZaifService {
 
         });
 
+        if (values == null) {
+            return null;
+        }
+
         if (fromTime == null) {
             return new ArrayList<>(values);
         }

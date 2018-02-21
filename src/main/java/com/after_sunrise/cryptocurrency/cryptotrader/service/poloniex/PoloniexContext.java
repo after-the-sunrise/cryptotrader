@@ -119,6 +119,10 @@ public class PoloniexContext extends TemplateContext implements PoloniexService 
 
         });
 
+        if (values == null) {
+            return null;
+        }
+
         if (fromTime == null) {
             return new ArrayList<>(values);
         }

@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 
 import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.*;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
@@ -178,7 +177,7 @@ public class TemplateContextTest {
         doThrow(new Exception("test")).when(callable).call();
         assertNull(target.findCached(BigDecimal.class, key, callable));
         assertNull(target.findCached(BigDecimal.class, key, callable));
-        verify(callable, times(5)).call();
+        verify(callable, times(3 + 3 + 3)).call();
 
         target.clear();
         assertNull(target.findCached(null, key, callable));
@@ -204,19 +203,19 @@ public class TemplateContextTest {
         verify(callable, times(2)).call();
 
         target.clear();
-        assertEquals(target.listCached(BigDecimal.class, key, callable), emptyList());
-        assertEquals(target.listCached(BigDecimal.class, key, callable), emptyList());
+        assertEquals(target.listCached(BigDecimal.class, key, callable), null);
+        assertEquals(target.listCached(BigDecimal.class, key, callable), null);
         verify(callable, times(3)).call();
 
         target.clear();
         doThrow(new Exception("test")).when(callable).call();
-        assertEquals(target.listCached(BigDecimal.class, key, callable), emptyList());
-        assertEquals(target.listCached(BigDecimal.class, key, callable), emptyList());
-        verify(callable, times(5)).call();
+        assertEquals(target.listCached(BigDecimal.class, key, callable), null);
+        assertEquals(target.listCached(BigDecimal.class, key, callable), null);
+        verify(callable, times(3 + 3 + 3)).call();
 
         target.clear();
-        assertEquals(target.listCached(null, key, callable), emptyList());
-        assertEquals(target.listCached(BigDecimal.class, null, callable), emptyList());
+        assertEquals(target.listCached(null, key, callable), null);
+        assertEquals(target.listCached(BigDecimal.class, null, callable), null);
         verifyNoMoreInteractions(callable);
 
     }

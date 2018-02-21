@@ -34,16 +34,16 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.util.Collections.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
 /**
@@ -97,9 +97,13 @@ public abstract class TemplateContext extends AbstractService implements Context
 
     private static final Duration CACHE_DURATION = Duration.ofMinutes(1);
 
-    private final Map<Class<?>, Cache<Key, Optional<?>>> singleCache = new ConcurrentHashMap<>();
+    private static final Duration CACHE_SLEEP = Duration.of(100, MILLIS);
 
-    private final Map<Class<?>, Cache<Key, Optional<List<?>>>> listCache = new ConcurrentHashMap<>();
+    private static final int CACHE_RETRY = 2;
+
+    private final Map<Class<?>, Cache<Key, Optional<?>>> singleCache = synchronizedMap(new HashMap<>());
+
+    private final Map<Class<?>, Cache<Key, Optional<List<?>>>> listCache = synchronizedMap(new HashMap<>());
 
     private final String id;
 
@@ -245,77 +249,114 @@ public abstract class TemplateContext extends AbstractService implements Context
 
     protected <T> T findCached(Class<T> type, Key key, Callable<T> c) {
 
-        if (type == null || key == null) {
+        if (type == null || key == null || c == null) {
             return null;
         }
 
-        Optional<?> cached;
+        Cache<Key, Optional<?>> cache = singleCache.computeIfAbsent(type, t -> createCache());
 
-        synchronized (type) {
+        synchronized (cache) {
 
-            Cache<Key, Optional<?>> cache = singleCache.computeIfAbsent(type, t -> createCache());
+            int retry = 0;
 
             try {
 
-                cached = cache.get(key, () -> {
+                while (true) {
 
-                    T value = c.call();
+                    try {
 
-                    log.trace("Cached : {} - {}", key, value);
+                        Optional<?> cached = cache.get(key, () -> {
 
-                    return Optional.ofNullable(value);
+                            T value = c.call();
 
-                });
+                            log.trace("Cached : {} - {}", key, value);
 
-            } catch (Exception e) {
+                            return Optional.ofNullable(value);
 
-                log.warn("Failed to cache : {} - {}", type, e);
+                        });
 
-                cached = Optional.empty();
+                        return cached.map(type::cast).orElse(null);
 
+                    } catch (Exception e) {
+
+                        if (CACHE_RETRY < ++retry) {
+
+                            log.warn("Failed to cache : {} - {}", type, e);
+
+                            break;
+
+                        }
+
+                        Thread.sleep(CACHE_SLEEP.toMillis());
+
+                    }
+
+                }
+
+            } catch (InterruptedException e) {
+                // Do nothing.
             }
 
         }
 
-        return type.cast(cached.orElse(null));
+        return null;
 
     }
 
     protected <T> List<T> listCached(Class<T> type, Key key, Callable<List<T>> c) {
 
-        if (type == null || key == null) {
-            return emptyList();
+        if (type == null || key == null || c == null) {
+            return null;
         }
 
-        Optional<List<?>> cached;
+        Cache<Key, Optional<List<?>>> cache = listCache.computeIfAbsent(type, t -> createCache());
 
-        synchronized (type) {
+        synchronized (cache) {
 
-            Cache<Key, Optional<List<?>>> cache = listCache.computeIfAbsent(type, t -> createCache());
+            int retry = 0;
 
             try {
 
-                cached = cache.get(key, () -> {
+                while (true) {
 
-                    List<T> values = trimToEmpty(c.call());
+                    try {
 
-                    log.trace("Cached list : {} ({})", key, values.size());
+                        Optional<List<?>> cached = cache.get(key, () -> {
 
-                    return Optional.of(values);
+                            List<T> values = c.call();
 
-                });
+                            log.trace("Cached list : {} ({})", key, values == null ? null : values.size());
 
-            } catch (Exception e) {
+                            return Optional.ofNullable(values);
 
-                log.warn("Failed to cache list : {} - {}", type, e);
+                        });
 
-                cached = Optional.empty();
+                        return cached.map(l -> l.stream().map(type::cast).collect(toList()))
+                                .map(Collections::unmodifiableList).orElse(null);
 
+                    } catch (Exception e) {
+
+                        if (CACHE_RETRY < ++retry) {
+
+                            log.warn("Failed to cache list : {} - {}", type, e);
+
+                            break;
+
+                        }
+
+                        Thread.sleep(CACHE_SLEEP.toMillis());
+
+                    }
+
+                }
+
+            } catch (InterruptedException e) {
+                // Do nothing.
             }
 
         }
 
-        return cached.orElse(emptyList()).stream().map(type::cast).collect(Collectors.toList());
+        return null;
 
     }
 

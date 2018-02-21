@@ -109,6 +109,10 @@ public class BitfinexContext extends TemplateContext implements BitfinexService 
 
         });
 
+        if (values == null) {
+            return null;
+        }
+
         if (fromTime == null) {
             return new ArrayList<>(values);
         }
