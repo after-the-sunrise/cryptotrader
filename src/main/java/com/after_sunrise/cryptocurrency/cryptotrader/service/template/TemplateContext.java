@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.util.Collections.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
@@ -95,9 +94,9 @@ public abstract class TemplateContext extends AbstractService implements Context
 
     private static final long CACHE_SIZE = Byte.MAX_VALUE;
 
-    private static final Duration CACHE_DURATION = Duration.ofMinutes(1);
+    private static final Duration CACHE_DURATION = Duration.ofMinutes(3);
 
-    private static final Duration CACHE_SLEEP = Duration.of(100, MILLIS);
+    private static final Duration CACHE_SLEEP = Duration.ofMillis(100);
 
     private static final int CACHE_RETRY = 2;
 
@@ -253,7 +252,7 @@ public abstract class TemplateContext extends AbstractService implements Context
             return null;
         }
 
-        Cache<Key, Optional<?>> cache = singleCache.computeIfAbsent(type, t -> createCache());
+        Cache<Key, Optional<?>> cache = singleCache.computeIfAbsent(type, this::createCache);
 
         synchronized (cache) {
 
@@ -309,7 +308,7 @@ public abstract class TemplateContext extends AbstractService implements Context
             return null;
         }
 
-        Cache<Key, Optional<List<?>>> cache = listCache.computeIfAbsent(type, t -> createCache());
+        Cache<Key, Optional<List<?>>> cache = listCache.computeIfAbsent(type, this::createCache);
 
         synchronized (cache) {
 
@@ -360,11 +359,15 @@ public abstract class TemplateContext extends AbstractService implements Context
 
     }
 
-    private <K0, K1 extends K0, V0, V1 extends V0> Cache<K1, V1> createCache() {
+    private <K0, K1 extends K0, V0, V1 extends V0> Cache<K1, V1> createCache(Class<?> type) {
+
+        log.trace("Creating cache : {}", type);
+
         return CacheBuilder.newBuilder()
                 .maximumSize(CACHE_SIZE)
                 .expireAfterWrite(CACHE_DURATION.toMillis(), MILLISECONDS)
                 .build();
+
     }
 
     protected BigDecimal round(BigDecimal value, RoundingMode mode, BigDecimal unit) {
