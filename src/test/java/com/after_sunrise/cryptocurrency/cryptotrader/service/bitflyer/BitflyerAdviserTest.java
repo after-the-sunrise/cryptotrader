@@ -350,6 +350,35 @@ public class BitflyerAdviserTest {
     }
 
     @Test
+    public void testCalculateDualSfdRate() {
+
+        Request request = Request.builder().build();
+        doReturn(new BigDecimal("0.10")).when(target).calculateSfdRate(context, request, true);
+
+        configurations.put(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerAdviser.sfd.inv",
+                new BigDecimal("0.50")
+        );
+
+        doReturn(new BigDecimal("0.24")).when(target).calculateSfdRate(context, request, false);
+        assertEquals(target.calculateDualSfdRate(context, request, true), new BigDecimal("0.1200"));
+        assertEquals(target.calculateDualSfdRate(context, request, false), new BigDecimal("0.24"));
+
+        doReturn(new BigDecimal("0.12")).when(target).calculateSfdRate(context, request, false);
+        assertEquals(target.calculateDualSfdRate(context, request, true), new BigDecimal("0.10"));
+        assertEquals(target.calculateDualSfdRate(context, request, false), new BigDecimal("0.12"));
+
+        doReturn(new BigDecimal("0.08")).when(target).calculateSfdRate(context, request, false);
+        assertEquals(target.calculateDualSfdRate(context, request, true), new BigDecimal("0.10"));
+        assertEquals(target.calculateDualSfdRate(context, request, false), new BigDecimal("0.08"));
+
+        doReturn(new BigDecimal("0.04")).when(target).calculateSfdRate(context, request, false);
+        assertEquals(target.calculateDualSfdRate(context, request, true), new BigDecimal("0.10"));
+        assertEquals(target.calculateDualSfdRate(context, request, false), new BigDecimal("0.0500"));
+
+    }
+
+    @Test
     public void testAdjustBuyBasis() {
 
         Request request = Request.builder().build();
@@ -361,7 +390,7 @@ public class BitflyerAdviserTest {
         );
 
         doReturn(new BigDecimal("0.0005")).when(target).calculateSwapRate(context, request, swap);
-        doReturn(new BigDecimal("0.0001")).when(target).calculateSfdRate(context, request, true);
+        doReturn(new BigDecimal("0.0001")).when(target).calculateDualSfdRate(context, request, true);
 
         BigDecimal result = target.adjustBuyBasis(context, request, new BigDecimal("0.002"));
         assertEquals(result, new BigDecimal("0.0026"));
@@ -382,7 +411,7 @@ public class BitflyerAdviserTest {
         );
 
         doReturn(new BigDecimal("0.0005")).when(target).calculateSwapRate(context, request, swap);
-        doReturn(new BigDecimal("0.0001")).when(target).calculateSfdRate(context, request, false);
+        doReturn(new BigDecimal("0.0001")).when(target).calculateDualSfdRate(context, request, false);
 
         BigDecimal result = target.adjustSellBasis(context, request, new BigDecimal("0.002"));
         assertEquals(result, new BigDecimal("0.0026"));

@@ -41,6 +41,8 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     private static final String KEY_SFD_PCT = "sfd.pct";
 
+    private static final String KEY_SFD_INV = "sfd.inv";
+
     private static final String KEY_SFD_TBL = "sfd.tbl";
 
     private static final String KEY_SWAP_B = "swap.buy";
@@ -202,6 +204,19 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
     }
 
+    @VisibleForTesting
+    BigDecimal calculateDualSfdRate(Context context, Request request, boolean buy) {
+
+        BigDecimal rate = trimToZero(calculateSfdRate(context, request, buy));
+
+        BigDecimal inversePct = getDecimalProperty(KEY_SFD_INV, ZERO);
+
+        BigDecimal inverseRate = trimToZero(calculateSfdRate(context, request, !buy));
+
+        return rate.max(inverseRate.multiply(inversePct));
+
+    }
+
     @Override
     protected BigDecimal adjustBuyBasis(Context context, Request request, BigDecimal basis) {
 
@@ -213,7 +228,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         BigDecimal swapRate = trimToZero(calculateSwapRate(context, request, dailyRate));
 
-        BigDecimal sfdRate = trimToZero(calculateSfdRate(context, request, true));
+        BigDecimal sfdRate = trimToZero(calculateDualSfdRate(context, request, true));
 
         return basis.add(swapRate).add(sfdRate);
 
@@ -230,7 +245,7 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
 
         BigDecimal swapRate = trimToZero(calculateSwapRate(context, request, dailyRate));
 
-        BigDecimal sfdRate = trimToZero(calculateSfdRate(context, request, false));
+        BigDecimal sfdRate = trimToZero(calculateDualSfdRate(context, request, false));
 
         return basis.add(swapRate).add(sfdRate);
 
