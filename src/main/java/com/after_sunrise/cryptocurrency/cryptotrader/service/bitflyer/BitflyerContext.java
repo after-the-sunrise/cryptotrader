@@ -941,15 +941,21 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     @Override
     public BitflyerOrder findOrder(Key key, String id) {
 
-        return fetchOrder(key).stream().filter(o -> StringUtils.isNotEmpty(o.getId()))
-                .filter(o -> StringUtils.equals(o.getId(), id)).findFirst().orElse(null);
+        return trimToEmpty(fetchOrder(key)).stream()
+                .filter(Objects::nonNull)
+                .filter(o -> StringUtils.isNotEmpty(o.getId()))
+                .filter(o -> StringUtils.equals(o.getId(), id))
+                .findFirst().orElse(null);
 
     }
 
     @Override
     public List<Order> listActiveOrders(Key key) {
 
-        return fetchOrder(key).stream().filter(o -> TRUE.equals(o.getActive())).collect(toList());
+        return trimToEmpty(fetchOrder(key)).stream()
+                .filter(Objects::nonNull)
+                .filter(o -> TRUE.equals(o.getActive()))
+                .collect(toList());
 
     }
 
@@ -1084,6 +1090,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
         String product = convertProductAlias(key);
 
         Map<String, BitflyerOrder> orders = trimToEmpty(fetchOrder(key)).stream()
+                .filter(Objects::nonNull)
                 .filter(o -> TRUE.equals(o.getActive()))
                 .collect(toMap(BitflyerOrder::getId, Function.identity(), (o1, o2) -> o1, HashMap::new));
 

@@ -385,7 +385,7 @@ public class BitbankContext extends TemplateContext implements BitbankService {
     @Override
     public List<Order> listActiveOrders(Key key) {
 
-        List<BitbankOrder> orders = fetchActiveOrders(key);
+        List<BitbankOrder> orders = trimToEmpty(fetchActiveOrders(key));
 
         return orders.stream().filter(Objects::nonNull).collect(toList());
 
