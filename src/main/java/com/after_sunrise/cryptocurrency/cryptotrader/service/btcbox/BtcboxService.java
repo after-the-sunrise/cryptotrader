@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.BTC;
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.JPY;
 import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.ZERO;
 
 /**
  * @author takanori.takase
@@ -30,7 +29,7 @@ public interface BtcboxService extends Service {
 
     enum ProductType {
 
-        BTC_JPY(CurrencyPair.BTC_JPY, BTC, JPY, new BigDecimal("0.001"), ONE, ZERO);
+        BTC_JPY(CurrencyPair.BTC_JPY, BTC, JPY, new BigDecimal("0.001"), ONE, new BigDecimal("0.0005"));
 
         private static final Map<String, ProductType> NAMES = Stream.of(values()).collect(
                 Collectors.toMap(Enum::name, Function.identity())
