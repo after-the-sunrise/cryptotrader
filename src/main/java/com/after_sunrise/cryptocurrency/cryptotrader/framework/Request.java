@@ -97,7 +97,7 @@ public class Request {
             b.tradingSamples(request.getTradingSamples());
             b.tradingExposure(request.getTradingExposure());
             b.tradingThreshold(request.getTradingThreshold());
-            b.tradingMaximum(request.getTradingMinimum());
+            b.tradingMaximum(request.getTradingMaximum());
             b.tradingMinimum(request.getTradingMinimum());
             b.tradingResistance(request.getTradingResistance());
             b.tradingAversion(request.getTradingAversion());
