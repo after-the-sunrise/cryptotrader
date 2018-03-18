@@ -259,7 +259,13 @@ public class BtcboxContext extends TemplateContext implements BtcboxService {
 
         ProductType product = ProductType.find(key.getInstrument());
 
-        return product == null ? null : product.getCommissionRate();
+        if (product == null) {
+            return null;
+        }
+
+        BigDecimal rate = product.getCommissionRate();
+
+        return getDecimalProperty("commission." + product.name(), rate);
 
     }
 

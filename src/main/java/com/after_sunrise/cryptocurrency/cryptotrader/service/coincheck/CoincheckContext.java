@@ -622,7 +622,9 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
             return null;
         }
 
-        return getDecimalProperty("commission.rate", product.getCommissionRate());
+        BigDecimal rate = product.getCommissionRate();
+
+        return getDecimalProperty("commission." + product.name(), rate);
 
     }
 

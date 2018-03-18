@@ -508,7 +508,7 @@ public class CoincheckContextTest {
         assertEquals(target.getCommissionRate(key), ZERO);
 
         conf.addProperty(
-                "com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckContext.commission.rate",
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckContext.commission.BTC_JPY",
                 "0.0001"
         );
         assertEquals(target.getCommissionRate(key), new BigDecimal("0.0001"));
