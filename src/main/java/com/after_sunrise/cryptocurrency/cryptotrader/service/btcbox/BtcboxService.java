@@ -29,7 +29,7 @@ public interface BtcboxService extends Service {
 
     enum ProductType {
 
-        BTC_JPY(CurrencyPair.BTC_JPY, BTC, JPY, new BigDecimal("0.001"), ONE, new BigDecimal("0.0005"));
+        BTC_JPY(CurrencyPair.BTC_JPY, BTC, JPY, new BigDecimal("0.001"), ONE);
 
         private static final Map<String, ProductType> NAMES = Stream.of(values()).collect(
                 Collectors.toMap(Enum::name, Function.identity())
@@ -43,10 +43,10 @@ public interface BtcboxService extends Service {
         private final CurrencyPair pair;
 
         @Getter
-        private final Service.CurrencyType instrumentCurrency;
+        private final CurrencyType instrumentCurrency;
 
         @Getter
-        private final Service.CurrencyType fundingCurrency;
+        private final CurrencyType fundingCurrency;
 
         @Getter
         private final BigDecimal lotSize;
@@ -54,17 +54,13 @@ public interface BtcboxService extends Service {
         @Getter
         private final BigDecimal tickSize;
 
-        @Getter
-        private final BigDecimal commissionRate;
-
-        ProductType(CurrencyPair pair, Service.CurrencyType instrument, Service.CurrencyType funding,
-                    BigDecimal lotSize, BigDecimal tickSize, BigDecimal commissionRate) {
+        ProductType(CurrencyPair pair, CurrencyType instrument, CurrencyType funding,
+                    BigDecimal lotSize, BigDecimal tickSize) {
             this.pair = pair;
             this.instrumentCurrency = instrument;
             this.fundingCurrency = funding;
             this.lotSize = lotSize;
             this.tickSize = tickSize;
-            this.commissionRate = commissionRate;
         }
 
     }

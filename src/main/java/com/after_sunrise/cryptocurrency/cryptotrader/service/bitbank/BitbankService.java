@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.BTC;
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.JPY;
 import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.ZERO;
 
 /**
  * @author takanori.takase
@@ -30,7 +29,7 @@ public interface BitbankService extends Service {
 
     enum ProductType {
 
-        BTC_JPY(CurrencyPair.BTC_JPY, BTC, JPY, new BigDecimal("0.0001"), ONE, ZERO);
+        BTC_JPY(CurrencyPair.BTC_JPY, BTC, JPY, new BigDecimal("0.0001"), ONE);
 
         private static final Map<String, ProductType> NAMES = Stream.of(values()).collect(
                 Collectors.toMap(Enum::name, Function.identity())
@@ -55,17 +54,13 @@ public interface BitbankService extends Service {
         @Getter
         private final BigDecimal tickSize;
 
-        @Getter
-        private final BigDecimal commissionRate;
-
         ProductType(CurrencyPair pair, CurrencyType instrument, CurrencyType funding,
-                    BigDecimal lotSize, BigDecimal tickSize, BigDecimal commissionRate) {
+                    BigDecimal lotSize, BigDecimal tickSize) {
             this.pair = pair;
             this.instrumentCurrency = instrument;
             this.fundingCurrency = funding;
             this.lotSize = lotSize;
             this.tickSize = tickSize;
-            this.commissionRate = commissionRate;
         }
 
     }

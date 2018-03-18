@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
 
@@ -317,9 +318,7 @@ public class BitbankContext extends TemplateContext implements BitbankService {
             return null;
         }
 
-        BigDecimal rate = product.getCommissionRate();
-
-        return getDecimalProperty("commission." + product.name(), rate);
+        return getDecimalProperty("commission." + product.name(), ZERO);
 
     }
 

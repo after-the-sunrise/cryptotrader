@@ -35,6 +35,7 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.Co
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.*;
 import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.synchronizedMap;
@@ -622,9 +623,7 @@ public class CoincheckContext extends TemplateContext implements CoincheckServic
             return null;
         }
 
-        BigDecimal rate = product.getCommissionRate();
-
-        return getDecimalProperty("commission." + product.name(), rate);
+        return getDecimalProperty("commission." + product.name(), ZERO);
 
     }
 

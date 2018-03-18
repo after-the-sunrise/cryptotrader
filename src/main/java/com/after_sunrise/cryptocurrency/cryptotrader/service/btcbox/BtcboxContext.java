@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.POST;
 import static java.lang.Boolean.FALSE;
 import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.*;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 
@@ -263,9 +264,7 @@ public class BtcboxContext extends TemplateContext implements BtcboxService {
             return null;
         }
 
-        BigDecimal rate = product.getCommissionRate();
-
-        return getDecimalProperty("commission." + product.name(), rate);
+        return getDecimalProperty("commission." + product.name(), ZERO);
 
     }
 
