@@ -1117,6 +1117,7 @@ public class TemplateAdviserTest {
         BigDecimal price = new BigDecimal("123.45");
         when(context.isMarginable(key)).thenReturn(null);
         when(context.getState(key)).thenReturn(StateType.WARNING);
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("100000"));
 
         // Net Short 1 (0.00 -> 0.00)
         doReturn(new BigDecimal("123")).when(target).calculateFundingExposureSize(context, request, price);
@@ -1142,6 +1143,10 @@ public class TemplateAdviserTest {
         doReturn(new BigDecimal("0")).when(target).calculateFundingExposureSize(context, request, price);
         doReturn(new BigDecimal("123")).when(target).calculateInstrumentExposureSize(context, request);
         assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("123.00"));
+
+        // Capped Availability
+        when(context.getInstrumentPosition(key)).thenReturn(new BigDecimal("12.3"));
+        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("12.25"));
 
     }
 

@@ -885,9 +885,11 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             return ZERO;
         }
 
+        Key key = Key.from(request);
+
         BigDecimal size;
 
-        if (Objects.equals(TRUE, context.isMarginable(Key.from(request)))) {
+        if (Objects.equals(TRUE, context.isMarginable(key))) {
 
             size = fundingSize.subtract(instrumentSize).max(ZERO).multiply(HALF);
 
@@ -899,7 +901,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         }
 
-        BigDecimal rounded = trimToZero(context.roundLotSize(Key.from(request), size, HALF_UP));
+        BigDecimal rounded = trimToZero(context.roundLotSize(key, size, HALF_UP));
 
         BigDecimal minimum = request.getTradingThreshold();
 
@@ -907,7 +909,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             rounded = ZERO;
         }
 
-        StateType state = context.getState(Key.from(request));
+        StateType state = context.getState(key);
 
         log.trace("Buy size : {} (state=[{}] funding=[{}] instrument[{}])",
                 rounded, state, fundingSize, instrumentSize);
@@ -927,9 +929,11 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             return ZERO;
         }
 
+        Key key = Key.from(request);
+
         BigDecimal size;
 
-        if (Objects.equals(TRUE, context.isMarginable(Key.from(request)))) {
+        if (Objects.equals(TRUE, context.isMarginable(key))) {
 
             size = fundingSize.add(instrumentSize).max(ZERO).multiply(HALF);
 
@@ -939,9 +943,13 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
             size = instrumentSize.subtract(excess).max(ZERO);
 
+            BigDecimal available = context.getInstrumentPosition(key);
+
+            size = size.min(trimToZero(available));
+
         }
 
-        BigDecimal rounded = trimToZero(context.roundLotSize(Key.from(request), size, HALF_UP));
+        BigDecimal rounded = trimToZero(context.roundLotSize(key, size, HALF_UP));
 
         BigDecimal minimum = request.getTradingThreshold();
 
@@ -949,7 +957,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
             rounded = ZERO;
         }
 
-        StateType state = context.getState(Key.from(request));
+        StateType state = context.getState(key);
 
         log.trace("Sell size : {} (state=[{}] funding=[{}] instrument[{}])",
                 rounded, state, fundingSize, instrumentSize);
