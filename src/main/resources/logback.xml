@@ -30,13 +30,13 @@
         </rollingPolicy>
     </appender>
 
-    <appender name="HTTP" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="BF4J" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <encoder>
             <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}][%-5level][%thread][%logger{0}] %msg%n</pattern>
         </encoder>
-        <file>logs/cryptotrader-http.log</file>
+        <file>logs/cryptotrader-bf4j.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/cryptotrader-http_%d{yyyy-MM-dd}.tar.gz</fileNamePattern>
+            <fileNamePattern>logs/cryptotrader-bf4j_%d{yyyy-MM-dd}.tar.gz</fileNamePattern>
             <maxHistory>8</maxHistory>
         </rollingPolicy>
     </appender>
@@ -65,7 +65,7 @@
     </logger>
 
     <logger level="TRACE" additivity="false" name="com.after_sunrise.cryptocurrency.bitflyer4j.core.Loggers$HttpLogger">
-        <appender-ref ref="HTTP"/>
+        <appender-ref ref="BF4J"/>
     </logger>
 
     <logger level="TRACE" additivity="false"
