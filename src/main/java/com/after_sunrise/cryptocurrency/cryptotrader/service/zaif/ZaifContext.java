@@ -258,17 +258,14 @@ public class ZaifContext extends TemplateContext implements ZaifService {
             Map<String, String> map = new LinkedHashMap<>(trimToEmpty(parameters));
             map.put("nonce", BigDecimal.valueOf(getNow().toEpochMilli()).movePointLeft(3).toPlainString());
             map.put("method", method);
-
-            String body = StringUtils.join(
-                    map.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).toArray(String[]::new),
-                    "&"
-            );
+            String data = buildQueryParameter(map, "");
 
             Map<String, String> headers = new LinkedHashMap<>();
+            headers.put("Content-Type", "application/x-www-form-urlencoded");
             headers.put("key", apiKey);
-            headers.put("sign", computeHash("HmacSHA512", secret.getBytes(), body.getBytes()));
+            headers.put("sign", computeHash("HmacSHA512", secret.getBytes(), data.getBytes()));
 
-            result = request(POST, URL_POST, headers, body);
+            result = request(POST, URL_POST, headers, data);
 
         }
 

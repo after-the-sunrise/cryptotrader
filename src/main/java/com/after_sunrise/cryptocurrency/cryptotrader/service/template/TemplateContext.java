@@ -173,6 +173,11 @@ public abstract class TemplateContext extends AbstractService implements Context
 
     @VisibleForTesting
     public String buildQueryParameter(Map<String, String> parameters) throws IOException {
+        return buildQueryParameter(parameters, "?");
+    }
+
+    @VisibleForTesting
+    public String buildQueryParameter(Map<String, String> parameters, String prefix) throws IOException {
 
         StringBuilder sb = new StringBuilder();
 
@@ -188,7 +193,7 @@ public abstract class TemplateContext extends AbstractService implements Context
                     continue;
                 }
 
-                sb.append(sb.length() == 0 ? "?" : "&");
+                sb.append(sb.length() == 0 ? StringUtils.trimToEmpty(prefix) : "&");
                 sb.append(URLEncoder.encode(entry.getKey(), UTF_8.name()));
                 sb.append('=');
                 sb.append(URLEncoder.encode(entry.getValue(), UTF_8.name()));

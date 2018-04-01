@@ -20,7 +20,7 @@ public class ZaifBalance {
     @SerializedName("funds")
     private Map<String, BigDecimal> funds;
 
-    @SerializedName("deposits")
+    @SerializedName("deposit")
     private Map<String, BigDecimal> deposits;
 
     @SerializedName("rights")
