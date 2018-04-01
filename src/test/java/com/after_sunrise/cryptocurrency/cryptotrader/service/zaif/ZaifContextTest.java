@@ -1,26 +1,36 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.zaif;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.Key;
+import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
+import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.CurrencyType.*;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
-import static com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifContext.URL_TICKER;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifContext.URL_TRADE;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifService.ID;
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifService.ProductType.BTC_JPY;
 import static com.google.common.io.Resources.getResource;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.toSet;
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 /**
  * @author takanori.takase
@@ -45,17 +55,67 @@ public class ZaifContextTest {
     }
 
     @Test(enabled = false)
-    public void test() throws IOException {
+    public void test() throws ConfigurationException, IOException {
 
         doCallRealMethod().when(target).request(any(), any(), any(), any());
 
-        Key key = Key.builder().instrument("bch_btc").build();
+        Path path = Paths.get(System.getProperty("user.home"), ".cryptotrader");
+        target.setConfiguration(new Configurations().properties(path.toAbsolutePath().toFile()));
+        Key key = Key.builder().site(ID).instrument(BTC_JPY.name()).timestamp(Instant.now()).build();
 
-        System.out.println("ASK : " + target.getBestAskPrice(key));
-        System.out.println("BID : " + target.getBestBidPrice(key));
-        System.out.println("MID : " + target.getMidPrice(key));
-        System.out.println("LTP : " + target.getLastPrice(key));
-        System.out.println("TRD : " + target.listTrades(key, null));
+        System.out.println("AP: " + target.getBestAskPrice(key));
+        System.out.println("BP: " + target.getBestBidPrice(key));
+        System.out.println("AS: " + target.getBestAskSize(key));
+        System.out.println("BS: " + target.getBestBidSize(key));
+        System.out.println("MP: " + target.getMidPrice(key));
+        System.out.println("AD: " + target.getAskPrices(key));
+        System.out.println("BD: " + target.getBidPrices(key));
+
+        System.out.println("LP:" + target.getLastPrice(key));
+        System.out.println("TD:" + target.listTrades(key, null));
+
+        System.out.println("IC:" + target.getInstrumentCurrency(key));
+        System.out.println("FC:" + target.getFundingCurrency(key));
+        System.out.println("FP:" + target.findProduct(key, BTC, JPY));
+
+        System.out.println("P1:" + target.getConversionPrice(key, BTC));
+        System.out.println("P2:" + target.getConversionPrice(key, JPY));
+
+        System.out.println("IP:" + target.getInstrumentPosition(key));
+        System.out.println("FP:" + target.getFundingPosition(key));
+        System.out.println("AO:" + target.listActiveOrders(key));
+        System.out.println("EX:" + target.listExecutions(key));
+
+    }
+
+    @Test(enabled = false)
+    public void testOrder() throws ConfigurationException, InterruptedException, IOException {
+
+        doCallRealMethod().when(target).request(any(), any(), any(), any());
+
+        Path path = Paths.get(System.getProperty("user.home"), ".cryptotrader");
+        target.setConfiguration(new Configurations().properties(path.toAbsolutePath().toFile()));
+        Key key = Key.builder().site(ID).instrument(BTC_JPY.name()).timestamp(Instant.now()).build();
+
+        Set<Instruction.CreateInstruction> creates = Sets.newHashSet(
+                Instruction.CreateInstruction.builder().price(new BigDecimal("1000000")).size(new BigDecimal("+0.0001")).build(),
+                Instruction.CreateInstruction.builder().price(new BigDecimal("1500000")).size(new BigDecimal("-0.0001")).build()
+        );
+
+        Map<Instruction.CreateInstruction, String> created = target.createOrders(key, creates);
+        System.out.println("Created : " + created);
+
+        TimeUnit.SECONDS.sleep(5L);
+        System.out.println("Orders:" + target.listActiveOrders(key));
+        TimeUnit.SECONDS.sleep(5L);
+
+        Set<Instruction.CancelInstruction> cancels = created.values().stream().filter(StringUtils::isNotEmpty)
+                .map(id -> Instruction.CancelInstruction.builder().id(id).build()).collect(toSet());
+        Map<Instruction.CancelInstruction, String> cancelled = target.cancelOrders(key, cancels);
+        System.out.println("Cancelled : " + cancelled);
+
+        TimeUnit.SECONDS.sleep(5L);
+        System.out.println("Orders:" + target.listActiveOrders(key));
 
     }
 
@@ -65,79 +125,50 @@ public class ZaifContextTest {
     }
 
     @Test
-    public void testQueryTick() throws Exception {
-
-        String data = Resources.toString(getResource("json/zaif_ticker.json"), UTF_8);
-        doReturn(data).when(target).request(GET, URL_TICKER + "btc_jpy", null, null);
-
-        // Found
-        ZaifTick tick = target.queryTick(Key.builder().instrument("btc_jpy").build()).get();
-        assertEquals(tick.getAsk(), new BigDecimal("403755"));
-        assertEquals(tick.getBid(), new BigDecimal("403690"));
-        assertEquals(tick.getLast(), new BigDecimal("403720"));
-
-        // Not found
-        assertFalse(target.queryTick(Key.builder().instrument("FOO_BAR").build()).isPresent());
-
-        // Cached
-        doReturn(null).when(target).request(any(), any(), any(), any());
-        ZaifTick cached = target.queryTick(Key.builder().instrument("btc_jpy").build()).get();
-        assertSame(cached, tick);
-
-    }
-
-    @Test
-    public void testGetBestAskPrice() throws Exception {
+    public void testGetAsk() throws Exception {
 
         Key key = Key.builder().instrument("foo").build();
 
-        ZaifTick tick = mock(ZaifTick.class);
-        when(tick.getAsk()).thenReturn(BigDecimal.TEN);
+        ZaifDepth value = mock(ZaifDepth.class);
+        when(value.getAskPrices()).thenReturn(new TreeMap<>());
+        value.getAskPrices().put(BigDecimal.ONE, BigDecimal.TEN);
 
-        doReturn(Optional.of(tick)).when(target).queryTick(key);
-        assertEquals(target.getBestAskPrice(key), tick.getAsk());
+        doReturn(Optional.of(value)).when(target).queryDepth(key);
+        assertEquals(target.getBestAskPrice(key), BigDecimal.ONE);
+        assertEquals(target.getBestAskSize(key), BigDecimal.TEN);
+        assertEquals(target.getAskPrices(key), value.getAskPrices());
 
-        doReturn(Optional.empty()).when(target).queryTick(key);
+        doReturn(Optional.empty()).when(target).queryDepth(key);
         assertNull(target.getBestAskPrice(key));
+        assertNull(target.getBestAskSize(key));
+        assertNull(target.getAskPrices(key));
 
     }
 
     @Test
-    public void testGetBestBidPrice() throws Exception {
+    public void testGetBid() throws Exception {
 
         Key key = Key.builder().instrument("foo").build();
 
-        ZaifTick tick = mock(ZaifTick.class);
-        when(tick.getBid()).thenReturn(BigDecimal.TEN);
+        ZaifDepth value = mock(ZaifDepth.class);
+        when(value.getBidPrices()).thenReturn(new TreeMap<>());
+        value.getBidPrices().put(BigDecimal.ONE, BigDecimal.TEN);
 
-        doReturn(Optional.of(tick)).when(target).queryTick(key);
-        assertEquals(target.getBestBidPrice(key), tick.getBid());
+        doReturn(Optional.of(value)).when(target).queryDepth(key);
+        assertEquals(target.getBestBidPrice(key), BigDecimal.ONE);
+        assertEquals(target.getBestBidSize(key), BigDecimal.TEN);
 
-        doReturn(Optional.empty()).when(target).queryTick(key);
+        doReturn(Optional.empty()).when(target).queryDepth(key);
         assertNull(target.getBestBidPrice(key));
-
-    }
-
-    @Test
-    public void testGetLastPrice() throws Exception {
-
-        Key key = Key.builder().instrument("foo").build();
-
-        ZaifTick tick = mock(ZaifTick.class);
-        when(tick.getLast()).thenReturn(BigDecimal.TEN);
-
-        doReturn(Optional.of(tick)).when(target).queryTick(key);
-        assertEquals(target.getLastPrice(key), tick.getLast());
-
-        doReturn(Optional.empty()).when(target).queryTick(key);
-        assertNull(target.getLastPrice(key));
+        assertNull(target.getBestBidSize(key));
+        assertNull(target.getBidPrices(key));
 
     }
 
     @Test
     public void testListTrades() throws Exception {
 
-        Key key = Key.builder().instrument("btc_jpy").build();
+        Key key = Key.builder().instrument("BTC_JPY").build();
         String data = Resources.toString(getResource("json/zaif_trade.json"), UTF_8);
         doReturn(data).when(target).request(GET, URL_TRADE + "btc_jpy", null, null);
 
@@ -169,9 +200,9 @@ public class ZaifContextTest {
 
     @Test
     public void testFindProduct() {
-        assertEquals(target.findProduct(null, BTC, JPY), "btc_jpy");
-        assertEquals(target.findProduct(null, ETH, BTC), "eth_btc");
-        assertEquals(target.findProduct(null, BCH, BTC), "bch_btc");
+        assertEquals(target.findProduct(null, BTC, JPY), "BTC_JPY");
+        assertEquals(target.findProduct(null, ETH, BTC), "ETH_BTC");
+        assertEquals(target.findProduct(null, BCH, BTC), "BCH_BTC");
         assertEquals(target.findProduct(null, JPY, BTC), null);
     }
 
