@@ -7,7 +7,6 @@
 * Standalone Java application.
 * Provides a thin framework for plugging-in custom trading strategies.
 * Multi-exchange, multi-product trading strategies.
-* Few trading strategies are available out-of-the-box. (Uses the same plugin mechanism.)
 * HTTP REST interface for manual interventions.
 
 Cryptotrader is...
