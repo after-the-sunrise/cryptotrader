@@ -6,61 +6,57 @@
 **Cryptotrader** is a cryptocurrency trading bot, with a plug-in mechanism to load custom trading strategies.
 * Standalone Java application.
 * Provides a thin framework for plugging-in custom trading strategies.
-* Few trading strategies are available out-of-the-box. (Uses the same plugin mechanism.)
 * Multi-exchange, multi-product trading strategies.
+* Few trading strategies are available out-of-the-box. (Uses the same plugin mechanism.)
 * HTTP REST interface for manual interventions.
 
 Cryptotrader is...
-* **NOT** fully automated. Even though the orders are handled automatically following the trading strategies, configurations such as which exchanges/products/strategies/parameters to use/trade, how much fund to utilize, and at which timing to deposit/withdraw are all discretional.
-* **NOT** a low-latency nor HFT trading application. The framework is based on a periodic timer, not event-driven.
+* **NOT** fully automated. Although the orders are autonomously managed by the trading strategies, configurations such as which exchanges/products/strategies/parameters to trade with, how much fund to utilize, and at which timing to deposit/withdraw funds are all discretional.
+* **NOT** a low-latency nor HFT trading application. The framework is based on a periodic timer and not event-driven.
 * **NOT** fault-tolerant nor highly-available. The single application process is the single-point-of-failure.
 * **NOT** for non-programmers. No tutorials, user guides, nor support are available. Read the code to figure out how things work. Fork if things needs to be tweaked. Contributions are always welcome, but not required.
 * **NOT** stable nor backward compatible. This project is for the author's quick & dirty playground implementations, therefore destructive changes could be made any time.
 
-So why is this project made public?
-* Not profitable by itself. Tuning is the key to the alpha, which is kept private.
-* Not all the strategies are exposed, some are only plugged-in at runtime.
-* More people, more attention, more liquidity benefits the author.
-* For fun. Something to chat over a cup of coffee.
+So why is this project made public? Well, mostly for fun, something to chat over a cup of :coffee:. 
+And also, custom plugins and configurations are not made public, which are the secret sauce to generate alpha.
 
 
 ## Getting Started
 
 ### Prerequisites
-* Linux
+* Linux machine with command line interface and direct internet access.
+    * Modern linux operating system. (cf: CentOS 7)
+    * 1GB or more free memory
+    * 30GB or more free disk space
 * JDK 8 or later
-* [Gradle](https://gradle.org/)
+* Gradle 4.x or later
+
+### Configuation
+Prepare a custom configuration file to define the trading strategies. 
+The [default configuration file](./src/main/resources/cryptotrader-default.properties) can be used as a starting point. 
+Note that the default values are simply placeholders with no real meanings, 
+therefore it's mandatory to configure each parameters properly for the application to actually start trading.
+Once configured, place the custom configuration file at the path `$HOME/.cryptotrader`.
 
 ### Installation & Launching
-Follow the below procedures to launch the application. The application will run in dry-mode (read-only) by default.
-1. Download (checkout) the project files from GitHub.
-2. From the command line, build the module with `gradle clean war`.
+Follow the below procedures to launch the application.
+1. Clone the project files from GitHub.
+2. Build the application module with `gradle clean war` command.
 3. Change current working directory to `etc/home/cryptotrader/cryptotrader/etc/winstone/`.
-4. Create a symbolic link to the generated war file `ln -s ../../build/libs/cryptotrader-0.0.1-SNAPSHOT.war cryptotrader-LATEST.war`.
-5. Launch the application with `sh winstone-start.sh`.
+4. Create a symbolic link to the generated file `ln -s ../../build/libs/cryptotrader-0.0.1-SNAPSHOT.war cryptotrader-LATEST.war`.
+5. Launch the application with `sh winstone-start.sh`. The application will launch in background.
 6. Check the application log file `logs/cryptotrader-app.log` to monitor the application state.
+7. To stop the application, execute `sh winstone-stop.sh` and wait, or simply kill the Java process.
 
-### Configuration
-To enable trading of the out-of-the-box trading strategies, create and configure the `${HOME}/.cryptotrader` file. 
-Template and parameter descriptions can be found under `src/main/resources/cryptotrader-default.properties`.
-
-### Plugin Jars
-To load custom trading strategies, prepare a jar file following the [SPI][ref-spi] specification, 
-place the jar file under `libs/` directory, and recreate the war file by `gradle clean war`.
-Don't forget to adjust the configuration file to configure the loaded strategy. 
+### Plugins
+To load custom trading strategies, prepare a jar file following the [SPI][ref-spi] specification, and place the jar file under `libs/` directory.
+The application needs to be re-built/restarted for the new plugin jars to be effective.
+Also, don't forget to adjust the custom configuration file to adapt for the newly loaded strategies. 
 
 
-## Framework Mechanics
-
-The framework is based on a periodic timer, to invoke the set of pipelined codes which are provided by the plugged-in trading strategies. 
-When the application is launched, the pipeline will be invoked periodically based on the preconfigured interval, until the application is terminated. 
-
-The pipeline consists of the following [SPI][ref-spi] interfaces:
- 1. Context : Adapter to capsulize each exchange's API calls.
- 2. Estimator : Estimate (predict) market price to use in the following 
- 3. Adviser : Calculate the ideal state of what the current position should ideally be.
- 4. Instructor : Figure out the differences between the as-is position and to-be position, and generate order instructions.
- 5. Agent : Execute the given order instructions, and reconcile the results to confirm all the orders were processed by the exchange.
+## DISCLAIMER
+Use at your own risk, following the [LICENSE](./LICENSE). 
+Author has no plan to provide specific support for individual configurations nor trading advisories.
 
 
 [travis-page]:https://travis-ci.org/after-the-sunrise/cryptotrader
