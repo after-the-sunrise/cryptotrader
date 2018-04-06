@@ -55,7 +55,7 @@ Also, don't forget to adjust the custom configuration file to adapt for the newl
 
 ## DISCLAIMER
 Use at your own risk, following the [LICENSE](./LICENSE). 
-Author has no plan to provide specific support for individual configurations nor trading advisories.
+Author has no plan to provide specific support for individual configurations nor provide trading instructions/advisories.
 
 
 [travis-page]:https://travis-ci.org/after-the-sunrise/cryptotrader
