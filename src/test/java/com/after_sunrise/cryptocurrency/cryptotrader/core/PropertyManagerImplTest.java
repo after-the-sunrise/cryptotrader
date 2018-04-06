@@ -201,7 +201,7 @@ public class PropertyManagerImplTest {
         // Default
         List<Composite> targets = target.getTradingTargets();
         assertEquals(targets.size(), 1);
-        assertEquals(targets.get(0).getSite(), "bitflyer");
+        assertEquals(targets.get(0).getSite(), "example");
         assertEquals(targets.get(0).getInstrument(), "BTC_JPY");
 
         // Mocked
@@ -246,7 +246,7 @@ public class PropertyManagerImplTest {
         target.setTradingTargets(null);
         targets = target.getTradingTargets();
         assertEquals(targets.size(), 1);
-        assertEquals(targets.get(0).getSite(), "bitflyer");
+        assertEquals(targets.get(0).getSite(), "example");
         assertEquals(targets.get(0).getInstrument(), "BTC_JPY");
 
     }
