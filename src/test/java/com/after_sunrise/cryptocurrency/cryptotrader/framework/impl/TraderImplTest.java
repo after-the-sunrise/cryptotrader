@@ -9,14 +9,13 @@ import org.testng.annotations.Test;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static java.time.Duration.ZERO;
 import static java.util.Collections.singletonList;
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 /**
  * @author takanori.takase
@@ -68,16 +67,10 @@ public class TraderImplTest {
     public void testTrade() throws Exception {
 
         Instant now = Instant.now();
+        when(module.getMock(PropertyManager.class).getNow()).thenReturn(now, now.plusMillis(123));
+
         Duration interval = Duration.ofMillis(50);
-        Instant estimate = now.plus(interval.toMillis() * 3, ChronoUnit.MILLIS);
-        String site = "s";
-        String instrument = "i";
-        List<Composite> targets = singletonList(new Composite(site, instrument));
-        when(module.getMock(PropertyManager.class).getNow()).thenReturn(now);
         when(module.getMock(PropertyManager.class).getTradingInterval()).thenReturn(interval);
-        when(module.getMock(PropertyManager.class).getTradingTargets()).thenReturn(targets);
-        when(module.getMock(PropertyManager.class).getTradingFrequency(site, instrument)).thenReturn(3);
-        when(module.getMock(PropertyManager.class).getTradingSeed(site, instrument)).thenReturn(0);
 
         AtomicInteger count = new AtomicInteger(3);
 
@@ -91,12 +84,11 @@ public class TraderImplTest {
 
             return null;
 
-        }).when(pipeline).process(any(), any(), any(), any());
+        }).when(target).processPipeline(any());
 
         target.trade();
 
-        verify(target, times(3 + 3 + 1)).processPipeline(any(), any(), any());
-        verify(pipeline, times(3)).process(now, estimate, site, instrument);
+        verify(target, times(3)).processPipeline(any());
 
     }
 
@@ -118,18 +110,44 @@ public class TraderImplTest {
 
     }
 
-    @Test
-    public void testCalculateInterval() throws Exception {
+    @Test(timeOut = 5000)
+    public void testProcessPipeline() throws InterruptedException {
 
-        Duration interval = Duration.ofMillis(10);
-        Instant t1 = Instant.now();
-        Instant t2 = t1.plus(interval);
-        when(module.getMock(PropertyManager.class).getNow()).thenReturn(t1);
+        Instant now = Instant.now();
+        String site = "s";
+        String instrument = "i";
 
-        assertEquals(target.calculateInterval(t2), interval);
-        assertEquals(target.calculateInterval(t1), ZERO);
-        assertEquals(target.calculateInterval(t1.minus(interval)), ZERO);
-        assertEquals(target.calculateInterval(null), ZERO);
+        List<Composite> targets = singletonList(new Composite(site, instrument));
+        when(module.getMock(PropertyManager.class).getTradingTargets()).thenReturn(targets);
+        when(module.getMock(PropertyManager.class).getTradingInterval()).thenReturn(Duration.ofMillis(123));
+        when(module.getMock(PropertyManager.class).getTradingFrequency(site, instrument)).thenReturn(3);
+        when(module.getMock(PropertyManager.class).getTradingSeed(site, instrument)).thenReturn(0);
+
+        doNothing().when(module.getMock(Pipeline.class)).process(any(), any(), any(), any());
+
+        // 0
+        target.processPipeline(now);
+        verify(pipeline, times(1)).process(now, now.plusMillis(123 * 3), site, instrument);
+
+        // 1, 2
+        target.processPipeline(now);
+        target.processPipeline(now);
+        verifyNoMoreInteractions(pipeline);
+
+        // 3
+        target.processPipeline(now);
+        verify(pipeline, times(2)).process(now, now.plusMillis(123 * 3), site, instrument);
+
+        doThrow(new RuntimeException("test")).when(pipeline).process(any(), any(), any(), any());
+
+        // 4, 5
+        target.processPipeline(now);
+        target.processPipeline(now);
+        verifyNoMoreInteractions(pipeline);
+
+        // 6
+        target.processPipeline(now);
+        verify(pipeline, times(3)).process(now, now.plusMillis(123 * 3), site, instrument);
 
     }
 

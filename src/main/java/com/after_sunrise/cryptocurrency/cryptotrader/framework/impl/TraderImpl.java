@@ -1,5 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.framework.impl;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.Composite;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.ExecutorFactory;
 import com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyManager;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Pipeline;
@@ -11,17 +12,13 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
+import java.util.Map.Entry;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 
@@ -119,28 +116,19 @@ public class TraderImpl implements Trader {
 
                 log.debug("Trade attempt : {}", now);
 
-                List<CompletableFuture<?>> futures = new ArrayList<>();
-
-                propertyManager.getTradingTargets().forEach(
-                        composite -> futures.add(
-                                processPipeline(now, composite.getSite(), composite.getInstrument())
-                        )
-                );
-
-                allOf(futures.toArray(new CompletableFuture[futures.size()])).get();
+                processPipeline(now);
 
                 Instant finish = propertyManager.getNow();
 
                 Duration interval = propertyManager.getTradingInterval();
 
-                Duration sleep = calculateInterval(now.plus(interval));
+                Duration elapsed = Duration.between(now, finish);
 
-                log.debug("Sleeping for interval : {} (Elapsed {} seconds)",
-                        sleep,
-                        Duration.between(now, finish).getSeconds()
-                );
+                Duration remaining = interval.minus(elapsed);
 
-                latch.await(sleep.toMillis(), MILLISECONDS);
+                log.debug("Sleeping : {} (Elapsed {})", remaining, elapsed);
+
+                latch.await(Math.max(remaining.toMillis(), 0), MILLISECONDS);
 
             }
 
@@ -155,47 +143,48 @@ public class TraderImpl implements Trader {
     }
 
     @VisibleForTesting
-    Duration calculateInterval(Instant target) {
+    void processPipeline(Instant now) throws InterruptedException {
 
-        if (target == null) {
-            return Duration.ZERO;
-        }
+        Map<Composite, Future<?>> futures = new IdentityHashMap<>();
 
-        Instant now = propertyManager.getNow();
+        for (Composite c : propertyManager.getTradingTargets()) {
 
-        if (now.isAfter(target)) {
-            return Duration.ZERO;
-        }
+            String site = trimToEmpty(c.getSite());
 
-        return Duration.between(now, target);
+            String instrument = trimToEmpty(c.getInstrument());
 
-    }
-
-    @VisibleForTesting
-    CompletableFuture<?> processPipeline(Instant now, String site, String instrument) {
-
-        return CompletableFuture.runAsync(() -> {
-
-            String s = trimToEmpty(site);
-
-            Map<String, AtomicLong> instruments = frequencies.computeIfAbsent(s, k -> new ConcurrentHashMap<>());
-
-            Duration interval = propertyManager.getTradingInterval();
+            AtomicLong count = frequencies.computeIfAbsent(site, k -> new ConcurrentHashMap<>()).computeIfAbsent(
+                    instrument,
+                    k -> new AtomicLong(propertyManager.getTradingSeed(site, instrument))
+            );
 
             Integer frequency = propertyManager.getTradingFrequency(site, instrument);
 
-            AtomicLong count = instruments.computeIfAbsent(trimToEmpty(instrument),
-                    k -> new AtomicLong(propertyManager.getTradingSeed(site, instrument)));
+            if (count.getAndIncrement() % frequency == 0) {
 
-            if (count.getAndIncrement() % frequency != 0) {
-                return;
+                Duration interval = propertyManager.getTradingInterval();
+
+                Instant target = now.plusMillis(Math.abs(interval.toMillis() * frequency));
+
+                futures.put(c, executor.submit(() -> pipeline.process(now, target, site, instrument)));
+
             }
 
-            Instant target = now.plusMillis(Math.abs(interval.toMillis() * frequency));
+        }
 
-            pipeline.process(now, target, site, instrument);
+        for (Entry<Composite, Future<?>> entry : futures.entrySet()) {
 
-        }, executor);
+            try {
+
+                entry.getValue().get();
+
+            } catch (ExecutionException e) {
+
+                log.error("Trading failure : " + entry.getKey(), e);
+
+            }
+
+        }
 
     }
 
