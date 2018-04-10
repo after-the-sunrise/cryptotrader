@@ -1020,6 +1020,11 @@ public class TemplateAdviserTest {
         when(context.getConversionPrice(any(), any())).thenReturn(null);
         assertEquals(target.calculateInstrumentExposureSize(context, request), null);
 
+        // Zero price
+        initializer.run();
+        when(context.getConversionPrice(any(), any())).thenReturn(ZERO);
+        assertEquals(target.calculateInstrumentExposureSize(context, request), null);
+
         // No position
         initializer.run();
         when(context.getInstrumentCurrency(any())).thenReturn(null);

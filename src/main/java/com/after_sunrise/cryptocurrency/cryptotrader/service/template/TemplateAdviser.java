@@ -331,7 +331,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
             BigDecimal conversionPrice = context.getConversionPrice(instrumentKey, currency);
 
-            if (conversionPrice == null) {
+            if (conversionPrice == null || conversionPrice.signum() == 0) {
 
                 log.trace("No conversion price for {}:{}:{}", site, instrument, currency);
 
