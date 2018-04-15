@@ -952,10 +952,29 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
     @Override
     public List<Order> listActiveOrders(Key key) {
 
-        return trimToEmpty(fetchOrder(key)).stream()
+        List<Order> parents = new ArrayList<>();
+
+        List<Order> children = new ArrayList<>();
+
+        BitflyerOrder.Visitor<Boolean> visitor = new BitflyerOrder.Visitor<Boolean>() {
+            @Override
+            public Boolean visit(BitflyerOrder.Child order) {
+                return children.add(order);
+            }
+
+            @Override
+            public Boolean visit(BitflyerOrder.Parent order) {
+                return parents.add(order);
+            }
+        };
+
+        trimToEmpty(fetchOrder(key)).stream()
                 .filter(Objects::nonNull)
                 .filter(o -> TRUE.equals(o.getActive()))
-                .collect(toList());
+                .forEach(o -> o.accept(visitor));
+
+        // Cannot properly associate parent-child.
+        return parents.isEmpty() ? children : parents;
 
     }
 

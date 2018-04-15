@@ -1111,23 +1111,49 @@ public class BitflyerContextTest {
     }
 
     @Test
-    public void testListOrders() throws Exception {
+    public void testListActiveOrders() throws Exception {
 
         Key key = Key.from(Request.builder().instrument("inst").build());
 
-        BitflyerOrder o1 = mock(BitflyerOrder.class);
-        BitflyerOrder o2 = mock(BitflyerOrder.class);
-        BitflyerOrder o3 = mock(BitflyerOrder.class);
-        BitflyerOrder o4 = mock(BitflyerOrder.class);
+        BitflyerOrder.Child o1 = mock(BitflyerOrder.Child.class);
+        BitflyerOrder.Child o2 = mock(BitflyerOrder.Child.class);
+        BitflyerOrder.Child o3 = mock(BitflyerOrder.Child.class);
+        BitflyerOrder.Child o4 = mock(BitflyerOrder.Child.class);
+        BitflyerOrder.Child o5 = mock(BitflyerOrder.Child.class);
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(o1)).when(o1).accept(any());
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(o2)).when(o2).accept(any());
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(o3)).when(o3).accept(any());
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(o4)).when(o4).accept(any());
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(o5)).when(o5).accept(any());
         when(o2.getActive()).thenReturn(true);
         when(o3.getActive()).thenReturn(false);
         when(o4.getActive()).thenReturn(true);
-        doReturn(asList(o1, o2, o3, o4)).when(target).fetchOrder(key);
+        when(o5.getActive()).thenReturn(true);
+        doReturn(asList(o1, o2, null, o3, o4, o5)).when(target).fetchOrder(key);
 
+        // Child Only
         List<Order> results = target.listActiveOrders(key);
-        assertEquals(results.size(), 2);
+        assertEquals(results.size(), 3);
         assertSame(results.get(0), o2);
         assertSame(results.get(1), o4);
+        assertSame(results.get(2), o5);
+
+        // With Parent
+        BitflyerOrder.Parent o6 = mock(BitflyerOrder.Parent.class);
+        BitflyerOrder.Parent o7 = mock(BitflyerOrder.Parent.class);
+        BitflyerOrder.Parent o8 = mock(BitflyerOrder.Parent.class);
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(o6)).when(o6).accept(any());
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(o7)).when(o7).accept(any());
+        doAnswer(i -> i.getArgumentAt(0, BitflyerOrder.Visitor.class).visit(o8)).when(o8).accept(any());
+        when(o6.getActive()).thenReturn(true);
+        when(o7.getActive()).thenReturn(false);
+        when(o8.getActive()).thenReturn(true);
+        doReturn(asList(o1, o6, o2, null, o3, o7, o4, o8, o5)).when(target).fetchOrder(key);
+
+        results = target.listActiveOrders(key);
+        assertEquals(results.size(), 2);
+        assertSame(results.get(0), o6);
+        assertSame(results.get(1), o8);
 
     }
 
