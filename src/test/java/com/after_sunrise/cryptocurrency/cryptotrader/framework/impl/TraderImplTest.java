@@ -9,13 +9,14 @@ import org.testng.annotations.Test;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Collections.singletonList;
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.*;
 
 /**
  * @author takanori.takase
@@ -69,8 +70,7 @@ public class TraderImplTest {
         Instant now = Instant.now();
         when(module.getMock(PropertyManager.class).getNow()).thenReturn(now, now.plusMillis(123));
 
-        Duration interval = Duration.ofMillis(50);
-        when(module.getMock(PropertyManager.class).getTradingInterval()).thenReturn(interval);
+        doReturn(Duration.ofMillis(50)).when(target).calculateInterval(any());
 
         AtomicInteger count = new AtomicInteger(3);
 
@@ -107,6 +107,39 @@ public class TraderImplTest {
         Thread.currentThread().interrupt();
 
         target.trade();
+
+    }
+
+    @Test(timeOut = 5000)
+    public void testCalculateInterval() {
+
+        Queue<Duration> durations = new LinkedList<>();
+        when(module.getMock(PropertyManager.class).getTradingInterval()).thenReturn(Duration.ofMillis(50));
+        when(module.getMock(PropertyManager.class).getTradingExtension()).thenReturn(3);
+
+        // Empty Durations
+        assertEquals(target.calculateInterval(durations), Duration.ofMillis(50));
+
+        // Average = (40) / 1 = 40
+        durations.add(Duration.ofMillis(40));
+        assertEquals(target.calculateInterval(durations), Duration.ofMillis(50));
+
+        // Average = (40 + 80) / 2 = 60
+        durations.add(Duration.ofMillis(80));
+        assertEquals(target.calculateInterval(durations), Duration.ofMillis(50 + 10));
+
+        // Average = (40 + 80 + 70) / 3 = 63.3333...
+        durations.add(Duration.ofMillis(70));
+        assertEquals(target.calculateInterval(durations), Duration.ofMillis(50 + 13));
+
+        // Average = (70 + 85 + 95) / 3 = 83.3333...
+        durations.add(Duration.ofMillis(85));
+        durations.add(Duration.ofMillis(95));
+        assertEquals(target.calculateInterval(durations), Duration.ofMillis(50 + 33));
+
+        // Disable
+        when(module.getMock(PropertyManager.class).getTradingExtension()).thenReturn(-1);
+        assertEquals(target.calculateInterval(durations), Duration.ofMillis(50));
 
     }
 

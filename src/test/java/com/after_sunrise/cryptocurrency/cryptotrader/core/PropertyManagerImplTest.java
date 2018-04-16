@@ -163,6 +163,39 @@ public class PropertyManagerImplTest {
     }
 
     @Test
+    public void testGetTradingExtension() throws Exception {
+
+        // Default
+        assertEquals(target.getTradingExtension(), (Integer) 0);
+
+        // Mocked
+        doReturn(valueOf(8)).when(conf).getBigDecimal(TRADING_EXTENSION.getKey());
+        assertEquals(target.getTradingExtension(), (Integer) 8);
+
+        // Ceiling
+        doReturn(valueOf(Long.MAX_VALUE)).when(conf).getBigDecimal(TRADING_EXTENSION.getKey());
+        assertEquals(target.getTradingExtension(), (Integer) Integer.MAX_VALUE);
+
+        // Floor
+        doReturn(valueOf(Integer.MIN_VALUE)).when(conf).getBigDecimal(TRADING_EXTENSION.getKey());
+        assertEquals(target.getTradingExtension(), (Integer) 0);
+
+        // Error
+        doThrow(new RuntimeException("test")).when(conf).getBigDecimal(TRADING_EXTENSION.getKey());
+        assertEquals(target.getTradingExtension(), (Integer) 0);
+        reset(conf);
+
+        // Override
+        target.setTradingExtension(3);
+        assertEquals(target.getTradingExtension(), (Integer) 3);
+
+        // Clear
+        target.setTradingExtension(null);
+        assertEquals(target.getTradingExtension(), (Integer) 0);
+
+    }
+
+    @Test
     public void testGetTradingThreads() throws Exception {
 
         // Default

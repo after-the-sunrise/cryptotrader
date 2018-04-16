@@ -15,6 +15,8 @@ import java.time.Instant;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.OptionalDouble;
+import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,6 +41,8 @@ public class TraderImpl implements Trader {
 
     private final Map<String, Map<String, AtomicLong>> frequencies;
 
+    private final Queue<Duration> durations;
+
     @Inject
     public TraderImpl(Injector injector) {
 
@@ -49,6 +53,8 @@ public class TraderImpl implements Trader {
         this.pipeline = injector.getInstance(Pipeline.class);
 
         this.frequencies = new ConcurrentHashMap<>();
+
+        this.durations = new ConcurrentLinkedQueue<>();
 
         int threads = propertyManager.getTradingThreads();
 
@@ -120,13 +126,15 @@ public class TraderImpl implements Trader {
 
                 Instant finish = propertyManager.getNow();
 
-                Duration interval = propertyManager.getTradingInterval();
+                Duration interval = calculateInterval(durations);
 
                 Duration elapsed = Duration.between(now, finish);
 
                 Duration remaining = interval.minus(elapsed);
 
                 log.debug("Sleeping : {} (Elapsed {})", remaining, elapsed);
+
+                durations.add(elapsed);
 
                 latch.await(Math.max(remaining.toMillis(), 0), MILLISECONDS);
 
@@ -139,6 +147,39 @@ public class TraderImpl implements Trader {
         }
 
         log.info("Trading finished.");
+
+    }
+
+    @VisibleForTesting
+    Duration calculateInterval(Queue<Duration> durations) {
+
+        while (true) {
+
+            if (durations.isEmpty()) {
+                break;
+            }
+
+            if (durations.size() <= propertyManager.getTradingExtension()) {
+                break;
+            }
+
+            durations.poll();
+
+        }
+
+        Duration interval = propertyManager.getTradingInterval();
+
+        OptionalDouble average = durations.stream().mapToLong(Duration::toMillis).average();
+
+        if (average.isPresent()) {
+
+            double additional = Math.max(average.getAsDouble() - interval.toMillis(), 0);
+
+            interval = interval.plusMillis((long) additional);
+
+        }
+
+        return interval;
 
     }
 

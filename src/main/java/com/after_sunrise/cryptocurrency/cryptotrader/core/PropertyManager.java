@@ -18,6 +18,8 @@ public interface PropertyManager {
 
     Duration getTradingInterval();
 
+    Integer getTradingExtension();
+
     Integer getTradingThreads();
 
     List<Composite> getTradingTargets();

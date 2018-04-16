@@ -18,6 +18,8 @@ public enum PropertyType {
 
     TRADING_INTERVAL,
 
+    TRADING_EXTENSION,
+
     TRADING_THREADS,
 
     TRADING_SPREAD,

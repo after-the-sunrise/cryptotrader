@@ -13,6 +13,8 @@ public interface PropertyController extends PropertyManager {
 
     void setTradingInterval(Duration value);
 
+    void setTradingExtension(Integer value);
+
     void setTradingThreads(Integer value);
 
     void setTradingTargets(List<Composite> values);

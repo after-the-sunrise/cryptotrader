@@ -251,6 +251,17 @@ public class PropertyManagerImpl implements PropertyController {
     }
 
     @Override
+    public Integer getTradingExtension() {
+        return getDecimal(null, null, TRADING_EXTENSION,
+                ZERO, BigDecimal.valueOf(Integer.MAX_VALUE), ZERO).intValue();
+    }
+
+    @Override
+    public void setTradingExtension(Integer value) {
+        set(TRADING_EXTENSION, null, null, value, Integer::valueOf);
+    }
+
+    @Override
     public Integer getTradingThreads() {
         return getDecimal(null, null, TRADING_THREADS,
                 ONE, BigDecimal.valueOf(Byte.MAX_VALUE), ONE).intValue();
