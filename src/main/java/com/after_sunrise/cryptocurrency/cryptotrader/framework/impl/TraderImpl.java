@@ -126,16 +126,15 @@ public class TraderImpl implements Trader {
 
                 Instant finish = propertyManager.getNow();
 
-                Duration interval = calculateInterval(durations);
+                Duration interval = propertyManager.getTradingInterval();
 
                 Duration elapsed = Duration.between(now, finish);
 
                 Duration remaining = interval.minus(elapsed);
 
-                log.debug("Sleeping : {} sec (Interval {} sec, Elapsed {} sec)",
-                        remaining.getSeconds(), interval.getSeconds(), elapsed.getSeconds());
+                log.debug("Sleeping : {} sec (Elapsed {} sec)", remaining.getSeconds(), elapsed.getSeconds());
 
-                durations.add(elapsed);
+                processDuration(durations, elapsed);
 
                 latch.await(Math.max(remaining.toMillis(), 0), MILLISECONDS);
 
@@ -148,39 +147,6 @@ public class TraderImpl implements Trader {
         }
 
         log.info("Trading finished.");
-
-    }
-
-    @VisibleForTesting
-    Duration calculateInterval(Queue<Duration> durations) {
-
-        while (true) {
-
-            if (durations.isEmpty()) {
-                break;
-            }
-
-            if (durations.size() <= propertyManager.getTradingExtension()) {
-                break;
-            }
-
-            durations.poll();
-
-        }
-
-        Duration interval = propertyManager.getTradingInterval();
-
-        OptionalDouble average = durations.stream().mapToLong(Duration::toMillis).average();
-
-        if (average.isPresent()) {
-
-            double additional = Math.max(average.getAsDouble() - interval.toMillis(), 0);
-
-            interval = interval.plusMillis((long) additional);
-
-        }
-
-        return interval;
 
     }
 
@@ -204,7 +170,7 @@ public class TraderImpl implements Trader {
 
             if (count.getAndIncrement() % frequency == 0) {
 
-                Duration interval = propertyManager.getTradingInterval();
+                Duration interval = calculateInterval(durations);
 
                 Instant target = now.plusMillis(Math.abs(interval.toMillis() * frequency));
 
@@ -225,6 +191,46 @@ public class TraderImpl implements Trader {
                 log.error("Trading failure : " + entry.getKey(), e);
 
             }
+
+        }
+
+    }
+
+    @VisibleForTesting
+    Duration calculateInterval(Queue<Duration> durations) {
+
+        Duration interval = propertyManager.getTradingInterval();
+
+        OptionalDouble average = durations.stream().mapToLong(Duration::toMillis).average();
+
+        if (average.isPresent()) {
+
+            double additional = Math.max(average.getAsDouble() - interval.toMillis(), 0);
+
+            interval = interval.plusMillis((long) additional);
+
+        }
+
+        return interval;
+
+    }
+
+    @VisibleForTesting
+    void processDuration(Queue<Duration> durations, Duration duration) {
+
+        durations.add(duration);
+
+        while (true) {
+
+            if (durations.isEmpty()) {
+                break;
+            }
+
+            if (durations.size() <= propertyManager.getTradingExtension()) {
+                break;
+            }
+
+            durations.poll();
 
         }
 

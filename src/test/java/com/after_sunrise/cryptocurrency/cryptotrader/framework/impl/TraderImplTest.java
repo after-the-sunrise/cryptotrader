@@ -69,8 +69,8 @@ public class TraderImplTest {
 
         Instant now = Instant.now();
         when(module.getMock(PropertyManager.class).getNow()).thenReturn(now, now.plusMillis(123));
-
-        doReturn(Duration.ofMillis(50)).when(target).calculateInterval(any());
+        when(module.getMock(PropertyManager.class).getTradingInterval()).thenReturn(Duration.ofMillis(50));
+        when(module.getMock(PropertyManager.class).getTradingExtension()).thenReturn(2);
 
         AtomicInteger count = new AtomicInteger(3);
 
@@ -111,35 +111,78 @@ public class TraderImplTest {
     }
 
     @Test(timeOut = 5000)
+    public void testProcessDuration() {
+
+        Queue<Duration> durations = new LinkedList<>();
+        when(module.getMock(PropertyManager.class).getTradingExtension()).thenReturn(3);
+
+        target.processDuration(durations, Duration.ofMillis(1));
+        assertEquals(durations.size(), 1);
+        assertTrue(durations.contains(Duration.ofMillis(1)));
+
+        target.processDuration(durations, Duration.ofMillis(2));
+        assertEquals(durations.size(), 2);
+        assertTrue(durations.contains(Duration.ofMillis(1)));
+        assertTrue(durations.contains(Duration.ofMillis(2)));
+
+        target.processDuration(durations, Duration.ofMillis(3));
+        assertEquals(durations.size(), 3);
+        assertTrue(durations.contains(Duration.ofMillis(1)));
+        assertTrue(durations.contains(Duration.ofMillis(2)));
+        assertTrue(durations.contains(Duration.ofMillis(3)));
+
+        target.processDuration(durations, Duration.ofMillis(4));
+        assertEquals(durations.size(), 3);
+        assertTrue(durations.contains(Duration.ofMillis(2)));
+        assertTrue(durations.contains(Duration.ofMillis(3)));
+        assertTrue(durations.contains(Duration.ofMillis(4)));
+
+        target.processDuration(durations, Duration.ofMillis(1));
+        assertEquals(durations.size(), 3);
+        assertTrue(durations.contains(Duration.ofMillis(3)));
+        assertTrue(durations.contains(Duration.ofMillis(4)));
+        assertTrue(durations.contains(Duration.ofMillis(1)));
+
+        when(module.getMock(PropertyManager.class).getTradingExtension()).thenReturn(-1);
+        target.processDuration(durations, Duration.ofMillis(1));
+        assertEquals(durations.size(), 0);
+
+    }
+
+    @Test(timeOut = 5000)
     public void testCalculateInterval() {
 
         Queue<Duration> durations = new LinkedList<>();
         when(module.getMock(PropertyManager.class).getTradingInterval()).thenReturn(Duration.ofMillis(50));
-        when(module.getMock(PropertyManager.class).getTradingExtension()).thenReturn(3);
 
         // Empty Durations
+        durations.clear();
         assertEquals(target.calculateInterval(durations), Duration.ofMillis(50));
 
         // Average = (40) / 1 = 40
+        durations.clear();
         durations.add(Duration.ofMillis(40));
         assertEquals(target.calculateInterval(durations), Duration.ofMillis(50));
 
         // Average = (40 + 80) / 2 = 60
+        durations.clear();
+        durations.add(Duration.ofMillis(40));
         durations.add(Duration.ofMillis(80));
         assertEquals(target.calculateInterval(durations), Duration.ofMillis(50 + 10));
 
         // Average = (40 + 80 + 70) / 3 = 63.3333...
+        durations.clear();
+        durations.add(Duration.ofMillis(40));
+        durations.add(Duration.ofMillis(80));
         durations.add(Duration.ofMillis(70));
         assertEquals(target.calculateInterval(durations), Duration.ofMillis(50 + 13));
 
         // Average = (70 + 85 + 95) / 3 = 83.3333...
+        durations.clear();
+        durations.add(Duration.ofMillis(70));
         durations.add(Duration.ofMillis(85));
         durations.add(Duration.ofMillis(95));
         assertEquals(target.calculateInterval(durations), Duration.ofMillis(50 + 33));
-
-        // Disable
-        when(module.getMock(PropertyManager.class).getTradingExtension()).thenReturn(-1);
-        assertEquals(target.calculateInterval(durations), Duration.ofMillis(50));
 
     }
 
