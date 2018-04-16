@@ -132,7 +132,8 @@ public class TraderImpl implements Trader {
 
                 Duration remaining = interval.minus(elapsed);
 
-                log.debug("Sleeping : {} (Elapsed {})", remaining, elapsed);
+                log.debug("Sleeping : {} sec (Interval {} sec, Elapsed {} sec)",
+                        remaining.getSeconds(), interval.getSeconds(), elapsed.getSeconds());
 
                 durations.add(elapsed);
 
