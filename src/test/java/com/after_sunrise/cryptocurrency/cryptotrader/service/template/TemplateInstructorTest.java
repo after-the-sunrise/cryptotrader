@@ -474,6 +474,8 @@ public class TemplateInstructorTest {
             initializer.run();
             when(cancels.get(cancel2).getOrderPrice()).thenReturn(new2.getPrice().add(delta));
             when(cancels.get(cancel3).getRemainingQuantity()).thenReturn(new3.getSize().add(delta));
+
+            // Zero Tolerance
             results = target.merge(creates, cancels);
             assertEquals(results.size(), 12, StringUtils.join(results, '\n'));
             assertTrue(results.contains(cancel2));
@@ -515,17 +517,33 @@ public class TemplateInstructorTest {
                     new BigDecimal("0.01")
             );
             results = target.merge(creates, cancels);
-            assertEquals(results.size(), 10, StringUtils.join(results, '\n'));
-            assertTrue(results.contains(cancel2));
-            assertTrue(results.contains(cancel6));
-            assertTrue(results.contains(cancel7));
-            assertTrue(results.contains(cancel8));
-            assertTrue(results.contains(cancel9));
-            assertTrue(results.contains(new2));
-            assertTrue(results.contains(new6));
-            assertTrue(results.contains(new7));
-            assertTrue(results.contains(new8));
-            assertTrue(results.contains(new9));
+            if (delta.signum() > 0) {
+                assertEquals(results.size(), 12, StringUtils.join(results, '\n'));
+                assertTrue(results.contains(cancel2));
+                assertTrue(results.contains(cancel3));
+                assertTrue(results.contains(cancel6));
+                assertTrue(results.contains(cancel7));
+                assertTrue(results.contains(cancel8));
+                assertTrue(results.contains(cancel9));
+                assertTrue(results.contains(new2));
+                assertTrue(results.contains(new3));
+                assertTrue(results.contains(new6));
+                assertTrue(results.contains(new7));
+                assertTrue(results.contains(new8));
+                assertTrue(results.contains(new9));
+            } else {
+                assertEquals(results.size(), 10, StringUtils.join(results, '\n'));
+                assertTrue(results.contains(cancel2));
+                assertTrue(results.contains(cancel6));
+                assertTrue(results.contains(cancel7));
+                assertTrue(results.contains(cancel8));
+                assertTrue(results.contains(cancel9));
+                assertTrue(results.contains(new2));
+                assertTrue(results.contains(new6));
+                assertTrue(results.contains(new7));
+                assertTrue(results.contains(new8));
+                assertTrue(results.contains(new9));
+            }
 
             configuration.clear();
 

@@ -317,11 +317,11 @@ public class TemplateInstructor extends AbstractService implements Instructor {
                     continue; // Different side.
                 }
 
-                BigDecimal sizeDiff = order.getRemainingQuantity().subtract(create.getSize());
+                BigDecimal sizeDiff = create.getSize().subtract(order.getRemainingQuantity());
 
-                BigDecimal sizePcnt = sizeDiff.divide(create.getSize(), SCALE, ROUND_CEILING).abs();
+                BigDecimal sizePcnt = sizeDiff.divide(create.getSize(), SCALE, ROUND_CEILING);
 
-                if (sizePcnt.compareTo(sizeThreshold) > 0) {
+                if (sizePcnt.signum() < 0 || sizePcnt.compareTo(sizeThreshold) > 0) {
                     continue;
                 }
 
