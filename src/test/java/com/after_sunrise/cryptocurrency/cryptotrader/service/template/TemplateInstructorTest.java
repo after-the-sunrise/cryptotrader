@@ -476,6 +476,7 @@ public class TemplateInstructorTest {
             when(cancels.get(cancel3).getRemainingQuantity()).thenReturn(new3.getSize().add(delta));
 
             // Zero Tolerance
+            configuration.clear();
             results = target.merge(creates, cancels);
             assertEquals(results.size(), 12, StringUtils.join(results, '\n'));
             assertTrue(results.contains(cancel2));
@@ -491,7 +492,30 @@ public class TemplateInstructorTest {
             assertTrue(results.contains(new8));
             assertTrue(results.contains(new9));
 
-            // Price Threshold
+            // Price Threshold (Out)
+            configuration.clear();
+            configuration.addProperty(
+                    "com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateInstructor.threshold.price",
+                    new BigDecimal("0.00000001")
+            );
+            results = target.merge(creates, cancels);
+            assertEquals(results.size(), 12, StringUtils.join(results, '\n'));
+            assertTrue(results.contains(cancel2));
+            assertTrue(results.contains(cancel3));
+            assertTrue(results.contains(cancel6));
+            assertTrue(results.contains(cancel7));
+            assertTrue(results.contains(cancel8));
+            assertTrue(results.contains(cancel9));
+            assertTrue(results.contains(new2));
+            assertTrue(results.contains(new3));
+            assertTrue(results.contains(new6));
+            assertTrue(results.contains(new7));
+            assertTrue(results.contains(new8));
+            assertTrue(results.contains(new9));
+
+
+            // Price Threshold (In)
+            configuration.clear();
             configuration.addProperty(
                     "com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateInstructor.threshold.price",
                     new BigDecimal("0.01")
@@ -509,9 +533,29 @@ public class TemplateInstructorTest {
             assertTrue(results.contains(new8));
             assertTrue(results.contains(new9));
 
+            // Size Threshold (Out)
             configuration.clear();
+            configuration.addProperty(
+                    "com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateInstructor.threshold.size",
+                    new BigDecimal("0.00000001")
+            );
+            results = target.merge(creates, cancels);
+            assertEquals(results.size(), 12, StringUtils.join(results, '\n'));
+            assertTrue(results.contains(cancel2));
+            assertTrue(results.contains(cancel3));
+            assertTrue(results.contains(cancel6));
+            assertTrue(results.contains(cancel7));
+            assertTrue(results.contains(cancel8));
+            assertTrue(results.contains(cancel9));
+            assertTrue(results.contains(new2));
+            assertTrue(results.contains(new3));
+            assertTrue(results.contains(new6));
+            assertTrue(results.contains(new7));
+            assertTrue(results.contains(new8));
+            assertTrue(results.contains(new9));
 
-            // Size Threshold
+            // Size Threshold (In)
+            configuration.clear();
             configuration.addProperty(
                     "com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateInstructor.threshold.size",
                     new BigDecimal("0.01")
@@ -544,8 +588,6 @@ public class TemplateInstructorTest {
                 assertTrue(results.contains(new8));
                 assertTrue(results.contains(new9));
             }
-
-            configuration.clear();
 
         }
 
