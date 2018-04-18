@@ -1132,7 +1132,7 @@ public class TemplateAdviserTest {
         // Net Short 2 (17.22 -> 17.25)
         doReturn(new BigDecimal("98.4")).when(target).calculateFundingExposureSize(context, request, price);
         doReturn(new BigDecimal("24.6")).when(target).calculateInstrumentExposureSize(context, request);
-        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("17.25"));
+        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("17.00"));
 
         // Equal (61.50 -> 61.50)
         doReturn(new BigDecimal("61.5")).when(target).calculateFundingExposureSize(context, request, price);
@@ -1142,7 +1142,7 @@ public class TemplateAdviserTest {
         // Net Long 1 (98.40 -> 98.50)
         doReturn(new BigDecimal("24.6")).when(target).calculateFundingExposureSize(context, request, price);
         doReturn(new BigDecimal("98.4")).when(target).calculateInstrumentExposureSize(context, request);
-        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("98.50"));
+        assertEquals(target.calculateSellLimitSize(context, request, price), new BigDecimal("98.25"));
 
         // Net Long 2 (123.00 -> 123.00)
         doReturn(new BigDecimal("0")).when(target).calculateFundingExposureSize(context, request, price);
