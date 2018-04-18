@@ -949,7 +949,7 @@ public class TemplateAdviser extends AbstractService implements Adviser {
 
         }
 
-        BigDecimal rounded = trimToZero(context.roundLotSize(key, size, HALF_UP));
+        BigDecimal rounded = trimToZero(context.roundLotSize(key, size, HALF_DOWN));
 
         BigDecimal minimum = request.getTradingThreshold();
 
