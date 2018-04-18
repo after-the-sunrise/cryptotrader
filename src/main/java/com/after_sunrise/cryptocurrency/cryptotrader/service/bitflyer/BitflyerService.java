@@ -73,7 +73,7 @@ public interface BitflyerService extends Service {
 
         ETH_BTC(ETH, BTC, new BigDecimal("0.01"), new BigDecimal("0.00001")),
 
-        FX_BTC_JPY(FX_BTC, COLLATERAL, new BigDecimal("0.001"), ONE),
+        FX_BTC_JPY(FX_BTC, COLLATERAL, new BigDecimal("0.01"), ONE),
 
         BTCJPY_MAT1WK(FUTURE_BTC1W, COLLATERAL, new BigDecimal("0.001"), ONE),
 
