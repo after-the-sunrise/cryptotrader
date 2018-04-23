@@ -3,6 +3,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.core;
 import com.after_sunrise.cryptocurrency.cryptotrader.TestInterface;
 import com.after_sunrise.cryptocurrency.cryptotrader.TestModule;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
+import com.google.common.io.Resources;
 import com.google.inject.ConfigurationException;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.StringUtils;
@@ -10,7 +11,9 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
@@ -22,8 +25,6 @@ import static org.testng.Assert.*;
  * @version 0.0.1
  */
 public class ServiceFactoryImplTest {
-
-    private static final String SERVICES = "src/main/resources/META-INF/services/com.after_sunrise.cryptocurrency.";
 
     private ServiceFactoryImpl target;
 
@@ -39,11 +40,15 @@ public class ServiceFactoryImplTest {
     }
 
     @Test
-    public void testEstimator() throws IOException {
+    public void testEstimator() throws IOException, URISyntaxException {
 
         List<Estimator> estimators = target.load(Estimator.class);
 
-        List<String> lines = Files.readAllLines(Paths.get(SERVICES + "cryptotrader.framework.Estimator"));
+        Path path = Paths.get(Resources.getResource(
+                "META-INF/services/com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator"
+        ).toURI());
+
+        List<String> lines = Files.readAllLines(path);
 
         assertEquals(estimators.size(), lines.stream().filter(StringUtils::isNotEmpty).count());
 
