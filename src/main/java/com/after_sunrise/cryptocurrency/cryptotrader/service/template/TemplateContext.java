@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -35,6 +36,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -66,10 +68,14 @@ public abstract class TemplateContext extends AbstractService implements Context
             }
         });
 
+        private static final int TIMEOUT = (int) TimeUnit.MINUTES.toMillis(1);
+
         private final Function<String, HttpRequestBase> delegate;
 
         RequestType(Function<String, HttpRequestBase> function) {
+
             this.delegate = function;
+
         }
 
         public HttpUriRequest create(String url, Map<String, String> headers, String data) {
@@ -83,6 +89,12 @@ public abstract class TemplateContext extends AbstractService implements Context
                     .filter(d -> HttpEntityEnclosingRequest.class.isInstance(request))
                     .map(d -> new StringEntity(data, UTF_8))
                     .ifPresent(d -> HttpEntityEnclosingRequest.class.cast(request).setEntity(d));
+
+            request.setConfig(RequestConfig.custom()
+                    .setConnectTimeout(TIMEOUT)
+                    .setConnectionRequestTimeout(TIMEOUT)
+                    .setSocketTimeout(TIMEOUT)
+                    .build());
 
             return request;
 
