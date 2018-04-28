@@ -30,7 +30,7 @@ dependencies {
     compile 'org.jboss.resteasy:resteasy-jaxrs:3.1.4.Final'
     compile 'org.jboss.resteasy:resteasy-guice:3.1.4.Final'
     compile 'javax.websocket:javax.websocket-api:1.1'
-    compile 'com.after_sunrise.cryptocurrency:bitflyer4j:0.4.3'
+    compile 'com.after_sunrise.cryptocurrency:bitflyer4j:0.5.1'
     compile 'cc.bitbank:java-bitbankcc:1.0.7'
     runtime 'ch.qos.logback:logback-classic:1.2.3'
     runtime 'org.glassfish.tyrus:tyrus-container-jdk-client:1.12'
