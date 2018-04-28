@@ -27,7 +27,7 @@ nohup \
   -XX:HeapDumpPath=logs/winstone-heap_`date +%Y%m%d_%H%M%S`.log \
   -XX:+HeapDumpOnOutOfMemoryError \
   -jar winstone-*.jar \
-  --warfile="`find . -name "cryptotrader-*.war"`" \
+  --warfile="`find ../../build/libs/ -name "cryptotrader-*.war"`" \
   --prefix="/cryptotrader" \
   --httpListenAddress=127.0.0.1 \
   --httpPort=41480 \

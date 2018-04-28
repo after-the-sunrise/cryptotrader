@@ -41,11 +41,9 @@ Once configured, place the custom configuration file at the path `$HOME/.cryptot
 Follow the below procedures to launch the application.
 1. Clone the project files from GitHub.
 2. Build the application module with `gradle clean war` command.
-3. Change current working directory to `etc/home/cryptotrader/cryptotrader/etc/winstone/`.
-4. Create a symbolic link to the generated file `ln -s ../../build/libs/cryptotrader-0.0.1-SNAPSHOT.war cryptotrader-LATEST.war`.
-5. Launch the application with `sh winstone-start.sh`. The application will launch in background.
-6. Check the application log file `logs/cryptotrader-app.log` to monitor the application state.
-7. To stop the application, execute `sh winstone-stop.sh` and wait, or simply kill the Java process.
+3. Launch the application with `sh ./etc/winstone/winstone-start.sh`. The application will launch in background.
+4. Check the application log file `./etc/winstone/logs/cryptotrader-app.log` to monitor the application state.
+5. To stop the application, execute `sh ./etc/winstone/winstone-stop.sh` and wait, or simply kill the Java process.
 
 ### Plugins
 To load custom trading strategies, prepare a jar file following the [SPI][ref-spi] specification, and place the jar file under `libs/` directory.
