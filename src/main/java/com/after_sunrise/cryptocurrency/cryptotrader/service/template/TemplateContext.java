@@ -229,6 +229,8 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         LOG.trace("[SEND][{}][{}][{}] {}", type, path, headers, data);
 
+        Instant start = Instant.now();
+
         HttpUriRequest request = type.create(path, headers, data);
 
         return client.execute(request, response -> {
@@ -241,7 +243,10 @@ public abstract class TemplateContext extends AbstractService implements Context
 
             StatusLine statusLine = response.getStatusLine();
 
-            LOG.trace("[RECV][{}][{}][{}] {}", path, statusLine, response.getAllHeaders(), body);
+            Duration elapsed = Duration.between(start, Instant.now());
+
+            LOG.trace("[RECV][{}][{}][{}ms][{}] {}",
+                    path, statusLine, elapsed.toMillis(), response.getAllHeaders(), body);
 
             if (HttpStatus.SC_OK == statusLine.getStatusCode()) {
                 return body;
