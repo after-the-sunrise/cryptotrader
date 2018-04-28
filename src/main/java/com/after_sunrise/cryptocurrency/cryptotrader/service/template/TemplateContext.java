@@ -11,6 +11,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
@@ -34,17 +35,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.math.NumberUtils.INTEGER_ZERO;
 
 /**
@@ -115,6 +112,10 @@ public abstract class TemplateContext extends AbstractService implements Context
     private final Map<Class<?>, Cache<Key, Optional<?>>> singleCache = synchronizedMap(new HashMap<>());
 
     private final Map<Class<?>, Cache<Key, Optional<List<?>>>> listCache = synchronizedMap(new HashMap<>());
+
+    private final Map<Pair<Class<?>, Key>, Optional<?>> singleLast = new ConcurrentHashMap<>();
+
+    private final Map<Pair<Class<?>, Key>, Optional<List<?>>> listLast = new ConcurrentHashMap<>();
 
     private final String id;
 
@@ -261,13 +262,23 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         listCache.forEach((k, v) -> v.invalidateAll());
 
+        singleLast.clear();
+
+        listLast.clear();
+
     }
 
     protected <T> T findCached(Class<T> type, Key key, Callable<T> c) {
+        return findCached(type, key, c, true);
+    }
+
+    protected <T> T findCached(Class<T> type, Key key, Callable<T> c, boolean cacheLast) {
 
         if (type == null || key == null || c == null) {
             return null;
         }
+
+        Pair lastKey = Pair.of(type, Key.build(key).timestamp(null).build());
 
         Cache<Key, Optional<?>> cache = singleCache.computeIfAbsent(type, this::createCache);
 
@@ -290,6 +301,10 @@ public abstract class TemplateContext extends AbstractService implements Context
                             return Optional.ofNullable(value);
 
                         });
+
+                        if (cacheLast) {
+                            singleLast.put(lastKey, cached);
+                        }
 
                         return cached.map(type::cast).orElse(null);
 
@@ -315,15 +330,23 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         }
 
-        return null;
+        Optional<?> last = singleLast.getOrDefault(lastKey, Optional.empty());
+
+        return last.map(type::cast).orElse(null);
 
     }
 
     protected <T> List<T> listCached(Class<T> type, Key key, Callable<List<T>> c) {
+        return listCached(type, key, c, true);
+    }
+
+    protected <T> List<T> listCached(Class<T> type, Key key, Callable<List<T>> c, boolean cacheLast) {
 
         if (type == null || key == null || c == null) {
             return null;
         }
+
+        Pair lastKey = Pair.of(type, Key.build(key).timestamp(null).build());
 
         Cache<Key, Optional<List<?>>> cache = listCache.computeIfAbsent(type, this::createCache);
 
@@ -343,12 +366,18 @@ public abstract class TemplateContext extends AbstractService implements Context
 
                             log.trace("Cached list : {} ({})", key, values == null ? null : values.size());
 
-                            return Optional.ofNullable(values);
+                            return Optional.ofNullable(values).map(Collections::unmodifiableList);
 
                         });
 
-                        return cached.map(l -> l.stream().map(type::cast).collect(toList()))
-                                .map(Collections::unmodifiableList).orElse(null);
+                        if (cacheLast) {
+                            listLast.put(lastKey, cached);
+                        }
+
+                        @SuppressWarnings("unchecked")
+                        List<T> result = (List<T>) cached.orElse(null);
+
+                        return result;
 
                     } catch (Exception e) {
 
@@ -372,7 +401,12 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         }
 
-        return null;
+        Optional<List<?>> last = listLast.getOrDefault(lastKey, Optional.empty());
+
+        @SuppressWarnings("unchecked")
+        List<T> result = (List<T>) last.orElse(null);
+
+        return result;
 
     }
 
