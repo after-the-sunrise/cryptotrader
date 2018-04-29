@@ -528,23 +528,29 @@ public class ZaifContext extends TemplateContext implements ZaifService {
             parameters.put("currency_pair", product.getId());
             parameters.put("order_id", i.getId());
 
+            int retry = getIntProperty("cancel.retry", 0);
+
             String id = null;
 
-            try {
+            for (int attempt = 0; attempt <= retry && StringUtils.isEmpty(id); attempt++) {
 
-                String data = post("cancel_order", parameters);
+                try {
 
-                if (StringUtils.isNotEmpty(data)) {
+                    String data = post("cancel_order", parameters);
 
-                    ZaifOrder.Response r = gson.fromJson(data, ZaifOrder.Response.class);
+                    if (StringUtils.isNotEmpty(data)) {
 
-                    id = r.getOrderId();
+                        ZaifOrder.Response r = gson.fromJson(data, ZaifOrder.Response.class);
+
+                        id = r.getOrderId();
+
+                    }
+
+                } catch (Exception e) {
+
+                    log.warn("Order cancel failure : " + i, e);
 
                 }
-
-            } catch (Exception e) {
-
-                log.warn("Order cancel failure : " + i, e);
 
             }
 
