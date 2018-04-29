@@ -127,20 +127,31 @@ public class ZaifOrder implements Order {
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Response {
 
+        @Getter
+        @Builder
+        @ToString
+        @AllArgsConstructor(access = AccessLevel.PRIVATE)
+        public static class Content {
+
+            @SerializedName("order_id")
+            private String orderId;
+
+        }
+
         private static final Integer SUCCESS = 1;
 
         @SerializedName("success")
         private Integer status;
 
         @SerializedName("return")
-        private Map<String, String> data;
+        private Content data;
 
         public Boolean isSuccess() {
             return SUCCESS.equals(status) && data != null;
         }
 
         public String getOrderId() {
-            return data == null ? null : data.get("order_id");
+            return data == null ? null : data.getOrderId();
         }
 
     }
