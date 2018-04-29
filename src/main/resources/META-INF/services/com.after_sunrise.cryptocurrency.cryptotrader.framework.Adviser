@@ -4,3 +4,4 @@ com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexAdviser
 com.after_sunrise.cryptocurrency.cryptotrader.service.btcbox.BtcboxAdviser
 com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckAdviser
 com.after_sunrise.cryptocurrency.cryptotrader.service.quoinex.QuoinexAdviser
+com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifAdviser
