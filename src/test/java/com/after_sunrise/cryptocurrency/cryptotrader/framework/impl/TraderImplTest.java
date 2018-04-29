@@ -67,8 +67,9 @@ public class TraderImplTest {
     @Test(timeOut = 5000)
     public void testTrade() throws Exception {
 
-        Instant now = Instant.now();
-        when(module.getMock(PropertyManager.class).getNow()).thenReturn(now, now.plusMillis(123));
+        Instant t = Instant.now();
+        AtomicInteger a = new AtomicInteger();
+        when(module.getMock(PropertyManager.class).getNow()).thenReturn(t, t.plusMillis(30), t, t.plusSeconds(3));
         when(module.getMock(PropertyManager.class).getTradingInterval()).thenReturn(Duration.ofMillis(50));
         when(module.getMock(PropertyManager.class).getTradingExtension()).thenReturn(2);
 
