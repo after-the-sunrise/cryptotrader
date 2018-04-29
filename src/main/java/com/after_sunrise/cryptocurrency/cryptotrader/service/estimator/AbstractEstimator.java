@@ -20,20 +20,4 @@ public abstract class AbstractEstimator extends AbstractService implements Estim
         return Key.from(request);
     }
 
-    protected Key convertKey(Context context, Request request, String site) {
-
-        Key key = Key.from(request);
-
-        CurrencyType structure = context.getInstrumentCurrency(key);
-
-        CurrencyType funding = context.getFundingCurrency(key);
-
-        Key newKey = Key.build(key).site(site).instrument(WILDCARD).build();
-
-        String instrument = context.findProduct(newKey, structure, funding);
-
-        return Key.build(newKey).instrument(instrument).build();
-
-    }
-
 }

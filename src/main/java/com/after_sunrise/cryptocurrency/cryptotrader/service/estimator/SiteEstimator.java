@@ -2,6 +2,7 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.estimator;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * @author takanori.takase
@@ -9,14 +10,27 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
  */
 public class SiteEstimator extends AbstractEstimator {
 
-    private static final SiteEstimator INSTANCE = new SiteEstimator();
+    @VisibleForTesting
+    static final SiteEstimator INSTANCE = new SiteEstimator();
 
     private SiteEstimator() {
     }
 
     @Override
     public Context.Key getKey(Context context, Request request) {
-        return convertKey(context, request, request.getSite());
+
+        Context.Key key = Context.Key.from(request);
+
+        CurrencyType structure = context.getInstrumentCurrency(key);
+
+        CurrencyType funding = context.getFundingCurrency(key);
+
+        Context.Key siteKey = Context.Key.build(key).instrument(WILDCARD).build();
+
+        String instrument = context.findProduct(siteKey, structure, funding);
+
+        return Context.Key.build(siteKey).instrument(instrument).build();
+
     }
 
     @Override
