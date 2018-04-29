@@ -109,18 +109,14 @@ public class ZaifOrder implements Order {
         private Integer status;
 
         @SerializedName("return")
-        private Map<String, Map<String, Data>> orders;
+        private Map<String, Data> orders;
 
         public Boolean isSuccess() {
             return SUCCESS.equals(status) && orders != null;
         }
 
         public Map<String, Data> getOrders() {
-            return orders == null ? null : orders.get("active_orders");
-        }
-
-        public Map<String, Data> getTokens() {
-            return orders == null ? null : orders.get("token_active_orders");
+            return orders;
         }
 
     }
