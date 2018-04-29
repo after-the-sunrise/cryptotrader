@@ -13,13 +13,17 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntityEnclosingRequest;
+import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.*;
+import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,15 +125,21 @@ public abstract class TemplateContext extends AbstractService implements Context
 
     private final CloseableHttpClient client;
 
+    private final CloseableHttpAsyncClient asyncClient;
+
     private final AtomicReference<StateType> state;
 
     protected TemplateContext(String id) {
 
         this.id = id;
 
+        this.state = new AtomicReference<>(StateType.ACTIVE);
+
         this.client = HttpClients.createDefault();
 
-        this.state = new AtomicReference<>(StateType.ACTIVE);
+        this.asyncClient = HttpAsyncClients.createDefault();
+
+        this.asyncClient.start();
 
     }
 
@@ -141,9 +151,11 @@ public abstract class TemplateContext extends AbstractService implements Context
     @Override
     public void close() throws Exception {
 
-        client.close();
-
         state.set(StateType.TERMINATE);
+
+        asyncClient.close();
+
+        client.close();
 
     }
 
@@ -255,6 +267,63 @@ public abstract class TemplateContext extends AbstractService implements Context
             throw new IOException(statusLine + " : " + body);
 
         });
+
+    }
+
+    @VisibleForTesting
+    public CompletableFuture<String> requestAsync(RequestType type, String path, Map<String, String> headers, String data) {
+
+        LOG.trace("[SEND][{}][{}][{}] {}", type, path, headers, data);
+
+        Instant start = Instant.now();
+
+        HttpUriRequest request = type.create(path, headers, data);
+
+        CompletableFuture<String> future = new CompletableFuture<>();
+
+        Future<?> call = asyncClient.execute(request, new FutureCallback<HttpResponse>() {
+            @Override
+            public void completed(HttpResponse result) {
+
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+                try {
+
+                    result.getEntity().writeTo(out);
+
+                    String body = new String(out.toByteArray(), UTF_8);
+
+                    StatusLine statusLine = result.getStatusLine();
+
+                    Duration elapsed = Duration.between(start, Instant.now());
+
+                    LOG.trace("[RECV][{}][{}][{}ms][{}] {}",
+                            path, statusLine, elapsed.toMillis(), result.getAllHeaders(), body);
+
+                    if (HttpStatus.SC_OK != statusLine.getStatusCode()) {
+                        throw new IOException(statusLine + " : " + body);
+                    }
+
+                    future.complete(body);
+
+                } catch (IOException e) {
+                    future.completeExceptionally(e);
+                }
+
+            }
+
+            @Override
+            public void failed(Exception e) {
+                future.completeExceptionally(e);
+            }
+
+            @Override
+            public void cancelled() {
+                future.cancel(true);
+            }
+        });
+
+        return future;
 
     }
 
