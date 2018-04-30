@@ -270,7 +270,7 @@ public abstract class TemplateContext extends AbstractService implements Context
 
             if (HttpStatus.SC_OK != statusLine.getStatusCode()) {
 
-                String trimmed = body.replaceAll("\r|\n", "");
+                String trimmed = body.replaceAll("[\r\n]", "");
 
                 throw new IOException(statusLine + " : " + trimmed);
 
@@ -320,7 +320,7 @@ public abstract class TemplateContext extends AbstractService implements Context
 
                     if (HttpStatus.SC_OK != statusLine.getStatusCode()) {
 
-                        String trimmed = body.replaceAll("\r|\n", "");
+                        String trimmed = body.replaceAll("[\r\n]", "");
 
                         throw new IOException(statusLine + " : " + trimmed);
 
