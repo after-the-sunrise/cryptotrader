@@ -268,11 +268,15 @@ public abstract class TemplateContext extends AbstractService implements Context
             LOG.trace("[RECV][{}][{}][{}ms][{}] {}",
                     path, statusLine, elapsed.toMillis(), response.getAllHeaders(), body);
 
-            if (HttpStatus.SC_OK == statusLine.getStatusCode()) {
-                return body;
+            if (HttpStatus.SC_OK != statusLine.getStatusCode()) {
+
+                String trimmed = body.replaceAll("\r|\n", "");
+
+                throw new IOException(statusLine + " : " + trimmed);
+
             }
 
-            throw new IOException(statusLine + " : " + body);
+            return body;
 
         });
 
@@ -315,7 +319,11 @@ public abstract class TemplateContext extends AbstractService implements Context
                             path, statusLine, elapsed.toMillis(), result.getAllHeaders(), body);
 
                     if (HttpStatus.SC_OK != statusLine.getStatusCode()) {
-                        throw new IOException(statusLine + " : " + body);
+
+                        String trimmed = body.replaceAll("\r|\n", "");
+
+                        throw new IOException(statusLine + " : " + trimmed);
+
                     }
 
                     future.complete(body);
