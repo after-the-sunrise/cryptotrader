@@ -68,8 +68,6 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
         return df;
     });
 
-    private static final Duration TIMEOUT = Duration.ofMinutes(3);
-
     private static final Duration REALTIME_EXPIRY = Duration.ofSeconds(5);
 
     private static final Duration REALTIME_TRADE = Duration.ofDays(3);
@@ -267,7 +265,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
         Key all = Key.build(key).instrument(WILDCARD).build();
 
         List<Product> products = listCached(Product.class, all, () ->
-                extract(marketService.getProducts(), TIMEOUT)
+                extract(marketService.getProducts(), getTimeout())
         );
 
         return trimToEmpty(products).stream()
@@ -319,7 +317,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             Board.Request request = Board.Request.builder().product(instrument).build();
 
-            Board board = extract(marketService.getBoard(request), TIMEOUT);
+            Board board = extract(marketService.getBoard(request), getTimeout());
 
             return board == null ? null : new BitflyerBoard(getNow(), board);
 
@@ -364,7 +362,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             Tick.Request request = Tick.Request.builder().product(instrument).build();
 
-            return extract(marketService.getTick(request), TIMEOUT);
+            return extract(marketService.getTick(request), getTimeout());
 
         });
 
@@ -383,7 +381,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
                 BoardStatus.Request request = BoardStatus.Request.builder().product(product).build();
 
-                return extract(marketService.getBoardStatus(request), TIMEOUT);
+                return extract(marketService.getBoardStatus(request), getTimeout());
 
             });
 
@@ -531,7 +529,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
                     Execution.Request r = b.before(minimumId).build();
 
-                    List<Execution> execs = trimToEmpty(extractQuietly(marketService.getExecutions(r), TIMEOUT));
+                    List<Execution> execs = trimToEmpty(extractQuietly(marketService.getExecutions(r), getTimeout()));
 
                     updateExecutions(trades, execs);
 
@@ -722,7 +720,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
         Key all = Key.build(key).instrument(WILDCARD).build();
 
         List<Balance> balances = listCached(Balance.class, all, () ->
-                extract(accountService.getBalances(), TIMEOUT)
+                extract(accountService.getBalances(), getTimeout())
         );
 
         String currency = mapper.apply(product).name();
@@ -755,7 +753,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             Key all = Key.build(key).instrument(WILDCARD).build();
 
             Collateral collateral = findCached(Collateral.class, all, () ->
-                    extract(accountService.getCollateral(), TIMEOUT)
+                    extract(accountService.getCollateral(), getTimeout())
             );
 
             if (collateral == null) {
@@ -783,7 +781,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             Key all = Key.build(key).instrument(WILDCARD).build();
 
             List<Margin> margins = listCached(Margin.class, all, () ->
-                    extract(accountService.getMargins(), TIMEOUT)
+                    extract(accountService.getMargins(), getTimeout())
             );
 
             if (CollectionUtils.isEmpty(margins)) {
@@ -806,7 +804,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             TradePosition.Request request = TradePosition.Request.builder().product(productId).build();
 
-            return extract(orderService.listPositions(request), TIMEOUT);
+            return extract(orderService.listPositions(request), getTimeout());
 
         });
 
@@ -863,7 +861,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             TradeCommission.Request request = TradeCommission.Request.builder()
                     .product(key.getInstrument()).build();
 
-            return extract(orderService.getCommission(request), TIMEOUT);
+            return extract(orderService.getCommission(request), getTimeout());
 
         });
 
@@ -925,11 +923,11 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
             List<BitflyerOrder> values = new ArrayList<>();
 
             trimToEmpty(extract(orderService.listOrders(
-                    OrderList.Request.builder().product(product).build()), TIMEOUT)
+                    OrderList.Request.builder().product(product).build()), getTimeout())
             ).stream().filter(Objects::nonNull).map(BitflyerOrder.Child::new).forEach(values::add);
 
             trimToEmpty(extract(orderService.listParents(
-                    ParentList.Request.builder().product(product).build()), TIMEOUT)
+                    ParentList.Request.builder().product(product).build()), getTimeout())
             ).stream().filter(Objects::nonNull).map(BitflyerOrder.Parent::new).forEach(values::add);
 
             return unmodifiableList(values);
@@ -987,7 +985,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             TradeExecution.Request request = TradeExecution.Request.builder().product(product).build();
 
-            return unmodifiableList(trimToEmpty(extract(orderService.listExecutions(request), TIMEOUT))
+            return unmodifiableList(trimToEmpty(extract(orderService.listExecutions(request), getTimeout()))
                     .stream().filter(Objects::nonNull).map(BitflyerExecution::new).collect(toList()));
 
         });
@@ -1097,7 +1095,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         Map<CreateInstruction, String> results = new IdentityHashMap<>();
 
-        futures.forEach((k, v) -> results.put(k, extractQuietly(v, TIMEOUT)));
+        futures.forEach((k, v) -> results.put(k, extractQuietly(v, getTimeout())));
 
         return results;
 
@@ -1183,7 +1181,7 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
         }
 
-        futures.forEach((i, f) -> results.put(i, extractQuietly(f, TIMEOUT)));
+        futures.forEach((i, f) -> results.put(i, extractQuietly(f, getTimeout())));
 
         return results;
 

@@ -19,7 +19,10 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.*;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -72,8 +75,6 @@ public abstract class TemplateContext extends AbstractService implements Context
             }
         });
 
-        private static final int TIMEOUT = (int) TimeUnit.MINUTES.toMillis(1);
-
         private final Function<String, HttpRequestBase> delegate;
 
         RequestType(Function<String, HttpRequestBase> function) {
@@ -82,7 +83,7 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         }
 
-        public HttpUriRequest create(String url, Map<String, String> headers, String data) {
+        public HttpRequestBase create(String url, Map<String, String> headers, String data) {
 
             HttpRequestBase request = delegate.apply(url);
 
@@ -93,12 +94,6 @@ public abstract class TemplateContext extends AbstractService implements Context
                     .filter(d -> HttpEntityEnclosingRequest.class.isInstance(request))
                     .map(d -> new StringEntity(data, UTF_8))
                     .ifPresent(d -> HttpEntityEnclosingRequest.class.cast(request).setEntity(d));
-
-            request.setConfig(RequestConfig.custom()
-                    .setConnectTimeout(TIMEOUT)
-                    .setConnectionRequestTimeout(TIMEOUT)
-                    .setSocketTimeout(TIMEOUT)
-                    .build());
 
             return request;
 
@@ -250,7 +245,13 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         Instant start = Instant.now();
 
-        HttpUriRequest request = type.create(path, headers, data);
+        HttpRequestBase request = type.create(path, headers, data);
+
+        int t = (int) getTimeout().toMillis();
+
+        request.setConfig(RequestConfig.custom()
+                .setConnectTimeout(t).setConnectionRequestTimeout(t).setSocketTimeout(t).build()
+        );
 
         return client.execute(request, response -> {
 
@@ -284,7 +285,13 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         Instant start = Instant.now();
 
-        HttpUriRequest request = type.create(path, headers, data);
+        HttpRequestBase request = type.create(path, headers, data);
+
+        int t = (int) getTimeout().toMillis();
+
+        request.setConfig(RequestConfig.custom()
+                .setConnectTimeout(t).setConnectionRequestTimeout(t).setSocketTimeout(t).build()
+        );
 
         CompletableFuture<String> future = new CompletableFuture<>();
 
@@ -514,6 +521,18 @@ public abstract class TemplateContext extends AbstractService implements Context
 
     }
 
+    protected Duration getTimeout() {
+
+        long timeout = getLongProperty("timeout", FUTURE_TIMEOUT.toMillis());
+
+        return Duration.ofMillis(timeout);
+
+    }
+
+    protected <V> V extract(Future<V> future) throws Exception {
+        return extract(future, getTimeout());
+    }
+
     protected <V> V extract(Future<V> future, Duration timeout) throws Exception {
 
         if (future == null) {
@@ -532,6 +551,14 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         }
 
+    }
+
+    protected <V> V extractQuietly(Future<V> future) {
+        try {
+            return extract(future);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     protected <V> V extractQuietly(Future<V> future, Duration timeout) {
@@ -718,7 +745,7 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         }
 
-        Instant cutoff = getNow().plus(FUTURE_TIMEOUT);
+        Instant cutoff = getNow().plus(getTimeout());
 
         Map<CreateInstruction, String> results = new IdentityHashMap<>();
 
@@ -781,7 +808,7 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         }
 
-        Instant cutoff = getNow().plus(FUTURE_TIMEOUT);
+        Instant cutoff = getNow().plus(getTimeout());
 
         Map<CancelInstruction, String> results = new IdentityHashMap<>();
 

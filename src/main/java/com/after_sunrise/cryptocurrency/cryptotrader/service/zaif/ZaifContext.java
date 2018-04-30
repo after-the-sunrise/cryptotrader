@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.Map.Entry;
@@ -44,8 +43,6 @@ public class ZaifContext extends TemplateContext implements ZaifService {
     static final String URL_TRADE = "https://api.zaif.jp/api/1/trades/";
 
     static final String URL_POST = "https://api.zaif.jp/tapi";
-
-    static final Duration TIMEOUT = Duration.ofMinutes(1);
 
     private static final Type TYPE_TRADE = new TypeToken<List<ZaifTrade>>() {
     }.getType();
@@ -279,9 +276,7 @@ public class ZaifContext extends TemplateContext implements ZaifService {
 
         ZaifBalance balance = findCached(ZaifBalance.class, newKey, () -> {
 
-            Future<String> future = postAsync("get_info2", emptyMap());
-
-            String data = future.get(TIMEOUT.toMillis(), MILLISECONDS);
+            String data = extract(postAsync("get_info2", emptyMap()));
 
             ZaifBalance.Container c = gson.fromJson(data, ZaifBalance.Container.class);
 
@@ -390,7 +385,7 @@ public class ZaifContext extends TemplateContext implements ZaifService {
 
             Map<String, String> parameters = singletonMap("currency_pair", product.getId());
 
-            String data = postAsync("active_orders", parameters).get(TIMEOUT.toMillis(), MILLISECONDS);
+            String data = extract(postAsync("active_orders", parameters));
 
             ZaifOrder.Container c = gson.fromJson(data, ZaifOrder.Container.class);
 
@@ -430,9 +425,7 @@ public class ZaifContext extends TemplateContext implements ZaifService {
             parameters.put("currency_pair", product.getId());
             parameters.put("count", "100");
 
-            Future<String> future = postAsync("trade_history", parameters);
-
-            String data = future.get(TIMEOUT.toMillis(), MILLISECONDS);
+            String data = extract(postAsync("trade_history", parameters));
 
             ZaifExecution.Container c = gson.fromJson(data, ZaifExecution.Container.class);
 
