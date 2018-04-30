@@ -1,5 +1,6 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.template;
 
+import com.after_sunrise.cryptocurrency.cryptotrader.core.Converter;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CancelInstruction;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.CreateInstruction;
@@ -9,6 +10,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.AbstractServ
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.util.concurrent.Futures;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -39,6 +41,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -112,6 +115,10 @@ public abstract class TemplateContext extends AbstractService implements Context
     private static final Duration CACHE_SLEEP = Duration.ofMillis(100);
 
     private static final int CACHE_RETRY = 2;
+
+    private static final Duration FUTURE_TIMEOUT = Duration.ofMinutes(1);
+
+    private static final Duration FUTURE_MINIMUM = Duration.ofMillis(100);
 
     private final Map<Class<?>, Cache<Key, Optional<?>>> singleCache = synchronizedMap(new HashMap<>());
 
@@ -208,7 +215,7 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         if (MapUtils.isNotEmpty(parameters)) {
 
-            for (Map.Entry<String, String> entry : parameters.entrySet()) {
+            for (Entry<String, String> entry : parameters.entrySet()) {
 
                 if (StringUtils.isEmpty(entry.getKey())) {
                     continue;
@@ -271,7 +278,7 @@ public abstract class TemplateContext extends AbstractService implements Context
     }
 
     @VisibleForTesting
-    public CompletableFuture<String> requestAsync(RequestType type, String path, Map<String, String> headers, String data) {
+    public Future<String> requestAsync(RequestType type, String path, Map<String, String> headers, String data) {
 
         LOG.trace("[SEND][{}][{}][{}] {}", type, path, headers, data);
 
@@ -682,9 +689,126 @@ public abstract class TemplateContext extends AbstractService implements Context
         return null;
     }
 
+    protected Map<CreateInstruction, String> handleCreates(Set<CreateInstruction> instructions,
+                                                           Converter<CreateInstruction, Future<String>> execute,
+                                                           Converter<String, String> extract) {
+
+        Map<CreateInstruction, Future<String>> futures = new IdentityHashMap<>();
+
+        for (CreateInstruction i : trimToEmpty(instructions)) {
+
+            if (i == null || i.getPrice() == null || i.getPrice().signum() == 0
+                    || i.getSize() == null || i.getSize().signum() == 0) {
+
+                futures.put(i, CompletableFuture.completedFuture(null));
+
+                continue;
+
+            }
+
+            try {
+
+                futures.put(i, execute.convert(i));
+
+            } catch (Exception e) {
+
+                futures.put(i, Futures.immediateFailedFuture(e));
+
+            }
+
+        }
+
+        Instant cutoff = getNow().plus(FUTURE_TIMEOUT);
+
+        Map<CreateInstruction, String> results = new IdentityHashMap<>();
+
+        for (Entry<CreateInstruction, Future<String>> entry : futures.entrySet()) {
+
+            try {
+
+                Duration remaining = Duration.between(getNow(), cutoff);
+
+                long millis = Math.max(remaining.toMillis(), FUTURE_MINIMUM.toMillis());
+
+                String data = entry.getValue().get(millis, MILLISECONDS);
+
+                results.put(entry.getKey(), extract.convert(data));
+
+            } catch (Exception e) {
+
+                log.warn("Order create failure : " + entry.getKey(), e);
+
+                results.put(entry.getKey(), null);
+
+            }
+
+        }
+
+        return results;
+
+    }
+
     @Override
     public Map<CancelInstruction, String> cancelOrders(Key key, Set<CancelInstruction> instructions) {
         return null;
+    }
+
+    protected Map<CancelInstruction, String> handleCancels(Set<CancelInstruction> instructions,
+                                                           Converter<CancelInstruction, Future<String>> execute,
+                                                           Converter<String, String> extract) {
+
+        Map<CancelInstruction, Future<String>> futures = new IdentityHashMap<>();
+
+        for (CancelInstruction i : trimToEmpty(instructions)) {
+
+            if (i == null || StringUtils.isEmpty(i.getId())) {
+
+                futures.put(i, CompletableFuture.completedFuture(null));
+
+                continue;
+
+            }
+
+            try {
+
+                futures.put(i, execute.convert(i));
+
+            } catch (Exception e) {
+
+                futures.put(i, Futures.immediateFailedCheckedFuture(e));
+
+            }
+
+        }
+
+        Instant cutoff = getNow().plus(FUTURE_TIMEOUT);
+
+        Map<CancelInstruction, String> results = new IdentityHashMap<>();
+
+        for (Entry<CancelInstruction, Future<String>> entry : futures.entrySet()) {
+
+            try {
+
+                Duration remaining = Duration.between(getNow(), cutoff);
+
+                long millis = Math.max(remaining.toMillis(), FUTURE_MINIMUM.toMillis());
+
+                String data = entry.getValue().get(millis, MILLISECONDS);
+
+                results.put(entry.getKey(), extract.convert(data));
+
+            } catch (Exception e) {
+
+                log.warn("Order cancel failure : " + entry.getKey(), e);
+
+                results.put(entry.getKey(), null);
+
+            }
+
+        }
+
+        return results;
+
     }
 
 }

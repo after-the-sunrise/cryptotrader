@@ -8,7 +8,6 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
-import com.google.common.util.concurrent.Futures;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
@@ -502,133 +501,57 @@ public class ZaifContext extends TemplateContext implements ZaifService {
     @Override
     public Map<CreateInstruction, String> createOrders(Key key, Set<CreateInstruction> instructions) {
 
-        Map<CreateInstruction, Future<String>> futures = new IdentityHashMap<>();
-
         ProductType product = ProductType.find(key.getInstrument());
 
-        for (CreateInstruction i : trimToEmpty(instructions)) {
+        return handleCreates(instructions, i -> {
 
-            if (product == null || i.getPrice() == null || i.getPrice().signum() == 0
-                    || i.getSize() == null || i.getSize().signum() == 0) {
-
-                futures.put(i, CompletableFuture.completedFuture(null));
-
-                continue;
-
+            if (product == null) {
+                return CompletableFuture.completedFuture((String) null);
             }
 
-            try {
+            Map<String, String> parameters = new IdentityHashMap<>();
+            parameters.put("currency_pair", product.getId());
+            parameters.put("action", i.getSize().signum() > 0 ? "bid" : "ask");
+            parameters.put("price", i.getPrice().toPlainString());
+            parameters.put("amount", i.getSize().abs().toPlainString());
 
-                Map<String, String> parameters = new IdentityHashMap<>();
-                parameters.put("currency_pair", product.getId());
-                parameters.put("action", i.getSize().signum() > 0 ? "bid" : "ask");
-                parameters.put("price", i.getPrice().toPlainString());
-                parameters.put("amount", i.getSize().abs().toPlainString());
+            return postAsync("trade", parameters);
 
-                futures.put(i, postAsync("trade", parameters));
+        }, d -> {
 
-            } catch (Exception e) {
+            ZaifOrder.Response r = gson.fromJson(d, ZaifOrder.Response.class);
 
-                futures.put(i, Futures.immediateFailedFuture(e));
+            return r.getOrderId();
 
-            }
-
-        }
-
-        Instant cutoff = getNow().plus(TIMEOUT);
-
-        Map<CreateInstruction, String> results = new IdentityHashMap<>();
-
-        for (Entry<CreateInstruction, Future<String>> entry : futures.entrySet()) {
-
-            try {
-
-                Duration remaining = Duration.between(getNow(), cutoff);
-
-                long millis = Math.max(remaining.toMillis(), MINIMUM.toMillis());
-
-                String data = entry.getValue().get(millis, MILLISECONDS);
-
-                ZaifOrder.Response r = gson.fromJson(data, ZaifOrder.Response.class);
-
-                results.put(entry.getKey(), r.getOrderId());
-
-            } catch (Exception e) {
-
-                log.warn("Order create failure : " + entry.getKey(), e);
-
-                results.put(entry.getKey(), null);
-
-            }
-
-        }
-
-        return results;
+        });
 
     }
 
     @Override
     public Map<CancelInstruction, String> cancelOrders(Key key, Set<CancelInstruction> instructions) {
 
-        Map<CancelInstruction, Future<String>> futures = new IdentityHashMap<>();
-
         ProductType product = ProductType.find(key.getInstrument());
 
-        for (CancelInstruction i : trimToEmpty(instructions)) {
+        return handleCancels(instructions, i -> {
 
-            if (product == null || StringUtils.isEmpty(i.getId())) {
-
-                futures.put(i, CompletableFuture.completedFuture(null));
-
-                continue;
-
+            if (product == null) {
+                return CompletableFuture.completedFuture((String) null);
             }
 
-            try {
+            Map<String, String> parameters = new IdentityHashMap<>();
+            parameters.put("currency_pair", product.getId());
+            parameters.put("order_id", i.getId());
 
-                Map<String, String> parameters = new IdentityHashMap<>();
-                parameters.put("currency_pair", product.getId());
-                parameters.put("order_id", i.getId());
+            return postAsync("cancel_order", parameters);
 
-                futures.put(i, postAsync("cancel_order", parameters));
+        }, data -> {
 
-            } catch (Exception e) {
+            ZaifOrder.Response r = gson.fromJson(data, ZaifOrder.Response.class);
 
-                futures.put(i, Futures.immediateFailedCheckedFuture(e));
+            return r.getOrderId();
 
-            }
+        });
 
-        }
-
-        Instant cutoff = getNow().plus(TIMEOUT);
-
-        Map<CancelInstruction, String> results = new IdentityHashMap<>();
-
-        for (Entry<CancelInstruction, Future<String>> entry : futures.entrySet()) {
-
-            try {
-
-                Duration remaining = Duration.between(getNow(), cutoff);
-
-                long millis = Math.max(remaining.toMillis(), MINIMUM.toMillis());
-
-                String data = entry.getValue().get(millis, MILLISECONDS);
-
-                ZaifOrder.Response r = gson.fromJson(data, ZaifOrder.Response.class);
-
-                results.put(entry.getKey(), r.getOrderId());
-
-            } catch (Exception e) {
-
-                log.warn("Order cancel failure : " + entry.getKey(), e);
-
-                results.put(entry.getKey(), null);
-
-            }
-
-        }
-
-        return results;
     }
 
 }
