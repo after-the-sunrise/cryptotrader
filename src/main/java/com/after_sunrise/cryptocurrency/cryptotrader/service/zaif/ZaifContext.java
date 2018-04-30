@@ -13,6 +13,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -84,10 +85,6 @@ public class ZaifContext extends TemplateContext implements ZaifService {
 
             String data = request(URL_DEPTH + product.getId());
 
-            if (StringUtils.isEmpty(data)) {
-                return null;
-            }
-
             return gson.fromJson(data, ZaifDepth.class);
 
         });
@@ -156,10 +153,6 @@ public class ZaifContext extends TemplateContext implements ZaifService {
         List<ZaifTrade> values = listCached(ZaifTrade.class, key, () -> {
 
             String data = request(URL_TRADE + product.getId());
-
-            if (StringUtils.isEmpty(data)) {
-                return null;
-            }
 
             List<ZaifTrade> trades = gson.fromJson(data, TYPE_TRADE);
 
@@ -290,11 +283,13 @@ public class ZaifContext extends TemplateContext implements ZaifService {
 
             String data = future.get(TIMEOUT.toMillis(), MILLISECONDS);
 
-            if (StringUtils.isEmpty(data)) {
-                return null;
+            ZaifBalance.Container c = gson.fromJson(data, ZaifBalance.Container.class);
+
+            if (!c.isSuccess()) {
+                throw new IOException("Invalid balance : " + c);
             }
 
-            return gson.fromJson(data, ZaifBalance.Container.class).getBalance();
+            return c.getBalance();
 
         });
 
@@ -395,21 +390,15 @@ public class ZaifContext extends TemplateContext implements ZaifService {
 
             Map<String, String> parameters = singletonMap("currency_pair", product.getId());
 
-            Future<String> future = postAsync("active_orders", parameters);
+            String data = postAsync("active_orders", parameters).get(TIMEOUT.toMillis(), MILLISECONDS);
 
-            String data = future.get(TIMEOUT.toMillis(), MILLISECONDS);
+            ZaifOrder.Container c = gson.fromJson(data, ZaifOrder.Container.class);
 
-            if (StringUtils.isEmpty(data)) {
-                return null;
+            if (!c.isSuccess()) {
+                throw new IOException("Invalid orders " + c);
             }
 
-            Map<String, ZaifOrder.Data> m = gson.fromJson(data, ZaifOrder.Container.class).getOrders();
-
-            if (m == null) {
-                return null;
-            }
-
-            return unmodifiableList(m.entrySet().stream()
+            return unmodifiableList(trimToEmpty(c.getOrders()).entrySet().stream()
                     .map(e -> ZaifOrder.builder().id(e.getKey()).data(e.getValue()).build())
                     .collect(toList()));
 
@@ -445,17 +434,13 @@ public class ZaifContext extends TemplateContext implements ZaifService {
 
             String data = future.get(TIMEOUT.toMillis(), MILLISECONDS);
 
-            if (StringUtils.isEmpty(data)) {
-                return null;
+            ZaifExecution.Container c = gson.fromJson(data, ZaifExecution.Container.class);
+
+            if (!c.isSuccess()) {
+                throw new IOException("Invalid executions : " + c);
             }
 
-            Map<String, ZaifExecution.Data> m = gson.fromJson(data, ZaifExecution.Container.class).getExecutions();
-
-            if (m == null) {
-                return null;
-            }
-
-            return unmodifiableList(m.entrySet().stream()
+            return unmodifiableList(trimToEmpty(c.getExecutions()).entrySet().stream()
                     .map(e -> ZaifExecution.builder().id(e.getKey()).data(e.getValue()).build())
                     .collect(toList()));
 
