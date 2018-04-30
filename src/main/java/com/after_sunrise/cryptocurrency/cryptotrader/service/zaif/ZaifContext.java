@@ -46,8 +46,6 @@ public class ZaifContext extends TemplateContext implements ZaifService {
 
     static final Duration TIMEOUT = Duration.ofMinutes(1);
 
-    static final Duration MINIMUM = Duration.ofMillis(100);
-
     private static final Type TYPE_TRADE = new TypeToken<List<ZaifTrade>>() {
     }.getType();
 
@@ -247,41 +245,6 @@ public class ZaifContext extends TemplateContext implements ZaifService {
     }
 
     @VisibleForTesting
-    String post(String method, Map<String, String> parameters) throws Exception {
-
-        String apiKey = getStringProperty("api.id", null);
-        String secret = getStringProperty("api.secret", null);
-
-        if (StringUtils.isEmpty(apiKey) || StringUtils.isEmpty(secret)) {
-            return null;
-        }
-
-        String result;
-
-        synchronized (URL_POST) {
-
-            // Avoid duplicate nonce
-            MILLISECONDS.sleep(5);
-
-            Map<String, String> map = new LinkedHashMap<>(trimToEmpty(parameters));
-            map.put("nonce", BigDecimal.valueOf(getNow().toEpochMilli()).movePointLeft(3).toPlainString());
-            map.put("method", method);
-            String data = buildQueryParameter(map, "");
-
-            Map<String, String> headers = new LinkedHashMap<>();
-            headers.put("Content-Type", "application/x-www-form-urlencoded");
-            headers.put("key", apiKey);
-            headers.put("sign", computeHash("HmacSHA512", secret.getBytes(), data.getBytes()));
-
-            result = request(POST, URL_POST, headers, data);
-
-        }
-
-        return result;
-
-    }
-
-    @VisibleForTesting
     Future<String> postAsync(String method, Map<String, String> parameters) throws Exception {
 
         String apiKey = getStringProperty("api.id", null);
@@ -323,7 +286,9 @@ public class ZaifContext extends TemplateContext implements ZaifService {
 
         ZaifBalance balance = findCached(ZaifBalance.class, newKey, () -> {
 
-            String data = post("get_info2", emptyMap());
+            Future<String> future = postAsync("get_info2", emptyMap());
+
+            String data = future.get(TIMEOUT.toMillis(), MILLISECONDS);
 
             if (StringUtils.isEmpty(data)) {
                 return null;
@@ -428,7 +393,11 @@ public class ZaifContext extends TemplateContext implements ZaifService {
 
         List<ZaifOrder> orders = listCached(ZaifOrder.class, key, () -> {
 
-            String data = post("active_orders", singletonMap("currency_pair", product.getId()));
+            Map<String, String> parameters = singletonMap("currency_pair", product.getId());
+
+            Future<String> future = postAsync("active_orders", parameters);
+
+            String data = future.get(TIMEOUT.toMillis(), MILLISECONDS);
 
             if (StringUtils.isEmpty(data)) {
                 return null;
@@ -472,7 +441,9 @@ public class ZaifContext extends TemplateContext implements ZaifService {
             parameters.put("currency_pair", product.getId());
             parameters.put("count", "100");
 
-            String data = post("trade_history", parameters);
+            Future<String> future = postAsync("trade_history", parameters);
+
+            String data = future.get(TIMEOUT.toMillis(), MILLISECONDS);
 
             if (StringUtils.isEmpty(data)) {
                 return null;
