@@ -111,7 +111,7 @@ public abstract class TemplateContext extends AbstractService implements Context
 
     private static final int CACHE_RETRY = 2;
 
-    private static final Duration FUTURE_TIMEOUT = Duration.ofMinutes(1);
+    private static final Duration FUTURE_TIMEOUT = Duration.ofSeconds(30);
 
     private static final Duration FUTURE_MINIMUM = Duration.ofMillis(100);
 
