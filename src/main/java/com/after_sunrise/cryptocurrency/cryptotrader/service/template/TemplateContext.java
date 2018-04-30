@@ -761,6 +761,12 @@ public abstract class TemplateContext extends AbstractService implements Context
 
                 results.put(entry.getKey(), extract.convert(data));
 
+            } catch (TimeoutException e) {
+
+                log.warn("Order create timeout : " + entry.getKey());
+
+                results.put(entry.getKey(), null);
+
             } catch (Exception e) {
 
                 log.warn("Order create failure : " + entry.getKey(), e);
@@ -823,6 +829,12 @@ public abstract class TemplateContext extends AbstractService implements Context
                 String data = entry.getValue().get(millis, MILLISECONDS);
 
                 results.put(entry.getKey(), extract.convert(data));
+
+            } catch (TimeoutException e) {
+
+                log.warn("Order cancel timeout : " + entry.getKey());
+
+                results.put(entry.getKey(), null);
 
             } catch (Exception e) {
 
