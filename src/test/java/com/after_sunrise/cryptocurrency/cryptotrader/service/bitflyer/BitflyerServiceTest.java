@@ -58,6 +58,7 @@ public class BitflyerServiceTest {
             switch (type) {
                 case BTCJPY_MAT1WK:
                 case BTCJPY_MAT2WK:
+                case BTCJPY_MAT3M:
                     expect = BTC_JPY;
                     break;
             }

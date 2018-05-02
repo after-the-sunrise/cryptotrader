@@ -502,6 +502,7 @@ public class BitflyerContextTest {
                             case FX_BTC_JPY:
                             case BTCJPY_MAT1WK:
                             case BTCJPY_MAT2WK:
+                            case BTCJPY_MAT3M:
                             case COLLATERAL_BTC:
                                 // First one found = 1 / 840000
                                 expect = new BigDecimal("-0.0000011905");
@@ -513,6 +514,7 @@ public class BitflyerContextTest {
                             case BTC_JPY:
                             case BTCJPY_MAT1WK:
                             case BTCJPY_MAT2WK:
+                            case BTCJPY_MAT3M:
                             case COLLATERAL_BTC:
                                 expect = ONE;
                                 break;
@@ -540,6 +542,7 @@ public class BitflyerContextTest {
                             case FX_BTC_JPY:
                             case BTCJPY_MAT1WK:
                             case BTCJPY_MAT2WK:
+                            case BTCJPY_MAT3M:
                             case COLLATERAL_BTC:
                                 expect = new BigDecimal("-0.4");
                                 break;
@@ -554,6 +557,7 @@ public class BitflyerContextTest {
                             case FX_BTC_JPY:
                             case BTCJPY_MAT1WK:
                             case BTCJPY_MAT2WK:
+                            case BTCJPY_MAT3M:
                             case COLLATERAL_BTC:
                                 expect = new BigDecimal("-0.6");
                                 break;
@@ -600,6 +604,7 @@ public class BitflyerContextTest {
                             case BTC_JPY:
                             case BTCJPY_MAT1WK:
                             case BTCJPY_MAT2WK:
+                            case BTCJPY_MAT3M:
                             case COLLATERAL_BTC:
                                 expect = ONE;
                                 break;

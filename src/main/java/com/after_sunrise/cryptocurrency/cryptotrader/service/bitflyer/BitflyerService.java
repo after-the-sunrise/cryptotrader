@@ -48,7 +48,9 @@ public interface BitflyerService extends Service {
 
         FUTURE_BTC1W(CurrencyType.BTC),
 
-        FUTURE_BTC2W(CurrencyType.BTC);
+        FUTURE_BTC2W(CurrencyType.BTC),
+
+        FUTURE_BTC3M(CurrencyType.BTC);
 
         private static final Map<String, AssetType> NAMES = stream(values()).collect(toMap(AssetType::name, t -> t));
 
@@ -78,6 +80,8 @@ public interface BitflyerService extends Service {
         BTCJPY_MAT1WK(FUTURE_BTC1W, COLLATERAL, new BigDecimal("0.001"), ONE),
 
         BTCJPY_MAT2WK(FUTURE_BTC2W, COLLATERAL, new BigDecimal("0.001"), ONE),
+
+        BTCJPY_MAT3M(FUTURE_BTC3M, COLLATERAL, new BigDecimal("0.001"), ONE),
 
         CASH_JPY(JPY, JPY, ONE, ONE),
 
@@ -117,6 +121,7 @@ public interface BitflyerService extends Service {
             switch (this) {
                 case BTCJPY_MAT1WK:
                 case BTCJPY_MAT2WK:
+                case BTCJPY_MAT3M:
                     underlying = BTC_JPY;
                     break;
                 default:

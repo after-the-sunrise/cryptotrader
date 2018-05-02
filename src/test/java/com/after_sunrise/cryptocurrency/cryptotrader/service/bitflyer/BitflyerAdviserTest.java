@@ -436,6 +436,7 @@ public class BitflyerAdviserTest {
             switch (p) {
                 case BTCJPY_MAT1WK:
                 case BTCJPY_MAT2WK:
+                case BTCJPY_MAT3M:
                     assertEquals(key.getSite(), builder.build().getSite());
                     assertEquals(key.getInstrument(), "BTC_JPY");
                     assertEquals(key.getTimestamp(), builder.build().getCurrentTime());
