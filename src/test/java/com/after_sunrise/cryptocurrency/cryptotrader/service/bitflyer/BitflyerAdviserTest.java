@@ -392,8 +392,17 @@ public class BitflyerAdviserTest {
         doReturn(new BigDecimal("0.0005")).when(target).calculateSwapRate(context, request, swap);
         doReturn(new BigDecimal("0.0001")).when(target).calculateDualSfdRate(context, request, true);
 
+        when(context.getInstrumentPosition(Key.from(request))).thenReturn(new BigDecimal("+0.1"));
         BigDecimal result = target.adjustBuyBasis(context, request, new BigDecimal("0.002"));
         assertEquals(result, new BigDecimal("0.0026"));
+
+        when(context.getInstrumentPosition(Key.from(request))).thenReturn(new BigDecimal("-0.0"));
+        result = target.adjustBuyBasis(context, request, new BigDecimal("0.002"));
+        assertEquals(result, new BigDecimal("0.0026"));
+
+        when(context.getInstrumentPosition(Key.from(request))).thenReturn(new BigDecimal("-0.1"));
+        result = target.adjustBuyBasis(context, request, new BigDecimal("0.002"));
+        assertEquals(result, new BigDecimal("0.0021"));
 
         assertNull(target.adjustBuyBasis(context, request, null));
 
@@ -413,8 +422,17 @@ public class BitflyerAdviserTest {
         doReturn(new BigDecimal("0.0005")).when(target).calculateSwapRate(context, request, swap);
         doReturn(new BigDecimal("0.0001")).when(target).calculateDualSfdRate(context, request, false);
 
+        when(context.getInstrumentPosition(Key.from(request))).thenReturn(new BigDecimal("-0.1"));
         BigDecimal result = target.adjustSellBasis(context, request, new BigDecimal("0.002"));
         assertEquals(result, new BigDecimal("0.0026"));
+
+        when(context.getInstrumentPosition(Key.from(request))).thenReturn(new BigDecimal("+0.0"));
+        result = target.adjustSellBasis(context, request, new BigDecimal("0.002"));
+        assertEquals(result, new BigDecimal("0.0026"));
+
+        when(context.getInstrumentPosition(Key.from(request))).thenReturn(new BigDecimal("+0.1"));
+        result = target.adjustSellBasis(context, request, new BigDecimal("0.002"));
+        assertEquals(result, new BigDecimal("0.0021"));
 
         assertNull(target.adjustSellBasis(context, request, null));
 

@@ -224,9 +224,17 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
             return null;
         }
 
-        BigDecimal dailyRate = getDecimalProperty(KEY_SWAP_B, SWAP_RATE);
+        BigDecimal position = context.getInstrumentPosition(Key.from(request));
 
-        BigDecimal swapRate = trimToZero(calculateSwapRate(context, request, dailyRate));
+        BigDecimal swapRate = ZERO;
+
+        if (trimToZero(position).signum() >= 0) {
+
+            BigDecimal dailyRate = getDecimalProperty(KEY_SWAP_B, SWAP_RATE);
+
+            swapRate = trimToZero(calculateSwapRate(context, request, dailyRate));
+
+        }
 
         BigDecimal sfdRate = trimToZero(calculateDualSfdRate(context, request, true));
 
@@ -241,9 +249,17 @@ public class BitflyerAdviser extends TemplateAdviser implements BitflyerService 
             return null;
         }
 
-        BigDecimal dailyRate = getDecimalProperty(KEY_SWAP_S, SWAP_RATE);
+        BigDecimal position = context.getInstrumentPosition(Key.from(request));
 
-        BigDecimal swapRate = trimToZero(calculateSwapRate(context, request, dailyRate));
+        BigDecimal swapRate = ZERO;
+
+        if (trimToZero(position).signum() <= 0) {
+
+            BigDecimal dailyRate = getDecimalProperty(KEY_SWAP_S, SWAP_RATE);
+
+            swapRate = trimToZero(calculateSwapRate(context, request, dailyRate));
+
+        }
 
         BigDecimal sfdRate = trimToZero(calculateDualSfdRate(context, request, false));
 
