@@ -29,7 +29,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.*;
@@ -525,52 +524,41 @@ public class BitbankContext extends TemplateContext implements BitbankService {
     @Override
     public Map<CancelInstruction, String> cancelOrders(Key key, Set<CancelInstruction> instructions) {
 
-        Set<String> cancelled = new HashSet<>();
+        Map<CancelInstruction, String> results = new IdentityHashMap<>();
 
         ProductType product = ProductType.find(key.getInstrument());
 
         if (product != null) {
 
-            long[] targets = trimToEmpty(instructions).stream()
+            trimToEmpty(instructions).stream()
                     .filter(Objects::nonNull)
-                    .map(CancelInstruction::getId)
-                    .filter(StringUtils::isNotEmpty)
-                    .filter(id -> NUMERIC.matcher(id).matches())
-                    .mapToLong(Long::valueOf)
-                    .toArray();
+                    .filter(i -> StringUtils.isNotBlank(i.getId()))
+                    .filter(i -> NUMERIC.matcher(i.getId()).matches())
+                    .forEach(i -> {
 
-            if (ArrayUtils.isNotEmpty(targets)) {
+                        String result;
 
-                try {
+                        try {
 
-                    Orders orders = getLocalApi().cancelOrders(product.getPair(), targets);
+                            long id = Long.valueOf(i.getId());
 
-                    Stream.of(orders.orders)
-                            .filter(Objects::nonNull)
-                            .map(BitbankOrder::new)
-                            .filter(o -> Objects.equals(TRUE, o.getCancelled()))
-                            .map(BitbankOrder::getId)
-                            .forEach(cancelled::add);
+                            cc.bitbank.entity.Order order = getLocalApi().cancelOrder(product.getPair(), id);
 
-                } catch (Exception e) {
+                            result = order == null ? null : new BitbankOrder(order).getId();
 
-                    log.warn("Order cancel failure : " + Arrays.asList(targets), e);
+                        } catch (Exception e) {
 
-                }
+                            log.warn("Order cancel failure : " + i.getId(), e);
 
-            }
+                            result = null;
+
+                        }
+
+                        results.put(i, result);
+
+                    });
 
         }
-
-        Map<CancelInstruction, String> results = new IdentityHashMap<>();
-
-        trimToEmpty(instructions).stream().filter(Objects::nonNull).forEach(i -> {
-
-            boolean success = cancelled.contains(i.getId());
-
-            results.put(i, success ? i.getId() : null);
-
-        });
 
         return results;
 
