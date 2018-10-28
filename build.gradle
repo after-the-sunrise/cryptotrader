@@ -16,6 +16,7 @@ targetCompatibility = 1.8
 repositories {
     mavenCentral()
     maven { url 'https://raw.github.com/bitbankinc/java-bitbankcc/mvn-repo/' }
+    maven { url 'https://raw.github.com/after-the-sunrise/java-bitbankcc/mvn-repo/' }
 }
 
 configurations {
