@@ -109,17 +109,24 @@ public class AbstractServiceTest {
             when(f.apply("s2", "p5")).thenReturn(new BigDecimal("5.6"));
         };
 
+        // 3 elements
         // 1 * 1.2 * 2.3 / 3.4 * 4.5 = 3.652941176470588
-        // Average = (3.652941176470588 + 4.5 + 5.6) / 3 = 4.584313725490196
+        // average(3.652941176470588, 4.5, 5.6)
         initializer.run();
         assertEquals(target.calculateComposite(products, f), new BigDecimal("4.5843137255"));
 
-        // Average Only
+        // 4 elements
+        // [3.65, 4.5, 5.6, 1.2] -> avg(3.65..., 4.5)
         initializer.run();
-        products.clear();
-        products.add(new Composite("@s2", "p4"));
-        products.add(new Composite("@s2", "p5"));
-        assertEquals(target.calculateComposite(products, f), new BigDecimal("5.0500000000"));
+        products.add(new Composite("@s1", "p1"));
+        assertEquals(target.calculateComposite(products, f), new BigDecimal("4.0764705883"));
+
+        // 5 elements
+        // [3.65, 4.5, 5.6, 1.2, 1.2] -> avg(1.2, 3.65..., 4.5)
+        initializer.run();
+        products.add(new Composite("@s1", "p1"));
+        products.add(new Composite("@s1", "p1"));
+        assertEquals(target.calculateComposite(products, f), new BigDecimal("3.1176470589"));
 
         // Empty products
         initializer.run();

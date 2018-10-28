@@ -34,6 +34,8 @@ public abstract class AbstractService implements Service {
 
     protected static final int SCALE = 10;
 
+    protected static final int QUARTER = 4;
+
     protected static final BigDecimal EPSILON = ONE.movePointLeft(SCALE);
 
     protected static final BigDecimal HALF = new BigDecimal("0.5");
@@ -211,12 +213,15 @@ public abstract class AbstractService implements Service {
 
         }
 
-        long count = Stream.of(results).filter(Objects::nonNull).count();
+        BigDecimal[] sorted = Stream.of(results).filter(Objects::nonNull).sorted().toArray(BigDecimal[]::new);
 
-        BigDecimal total = Stream.of(results).filter(Objects::nonNull)
-                .reduce(BigDecimal::add).orElse(ZERO);
+        int quarter = sorted.length / QUARTER;
 
-        return total.divide(BigDecimal.valueOf(count), SCALE, HALF_UP);
+        BigDecimal[] filtered = ArrayUtils.subarray(sorted, quarter, sorted.length - quarter);
+
+        BigDecimal total = Stream.of(filtered).reduce(BigDecimal::add).orElse(ZERO);
+
+        return total.divide(BigDecimal.valueOf(filtered.length), SCALE, HALF_UP);
 
     }
 
