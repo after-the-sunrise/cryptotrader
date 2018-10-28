@@ -18,6 +18,7 @@ import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -137,9 +138,13 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         this.state = new AtomicReference<>(StateType.ACTIVE);
 
-        this.client = HttpClients.createDefault();
+        this.client = HttpClients.custom().setDefaultRequestConfig(
+                RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build()
+        ).build();
 
-        this.asyncClient = HttpAsyncClients.createDefault();
+        this.asyncClient = HttpAsyncClients.custom().setDefaultRequestConfig(
+                RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build()
+        ).build();
 
         this.asyncClient.start();
 

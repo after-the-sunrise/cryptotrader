@@ -5,3 +5,4 @@ com.after_sunrise.cryptocurrency.cryptotrader.service.btcbox.BtcboxAgent
 com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckAgent
 com.after_sunrise.cryptocurrency.cryptotrader.service.quoinex.QuoinexAgent
 com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifAgent
+com.after_sunrise.cryptocurrency.cryptotrader.service.fisco.FiscoAgent

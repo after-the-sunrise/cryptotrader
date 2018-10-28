@@ -9,3 +9,4 @@ com.after_sunrise.cryptocurrency.cryptotrader.service.poloniex.PoloniexContext
 com.after_sunrise.cryptocurrency.cryptotrader.service.quoinex.QuoinexContext
 com.after_sunrise.cryptocurrency.cryptotrader.service.template.ConstantContext
 com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifContext
+com.after_sunrise.cryptocurrency.cryptotrader.service.fisco.FiscoContext
