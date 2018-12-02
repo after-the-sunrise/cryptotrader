@@ -6,3 +6,4 @@ com.after_sunrise.cryptocurrency.cryptotrader.service.coincheck.CoincheckInstruc
 com.after_sunrise.cryptocurrency.cryptotrader.service.quoinex.QuoinexInstructor
 com.after_sunrise.cryptocurrency.cryptotrader.service.zaif.ZaifInstructor
 com.after_sunrise.cryptocurrency.cryptotrader.service.fisco.FiscoInstructor
+com.after_sunrise.cryptocurrency.cryptotrader.service.bitpoint.BitpointInstructor
