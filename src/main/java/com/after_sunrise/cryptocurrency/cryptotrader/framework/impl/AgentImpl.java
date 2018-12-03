@@ -65,7 +65,7 @@ public class AgentImpl extends AbstractService implements Agent {
 
         log.info("Manage : [{}.{}] {}", req.getSite(), req.getInstrument(), results.size());
 
-        results.forEach((k, v) -> log.debug("id=[{}] {}", v, k));
+        results.forEach((k, v) -> log.debug("[{}.{}] ID={} : {}", req.getSite(), req.getInstrument(), v, k));
 
         return results;
 
@@ -88,7 +88,7 @@ public class AgentImpl extends AbstractService implements Agent {
 
         log.info("Reconcile : [{}.{}] {}", req.getSite(), req.getInstrument(), results.size());
 
-        results.forEach((k, v) -> log.debug("Reconcile=[{}] {}", v, k));
+        results.forEach((k, v) -> log.debug("[{}.{}] RC={} : {}", req.getSite(), req.getInstrument(), v, k));
 
         return results;
 

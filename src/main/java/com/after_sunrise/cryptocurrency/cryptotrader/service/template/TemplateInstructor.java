@@ -333,7 +333,7 @@ public class TemplateInstructor extends AbstractService implements Instructor {
                     continue;
                 }
 
-                log.trace("Netting cancel/create : {} - {}", create, entry.getKey());
+                log.trace("Netting create/cancel : {} / {}", create, entry.getValue());
 
                 cancelItr.remove();
 
