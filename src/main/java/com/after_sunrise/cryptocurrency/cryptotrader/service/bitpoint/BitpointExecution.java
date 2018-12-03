@@ -3,9 +3,13 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitpoint;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.google.gson.annotations.SerializedName;
 import lombok.*;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -18,35 +22,38 @@ import java.util.List;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class BitpointExecution implements Order.Execution {
 
-    @SerializedName("symbol")
-    private String symbol;
+    public static final String SIDE_BUY = "3";
 
-    @SerializedName("id")
+    public static final DateTimeFormatter DATE_FORMAT =
+            DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneId.of("Asia/Tokyo"));
+
+    @SerializedName("executionNo")
     private String id;
 
-    @SerializedName("orderId")
+    @SerializedName("orderNo")
     private String orderId;
 
-    @SerializedName("tradeId")
-    private String tradeId;
+    @SerializedName("executionDt")
+    private String date;
 
-    @SerializedName("price")
+    @SerializedName("buySellCls")
+    private String side;
+
+    @SerializedName("execPrice")
     private BigDecimal price;
 
-    @SerializedName("qty")
-    private BigDecimal size; // TODO: Negate for Sell
+    @SerializedName("execAmount")
+    private BigDecimal amount;
 
-    @SerializedName("commission")
-    private BigDecimal commission;
+    @Override
+    public Instant getTime() {
+        return StringUtils.isNumeric(date) ? ZonedDateTime.parse(date, DATE_FORMAT).toInstant() : null;
+    }
 
-    @SerializedName("commissionAsset")
-    private String commissionAsset;
-
-    @SerializedName("time")
-    private Instant time;
-
-    @SerializedName("tradeType")
-    private String tradeType;
+    @Override
+    public BigDecimal getSize() {
+        return amount == null ? null : SIDE_BUY.equals(side) ? amount : amount.negate();
+    }
 
     @Getter
     @Builder
@@ -54,8 +61,13 @@ public class BitpointExecution implements Order.Execution {
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Container {
 
-        @SerializedName("trades")
-        private List<BitpointExecution> trades;
+        public static final Integer SUCCESS = 0;
+
+        @SerializedName("resultCode")
+        private Integer result;
+
+        @SerializedName("executionList")
+        private List<BitpointExecution> executions;
 
     }
 

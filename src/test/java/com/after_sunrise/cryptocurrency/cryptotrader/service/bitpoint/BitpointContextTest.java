@@ -94,7 +94,7 @@ public class BitpointContextTest {
 
         Set<Instruction.CreateInstruction> creates = Sets.newHashSet(
                 Instruction.CreateInstruction.builder().price(new BigDecimal("400000")).size(new BigDecimal("+0.001")).build(),
-                Instruction.CreateInstruction.builder().price(new BigDecimal("500000")).size(new BigDecimal("-0.001")).build()
+                Instruction.CreateInstruction.builder().price(new BigDecimal("600000")).size(new BigDecimal("-0.001")).build()
         );
 
         Map<Instruction.CreateInstruction, String> created = target.createOrders(key, creates);

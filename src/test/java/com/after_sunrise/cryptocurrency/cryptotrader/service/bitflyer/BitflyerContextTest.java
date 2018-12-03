@@ -35,8 +35,8 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.Bit
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.AssetType.FUTURE_BTC1W;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ID;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.*;
-import static java.math.BigDecimal.*;
 import static java.math.BigDecimal.valueOf;
+import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
 import static java.util.Arrays.asList;

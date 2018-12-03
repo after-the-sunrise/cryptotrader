@@ -1,11 +1,11 @@
 package com.after_sunrise.cryptocurrency.cryptotrader.service.bitpoint;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.annotations.SerializedName;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.List;
 
 /**
@@ -18,35 +18,45 @@ import java.util.List;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class BitpointOrder implements Order {
 
-    @SerializedName("orderId")
+    public static final String STATUS_ACTIVE = "1";
+
+    public static final String SIDE_BUY = "3";
+
+    @SerializedName("orderNo")
     private String id;
 
-    @SerializedName("symbol")
-    private String product;
+    @SerializedName("orderStatus")
+    private String status;
 
-    @SerializedName("tradeType")
-    private String tradeType;
+    @SerializedName("orderDt")
+    private String date;
 
-    @SerializedName("isWorking")
-    private Boolean active;
+    @SerializedName("currencyCd1")
+    private String currency1;
 
-    @SerializedName("time")
-    private Instant time;
+    @SerializedName("currencyCd2")
+    private String currency2;
 
-    @SerializedName("side")
+    @SerializedName("buySellCls")
     private String side;
 
-    @SerializedName("price")
+    @SerializedName("orderPrice")
     private BigDecimal orderPrice;
 
-    @SerializedName("orderQty")
+    @SerializedName("orderNominal")
     private BigDecimal orderSize;
 
-    @SerializedName("executedQty")
-    private BigDecimal filledSize;
+    @SerializedName("execNominal")
+    private BigDecimal fillSize;
 
-    BigDecimal convertQuantity(BigDecimal value) {
-        return value == null ? null : "BUY".equals(side) ? value : value.negate();
+    @Override
+    public String getProduct() {
+        return currency1 + currency2;
+    }
+
+    @Override
+    public Boolean getActive() {
+        return STATUS_ACTIVE.equals(status);
     }
 
     @Override
@@ -56,18 +66,17 @@ public class BitpointOrder implements Order {
 
     @Override
     public BigDecimal getFilledQuantity() {
-        return convertQuantity(filledSize);
+        return convertQuantity(fillSize);
     }
 
     @Override
     public BigDecimal getRemainingQuantity() {
+        return orderSize != null && fillSize != null ? convertQuantity(orderSize.subtract(fillSize)) : null;
+    }
 
-        if (orderSize == null || filledSize == null) {
-            return null;
-        }
-
-        return convertQuantity(orderSize.subtract(filledSize));
-
+    @VisibleForTesting
+    BigDecimal convertQuantity(BigDecimal value) {
+        return value == null ? null : SIDE_BUY.equals(side) ? value : value.negate();
     }
 
     @Getter
@@ -76,7 +85,12 @@ public class BitpointOrder implements Order {
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Container {
 
-        @SerializedName("orders")
+        public static final Integer SUCCESS = 0;
+
+        @SerializedName("resultCode")
+        private Integer result;
+
+        @SerializedName("vcOrderList")
         private List<BitpointOrder> orders;
 
     }

@@ -30,8 +30,8 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.framework.Service.Cu
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitmex.BitmexService.FundingType.XBT;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.*;
 import static com.google.common.io.Resources.getResource;
-import static java.math.BigDecimal.*;
 import static java.math.BigDecimal.valueOf;
+import static java.math.BigDecimal.*;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.UP;
 import static java.nio.charset.StandardCharsets.UTF_8;

@@ -11,9 +11,9 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
-import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -23,19 +23,16 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.GET;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.POST;
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
-import static java.util.Collections.singletonMap;
-import static java.util.Collections.unmodifiableList;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -46,12 +43,21 @@ public class BitpointContext extends TemplateContext implements BitpointService 
 
     private static final String URL_SMART = "https://smartapi.bitpoint.co.jp/bpj-smart-api";
 
+    private static final String URL_CLASSIC = "https://public.bitpoint.co.jp/bpj-api";
+
+    private static final String ACCESS_TOKEN = "access_token";
+
     private static final Type TYPE_TRADE = new TypeToken<List<BitpointTrade>>() {
     }.getType();
 
-    private final Lock lock;
+    private static final Type TYPE_TOKEN = new TypeToken<Map<String, String>>() {
+    }.getType();
 
     private final Gson gson;
+
+    private final Lock lock;
+
+    private final AtomicReference<Pair<Instant, String>> token;
 
     public BitpointContext() {
 
@@ -70,6 +76,8 @@ public class BitpointContext extends TemplateContext implements BitpointService 
         gson = builder.create();
 
         lock = new ReentrantLock();
+
+        token = new AtomicReference<>();
 
     }
 
@@ -243,80 +251,62 @@ public class BitpointContext extends TemplateContext implements BitpointService 
     }
 
     @VisibleForTesting
-    Future<String> requestAsync(String path, Map<String, String> parameter, Map<String, String> body) throws Exception {
+    Future<String> requestAsync(String path, String body) {
 
         String apiKey = getStringProperty("api.id", null);
         String secret = getStringProperty("api.secret", null);
-        String pinCode = getStringProperty("api.pin", null);
 
         if (StringUtils.isEmpty(apiKey) || StringUtils.isEmpty(secret)) {
             return null;
         }
 
-        Future<String> result;
+        CompletableFuture<String> future = new CompletableFuture<>();
 
         try {
 
             lock.lock();
 
-            MILLISECONDS.sleep(5); // Avoid duplicate nonce
+            Pair<Instant, String> accessToken = token.get();
 
-            String nonce = String.valueOf(getNow().toEpochMilli());
+            Long millis = getLongProperty("api.expire", TimeUnit.MINUTES.toMillis(59));
 
-            Map<String, String> headers = new LinkedHashMap<>();
-            headers.put("access-key", apiKey);
-            headers.put("access-nonce", nonce);
+            Instant now = getNow();
 
-            if (MapUtils.isEmpty(body)) {
+            if (accessToken == null || accessToken.getLeft().isBefore(now.minusMillis(millis))) {
 
-                Map<String, String> copy = new LinkedHashMap<>(MapUtils.emptyIfNull(parameter));
-                copy.put("timestamp", nonce);
+                Map<String, String> parameters = new LinkedHashMap<>();
+                parameters.put("username", apiKey);
+                parameters.put("password", secret);
 
-                String param = buildQueryParameter(copy, "");
-                String input = String.join("\n", apiKey, nonce, param);
-                headers.put("access-signature", computeHash("HmacSHA256", secret.getBytes(), input.getBytes()));
+                String json = request(URL_CLASSIC + "/login" + buildQueryParameter(parameters, "?"));
 
-                result = requestAsync(GET, URL_SMART + path + "?" + param, headers, null);
+                accessToken = Pair.of(now, MapUtils.getString(gson.fromJson(json, TYPE_TOKEN), ACCESS_TOKEN));
 
-            } else {
-
-                Map<String, String> copy = new LinkedHashMap<>(MapUtils.emptyIfNull(body));
-                copy.put("timestamp", nonce);
-                copy.put("pinCode", pinCode);
-
-                String param = gson.toJson(copy);
-                String input = String.join("\n", apiKey, nonce, param);
-                headers.put("access-signature", computeHash("HmacSHA256", secret.getBytes(), input.getBytes()));
-                headers.put("Content-Type", "application/json");
-
-                result = requestAsync(POST, URL_SMART + path, headers, param);
+                token.set(accessToken);
 
             }
 
+            // Requests must be serial (Error Code : E_BL_0023)
+
+            Map<String, String> headers = singletonMap("Content-Type", "application/json");
+
+            String query = buildQueryParameter(singletonMap(ACCESS_TOKEN, accessToken.getRight()), "?");
+
+            future.complete(request(POST, URL_CLASSIC + path + query, headers, body));
+
+        } catch (Exception e) {
+
+            token.set(null); // TODO: Clear token only on authentication failure.
+
+            future.completeExceptionally(e);
+
         } finally {
+
             lock.unlock();
+
         }
 
-        return result;
-
-    }
-
-    @VisibleForTesting
-    Optional<BitpointBalance> fetchBalance(Key key) {
-
-        Key newKey = Key.build(key).instrument(WILDCARD).build();
-
-        BitpointBalance balance = findCached(BitpointBalance.class, newKey, () -> {
-
-            Map<String, String> param = singletonMap("timestamp", null);
-
-            String data = extract(requestAsync("/api/account", param, null));
-
-            return gson.fromJson(data, BitpointBalance.class);
-
-        });
-
-        return Optional.ofNullable(balance);
+        return future;
 
     }
 
@@ -329,14 +319,31 @@ public class BitpointContext extends TemplateContext implements BitpointService 
             return null;
         }
 
-        List<BitpointBalance.CoinBalance> balances = fetchBalance(key)
-                .map(BitpointBalance::getCoinBalances).orElseGet(Collections::emptyList);
+        BitpointCoinBalance balance = findCached(BitpointCoinBalance.class, key, () -> {
 
-        return balances.stream()
+            Map<String, Object> body = new LinkedHashMap<>();
+
+            body.put("calcCurrencyCd", product.getFundingCurrency().name());
+
+            body.put("currencyCdList", singletonList(product.getInstrumentCurrency().name()));
+
+            String data = extract(requestAsync("/vc_balance_list", gson.toJson(body)));
+
+            BitpointCoinBalance result = gson.fromJson(data, BitpointCoinBalance.class);
+
+            return result != null && BitpointCoinBalance.SUCCESS.equals(result.getResult()) ? result : null;
+
+        });
+
+        if (balance == null) {
+            return null;
+        }
+
+        return balance.getBalances().stream()
                 .filter(Objects::nonNull)
-                .filter(b -> product.getInstrumentCurrency().name().equals(b.getAsset()))
+                .map(BitpointCoinBalance.Balance::getAmount)
+                .filter(Objects::nonNull)
                 .findAny()
-                .map(b -> firstNonNull(b.getFree(), ZERO).add(firstNonNull(b.getLocked(), ZERO)))
                 .orElse(null);
 
     }
@@ -350,32 +357,30 @@ public class BitpointContext extends TemplateContext implements BitpointService 
             return null;
         }
 
-        List<BitpointBalance.CashBalance> balances = fetchBalance(key)
-                .map(BitpointBalance::getCashBalances).orElseGet(Collections::emptyList);
+        BitpointCashBalance balance = findCached(BitpointCashBalance.class, key, () -> {
 
-        for (BitpointBalance.CashBalance cb : balances) {
+            Map<String, Object> body = new LinkedHashMap<>();
 
-            if (cb == null) {
-                continue;
-            }
+            body.put("currencyCdList", singletonList(product.getFundingCurrency().name()));
 
-            for (BitpointBalance.Asset asset : ListUtils.emptyIfNull(cb.getSpotAssets())) {
+            String data = extract(requestAsync("/rc_balance_list", gson.toJson(body)));
 
-                if (asset == null) {
-                    continue;
-                }
+            BitpointCashBalance result = gson.fromJson(data, BitpointCashBalance.class);
 
-                if (!product.getFundingCurrency().name().equals(asset.getAsset())) {
-                    continue;
-                }
+            return result != null && BitpointCashBalance.SUCCESS.equals(result.getResult()) ? result : null;
 
-                return asset.getFree();
+        });
 
-            }
-
+        if (balance == null) {
+            return null;
         }
 
-        return null;
+        return balance.getBalances().stream()
+                .filter(Objects::nonNull)
+                .map(BitpointCashBalance.Balance::getAmount)
+                .filter(Objects::nonNull)
+                .findAny()
+                .orElse(null);
 
     }
 
@@ -443,11 +448,14 @@ public class BitpointContext extends TemplateContext implements BitpointService 
         List<BitpointOrder> orders = listCached(BitpointOrder.class, key, () -> {
 
             Map<String, String> params = new LinkedHashMap<>();
-            params.put("timestamp", null);
-            params.put("symbol", product.getId());
-            params.put("tradeType", "SPOT");
+            params.put("currencyCd1", product.getInstrumentCurrency().name());
+            params.put("currencyCd2", product.getFundingCurrency().name());
+            params.put("buySellClsSearch", "0"); // 0:All, 1:Sell, 3:Buy
+            params.put("orderStatus", "2"); // 0:All, 2:Active, ...
+            params.put("period", "5"); // 0:TD, 1:T-1, 2:1M, 3:3M, 4:6M, 5:1Y
+            params.put("refTradeTypeCls", "0"); // 0:All, 1:Open, 2:Close, 3:Cash
 
-            String data = extract(requestAsync("/api/openOrders", params, null));
+            String data = extract(requestAsync("/vc_order_refer_list", gson.toJson(params)));
 
             BitpointOrder.Container c = gson.fromJson(data, BitpointOrder.Container.class);
 
@@ -459,10 +467,7 @@ public class BitpointContext extends TemplateContext implements BitpointService 
             return null;
         }
 
-        return orders.stream()
-                .filter(Objects::nonNull)
-                .filter(o -> Objects.equals(TRUE, o.getActive()))
-                .collect(toList());
+        return orders.stream().filter(Objects::nonNull).collect(toList());
 
     }
 
@@ -478,15 +483,17 @@ public class BitpointContext extends TemplateContext implements BitpointService 
         List<BitpointExecution> executions = listCached(BitpointExecution.class, key, () -> {
 
             Map<String, String> params = new LinkedHashMap<>();
-            params.put("timestamp", null);
-            params.put("symbol", product.getId());
-            params.put("tradeType", "SPOT");
+            params.put("currencyCd1", product.getInstrumentCurrency().name());
+            params.put("currencyCd2", product.getFundingCurrency().name());
+            params.put("buySellClsSearch", "0"); // 0:All, 1:Sell, 3:Buy
+            params.put("period", "0"); // 0:TD, 1:T-1, 2:1M, 3:3M, 4:6M, 5:1Y
+            params.put("refTradeTypeCls", "0"); // 0:All, 1:Open, 2:Close, 3:Cash
 
-            String data = extract(requestAsync("/api/myTrades", params, null));
+            String data = extract(requestAsync("/vc_contract_refer_list", gson.toJson(params)));
 
             BitpointExecution.Container c = gson.fromJson(data, BitpointExecution.Container.class);
 
-            return c == null ? null : c.getTrades();
+            return c == null ? null : c.getExecutions();
 
         });
 
@@ -510,15 +517,16 @@ public class BitpointContext extends TemplateContext implements BitpointService 
             }
 
             Map<String, String> params = new LinkedHashMap<>();
-            params.put("symbol", product.getId());
-            params.put("side", i.getSize().signum() >= 0 ? "BUY" : "SELL");
-            params.put("type", i.getPrice().signum() == 0 ? "MARKET" : "LIMIT");
-            params.put("quantity", i.getSize().abs().toPlainString());
-            params.put("price", i.getPrice().toPlainString());
-            params.put("timestamp", null);
-            params.put("pinCode", null);
+            params.put("tradingPassword", getStringProperty("api.pin", null));
+            params.put("buySellCls", i.getSize().signum() >= 0 ? "3" : "1");
+            params.put("orderNominal", i.getSize().abs().toPlainString());
+            params.put("currencyCd1", product.getInstrumentCurrency().name());
+            params.put("currencyCd2", product.getFundingCurrency().name());
+            params.put("conditionCls", i.getPrice().signum() == 0 ? "2" : "1");
+            params.put("orderPriceIn", i.getPrice().toPlainString());
+            params.put("durationCls", "1");
 
-            return requestAsync("/api/order/test", null, params);
+            return requestAsync("/spot_order", gson.toJson(params));
 
         }, d -> {
 
@@ -542,12 +550,10 @@ public class BitpointContext extends TemplateContext implements BitpointService 
             }
 
             Map<String, String> params = new LinkedHashMap<>();
-            params.put("symbol", product.getId());
-            params.put("orderId", i.getId());
-            params.put("timestamp", null);
-            params.put("pinCode", null);
+            params.put("tradingPassword", getStringProperty("api.pin", null));
+            params.put("orderNo", i.getId());
 
-            return requestAsync("/api/cancelOrder", null, params);
+            return requestAsync("/spot_order_cancel", gson.toJson(params));
 
         }, d -> {
 

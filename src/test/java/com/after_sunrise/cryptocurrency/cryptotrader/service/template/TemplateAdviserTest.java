@@ -31,8 +31,8 @@ import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.Bit
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.bitflyer.BitflyerService.ProductType.BTC_JPY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.SIGNUM_BUY;
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAdviser.SIGNUM_SELL;
-import static java.math.BigDecimal.*;
 import static java.math.BigDecimal.valueOf;
+import static java.math.BigDecimal.*;
 import static java.time.Instant.now;
 import static java.time.Instant.ofEpochMilli;
 import static java.util.Collections.singletonList;

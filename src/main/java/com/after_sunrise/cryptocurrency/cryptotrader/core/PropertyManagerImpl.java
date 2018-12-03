@@ -17,8 +17,8 @@ import java.util.stream.Collectors;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.core.PropertyType.*;
 import static java.lang.String.format;
-import static java.math.BigDecimal.*;
 import static java.math.BigDecimal.valueOf;
+import static java.math.BigDecimal.*;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptySet;
 import static java.util.Optional.ofNullable;
