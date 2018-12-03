@@ -2,11 +2,13 @@ package com.after_sunrise.cryptocurrency.cryptotrader.service.bitpoint;
 
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Sets;
 import com.google.gson.annotations.SerializedName;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author takanori.takase
@@ -18,7 +20,12 @@ import java.util.List;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class BitpointOrder implements Order {
 
-    public static final String STATUS_ACTIVE = "1";
+    // 0: All, 1: Pending, 2: Active, 3: Filled, 5: Amending, 6: Amended
+    // 7: Cancelling, 8: Cancelled, 9: Expired, 10: Stop
+    public static final Set<String> ORDER_TERMINATED = Sets.newHashSet("8", "9");
+
+    // 0: None, 1: Complete, 2: Partial
+    public static final Set<String> EXECUTION_FILLED = Sets.newHashSet("1");
 
     public static final String SIDE_BUY = "3";
 
@@ -26,7 +33,10 @@ public class BitpointOrder implements Order {
     private String id;
 
     @SerializedName("orderStatus")
-    private String status;
+    private String orderStatus;
+
+    @SerializedName("executionStatus")
+    private String executionStatus;
 
     @SerializedName("orderDt")
     private String date;
@@ -56,7 +66,7 @@ public class BitpointOrder implements Order {
 
     @Override
     public Boolean getActive() {
-        return STATUS_ACTIVE.equals(status);
+        return !ORDER_TERMINATED.contains(orderStatus) && !EXECUTION_FILLED.contains(executionStatus);
     }
 
     @Override

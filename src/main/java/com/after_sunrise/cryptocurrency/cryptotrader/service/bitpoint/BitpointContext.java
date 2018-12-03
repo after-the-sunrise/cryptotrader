@@ -30,6 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateContext.RequestType.POST;
 import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.*;
@@ -467,7 +468,8 @@ public class BitpointContext extends TemplateContext implements BitpointService 
             return null;
         }
 
-        return orders.stream().filter(Objects::nonNull).collect(toList());
+        return orders.stream().filter(Objects::nonNull)
+                .filter(o -> Objects.equals(TRUE, o.getActive())).collect(toList());
 
     }
 
