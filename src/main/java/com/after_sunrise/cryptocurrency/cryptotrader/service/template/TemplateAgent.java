@@ -13,6 +13,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -139,6 +140,10 @@ public class TemplateAgent extends AbstractService implements Agent {
                 break;
             }
 
+            if (getNow().isAfter(request.getTargetTime())) {
+                break;
+            }
+
             key = nextKey(key, getInterval());
 
             if (key == null) {
@@ -199,6 +204,11 @@ public class TemplateAgent extends AbstractService implements Agent {
 
         return results;
 
+    }
+
+    @VisibleForTesting
+    Instant getNow() {
+        return Instant.now();
     }
 
     @VisibleForTesting

@@ -121,6 +121,7 @@ public class TemplateAgentTest {
         values.put(cancel3, "i7");
 
         Instant now = Instant.now();
+        doReturn(now).when(target).getNow();
         Request request = Request.builder().site("s").instrument("i")
                 .currentTime(now).targetTime(now.plusSeconds(1)).build();
         doReturn(Duration.ofMillis(123)).when(target).getInterval();
@@ -178,6 +179,10 @@ public class TemplateAgentTest {
         verify(context, times(8 + 1 + 1)).findOrder(any(), eq("i2"));
         verify(context, times(1 + 1 + 1)).findOrder(any(), eq("i5"));
         verify(context, times(1 + 8 + 1)).findOrder(any(), eq("i7"));
+
+        // Timeout
+        doReturn(now.plusSeconds(1).plusMillis(1)).when(target).getNow();
+        assertEquals(target.reconcile(context, request, values).size(), 0);
 
         // No input
         assertEquals(target.reconcile(context, request, null).size(), 0);
