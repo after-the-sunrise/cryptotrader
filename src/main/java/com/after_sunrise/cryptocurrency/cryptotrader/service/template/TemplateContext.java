@@ -15,7 +15,6 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntityEnclosingRequest;
-import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.config.CookieSpecs;
@@ -24,18 +23,15 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.apache.http.impl.nio.client.HttpAsyncClients;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -112,6 +108,8 @@ public abstract class TemplateContext extends AbstractService implements Context
 
     private static final int CACHE_RETRY = 2;
 
+    private static final Duration CLIENT_TIMEOUT = Duration.ofMinutes(3);
+
     private static final Duration FUTURE_TIMEOUT = Duration.ofSeconds(30);
 
     private static final Duration FUTURE_MINIMUM = Duration.ofMillis(100);
@@ -126,9 +124,9 @@ public abstract class TemplateContext extends AbstractService implements Context
 
     private final String id;
 
-    private final CloseableHttpClient client;
+    private final ExecutorService executor;
 
-    private final CloseableHttpAsyncClient asyncClient;
+    private final CloseableHttpClient client;
 
     private final AtomicReference<StateType> state;
 
@@ -136,17 +134,26 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         this.id = id;
 
+        this.executor = Executors.newCachedThreadPool();
+
         this.state = new AtomicReference<>(StateType.ACTIVE);
 
-        this.client = HttpClients.custom().setDefaultRequestConfig(
-                RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build()
-        ).build();
+        this.client = HttpClients.custom()
+                .evictExpiredConnections()
+                .evictIdleConnections(CLIENT_TIMEOUT.toMillis(), MILLISECONDS)
+                .setConnectionTimeToLive(CLIENT_TIMEOUT.toMillis(), MILLISECONDS)
+                .setMaxConnPerRoute(Byte.MAX_VALUE)
+                .setMaxConnTotal(Byte.MAX_VALUE)
+                .setDefaultRequestConfig(
+                        RequestConfig.custom()
+                                .setCookieSpec(CookieSpecs.STANDARD)
+                                .setSocketTimeout((int) CLIENT_TIMEOUT.toMillis())
+                                .setConnectTimeout((int) CLIENT_TIMEOUT.toMillis())
+                                .setConnectionRequestTimeout((int) CLIENT_TIMEOUT.toMillis())
+                                .build()
+                )
+                .build();
 
-        this.asyncClient = HttpAsyncClients.custom().setDefaultRequestConfig(
-                RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build()
-        ).build();
-
-        this.asyncClient.start();
 
     }
 
@@ -160,7 +167,7 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         state.set(StateType.TERMINATE);
 
-        asyncClient.close();
+        executor.shutdown();
 
         client.close();
 
@@ -254,17 +261,13 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         int t = (int) getTimeout().toMillis();
 
-        request.setConfig(RequestConfig.custom()
+        request.setConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD)
                 .setConnectTimeout(t).setConnectionRequestTimeout(t).setSocketTimeout(t).build()
         );
 
         return client.execute(request, response -> {
 
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-            response.getEntity().writeTo(out);
-
-            String body = new String(out.toByteArray(), UTF_8);
+            String body = EntityUtils.toString(response.getEntity(), UTF_8);
 
             StatusLine statusLine = response.getStatusLine();
 
@@ -292,63 +295,19 @@ public abstract class TemplateContext extends AbstractService implements Context
 
         LOG.trace("[SEND][{}][{}][{}] {}", type, path, headers, data);
 
-        Instant start = Instant.now();
-
-        HttpRequestBase request = type.create(path, headers, data);
-
-        int t = (int) getTimeout().toMillis();
-
-        request.setConfig(RequestConfig.custom()
-                .setConnectTimeout(t).setConnectionRequestTimeout(t).setSocketTimeout(t).build()
-        );
-
         CompletableFuture<String> future = new CompletableFuture<>();
 
-        Future<?> call = asyncClient.execute(request, new FutureCallback<HttpResponse>() {
-            @Override
-            public void completed(HttpResponse result) {
-
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-
+        try {
+            executor.execute(() -> {
                 try {
-
-                    result.getEntity().writeTo(out);
-
-                    String body = new String(out.toByteArray(), UTF_8);
-
-                    StatusLine statusLine = result.getStatusLine();
-
-                    Duration elapsed = Duration.between(start, Instant.now());
-
-                    LOG.trace("[RECV][{}][{}][{}ms][{}] {}",
-                            path, statusLine, elapsed.toMillis(), result.getAllHeaders(), body);
-
-                    if (HttpStatus.SC_OK != statusLine.getStatusCode()) {
-
-                        String trimmed = body.replaceAll("[\r\n]", "");
-
-                        throw new IOException(statusLine + " : " + trimmed);
-
-                    }
-
-                    future.complete(body);
-
+                    future.complete(request(type, path, headers, data));
                 } catch (IOException e) {
                     future.completeExceptionally(e);
                 }
-
-            }
-
-            @Override
-            public void failed(Exception e) {
-                future.completeExceptionally(e);
-            }
-
-            @Override
-            public void cancelled() {
-                future.cancel(true);
-            }
-        });
+            });
+        } catch (RejectedExecutionException e) {
+            future.completeExceptionally(e);
+        }
 
         return future;
 
