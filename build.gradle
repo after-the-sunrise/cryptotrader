@@ -26,21 +26,21 @@ configurations {
 }
 
 dependencies {
-    compile 'org.apache.httpcomponents:httpasyncclient:4.1.3'
+    compile 'org.apache.httpcomponents:httpclient:4.5.6'
     compile 'org.apache.commons:commons-math3:3.6.1'
-    compile 'org.jboss.resteasy:resteasy-jaxrs:3.1.4.Final'
-    compile 'org.jboss.resteasy:resteasy-guice:3.1.4.Final'
+    compile 'org.jboss.resteasy:resteasy-jaxrs:3.6.2.Final'
+    compile 'org.jboss.resteasy:resteasy-guice:3.6.2.Final'
     compile 'javax.websocket:javax.websocket-api:1.1'
     compile 'com.after_sunrise.cryptocurrency:bitflyer4j:0.5.1'
     compile 'cc.bitbank:java-bitbankcc:1.0.7'
     runtime 'ch.qos.logback:logback-classic:1.2.3'
-    runtime 'org.glassfish.tyrus:tyrus-container-jdk-client:1.12'
+    runtime 'org.glassfish.tyrus:tyrus-container-jdk-client:1.15'
     runtime fileTree(dir: 'libs', include: '*.jar')
-    compileOnly 'org.projectlombok:lombok:1.16.16'
+    compileOnly 'org.projectlombok:lombok:1.18.4'
     compileOnly 'javax.servlet:javax.servlet-api:3.1.0'
-    testCompile 'org.testng:testng:6.10'
-    testCompile 'org.mockito:mockito-all:1.10.19'
-    testCompile 'org.jboss.resteasy:resteasy-undertow:3.1.4.Final'
+    testCompile 'org.testng:testng:6.+'
+    testCompile 'org.mockito:mockito-all:1.+'
+    testCompile 'org.jboss.resteasy:resteasy-undertow:3.6.2.Final'
 }
 
 war.doFirst {
