@@ -8,6 +8,8 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Instruction.Creat
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Order;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.common.collect.Sets;
+import org.apache.commons.configuration2.BaseConfiguration;
+import org.apache.commons.configuration2.Configuration;
 import org.mockito.InOrder;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -39,12 +41,18 @@ public class TemplateAgentTest {
 
     private Context context;
 
+    private Configuration configuration;
+
     @BeforeMethod
     public void setUp() throws Exception {
+
+        configuration = new BaseConfiguration();
 
         context = mock(Context.class);
 
         target = spy(new TemplateAgent("test"));
+
+        target.setConfiguration(configuration);
 
     }
 
@@ -187,6 +195,16 @@ public class TemplateAgentTest {
         assertEquals(results.get(create2), FALSE);
         assertEquals(results.get(cancel1), FALSE);
         assertEquals(results.get(cancel3), FALSE);
+
+        //
+        // Skip
+        //
+        configuration.setProperty(
+                "com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAgent.shortcut",
+                "true"
+        );
+        results = target.reconcile(context, request, instructions);
+        assertEquals(results.size(), 0);
 
         //
         // No input

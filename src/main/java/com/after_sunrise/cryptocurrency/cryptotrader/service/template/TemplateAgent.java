@@ -104,6 +104,14 @@ public class TemplateAgent extends AbstractService implements Agent {
 
         }
 
+        if (Boolean.valueOf(getStringProperty("shortcut", "false"))) {
+
+            log.trace("Skipping reconcile.");
+
+            return Collections.emptyMap();
+
+        }
+
         Map<String, CreateInstruction> creates = new HashMap<>();
         Map<String, CancelInstruction> cancels = new HashMap<>();
 
@@ -133,7 +141,7 @@ public class TemplateAgent extends AbstractService implements Agent {
 
         while (!remaining.isEmpty()) {
 
-            key = nextKey(key, INTERVAL);
+            key = nextKey(key, Duration.ofMillis(getLongProperty("interval", INTERVAL.toMillis())));
 
             for (Entry<String, Instruction> entry : new HashMap<>(remaining).entrySet()) {
 
