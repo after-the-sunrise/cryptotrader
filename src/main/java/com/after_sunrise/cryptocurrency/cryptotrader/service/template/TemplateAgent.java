@@ -27,7 +27,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class TemplateAgent extends AbstractService implements Agent {
 
-    private static final Duration INTERVAL = Duration.ofSeconds(5);
+    static final Duration INTERVAL = Duration.ofSeconds(5);
 
     private final String id;
 
@@ -38,6 +38,11 @@ public class TemplateAgent extends AbstractService implements Agent {
     @Override
     public String get() {
         return id;
+    }
+
+    @VisibleForTesting
+    Instant getNow() {
+        return Instant.now();
     }
 
     @Override
@@ -126,33 +131,13 @@ public class TemplateAgent extends AbstractService implements Agent {
 
         Key key = Key.from(request);
 
-        long retry = Math.max(Duration.between(
-                request.getCurrentTime(), request.getTargetTime()
-        ).toMillis() / getInterval().toMillis(), 1);
+        while (!remaining.isEmpty()) {
 
-        for (long i = 0; i < retry; i++) {
-
-            if (remaining.isEmpty()) {
-                break;
-            }
-
-            if (context.getState(key) == StateType.TERMINATE) {
-                break;
-            }
-
-            if (getNow().isAfter(request.getTargetTime())) {
-                break;
-            }
-
-            key = nextKey(key, getInterval());
-
-            if (key == null) {
-                break;
-            }
+            key = nextKey(key, INTERVAL);
 
             for (Entry<String, Instruction> entry : new HashMap<>(remaining).entrySet()) {
 
-                if (context.getState(key) != StateType.TERMINATE) {
+                if (key != null && key.getTimestamp().isBefore(request.getTargetTime()) && context.getState(key) != StateType.TERMINATE) {
 
                     Order order = context.findOrder(key, entry.getKey());
 
@@ -163,10 +148,6 @@ public class TemplateAgent extends AbstractService implements Agent {
                             remaining.remove(entry.getKey());
 
                             results.put(entry.getValue(), TRUE);
-
-                        } else {
-
-                            results.put(entry.getValue(), FALSE);
 
                         }
 
@@ -182,10 +163,6 @@ public class TemplateAgent extends AbstractService implements Agent {
 
                             results.put(entry.getValue(), TRUE);
 
-                        } else {
-
-                            results.put(entry.getValue(), FALSE);
-
                         }
 
                         continue;
@@ -200,20 +177,11 @@ public class TemplateAgent extends AbstractService implements Agent {
 
             }
 
+
         }
 
         return results;
 
-    }
-
-    @VisibleForTesting
-    Instant getNow() {
-        return Instant.now();
-    }
-
-    @VisibleForTesting
-    Duration getInterval() {
-        return INTERVAL;
     }
 
     @VisibleForTesting
@@ -225,7 +193,7 @@ public class TemplateAgent extends AbstractService implements Agent {
 
             MILLISECONDS.sleep(interval.toMillis());
 
-            next = Key.build(current).timestamp(current.getTimestamp().plus(interval)).build();
+            next = Key.build(current).timestamp(getNow()).build();
 
         } catch (InterruptedException e) {
 

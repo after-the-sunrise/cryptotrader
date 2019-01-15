@@ -18,15 +18,16 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
+import static com.after_sunrise.cryptocurrency.cryptotrader.service.template.TemplateAgent.INTERVAL;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
+import static org.testng.Assert.*;
 
 /**
  * @author takanori.takase
@@ -50,6 +51,11 @@ public class TemplateAgentTest {
     @Test
     public void testGet() throws Exception {
         assertEquals(target.get(), "test");
+    }
+
+    @Test
+    public void testGetNow() throws Exception {
+        assertNotNull(target.getNow());
     }
 
     @Test
@@ -111,38 +117,40 @@ public class TemplateAgentTest {
         CancelInstruction cancel2 = CancelInstruction.builder().build();
         CancelInstruction cancel3 = CancelInstruction.builder().build();
 
-        Map<Instruction, String> values = new IdentityHashMap<>();
-        values.put(create1, "i1");
-        values.put(create2, "i2");
-        values.put(create3, null);
-        values.put(null, "i4");
-        values.put(cancel1, "i5");
-        values.put(cancel2, null);
-        values.put(cancel3, "i7");
+        Map<Instruction, String> instructions = new IdentityHashMap<>();
+        instructions.put(create1, "i1");
+        instructions.put(create2, "i2");
+        instructions.put(create3, null);
+        instructions.put(null, "i4"); // Skipped
+        instructions.put(cancel1, "i5");
+        instructions.put(cancel2, null); // Skipped
+        instructions.put(cancel3, "i7");
 
-        Instant now = Instant.now();
-        doReturn(now).when(target).getNow();
-        Request request = Request.builder().site("s").instrument("i")
-                .currentTime(now).targetTime(now.plusSeconds(1)).build();
-        doReturn(Duration.ofMillis(123)).when(target).getInterval();
-        doReturn(Key.from(request)).when(target).nextKey(any(), any());
         doReturn(null).when(context).getState(any());
         doReturn(null).when(context).findOrder(any(), anyString());
+        doAnswer(i -> {
+            Key key = i.getArgumentAt(0, Key.class);
+            Duration interval = i.getArgumentAt(1, Duration.class);
+            return Key.build(key).timestamp(key.getTimestamp().plus(interval)).build();
+        }).when(target).nextKey(any(), any());
 
+        Instant now = Instant.now();
+        Request request = Request.builder().site("s").instrument("i")
+                .currentTime(now).targetTime(now.plus(INTERVAL).plus(INTERVAL).plusMillis(1)).build();
+
+        //
         // No orders
-        Map<Instruction, Boolean> results = target.reconcile(context, request, values);
+        //
+        Map<Instruction, Boolean> results = target.reconcile(context, request, instructions);
         assertEquals(results.size(), 4);
         assertEquals(results.get(create1), FALSE);
         assertEquals(results.get(create2), FALSE);
         assertEquals(results.get(cancel1), TRUE);
         assertEquals(results.get(cancel3), TRUE);
-        verify(context, times(18)).findOrder(any(), anyString());
-        verify(context, times(8)).findOrder(any(), eq("i1"));
-        verify(context, times(8)).findOrder(any(), eq("i2"));
-        verify(context, times(1)).findOrder(any(), eq("i5"));
-        verify(context, times(1)).findOrder(any(), eq("i7"));
 
+        //
         // With orders
+        //
         Order o1 = mock(Order.class);
         Order o2 = mock(Order.class);
         when(o1.getActive()).thenReturn(null);
@@ -151,40 +159,38 @@ public class TemplateAgentTest {
         when(context.findOrder(any(), eq("i2"))).thenReturn(o2);
         when(context.findOrder(any(), eq("i5"))).thenReturn(o1);
         when(context.findOrder(any(), eq("i7"))).thenReturn(o2);
-        results = target.reconcile(context, request, values);
+        results = target.reconcile(context, request, instructions);
         assertEquals(results.size(), 4);
         assertEquals(results.get(create1), TRUE);
         assertEquals(results.get(create2), TRUE);
         assertEquals(results.get(cancel1), TRUE);
         assertEquals(results.get(cancel3), FALSE);
-        verify(context, times(18 + 11)).findOrder(any(), anyString());
-        verify(context, times(8 + 1)).findOrder(any(), eq("i1"));
-        verify(context, times(8 + 1)).findOrder(any(), eq("i2"));
-        verify(context, times(1 + 1)).findOrder(any(), eq("i5"));
-        verify(context, times(1 + 8)).findOrder(any(), eq("i7"));
 
-        // All success
-        when(context.findOrder(any(), eq("i1"))).thenReturn(o1);
-        when(context.findOrder(any(), eq("i2"))).thenReturn(o1);
-        when(context.findOrder(any(), eq("i5"))).thenReturn(o1);
-        when(context.findOrder(any(), eq("i7"))).thenReturn(o1);
-        results = target.reconcile(context, request, values);
+        //
+        // Terminated
+        //
+        doReturn(Context.StateType.TERMINATE).when(context).getState(any());
+        results = target.reconcile(context, request, instructions);
         assertEquals(results.size(), 4);
-        assertEquals(results.get(create1), TRUE);
-        assertEquals(results.get(create2), TRUE);
-        assertEquals(results.get(cancel1), TRUE);
-        assertEquals(results.get(cancel3), TRUE);
-        verify(context, times(18 + 11 + 4)).findOrder(any(), anyString());
-        verify(context, times(8 + 1 + 1)).findOrder(any(), eq("i1"));
-        verify(context, times(8 + 1 + 1)).findOrder(any(), eq("i2"));
-        verify(context, times(1 + 1 + 1)).findOrder(any(), eq("i5"));
-        verify(context, times(1 + 8 + 1)).findOrder(any(), eq("i7"));
+        assertEquals(results.get(create1), FALSE);
+        assertEquals(results.get(create2), FALSE);
+        assertEquals(results.get(cancel1), FALSE);
+        assertEquals(results.get(cancel3), FALSE);
 
-        // Timeout
-        doReturn(now.plusSeconds(1).plusMillis(1)).when(target).getNow();
-        assertEquals(target.reconcile(context, request, values).size(), 0);
+        //
+        // Interrupted
+        //
+        doReturn(null).when(target).nextKey(any(), any());
+        results = target.reconcile(context, request, instructions);
+        assertEquals(results.size(), 4);
+        assertEquals(results.get(create1), FALSE);
+        assertEquals(results.get(create2), FALSE);
+        assertEquals(results.get(cancel1), FALSE);
+        assertEquals(results.get(cancel3), FALSE);
 
+        //
         // No input
+        //
         assertEquals(target.reconcile(context, request, null).size(), 0);
 
     }
@@ -192,12 +198,20 @@ public class TemplateAgentTest {
     @Test
     public void testNextKey() {
 
-        Key original = Key.builder().site("s").instrument("i").timestamp(Instant.now()).build();
+        Instant now = Instant.now();
+        AtomicLong count = new AtomicLong();
+        doAnswer(i -> now.plusMillis(count.addAndGet(25))).when(target).getNow();
+        Key original = Key.builder().site("s").instrument("i").timestamp(now).build();
 
         Key result = target.nextKey(original, Duration.ofMillis(100));
         assertEquals(result.getSite(), original.getSite());
         assertEquals(result.getInstrument(), original.getInstrument());
-        assertEquals(result.getTimestamp(), original.getTimestamp().plusMillis(100));
+        assertEquals(result.getTimestamp(), original.getTimestamp().plusMillis(25 * 1));
+
+        result = target.nextKey(original, Duration.ofMillis(100));
+        assertEquals(result.getSite(), original.getSite());
+        assertEquals(result.getInstrument(), original.getInstrument());
+        assertEquals(result.getTimestamp(), original.getTimestamp().plusMillis(25 * 2));
 
         Thread.currentThread().interrupt();
         assertNull(target.nextKey(original, Duration.ofMillis(100)));
