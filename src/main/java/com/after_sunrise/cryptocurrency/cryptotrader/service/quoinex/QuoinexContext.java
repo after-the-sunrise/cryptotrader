@@ -38,7 +38,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class QuoinexContext extends TemplateContext implements QuoinexService {
 
-    private static final String ENDPOINT = "https://api.quoine.com";
+    private static final String ENDPOINT = "https://api.liquid.com";
 
     private static final String PAGE_LIMIT = "1000";
 
