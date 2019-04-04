@@ -922,13 +922,17 @@ public class BitflyerContext extends TemplateContext implements BitflyerService,
 
             List<BitflyerOrder> values = new ArrayList<>();
 
-            trimToEmpty(extract(orderService.listOrders(
-                    OrderList.Request.builder().product(product).build()), getTimeout())
-            ).stream().filter(Objects::nonNull).map(BitflyerOrder.Child::new).forEach(values::add);
+            if (Boolean.valueOf(getStringProperty("fetch.child", TRUE.toString()))) {
+                trimToEmpty(extract(orderService.listOrders(
+                        OrderList.Request.builder().product(product).build()), getTimeout())
+                ).stream().filter(Objects::nonNull).map(BitflyerOrder.Child::new).forEach(values::add);
+            }
 
-            trimToEmpty(extract(orderService.listParents(
-                    ParentList.Request.builder().product(product).build()), getTimeout())
-            ).stream().filter(Objects::nonNull).map(BitflyerOrder.Parent::new).forEach(values::add);
+            if (Boolean.valueOf(getStringProperty("fetch.parent", TRUE.toString()))) {
+                trimToEmpty(extract(orderService.listParents(
+                        ParentList.Request.builder().product(product).build()), getTimeout())
+                ).stream().filter(Objects::nonNull).map(BitflyerOrder.Parent::new).forEach(values::add);
+            }
 
             return unmodifiableList(values);
 

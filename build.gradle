@@ -28,6 +28,7 @@ configurations {
 dependencies {
     compile 'org.apache.httpcomponents:httpclient:4.5.6'
     compile 'org.apache.commons:commons-math3:3.6.1'
+    compile 'commons-collections:commons-collections:3.2.2'
     compile 'org.jboss.resteasy:resteasy-jaxrs:3.6.2.Final'
     compile 'org.jboss.resteasy:resteasy-guice:3.6.2.Final'
     compile 'javax.websocket:javax.websocket-api:1.1'
@@ -36,8 +37,9 @@ dependencies {
     runtime 'ch.qos.logback:logback-classic:1.2.3'
     runtime 'org.glassfish.tyrus:tyrus-container-jdk-client:1.15'
     runtime fileTree(dir: 'libs', include: '*.jar')
-    compileOnly 'org.projectlombok:lombok:1.18.4'
+    compileOnly 'org.projectlombok:lombok:1.18.6'
     compileOnly 'javax.servlet:javax.servlet-api:3.1.0'
+    annotationProcessor 'org.projectlombok:lombok:1.18.6'
     testCompile 'org.testng:testng:6.+'
     testCompile 'org.mockito:mockito-all:1.+'
     testCompile 'org.jboss.resteasy:resteasy-undertow:3.6.2.Final'
