@@ -7,8 +7,5 @@ notifications:
     email:
         - scm@after-sunrise.com
 
-before_install:
-  - gradle wrapper
-
 after_success:
   - gradlew jacocoTestReport coveralls
