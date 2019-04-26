@@ -177,7 +177,7 @@ public class TemplateContextTest {
         doThrow(new Exception("test")).when(callable).call();
         assertNull(target.findCached(BigDecimal.class, key, callable));
         assertNull(target.findCached(BigDecimal.class, key, callable));
-        verify(callable, times(3 + 3 + 3)).call();
+        verify(callable, times(3 + 3)).call();
 
         target.clear();
         assertNull(target.findCached(null, key, callable));
@@ -211,7 +211,7 @@ public class TemplateContextTest {
         doThrow(new Exception("test")).when(callable).call();
         assertEquals(target.listCached(BigDecimal.class, key, callable), null);
         assertEquals(target.listCached(BigDecimal.class, key, callable), null);
-        verify(callable, times(3 + 3 + 3)).call();
+        verify(callable, times(3 + 3)).call();
 
         target.clear();
         assertEquals(target.listCached(null, key, callable), null);

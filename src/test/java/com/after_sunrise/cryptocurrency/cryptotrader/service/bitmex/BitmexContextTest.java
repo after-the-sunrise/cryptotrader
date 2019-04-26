@@ -783,14 +783,14 @@ public class BitmexContextTest {
         target.clear();
         assertEquals(target.getFundingPosition(key1), null);
         assertEquals(target.getFundingPosition(key2), null);
-        verify(target, times(1 + 1 + 3 + 3)).executePrivate(any(), any(), any(), any());
+        verify(target, times(1 + 1 + 3)).executePrivate(any(), any(), any(), any());
 
         // No rate
         doReturn(null).when(target).getFundingConversionRate(any(), any());
         target.clear();
         assertEquals(target.getFundingPosition(key1), null);
         assertEquals(target.getFundingPosition(key2), null);
-        verify(target, times(1 + 1 + 3 + 3)).executePrivate(any(), any(), any(), any());
+        verify(target, times(1 + 1 + 3)).executePrivate(any(), any(), any(), any());
 
     }
 

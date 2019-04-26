@@ -374,6 +374,8 @@ public abstract class TemplateContext extends AbstractService implements Context
 
                             log.warn("Failed to cache : {} - {}", type, e);
 
+                            cache.put(key, Optional.empty());
+
                             break;
 
                         }
@@ -444,6 +446,8 @@ public abstract class TemplateContext extends AbstractService implements Context
                         if (CACHE_RETRY < ++retry) {
 
                             log.warn("Failed to cache list : {} - {}", type, e);
+
+                            cache.put(key, Optional.empty());
 
                             break;
 
