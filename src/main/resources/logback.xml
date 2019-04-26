@@ -52,9 +52,12 @@
         </rollingPolicy>
     </appender>
 
+    <appender name="METRICS" class="io.prometheus.client.logback.InstrumentedAppender"/>
+
     <root level="INFO">
         <appender-ref ref="STDO"/>
         <appender-ref ref="FILE"/>
+        <appender-ref ref="METRICS"/>
     </root>
 
     <logger level="DEBUG" name="com.after_sunrise.cryptocurrency"/>

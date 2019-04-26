@@ -34,6 +34,9 @@ dependencies {
     compile 'javax.websocket:javax.websocket-api:1.1'
     compile 'com.after_sunrise.cryptocurrency:bitflyer4j:0.5.1'
     compile 'cc.bitbank:java-bitbankcc:1.0.7'
+    compile 'io.prometheus:simpleclient_hotspot:0.6.0'
+    runtime 'io.prometheus:simpleclient_logback:0.6.0'
+    runtime 'io.prometheus:simpleclient_servlet:0.6.0'
     runtime 'ch.qos.logback:logback-classic:1.2.3'
     runtime 'org.glassfish.tyrus:tyrus-container-jdk-client:1.15'
     runtime fileTree(dir: 'libs', include: '*.jar')

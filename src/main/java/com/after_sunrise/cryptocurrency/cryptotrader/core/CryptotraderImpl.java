@@ -6,6 +6,8 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.*;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.hotspot.DefaultExports;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.ImmutableConfiguration;
@@ -41,6 +43,7 @@ public class CryptotraderImpl implements Cryptotrader {
             bind(PropertyManager.class).to(PropertyController.class).asEagerSingleton();
             bind(ServiceFactory.class).to(ServiceFactoryImpl.class).asEagerSingleton();
             bind(ExecutorFactory.class).to(ExecutorFactoryImpl.class).asEagerSingleton();
+            bind(CollectorRegistry.class).toInstance(CollectorRegistry.defaultRegistry);
 
             bind(Context.class).to(ContextImpl.class).asEagerSingleton();
             bind(Estimator.class).to(EstimatorImpl.class).asEagerSingleton();
@@ -61,7 +64,11 @@ public class CryptotraderImpl implements Cryptotrader {
 
     @Inject
     public CryptotraderImpl(Injector injector) {
+
         this.injector = injector;
+
+        DefaultExports.initialize();
+
     }
 
     @Override
