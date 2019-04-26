@@ -387,7 +387,9 @@ public abstract class TemplateContext extends AbstractService implements Context
                 }
 
             } catch (InterruptedException e) {
-                // Do nothing.
+
+                Thread.currentThread().interrupt(); // Propagate interruption.
+
             }
 
         }
@@ -460,7 +462,9 @@ public abstract class TemplateContext extends AbstractService implements Context
                 }
 
             } catch (InterruptedException e) {
-                // Do nothing.
+
+                Thread.currentThread().interrupt(); // Propagate interruption.
+
             }
 
         }

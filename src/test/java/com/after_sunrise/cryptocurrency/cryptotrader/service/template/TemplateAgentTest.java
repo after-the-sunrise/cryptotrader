@@ -233,6 +233,7 @@ public class TemplateAgentTest {
 
         Thread.currentThread().interrupt();
         assertNull(target.nextKey(original, Duration.ofMillis(100)));
+        assertTrue(Thread.interrupted());
 
     }
 

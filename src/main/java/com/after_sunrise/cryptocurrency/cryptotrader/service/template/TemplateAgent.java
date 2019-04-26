@@ -207,6 +207,8 @@ public class TemplateAgent extends AbstractService implements Agent {
 
             log.trace("Reconciling cancel interrupted.");
 
+            Thread.currentThread().interrupt();
+
         }
 
         return next;
