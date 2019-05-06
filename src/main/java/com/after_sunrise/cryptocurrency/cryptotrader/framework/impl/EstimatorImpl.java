@@ -8,7 +8,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Request;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;

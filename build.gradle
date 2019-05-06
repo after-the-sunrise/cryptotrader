@@ -28,11 +28,10 @@ configurations {
 dependencies {
     compile 'org.apache.httpcomponents:httpclient:4.5.8'
     compile 'org.apache.commons:commons-math3:3.6.1'
-    compile 'commons-collections:commons-collections:3.2.2'
     compile 'org.jboss.resteasy:resteasy-jaxrs:3.6.3.Final'
     compile 'org.jboss.resteasy:resteasy-guice:3.6.3.Final'
     compile 'javax.websocket:javax.websocket-api:1.1'
-    compile 'com.after_sunrise.cryptocurrency:bitflyer4j:0.5.1'
+    compile 'com.after_sunrise.cryptocurrency:bitflyer4j:0.6.0'
     compile 'cc.bitbank:java-bitbankcc:1.0.7'
     compile 'io.prometheus:simpleclient_hotspot:0.6.0'
     runtime 'io.prometheus:simpleclient_logback:0.6.0'

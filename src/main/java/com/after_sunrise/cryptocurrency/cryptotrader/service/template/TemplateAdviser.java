@@ -7,7 +7,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.framework.Context.StateType
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Estimator.Estimation;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.impl.AbstractService;
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 

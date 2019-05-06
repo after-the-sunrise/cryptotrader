@@ -4,7 +4,7 @@ import com.after_sunrise.cryptocurrency.cryptotrader.core.Composite;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Service;
 import com.after_sunrise.cryptocurrency.cryptotrader.framework.Trade;
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
